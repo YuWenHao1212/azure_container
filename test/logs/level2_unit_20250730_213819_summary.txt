@@ -1,0 +1,5 @@
+Level 2 Unit Test Summary
+Timestamp: 20250730_213819
+Status: FAILED
+Exit code: 4
+Log file: test/logs/level2_unit_20250730_213819.log

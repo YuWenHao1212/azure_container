@@ -1,0 +1,363 @@
+# Keyword Standardization Dictionary - Pattern Rules
+# Total: 60 rules
+# Last Updated: 2025-07-02
+# Maintainer: AI Resume Advisor Team
+#
+# Pattern Format:
+# - pattern: regex pattern (case-insensitive)
+#   replacement: replacement string
+#   type: pattern type
+#   description: what this pattern does
+
+# Suffix Removal Patterns (23 rules)
+suffix_removal:
+  # Programming/Development suffixes
+  - pattern: '\s+programming$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "programming" suffix (e.g., "Python programming" → "Python")
+    
+  - pattern: '\s+development$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "development" suffix
+    
+  # Commented out to preserve position titles like "Lead Developer"
+  # - pattern: '\s+developer$'
+  #   replacement: ''
+  #   type: suffix_removal
+  #   description: Remove "developer" suffix
+    
+  - pattern: '\s+coding$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "coding" suffix
+    
+  - pattern: '\s+language$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "language" suffix
+
+  # Skills/Experience suffixes
+  - pattern: '\s+skills?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "skill" or "skills" suffix
+    
+  - pattern: '\s+experience$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "experience" suffix
+    
+  - pattern: '\s+knowledge$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "knowledge" suffix
+    
+  - pattern: '\s+expertise$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "expertise" suffix
+    
+  - pattern: '\s+proficiency$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "proficiency" suffix
+
+  # Tools/Software suffixes
+  - pattern: '\s+tools?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "tool" or "tools" suffix
+    
+  - pattern: '\s+software$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "software" suffix
+    
+  - pattern: '\s+platform$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "platform" suffix
+    
+  - pattern: '\s+services?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "service" or "services" suffix
+    
+  - pattern: '\s+solutions?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "solution" or "solutions" suffix
+    
+  - pattern: '\s+applications?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "application" or "applications" suffix
+    
+  - pattern: '\s+systems?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "system" or "systems" suffix
+
+  # Methods/Techniques suffixes
+  - pattern: '\s+algorithms?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "algorithm" or "algorithms" suffix
+    
+  - pattern: '\s+techniques?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "technique" or "techniques" suffix
+    
+  - pattern: '\s+methods?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "method" or "methods" suffix
+    
+  - pattern: '\s+practices?$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "practice" or "practices" suffix
+    
+  - pattern: '\s+methodolog(y|ies)$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "methodology" or "methodologies" suffix
+
+  # Framework/Library suffixes
+  - pattern: '\s+framework$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "framework" suffix
+    
+  - pattern: '\s+library$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "library" suffix
+    
+  - pattern: '\s+package$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "package" suffix
+    
+  - pattern: '\s+module$'
+    replacement: ''
+    type: suffix_removal
+    description: Remove "module" suffix
+
+# Abbreviation Expansion Patterns (26 rules)
+abbreviation_expansion:
+  # AI/ML abbreviations
+  - pattern: '\bml\b'
+    replacement: 'machine learning'
+    type: abbreviation
+    description: Expand ML to machine learning
+    
+  - pattern: '\bai\b'
+    replacement: 'artificial intelligence'
+    type: abbreviation
+    description: Expand AI to artificial intelligence
+    
+  - pattern: '\bdl\b'
+    replacement: 'deep learning'
+    type: abbreviation
+    description: Expand DL to deep learning
+    
+  - pattern: '\bnlp\b'
+    replacement: 'natural language processing'
+    type: abbreviation
+    description: Expand NLP to natural language processing
+    
+  - pattern: '\bcv\b'
+    replacement: 'computer vision'
+    type: abbreviation
+    description: Expand CV to computer vision
+    
+  - pattern: '\brl\b'
+    replacement: 'reinforcement learning'
+    type: abbreviation
+    description: Expand RL to reinforcement learning
+
+  # Data abbreviations
+  - pattern: '\bds\b'
+    replacement: 'data science'
+    type: abbreviation
+    description: Expand DS to data science
+    
+  - pattern: '\bde\b'
+    replacement: 'data engineering'
+    type: abbreviation
+    description: Expand DE to data engineering
+    
+  - pattern: '\betl\b'
+    replacement: 'extract transform load'
+    type: abbreviation
+    description: Expand ETL to extract transform load
+
+  # Technical abbreviations
+  - pattern: '\bapi\b'
+    replacement: 'application programming interface'
+    type: abbreviation
+    description: Expand API to application programming interface
+    
+  - pattern: '\bui\b'
+    replacement: 'user interface'
+    type: abbreviation
+    description: Expand UI to user interface
+    
+  - pattern: '\bux\b'
+    replacement: 'user experience'
+    type: abbreviation
+    description: Expand UX to user experience
+    
+  - pattern: '\bqa\b'
+    replacement: 'quality assurance'
+    type: abbreviation
+    description: Expand QA to quality assurance
+    
+  - pattern: '\bci/cd\b'
+    replacement: 'continuous integration continuous deployment'
+    type: abbreviation
+    description: Expand CI/CD
+    
+  - pattern: '\bcicd\b'
+    replacement: 'continuous integration continuous deployment'
+    type: abbreviation
+    description: Expand CICD
+    
+  - pattern: '\biac\b'
+    replacement: 'infrastructure as code'
+    type: abbreviation
+    description: Expand IaC to infrastructure as code
+
+  # Platform abbreviations
+  - pattern: '\bk8s\b'
+    replacement: 'kubernetes'
+    type: abbreviation
+    description: Expand k8s to kubernetes
+
+  # Development methodology abbreviations
+  - pattern: '\btdd\b'
+    replacement: 'test driven development'
+    type: abbreviation
+    description: Expand TDD to test driven development
+    
+  - pattern: '\bbdd\b'
+    replacement: 'behavior driven development'
+    type: abbreviation
+    description: Expand BDD to behavior driven development
+    
+  - pattern: '\boop\b'
+    replacement: 'object oriented programming'
+    type: abbreviation
+    description: Expand OOP to object oriented programming
+
+  # Database & format abbreviations
+  - pattern: '\bsql\b'
+    replacement: 'structured query language'
+    type: abbreviation
+    description: Expand SQL to structured query language
+    
+  - pattern: '\bnosql\b'
+    replacement: 'non-sql'
+    type: abbreviation
+    description: Expand NoSQL to non-sql
+    
+  - pattern: '\bjson\b'
+    replacement: 'javascript object notation'
+    type: abbreviation
+    description: Expand JSON to javascript object notation
+    
+  - pattern: '\bxml\b'
+    replacement: 'extensible markup language'
+    type: abbreviation
+    description: Expand XML to extensible markup language
+    
+  - pattern: '\bhtml\b'
+    replacement: 'hypertext markup language'
+    type: abbreviation
+    description: Expand HTML to hypertext markup language
+    
+  - pattern: '\bcss\b'
+    replacement: 'cascading style sheets'
+    type: abbreviation
+    description: Expand CSS to cascading style sheets
+
+  # Programming language abbreviations
+  - pattern: '\bjs\b'
+    replacement: 'javascript'
+    type: abbreviation
+    description: Expand JS to javascript
+    
+  - pattern: '\bts\b'
+    replacement: 'typescript'
+    type: abbreviation
+    description: Expand TS to typescript
+    
+  - pattern: '\bpy\b'
+    replacement: 'python'
+    type: abbreviation
+    description: Expand py to python
+
+# Version Number Removal Patterns (2 rules)
+version_removal:
+  - pattern: '\s+v?\d+(\.\d+)*$'
+    replacement: ''
+    type: version_removal
+    description: Remove version numbers with optional 'v' prefix (e.g., "v2.0.1")
+    
+  - pattern: '\s+\d+(\.\d+)*$'
+    replacement: ''
+    type: version_removal
+    description: Remove version numbers without prefix (e.g., "2.0.1")
+
+# Special Character Normalization (4 rules)
+special_characters:
+  - pattern: '[/\\&]'
+    replacement: ' and '
+    type: special_char
+    description: Replace slashes and ampersands with "and"
+    
+  - pattern: '[_\-]+'
+    replacement: ' '
+    type: special_char
+    description: Replace underscores and hyphens with spaces
+    
+  - pattern: '\s+'
+    replacement: ' '
+    type: whitespace
+    description: Normalize multiple spaces to single space
+    
+  - pattern: '^\s+|\s+$'
+    replacement: ''
+    type: whitespace
+    description: Trim leading and trailing whitespace
+
+# Advanced Patterns (5 rules)
+advanced_patterns:
+  - pattern: '\bsr\.\s*'
+    replacement: 'Senior '
+    type: normalization
+    description: Normalize Sr. abbreviation to Senior
+    
+  - pattern: '\bjr\.\s*'
+    replacement: 'Junior '
+    type: normalization
+    description: Normalize junior abbreviations
+    
+  - pattern: '\b(mgr\.|manager)\s+'
+    replacement: 'manager '
+    type: normalization
+    description: Normalize manager abbreviations
+    
+  - pattern: '\b(eng\.|engineer)\s+'
+    replacement: 'engineer '
+    type: normalization
+    description: Normalize engineer abbreviations
+    
+  - pattern: '\b(dev\.|developer)\s+'
+    replacement: 'developer '
+    type: normalization
+    description: Normalize developer abbreviations

@@ -1,0 +1,181 @@
+version: "1.4.0"
+metadata:
+  author: "DevOps Team"
+  created_at: "2025-07-05T10:00:00Z"
+  description: "Enhanced keyword extraction with importance-based ordering requirement"
+  status: "active"
+  changes_from_v1.3.0: |
+    - Added explicit requirement to order keywords by importance (most important first)
+    - All other rules remain identical to v1.3.0
+
+llm_config:
+  # Temperature 0 for maximum consistency
+  temperature: 0.0
+  
+  # Increased tokens for 25 keywords
+  max_tokens: 500
+  
+  # Same seed for both rounds to improve consistency
+  seed: 42
+  
+  # Use top_p 0.1 for better consistency (based on testing)
+  top_p: 0.1
+  
+  # No penalties to maintain consistency
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+
+prompts:
+  system: |
+    您是專業的關鍵字提取專家。一致性是您的首要任務。
+    
+    關鍵一致性規則：
+    
+    1. 優先提取規則（如有提及必須提取）：
+       
+       程式語言和工具（提及時必須提取）：
+       - "Python", "R", "SQL", "Java", "C++", "JavaScript", "Go", "Scala"
+       - "Tableau", "Power BI", "Excel", "SAS", "SPSS", "MATLAB"
+       - "Git", "Docker", "Kubernetes", "Jenkins", "Terraform"
+       
+       核心技術技能（提及時必須提取）：
+       - "機器學習", "深度學習", "類神經網路"
+       - "時間序列分析", "統計分析", "預測模型"
+       - "資料視覺化", "資料探勘", "大數據"
+       - "自然語言處理", "電腦視覺"
+       
+       職位頭銜（必須包含完整職級）：
+       - 包含職級指標："資深", "主任", "首席", "高級", "初級"
+       - 範例："資深資料科學家", "主任工程師", "高級分析師"
+       - 不要分割：保持 "主任資料科學家"，而非分開的 "主任" 和 "資料科學家"
+    
+    2. 大小寫規則（必須遵守）：
+       - 英文多字詞使用標題大小寫："Data Analysis", "Machine Learning"
+       - 縮寫保持大寫："SQL", "AWS", "HR", "API", "NLP", "ARIMA"
+       - 單字：標題大小寫（"Python", "Tableau", "Excel"）
+       - 程式語言：遵循標準大小寫（"Python", "R", "JavaScript", "C++"）
+       - 中文術語：保持原樣，不要轉換大小寫
+    
+    3. 標準化規則（必須精確套用）：
+       
+       中文術語標準化：
+       - "跨部門團隊" → "跨部門協作"
+       - "跨職能團隊" → "跨部門協作"
+       - "跨功能合作" → "跨部門協作"
+       - "策略決策" → "策略決策制定"
+       - "戰略決策" → "策略決策制定"
+       - "儀表板設計" → "儀表板"
+       - "儀表板開發" → "儀表板"
+       - "資料視覺化工具" → "資料視覺化"
+       - "資料視覺化軟體" → "資料視覺化"
+       - "薪酬福利" → "薪酬與福利"
+       - "人力資源薪酬福利" → "薪酬與福利"
+       - "Python程式設計" → "Python"
+       - "Python開發" → "Python"
+       - "R語言" → "R"
+       - "R程式設計" → "R"
+       - "機器學習演算法" → "機器學習"
+       - "ML演算法" → "機器學習"
+       - "AWS雲端服務" → "AWS"
+       - "亞馬遜網路服務" → "AWS"
+       - "專案管理技能" → "專案管理"
+       - "資訊管理" → "資訊管理"
+       - "時間序列" → "時間序列分析"
+       - "預測分析" → "預測模型"
+       - "統計建模" → "統計分析"
+       - "深度學習演算法" → "深度學習"
+       - "神經網路" → "類神經網路"
+       
+       混合中英文術語：
+       - "DevOps工程師" → "DevOps 工程師" （加空格）
+       - "AI人工智慧" → "AI 人工智慧" （加空格）
+       - "BI商業智慧" → "BI 商業智慧" （加空格）
+    
+    4. 提取優先順序（關鍵）：
+       a) 強制優先：提取所有提及的程式語言和工具
+          - 如果文本提到 SQL、Python、R、Tableau、Power BI 等 → 必須包含全部
+          - 即使已有 25 個關鍵字也不要跳過任何工具
+       b) 其次：提取所有核心技術技能（ML、統計等）
+       c) 第三：提取完整的職位頭銜（含職級）
+       d) 第四：提取領域特定技能
+       e) 最後：提取軟技能和一般概念
+    
+    5. 一致性檢查：
+       完成前，確認：
+       - 第1節中的所有優先關鍵字（如文中提及）都已包含
+       - 所有相似概念使用相同的標準形式
+       - 大小寫一致（英文術語用標題大小寫，縮寫大寫）
+       - 沒有同一概念的不同變體
+       - 職位頭銜包含職級指標（資深、主任等）
+    
+    6. 排序要求（關鍵）：
+       您的最終關鍵字列表必須按重要性排序，遵循嚴格的層次結構：
+       a) 程式語言（Python、R、SQL等）- 永遠排第一
+       b) 技術工具（Tableau、Power BI、Excel等）- 第二
+       c) 技術技能（機器學習、資料分析等）- 第三
+       d) 領域知識（HR分析、商業智慧等）- 第四
+       e) 軟技能（溝通、領導力、團隊合作等）- 永遠排最後
+       
+       此排序對每次提取都是強制性的。
+    
+    正確提取範例：
+    
+    範例1：
+    輸入：「資深資料科學家，精通 R、Python 和使用 ARIMA 模型的時間序列分析」
+    輸出：{{"keywords": ["資深資料科學家", "R", "Python", "時間序列分析", "統計分析", "資料科學", "預測模型", ...]}}
+    注意："資深資料科學家" 保持完整，"ARIMA" 對應到 "時間序列分析"，所有工具都被提取
+    
+    範例2：
+    輸入：「高級資料分析師，擅長資料視覺化工具、建立儀表板和策略決策」
+    輸出：{{"keywords": ["高級資料分析師", "資料視覺化", "儀表板", "策略決策制定", "資料分析", "商業智慧", ...]}}
+    注意："高級資料分析師" 保持完整，使用標準化術語
+    
+    範例3：
+    輸入：「跨部門團隊合作，人力資源薪酬福利分析，使用Python程式設計」
+    輸出：{{"keywords": ["跨部門協作", "薪酬與福利", "人力資源", "Python", "資料分析", "團隊合作", ...]}}
+    注意：標準化協作術語，"Python程式設計" → "Python"
+    
+    範例4：
+    輸入：「機器學習演算法專家，具備AWS雲端服務和React.js開發技能」
+    輸出：{{"keywords": ["機器學習", "AWS", "React", "雲端運算", "軟體開發", "演算法開發", ...]}}
+    注意：所有工具都被提取，標準化 ML 和 AWS 術語
+    
+    範例5：
+    輸入：「首席工程師職位，需要深度學習、神經網路和時間序列預測」
+    輸出：{{"keywords": ["首席工程師", "深度學習", "類神經網路", "時間序列分析", "機器學習", "人工智慧", ...]}}
+    注意："首席工程師" 保持完整，"預測" 對應到 "時間序列分析"
+    
+  user: |
+    從以下職位描述中提取關鍵字，確保絕對一致性：
+    
+    1. 提取精確 25 個關鍵字
+    2. 必須包含所有提及的程式語言和工具
+    3. 必須包含完整的職位頭銜（含職級）
+    4. 套用所有標準化規則
+    5. 英文使用一致的標題大小寫（縮寫大寫）
+    6. 按職位匹配重要性排序
+    7. 仔細檢查優先關鍵字都已包含
+    
+    職位描述：
+    {job_description}
+    
+    優先提醒：
+    - 如職位提到 R、Python、SQL 等 → 必須在您的關鍵字中
+    - 如職位提到 Tableau、Power BI、Superset、Excel → 必須包含全部
+    - 如職位提到「主任資料科學家」→ 提取完整頭銜，不要分割
+    - 如職位提到時間序列、ARIMA、預測 → 對應到「時間序列分析」
+    - 檢查第1節（優先提取）並確保所有提及的關鍵字都已包含
+    - 關鍵：在套用排序前，檢查所有工具和語言都在您的最終列表中
+    
+    一致性提醒：檢查您的關鍵字，確保沒有變體存在且所有標準化規則都已套用。
+    
+    僅回傳包含 25 個關鍵字的 JSON：{{"keywords": ["詞彙1", "詞彙2", ..., "詞彙25"]}}
+
+multi_round_config:
+  enabled: true
+  # Use same seed for both rounds
+  round1_seed: 42
+  round2_seed: 42
+  min_intersection: 8  # Reduced from 12 to avoid losing important keywords
+  # Request 25 keywords per round for buffer
+  max_keywords_per_round: 25

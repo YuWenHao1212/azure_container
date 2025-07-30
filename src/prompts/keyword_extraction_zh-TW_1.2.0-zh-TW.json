@@ -1,0 +1,79 @@
+{
+  "version": "1.2.0-zh-TW",
+  "language": "zh-TW",
+  "locale": "Taiwan",
+  "created_date": "2025-07-02",
+  "description": "繁體中文關鍵字提取提示詞，專為台灣職場環境設計",
+  "content": "您是專業的關鍵字提取專家，專門分析台灣職場的職位描述。請根據以下職位描述提取相關的專業關鍵字。\n\n提取要求：\n1. 提取 25 個最能代表職位要求的專業關鍵字\n2. 專注領域：\n   - 技術技能：程式語言、框架、工具、平台\n   - 專業證照：如 PMP、CISSP、AWS 認證等\n   - 經驗水平：資深、junior、mid-level 等\n   - 產業知識：相關領域專業術語\n   - 軟體工具：開發工具、設計軟體、分析工具\n3. 優先順序：技術技能 > 專業證照 > 經驗要求 > 軟技能\n4. 術語標準：\n   - 使用台灣慣用的技術術語（繁體中文）\n   - 保留國際通用的英文術語（如 Python、AWS、React）\n   - 避免簡體中文術語\n5. 格式要求：\n   - 提供簡潔清單，每行一個關鍵字\n   - 不使用編號、項目符號或其他格式\n   - 移除重複和相似術語\n   - 關鍵字長度控制在 1-4 個詞彙\n\n職位描述：\n{job_description}\n\n請提取關鍵字：",
+  "metadata": {
+    "target_keywords": "25 (fixed)",
+    "focus_areas": [
+      "技術技能",
+      "程式語言", 
+      "框架和工具",
+      "專業證照",
+      "經驗水平",
+      "產業知識"
+    ],
+    "priority_order": [
+      "技術技能",
+      "專業證照", 
+      "經驗要求",
+      "軟技能"
+    ],
+    "terminology_guidelines": {
+      "use_traditional_chinese": true,
+      "preserve_english_terms": [
+        "程式語言名稱",
+        "技術框架",
+        "雲端平台",
+        "認證名稱"
+      ],
+      "avoid_simplified_chinese": true,
+      "taiwan_context": true
+    },
+    "format_requirements": {
+      "list_format": "simple",
+      "no_numbering": true,
+      "no_bullets": true,
+      "keyword_length": "1-4 words",
+      "remove_duplicates": true
+    },
+    "examples": {
+      "technical_skills": [
+        "Python",
+        "React",
+        "機器學習",
+        "資料分析",
+        "雲端架構"
+      ],
+      "certifications": [
+        "AWS 認證",
+        "PMP",
+        "CISSP",
+        "Google Cloud 認證"
+      ],
+      "experience_levels": [
+        "資深工程師",
+        "技術主管",
+        "專案經理",
+        "初級開發者"
+      ]
+    },
+    "quality_indicators": {
+      "keyword_diversity": "涵蓋多個技能領域",
+      "relevance": "與職位要求高度相關",
+      "specificity": "具體的技術術語優於通用術語",
+      "taiwan_localization": "符合台灣職場慣用術語"
+    },
+    "validation_rules": {
+      "min_keywords": 25,
+      "max_keywords": 25,
+      "llm_extract_count": 25,
+      "api_response_limit": 16,
+      "technical_ratio": "60%以上為技術相關",
+      "chinese_content": "支援繁體中文術語",
+      "mixed_language": "允許中英文混合關鍵字"
+    }
+  }
+}

@@ -1,0 +1,173 @@
+# Keyword Standardization Dictionary - Positions
+# Total: 84 entries
+# Last Updated: 2025-07-02
+# Maintainer: AI Resume Advisor Team
+
+# Data Roles (17 entries)
+data_roles:
+  # Data Analyst
+  data analyst: Data Analyst
+  data analysis: Data Analyst
+  business data analyst: Data Analyst
+  
+  # Data Scientist
+  data scientist: Data Scientist
+  data science: Data Scientist
+  senior data scientist: Senior Data Scientist
+  lead data scientist: Lead Data Scientist
+  
+  # Data Engineer
+  data engineer: Data Engineer
+  data engineering: Data Engineer
+  senior data engineer: Senior Data Engineer
+  
+  # Data Architect
+  data architect: Data Architect
+  data architecture: Data Architect
+  
+  # Business Analyst
+  business analyst: Business Analyst
+  business analysis: Business Analyst
+  
+  # BI Roles
+  business intelligence analyst: BI Analyst
+  bi analyst: BI Analyst
+  bi developer: BI Developer
+
+# Software Engineering Roles (24 entries)
+software_engineering:
+  # General Software Roles
+  software engineer: Software Engineer
+  software developer: Software Developer
+  software development: Software Developer
+  senior software engineer: Senior Software Engineer
+  lead software engineer: Lead Software Engineer
+  principal software engineer: Principal Software Engineer
+  staff software engineer: Staff Software Engineer
+  
+  # Full Stack
+  full stack developer: Full Stack Developer
+  fullstack developer: Full Stack Developer
+  
+  # Frontend
+  frontend developer: Frontend Developer
+  front-end developer: Frontend Developer
+  
+  # Backend
+  backend developer: Backend Developer
+  back-end developer: Backend Developer
+  
+  # Web Developer
+  web developer: Web Developer
+  web development: Web Developer
+  
+  # Language-Specific Developers
+  python developer: Python Developer
+  java developer: Java Developer
+  javascript developer: JavaScript Developer
+  react developer: React Developer
+  angular developer: Angular Developer
+  node.js developer: Node.js Developer
+  nodejs developer: Node.js Developer
+  .net developer: .NET Developer
+  dotnet developer: .NET Developer
+
+# Mobile Development Roles (3 entries)
+mobile_roles:
+  ios developer: iOS Developer
+  android developer: Android Developer
+  mobile developer: Mobile Developer
+
+# Leadership & Management Roles (11 entries)
+leadership_management:
+  # Technical Leadership
+  technical lead: Tech Lead
+  tech lead: Tech Lead
+  team lead: Team Lead
+  
+  # Management
+  engineering manager: Engineering Manager
+  software engineering manager: Engineering Manager
+  technical manager: Technical Manager
+  
+  # Product & Project
+  product manager: Product Manager
+  product management: Product Manager
+  project manager: Project Manager
+  # Note: "project management" is a skill, not a position - handled in skills.yaml
+  
+  # Agile
+  scrum master: Scrum Master
+  agile coach: Agile Coach
+
+# DevOps & Infrastructure Roles (9 entries)
+devops_infrastructure:
+  # DevOps
+  devops engineer: DevOps Engineer
+  devops: DevOps Engineer
+  
+  # SRE
+  site reliability engineer: SRE
+  sre: SRE
+  
+  # Cloud & Infrastructure
+  cloud engineer: Cloud Engineer
+  cloud architect: Cloud Architect
+  infrastructure engineer: Infrastructure Engineer
+  systems engineer: Systems Engineer
+  network engineer: Network Engineer
+
+# QA & Testing Roles (7 entries)
+qa_testing:
+  qa engineer: QA Engineer
+  quality assurance engineer: QA Engineer
+  test engineer: Test Engineer
+  qa analyst: QA Analyst
+  quality analyst: QA Analyst
+  automation engineer: Automation Engineer
+  test automation engineer: Automation Engineer
+
+# Security Roles (5 entries)
+security_roles:
+  security engineer: Security Engineer
+  cybersecurity engineer: Security Engineer
+  security analyst: Security Analyst
+  cybersecurity analyst: Security Analyst
+  security architect: Security Architect
+
+# AI/ML Roles (7 entries)
+ai_ml_roles:
+  machine learning engineer: ML Engineer
+  ml engineer: ML Engineer
+  ai engineer: AI Engineer
+  artificial intelligence engineer: AI Engineer
+  deep learning engineer: Deep Learning Engineer
+  nlp engineer: NLP Engineer
+  computer vision engineer: Computer Vision Engineer
+
+# Specialized Roles (6 entries)
+specialized_roles:
+  # Design
+  ux designer: UX Designer
+  ui designer: UI Designer
+  product designer: Product Designer
+  
+  # Database
+  database administrator: Database Administrator
+  dba administrator: Database Administrator
+  
+  # Solution Architecture
+  solutions architect: Solutions Architect
+
+# Additional Roles (5 entries)
+additional_roles:
+  # Consultant
+  technical consultant: Technical Consultant
+  it consultant: IT Consultant
+  
+  # Support
+  technical support engineer: Support Engineer
+  customer success engineer: Customer Success Engineer
+  
+  # Research
+  research engineer: Research Engineer

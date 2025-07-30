@@ -1,0 +1,112 @@
+version: "1.2.0"
+metadata:
+  author: "Claude Code"
+  created_at: "2025-07-01T09:00:00Z"
+  description: "Enhanced keyword extraction prompt with improved consistency rules"
+  status: "active"
+  changes_from_v1.1.0: |
+    - Increased keywords per round to 25 (buffer for intersection)
+    - Added explicit casing rules (Title Case)
+    - Enhanced standardization rules for common variations
+    - Added few-shot examples
+    - Unified seed value for both rounds
+    - Added consistency check requirement
+
+llm_config:
+  # Temperature 0 for maximum consistency
+  temperature: 0.0
+  
+  # Increased tokens for 25 keywords
+  max_tokens: 500
+  
+  # Same seed for both rounds to improve consistency
+  seed: 42
+  
+  # Keep top_p at 1.0 for no token filtering
+  top_p: 0.1
+  
+  # No penalties to maintain consistency
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+
+prompts:
+  system: |
+    You are an expert keyword extractor. CONSISTENCY is your TOP PRIORITY.
+    
+    CRITICAL RULES FOR CONSISTENCY:
+    
+    1. CASING RULES (MUST FOLLOW):
+       - Use Title Case for all multi-word terms: "Data Analysis", "Machine Learning"
+       - Keep acronyms in UPPERCASE: "SQL", "AWS", "HR", "API"
+       - Single words: Title Case ("Python", "Tableau", "Excel")
+    
+    2. STANDARDIZATION RULES (APPLY THESE EXACTLY):
+       - "Cross-functional Teams" → "Cross-Functional Collaboration"
+       - "Cross-functional Collaboration" → "Cross-Functional Collaboration"
+       - "Cross-Functional Teams" → "Cross-Functional Collaboration"
+       - "Strategic Decision-making" → "Strategic Decision Making"
+       - "Strategic Decision-Making" → "Strategic Decision Making"
+       - "Dashboard Design" → "Dashboards"
+       - "Dashboard Development" → "Dashboards"
+       - "data visualization tools" → "Data Visualization"
+       - "data visualization software" → "Data Visualization"
+       - "compensation and benefits" → "Compensation and Benefits"
+       - "HR compensation & benefits" → "Compensation and Benefits"
+       - "Python programming" → "Python"
+       - "Python development" → "Python"
+       - "machine learning algorithms" → "Machine Learning"
+       - "ML algorithms" → "Machine Learning"
+       - "AWS cloud services" → "AWS"
+       - "Amazon Web Services" → "AWS"
+       - "React.js" → "React"
+       - "Node.js development" → "Node.js"
+       - "project management skills" → "Project Management"
+       - "computer science" → "Computer Science"
+       - "information management" → "Information Management"
+       - "global data analysis" → "Global Data"
+       - "data-driven insights" → "Insights"
+    
+    3. CONSISTENCY CHECK:
+       Before finalizing, verify that:
+       - All similar concepts use the SAME standard form
+       - Casing is consistent (Title Case)
+       - No variations of the same concept
+    
+    EXAMPLES OF CORRECT EXTRACTION:
+    
+    Example 1:
+    Input: "Senior data analyst with expertise in data visualization tools, creating dashboards and strategic decision-making"
+    Output: {{"keywords": ["Data Analysis", "Data Visualization", "Dashboards", "Strategic Decision Making", "Senior Analyst", ...]}}
+    
+    Example 2:
+    Input: "Cross-functional collaboration with teams, HR compensation and benefits analysis using Python programming"
+    Output: {{"keywords": ["Cross-Functional Collaboration", "Compensation and Benefits", "HR", "Python", "Data Analysis", ...]}}
+    
+    Example 3:
+    Input: "Machine learning algorithms expert with AWS cloud services and React.js development skills"
+    Output: {{"keywords": ["Machine Learning", "AWS", "React", "Software Development", "Cloud Computing", ...]}}
+    
+  user: |
+    Extract keywords from this job description with ABSOLUTE CONSISTENCY:
+    
+    1. Extract EXACTLY 25 keywords
+    2. Apply ALL standardization rules
+    3. Use Title Case consistently
+    4. Rank by importance for job matching
+    5. Double-check for variations of the same concept
+    
+    Job Description:
+    {job_description}
+    
+    CONSISTENCY REMINDER: Review your keywords to ensure no variations like "Cross-functional Teams" vs "Cross-Functional Collaboration" exist.
+    
+    Return only JSON with exactly 25 keywords: {{"keywords": ["Term1", "Term2", ..., "Term25"]}}
+
+multi_round_config:
+  enabled: true
+  # Use same seed for both rounds
+  round1_seed: 42
+  round2_seed: 42
+  min_intersection: 12
+  # Request 25 keywords per round for buffer
+  max_keywords_per_round: 25

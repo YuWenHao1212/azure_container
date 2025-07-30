@@ -1,0 +1,173 @@
+version: "1.3.0"
+metadata:
+  author: "Claude Code"
+  created_at: "2025-07-03T10:00:00Z"
+  description: "Enhanced keyword extraction with priority keywords and must-extract rules"
+  status: "active"
+  changes_from_v1.2.0: |
+    - Added PRIORITY EXTRACTION section for must-extract keywords
+    - Added context-aware extraction rules for programming languages and tools
+    - Enhanced handling of job titles with level indicators (Senior, Lead, Staff, etc.)
+    - Added domain-specific priority lists for technical skills
+    - Added extraction priority order to handle limited slots better
+    - Enhanced examples with detailed notes on handling
+    - Added priority reminders in user prompt
+    - Changed top_p from 1.0 to 0.1 based on consistency testing results
+
+llm_config:
+  # Temperature 0 for maximum consistency
+  temperature: 0.0
+  
+  # Increased tokens for 25 keywords
+  max_tokens: 500
+  
+  # Same seed for both rounds to improve consistency
+  seed: 42
+  
+  # Use top_p 0.1 for better consistency (based on testing)
+  top_p: 0.1
+  
+  # No penalties to maintain consistency
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+
+prompts:
+  system: |
+    You are an expert keyword extractor. CONSISTENCY is your TOP PRIORITY.
+    
+    CRITICAL RULES FOR CONSISTENCY:
+    
+    1. PRIORITY EXTRACTION (MUST EXTRACT IF PRESENT):
+       
+       Programming Languages & Tools (ALWAYS extract if mentioned):
+       - "Python", "R", "SQL", "Java", "C++", "JavaScript", "Go", "Scala"
+       - "Tableau", "Power BI", "Excel", "SAS", "SPSS", "MATLAB"
+       - "Git", "Docker", "Kubernetes", "Jenkins", "Terraform"
+       
+       Core Analytics Skills (ALWAYS extract if mentioned):
+       - "Machine Learning", "Deep Learning", "Neural Networks"
+       - "Time Series Analysis", "Statistical Analysis", "Predictive Modeling"
+       - "Data Visualization", "Data Mining", "Big Data"
+       - "Natural Language Processing", "Computer Vision"
+       
+       Job Titles (ALWAYS extract complete title with level):
+       - Include level indicators: "Senior", "Lead", "Principal", "Staff", "Junior"
+       - Examples: "Senior Data Scientist", "Lead Engineer", "Staff Analyst"
+       - DO NOT split: Keep as "Lead Data Scientist", not separate "Lead" and "Data Scientist"
+    
+    2. CASING RULES (MUST FOLLOW):
+       - Use Title Case for all multi-word terms: "Data Analysis", "Machine Learning"
+       - Keep acronyms in UPPERCASE: "SQL", "AWS", "HR", "API", "NLP", "ARIMA"
+       - Single words: Title Case ("Python", "Tableau", "Excel")
+       - Programming languages: Follow standard casing ("Python", "R", "JavaScript", "C++")
+    
+    3. STANDARDIZATION RULES (APPLY THESE EXACTLY):
+       - "Cross-functional Teams" → "Cross-Functional Collaboration"
+       - "Cross-functional Collaboration" → "Cross-Functional Collaboration"
+       - "Cross-Functional Teams" → "Cross-Functional Collaboration"
+       - "Strategic Decision-making" → "Strategic Decision Making"
+       - "Strategic Decision-Making" → "Strategic Decision Making"
+       - "Dashboard Design" → "Dashboards"
+       - "Dashboard Development" → "Dashboards"
+       - "data visualization tools" → "Data Visualization"
+       - "data visualization software" → "Data Visualization"
+       - "compensation and benefits" → "Compensation and Benefits"
+       - "HR compensation & benefits" → "Compensation and Benefits"
+       - "Python programming" → "Python"
+       - "Python development" → "Python"
+       - "R programming" → "R"
+       - "R language" → "R"
+       - "machine learning algorithms" → "Machine Learning"
+       - "ML algorithms" → "Machine Learning"
+       - "AWS cloud services" → "AWS"
+       - "Amazon Web Services" → "AWS"
+       - "React.js" → "React"
+       - "Node.js development" → "Node.js"
+       - "project management skills" → "Project Management"
+       - "computer science" → "Computer Science"
+       - "information management" → "Information Management"
+       - "global data analysis" → "Global Data"
+       - "data-driven insights" → "Insights"
+       - "time series" → "Time Series Analysis"
+       - "time-series analysis" → "Time Series Analysis"
+       - "ARIMA" → "Time Series Analysis"
+       - "forecasting" → "Time Series Analysis"
+       - "predictive analytics" → "Predictive Modeling"
+       - "statistical modeling" → "Statistical Analysis"
+       - "deep learning algorithms" → "Deep Learning"
+       - "neural network" → "Neural Networks"
+    
+    4. EXTRACTION PRIORITY ORDER:
+       a) First: Extract ALL mentioned programming languages and tools
+       b) Second: Extract ALL core technical skills (ML, Statistics, etc.)
+       c) Third: Extract complete job titles with level indicators
+       d) Fourth: Extract domain-specific skills
+       e) Last: Extract soft skills and general concepts
+    
+    5. CONSISTENCY CHECK:
+       Before finalizing, verify that:
+       - All priority keywords from section 1 are included if mentioned in the text
+       - All similar concepts use the SAME standard form
+       - Casing is consistent (Title Case for terms, UPPERCASE for acronyms)
+       - No variations of the same concept exist
+       - Job titles include level indicators (Senior, Lead, etc.) when present
+    
+    EXAMPLES OF CORRECT EXTRACTION:
+    
+    Example 1:
+    Input: "Lead Data Scientist with expertise in R, Python, and time series analysis using ARIMA models"
+    Output: {{"keywords": ["Lead Data Scientist", "R", "Python", "Time Series Analysis", "Statistical Modeling", "Data Science", "Predictive Modeling", ...]}}
+    Note: "Lead Data Scientist" kept together, "ARIMA" mapped to "Time Series Analysis", all tools extracted
+    
+    Example 2:
+    Input: "Senior data analyst with expertise in data visualization tools, creating dashboards and strategic decision-making"
+    Output: {{"keywords": ["Senior Data Analyst", "Data Visualization", "Dashboards", "Strategic Decision Making", "Data Analysis", "Business Intelligence", ...]}}
+    Note: "Senior Data Analyst" kept together, standardized terms used
+    
+    Example 3:
+    Input: "Cross-functional collaboration with teams, HR compensation and benefits analysis using Python programming"
+    Output: {{"keywords": ["Cross-Functional Collaboration", "Compensation and Benefits", "HR", "Python", "Data Analysis", "Teamwork", ...]}}
+    Note: Standardized collaboration term, "Python programming" → "Python"
+    
+    Example 4:
+    Input: "Machine learning algorithms expert with AWS cloud services and React.js development skills"
+    Output: {{"keywords": ["Machine Learning", "AWS", "React", "Cloud Computing", "Software Development", "Algorithm Development", ...]}}
+    Note: All tools extracted, standardized ML and AWS terms
+    
+    Example 5:
+    Input: "Staff engineer role requiring deep learning, neural networks, and time-series forecasting"
+    Output: {{"keywords": ["Staff Engineer", "Deep Learning", "Neural Networks", "Time Series Analysis", "Machine Learning", "Artificial Intelligence", ...]}}
+    Note: "Staff Engineer" kept together, "forecasting" mapped to "Time Series Analysis"
+    
+  user: |
+    Extract keywords from this job description with ABSOLUTE CONSISTENCY:
+    
+    1. Extract EXACTLY 25 keywords
+    2. MUST include ALL programming languages and tools mentioned
+    3. MUST include complete job titles with level indicators
+    4. Apply ALL standardization rules
+    5. Use Title Case consistently (UPPERCASE for acronyms)
+    6. Rank by importance for job matching
+    7. Double-check priority keywords are included
+    
+    Job Description:
+    {job_description}
+    
+    PRIORITY REMINDER: 
+    - If the job mentions R, Python, SQL, etc. → MUST be in your keywords
+    - If the job mentions "Lead Data Scientist" → Extract as complete title, not split
+    - If the job mentions time series, ARIMA, forecasting → Map to "Time Series Analysis"
+    - Review section 1 (PRIORITY EXTRACTION) and ensure ALL those keywords are included if mentioned
+    
+    CONSISTENCY REMINDER: Review your keywords to ensure no variations exist and all standardization rules are applied.
+    
+    Return only JSON with exactly 25 keywords: {{"keywords": ["Term1", "Term2", ..., "Term25"]}}
+
+multi_round_config:
+  enabled: true
+  # Use same seed for both rounds
+  round1_seed: 42
+  round2_seed: 42
+  min_intersection: 12
+  # Request 25 keywords per round for buffer
+  max_keywords_per_round: 25

@@ -1,0 +1,403 @@
+# Keyword Standardization Dictionary - Skills
+# Total: 218 entries
+# Last Updated: 2025-07-02
+# Maintainer: AI Resume Advisor Team
+
+# Programming Languages (31 entries)
+programming_languages:
+  # Python variants
+  python: Python
+  python programming: Python
+  python development: Python
+  python developer: Python
+  python coding: Python
+  py: Python
+  
+  # Java variants
+  java programming: Java
+  java development: Java
+  java developer: Java
+  
+  # JavaScript variants
+  javascript programming: JavaScript
+  javascript development: JavaScript
+  js: JavaScript
+  js development: JavaScript
+  
+  # TypeScript variants
+  typescript programming: TypeScript
+  typescript development: TypeScript
+  ts: TypeScript
+  
+  # C# variants
+  "c# programming": "C#"
+  "c# development": "C#"
+  csharp: "C#"
+  c sharp: "C#"
+  
+  # C++ variants
+  "c++ programming": "C++"
+  "c++ development": "C++"
+  cpp: "C++"
+  
+  # Go variants
+  golang: Go
+  go programming: Go
+  go development: Go
+  
+  # Ruby variants
+  ruby programming: Ruby
+  ruby development: Ruby
+  ruby on rails: Ruby on Rails
+  ror: Ruby on Rails
+  
+  # PHP variants
+  php programming: PHP
+  php development: PHP
+  
+  # Swift variants
+  swift programming: Swift
+  swift development: Swift
+  
+  # Kotlin variants
+  kotlin programming: Kotlin
+  kotlin development: Kotlin
+  
+  # R variants
+  r programming: R
+  r language: R
+  
+  # Scala variants
+  scala programming: Scala
+  scala development: Scala
+
+# AI/ML Skills (21 entries)
+ai_ml:
+  # Machine Learning
+  machine learning: Machine Learning
+  machine learning algorithms: Machine Learning
+  machine learning models: Machine Learning
+  ml algorithms: Machine Learning
+  ml models: Machine Learning
+  ml: Machine Learning
+  
+  # Deep Learning
+  deep learning algorithms: Deep Learning
+  dl: Deep Learning
+  
+  # Neural Networks
+  neural networks: Neural Networks
+  neural nets: Neural Networks
+  nn: Neural Networks
+  
+  # AI
+  artificial intelligence: AI
+  ai algorithms: AI
+  ai models: AI
+  
+  # NLP
+  natural language processing: NLP
+  nlp algorithms: NLP
+  
+  # Computer Vision
+  computer vision algorithms: Computer Vision
+  cv algorithms: Computer Vision
+  
+  # Reinforcement Learning
+  reinforcement learning: Reinforcement Learning
+  rl: Reinforcement Learning
+  
+  # Learning Types
+  supervised learning: Supervised Learning
+  unsupervised learning: Unsupervised Learning
+
+# Data Science & Analytics (14 entries)
+data_science:
+  data science skills: Data Science
+  data scientist skills: Data Science
+  data analysis skills: Data Analysis
+  data analytics: Data Analytics
+  predictive modeling: Predictive Modeling
+  predictive analytics: Predictive Analytics
+  statistical analysis: Statistical Analysis
+  statistics: Statistics
+  statistical modeling: Statistical Modeling
+  data mining: Data Mining
+  data visualization: Data Visualization
+  business intelligence: Business Intelligence
+  bi analytics: BI Analytics
+  hr analytics: HR Analytics
+  human resources: HR Analytics
+  hr data: HR Analytics
+  statistics: Statistical Analysis
+  data engineering: Data Engineering
+
+# Web Development (22 entries)
+web_development:
+  # Frontend/Backend
+  frontend development: Frontend Development
+  front-end development: Frontend Development
+  frontend: Frontend Development
+  backend development: Backend Development
+  back-end development: Backend Development
+  backend: Backend Development
+  full stack development: Full Stack Development
+  fullstack development: Full Stack Development
+  full-stack: Full Stack Development
+  
+  # General Web
+  web development: Web Development
+  web dev: Web Development
+  # Note: web developer is in positions.yaml
+  responsive design: Responsive Design
+  responsive web design: Responsive Design
+  
+  # APIs
+  restful apis: REST APIs
+  rest apis: REST APIs
+  restful services: REST APIs
+  api development: API Development
+  api design: API Design
+  
+  # Architecture
+  microservices architecture: Microservices
+  microservice architecture: Microservices
+  serverless architecture: Serverless
+  serverless computing: Serverless
+
+# Databases (24 entries)
+databases:
+  # SQL Server
+  sql server: SQL Server
+  ms sql server: SQL Server
+  microsoft sql server: SQL Server
+  
+  # MySQL
+  mysql database: MySQL
+  mysql db: MySQL
+  
+  # PostgreSQL
+  postgresql database: PostgreSQL
+  postgres: PostgreSQL
+  postgres db: PostgreSQL
+  
+  # MongoDB
+  mongodb database: MongoDB
+  mongo: MongoDB
+  mongo db: MongoDB
+  
+  # Oracle
+  oracle database: Oracle
+  oracle db: Oracle
+  
+  # Redis
+  redis database: Redis
+  redis cache: Redis
+  
+  # Others
+  elasticsearch: Elasticsearch
+  elastic search: Elasticsearch
+  cassandra database: Cassandra
+  cassandra db: Cassandra
+  dynamodb: DynamoDB
+  dynamo db: DynamoDB
+  
+  # Database Skills
+  database administration: Database Administration
+  dba: Database Administration
+  database design: Database Design
+  database optimization: Database Optimization
+  sql queries: SQL
+  sql programming: SQL
+  structured query language: SQL
+  nosql databases: NoSQL
+  nosql: NoSQL
+
+# Cloud & DevOps (27 entries)
+cloud_devops:
+  # AWS
+  amazon web services: AWS
+  aws cloud: AWS
+  aws services: AWS
+  
+  # Azure
+  microsoft azure: Azure
+  azure cloud: Azure
+  azure services: Azure
+  
+  # GCP
+  google cloud platform: GCP
+  google cloud: GCP
+  gcp services: GCP
+  
+  # General Cloud
+  cloud computing: Cloud Computing
+  cloud architecture: Cloud Architecture
+  cloud solutions: Cloud Solutions
+  
+  # DevOps
+  devops practices: DevOps
+  devops tools: DevOps
+  ci/cd pipeline: CI/CD
+  ci/cd pipelines: CI/CD
+  cicd pipeline: CI/CD
+  cicd pipelines: CI/CD
+  continuous integration: CI/CD
+  continuous deployment: CI/CD
+  continuous integration continuous deployment: CI/CD
+  continuous integration continuous deployment pipelines: CI/CD
+  
+  # Infrastructure
+  infrastructure as code: IaC
+  iac: IaC
+  containerization: Containerization
+  container orchestration: Container Orchestration
+  docker: Docker
+  kubernetes: Kubernetes
+  k8s: Kubernetes
+
+# Data Engineering (12 entries)
+data_engineering:
+  # Removed: data engineering, data engineer (moved to positions.yaml)
+  etl processes: ETL
+  etl pipelines: ETL
+  extract transform load: ETL
+  data pipelines: Data Pipelines
+  data pipeline: Data Pipelines
+  data warehousing: Data Warehousing
+  data warehouse: Data Warehousing
+  big data technologies: Big Data
+  big data: Big Data
+  data lake: Data Lake
+  data lakes: Data Lake
+  stream processing: Stream Processing
+  streaming data: Stream Processing
+  batch processing: Batch Processing
+
+# Testing (12 entries)
+testing:
+  unit testing: Unit Testing
+  unit tests: Unit Testing
+  integration testing: Integration Testing
+  integration tests: Integration Testing
+  test automation: Test Automation
+  automated testing: Test Automation
+  qa testing: QA Testing
+  quality assurance: QA Testing
+  test driven development: TDD
+  tdd: TDD
+  behavior driven development: BDD
+  bdd: BDD
+  performance testing: Performance Testing
+  load testing: Load Testing
+  stress testing: Stress Testing
+
+# Soft Skills (15 entries)
+soft_skills:
+  # Project Management
+  project management: Project Management
+  # Removed: project manager (in positions.yaml)
+  agile methodology: Agile
+  agile development: Agile
+  scrum methodology: Scrum
+  scrum master: Scrum
+  kanban methodology: Kanban
+  
+  # Leadership
+  team leadership: Leadership
+  team lead: Leadership
+  technical leadership: Technical Leadership
+  
+  # Other Skills
+  communication skills: Communication
+  problem solving: Problem Solving
+  problem-solving: Problem Solving
+  analytical skills: Analytical Skills
+  critical thinking: Critical Thinking
+
+# Security (15 entries)
+security:
+  cybersecurity: Cybersecurity
+  cyber security: Cybersecurity
+  information security: Information Security
+  infosec: Information Security
+  application security: Application Security
+  appsec: Application Security
+  network security: Network Security
+  security testing: Security Testing
+  penetration testing: Penetration Testing
+  pen testing: Penetration Testing
+  security compliance: Security Compliance
+  data security: Data Security
+  encryption: Encryption
+  authentication: Authentication
+  authorization: Authorization
+
+# Mobile Development (13 entries)
+mobile_development:
+  # iOS
+  ios development: iOS Development
+  ios developer: iOS Development
+  iphone development: iOS Development
+  
+  # Android
+  android development: Android Development
+  android developer: Android Development
+  
+  # Cross-platform
+  mobile development: Mobile Development
+  mobile app development: Mobile Development
+  react native: React Native
+  react native development: React Native
+  flutter development: Flutter
+  flutter developer: Flutter
+  xamarin development: Xamarin
+  xamarin developer: Xamarin
+  mobile ui/ux: Mobile UI/UX
+  mobile design: Mobile UI/UX
+
+# Frameworks & Libraries (20 entries)
+frameworks_libraries:
+  # JavaScript Frameworks
+  react.js: React
+  reactjs: React
+  angular.js: Angular
+  angularjs: Angular
+  vue.js: Vue.js
+  vuejs: Vue.js
+  node.js: Node.js
+  nodejs: Node.js
+  express.js: Express.js
+  expressjs: Express.js
+  
+  # Python Frameworks
+  django framework: Django
+  django web: Django
+  flask framework: Flask
+  flask web: Flask
+  
+  # Java Frameworks
+  spring framework: Spring
+  spring boot: Spring Boot
+  
+  # .NET
+  asp.net: ASP.NET
+  asp.net core: ASP.NET Core
+  .net framework: .NET
+  dotnet: .NET
+
+# Business & Domain Skills (10 entries)
+business_skills:
+  # Removed: business analysis, business analyst (in positions.yaml)
+  product management: Product Management
+  # Removed: product manager (in positions.yaml)
+  customer experience: Customer Experience
+  cx: Customer Experience
+  user experience: User Experience
+  ux design: UX Design
+  user interface: User Interface
+  ui design: UI Design
+  talent management: Talent Acquisition
+  recruitment: Talent Acquisition
+  stakeholder management: Stakeholder Engagement
+  stakeholder relations: Stakeholder Engagement

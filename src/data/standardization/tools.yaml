@@ -1,0 +1,282 @@
+# Keyword Standardization Dictionary - Tools
+# Total: 154 entries
+# Last Updated: 2025-07-02
+# Maintainer: AI Resume Advisor Team
+
+# Version Control (9 entries)
+version_control:
+  git version control: Git
+  git vcs: Git
+  github: GitHub
+  gitlab: GitLab
+  bitbucket: Bitbucket
+  svn: SVN
+  subversion: SVN
+  mercurial: Mercurial
+  perforce: Perforce
+
+# IDEs & Editors (14 entries)
+ides_editors:
+  # VS Code
+  visual studio code: VS Code
+  vscode: VS Code
+  vs code: VS Code
+  
+  # Visual Studio
+  visual studio: Visual Studio
+  
+  # JetBrains
+  intellij idea: IntelliJ IDEA
+  intellij: IntelliJ IDEA
+  pycharm: PyCharm
+  webstorm: WebStorm
+  
+  # Others
+  eclipse ide: Eclipse
+  eclipse: Eclipse
+  sublime text: Sublime Text
+  atom editor: Atom
+  vim editor: Vim
+  emacs editor: Emacs
+
+# Web Frameworks (24 entries)
+web_frameworks:
+  # JavaScript Frameworks
+  react.js: React
+  reactjs: React
+  react framework: React
+  angular.js: Angular
+  angularjs: Angular
+  angular framework: Angular
+  vue.js: Vue.js
+  vuejs: Vue.js
+  vue framework: Vue.js
+  
+  # Node.js
+  node.js: Node.js
+  nodejs: Node.js
+  express.js: Express.js
+  expressjs: Express.js
+  
+  # Python Frameworks
+  django framework: Django
+  django web: Django
+  flask framework: Flask
+  flask web: Flask
+  
+  # Java Frameworks
+  spring framework: Spring
+  spring boot: Spring Boot
+  
+  # .NET
+  asp.net: ASP.NET
+  asp.net core: ASP.NET Core
+  
+  # PHP
+  laravel framework: Laravel
+  laravel php: Laravel
+  
+  # Ruby
+  ruby on rails: Ruby on Rails
+  rails framework: Ruby on Rails
+
+# Databases & Data Tools (31 entries)
+databases_data:
+  # Microsoft SQL
+  microsoft sql server: SQL Server
+  mssql: SQL Server
+  
+  # MySQL
+  mysql database: MySQL
+  
+  # PostgreSQL
+  postgresql database: PostgreSQL
+  postgres database: PostgreSQL
+  
+  # MongoDB
+  mongodb database: MongoDB
+  
+  # Oracle
+  oracle database: Oracle
+  
+  # Redis
+  redis cache: Redis
+  
+  # Search & Analytics
+  elasticsearch engine: Elasticsearch
+  apache cassandra: Cassandra
+  
+  # Message Queues
+  apache kafka: Kafka
+  rabbitmq: RabbitMQ
+  
+  # Big Data
+  apache spark: Spark
+  apache hadoop: Hadoop
+  apache hive: Hive
+  apache airflow: Airflow
+  
+  # Cloud Data Warehouses
+  snowflake data: Snowflake
+  
+  # BI Tools
+  tableau software: Tableau
+  power bi: Power BI
+  microsoft power bi: Power BI
+  looker: Looker
+  qlik sense: Qlik Sense
+  qlikview: QlikView
+  
+  # Data Tools
+  databricks: Databricks
+  apache flink: Flink
+  apache beam: Beam
+
+# Cloud Platforms & Services (16 entries)
+cloud_platforms:
+  # AWS
+  amazon web services: AWS
+  aws cloud services: AWS
+  aws ec2: EC2
+  aws s3: S3
+  aws lambda: Lambda
+  aws rds: RDS
+  
+  # Azure
+  microsoft azure: Azure
+  azure cloud: Azure
+  
+  # Google Cloud
+  google cloud platform: GCP
+  google cloud: GCP
+  
+  # Other Platforms
+  digital ocean: DigitalOcean
+  heroku platform: Heroku
+  netlify: Netlify
+  vercel: Vercel
+  cloudflare: Cloudflare
+
+# DevOps Tools (27 entries)
+devops_tools:
+  # Containerization
+  docker container: Docker
+  docker platform: Docker
+  kubernetes orchestration: Kubernetes
+  k8s: Kubernetes
+  
+  # CI/CD
+  jenkins ci: Jenkins
+  jenkins pipeline: Jenkins
+  github actions: GitHub Actions
+  gitlab ci: GitLab CI
+  circle ci: CircleCI
+  travis ci: Travis CI
+  
+  # Configuration Management
+  ansible automation: Ansible
+  terraform iac: Terraform
+  terraform infrastructure: Terraform
+  puppet automation: Puppet
+  chef automation: Chef
+  
+  # Monitoring
+  prometheus monitoring: Prometheus
+  grafana dashboard: Grafana
+  elk stack: ELK Stack
+  datadog monitoring: Datadog
+  new relic: New Relic
+  splunk: Splunk
+  
+  # Others
+  hashicorp vault: Vault
+  consul: Consul
+  packer: Packer
+  vagrant: Vagrant
+
+# Programming Tools (15 entries)
+programming_tools:
+  # Testing Frameworks
+  junit testing: JUnit
+  pytest framework: pytest
+  jest testing: Jest
+  mocha testing: Mocha
+  
+  # Testing Tools
+  selenium webdriver: Selenium
+  cypress testing: Cypress
+  
+  # API Tools
+  postman api: Postman
+  swagger api: Swagger
+  
+  # Build Tools
+  webpack bundler: Webpack
+  babel transpiler: Babel
+  npm package: npm
+  yarn package: Yarn
+  maven build: Maven
+  gradle build: Gradle
+  cmake build: CMake
+
+# Data Science Tools (18 entries)
+data_science_tools:
+  # Notebooks
+  jupyter notebook: Jupyter
+  jupyter lab: JupyterLab
+  google colab: Google Colab
+  
+  # Python Libraries
+  anaconda distribution: Anaconda
+  pandas library: pandas
+  numpy library: NumPy
+  scipy library: SciPy
+  scikit-learn: Scikit-learn
+  sklearn: Scikit-learn
+  
+  # Deep Learning
+  tensorflow framework: TensorFlow
+  tf: TensorFlow
+  pytorch framework: PyTorch
+  keras library: Keras
+  
+  # Visualization
+  matplotlib library: matplotlib
+  seaborn library: seaborn
+  plotly library: Plotly
+  
+  # Others
+  r studio: RStudio
+
+# Communication & Collaboration Tools (10 entries)
+communication_tools:
+  slack communication: Slack
+  microsoft teams: Teams
+  ms teams: Teams
+  zoom meetings: Zoom
+  jira project: Jira
+  atlassian jira: Jira
+  confluence wiki: Confluence
+  trello board: Trello
+  asana project: Asana
+  notion workspace: Notion
+
+# Design Tools (8 entries)
+design_tools:
+  adobe photoshop: Photoshop
+  adobe illustrator: Illustrator
+  adobe xd: Adobe XD
+  sketch app: Sketch
+  figma design: Figma
+  invision: InVision
+  zeplin: Zeplin
+  canva design: Canva
+
+# Security Tools (6 entries)
+security_tools:
+  wireshark: Wireshark
+  metasploit: Metasploit
+  nmap: Nmap
+  burp suite: Burp Suite
+  owasp zap: OWASP ZAP
+  kali linux: Kali Linux

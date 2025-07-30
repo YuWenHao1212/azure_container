@@ -1,0 +1,5 @@
+Level 2 Unit Test Summary
+Timestamp: 20250730_214004
+Status: FAILED
+Exit code: 2
+Log file: test/logs/level2_unit_20250730_214004.log

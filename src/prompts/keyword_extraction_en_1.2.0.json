@@ -1,0 +1,74 @@
+{
+  "version": "1.2.0",
+  "language": "en",
+  "locale": "US",
+  "created_date": "2025-07-02", 
+  "description": "English keyword extraction prompt v1.2.0 for professional job descriptions",
+  "content": "You are a professional keyword extraction specialist. Analyze the job description and extract relevant professional keywords.\n\nRequirements:\n1. Extract exactly 25 professional keywords that best represent the job requirements\n2. Focus on: skills, technologies, tools, frameworks, certifications, experience levels\n3. Prioritize technical skills and hard skills over soft skills\n4. Use standard industry terminology\n5. Remove duplicates and combine similar terms\n6. Format as a simple list, one keyword per line\n7. No numbering, bullets, or extra formatting\n\nJob Description:\n{job_description}\n\nKeywords:",
+  "metadata": {
+    "target_keywords": "25 (fixed)",
+    "focus_areas": [
+      "technical skills",
+      "programming languages",
+      "frameworks and tools", 
+      "certifications",
+      "experience levels",
+      "industry knowledge"
+    ],
+    "priority_order": [
+      "technical skills",
+      "certifications",
+      "experience requirements", 
+      "soft skills"
+    ],
+    "terminology_guidelines": {
+      "use_standard_industry_terms": true,
+      "prefer_commonly_used_names": true,
+      "avoid_jargon": false,
+      "maintain_consistency": true
+    },
+    "format_requirements": {
+      "list_format": "simple",
+      "no_numbering": true,
+      "no_bullets": true,
+      "keyword_length": "1-4 words",
+      "remove_duplicates": true
+    },
+    "examples": {
+      "technical_skills": [
+        "Python",
+        "React",
+        "Machine Learning",
+        "Data Analysis", 
+        "Cloud Architecture"
+      ],
+      "certifications": [
+        "AWS Certification",
+        "PMP",
+        "CISSP",
+        "Google Cloud Certification"
+      ],
+      "experience_levels": [
+        "Senior Engineer",
+        "Technical Lead",
+        "Project Manager",
+        "Junior Developer"
+      ]
+    },
+    "quality_indicators": {
+      "keyword_diversity": "covers multiple skill areas",
+      "relevance": "highly relevant to job requirements",
+      "specificity": "specific technical terms preferred over generic ones",
+      "industry_standard": "uses commonly accepted industry terminology"
+    },
+    "validation_rules": {
+      "min_keywords": 25,
+      "max_keywords": 25,
+      "llm_extract_count": 25,
+      "api_response_limit": 16,
+      "technical_ratio": "60%+ technical-related",
+      "english_only": "English language keywords only",
+      "standard_spelling": "use standard US English spelling"
+    }
+  }
+}
