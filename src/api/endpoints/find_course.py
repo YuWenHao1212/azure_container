@@ -16,14 +16,14 @@ router = APIRouter()
 async def search_courses(request: CourseSearchRequest) -> CourseSearchResponse:
     """
     搜尋相關課程
-    
+
     根據技能名稱和搜尋情境，使用向量相似度搜尋最相關的課程。
     支援 Tech/Non-Tech 分類過濾。
     """
     try:
         # 取得服務實例
         search_service = await get_course_search_service()
-        
+
         # 執行搜尋
         result = await search_service.search_courses_v2(
             skill_name=request.skill_name,
@@ -31,9 +31,9 @@ async def search_courses(request: CourseSearchRequest) -> CourseSearchResponse:
             limit=request.limit,
             similarity_threshold=request.similarity_threshold
         )
-        
+
         return result
-        
+
     except Exception as e:
         # 記錄錯誤
         monitoring_service.track_event("CourseSearchError", {
@@ -41,7 +41,7 @@ async def search_courses(request: CourseSearchRequest) -> CourseSearchResponse:
             "skill_name": request.skill_name,
             "search_context": request.search_context
         })
-        
+
         # Bubble.io 相容：總是回傳 200 狀態碼
         return CourseSearchResponse(
             success=False,

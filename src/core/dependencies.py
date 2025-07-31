@@ -14,8 +14,8 @@ from src.services.standardization.multilingual_standardizer import (
 from src.services.standardization.zh_tw_standardizer import (
     TraditionalChineseStandardizer,
 )
-from src.services.unified_prompt_service import UnifiedPromptService
 from src.services.unified_prompt_service import (
+    UnifiedPromptService,
     get_unified_prompt_service as get_prompt_service_instance,
 )
 
@@ -37,9 +37,9 @@ def initialize_dependencies():
     global _keyword_standardizer, _multilingual_standardizer
     global _english_standardizer, _chinese_standardizer
     global _unified_prompt_service
-    
+
     logger.info("Initializing application dependencies...")
-    
+
     # Initialize KeywordStandardizer (loads YAML files)
     logger.info("Loading keyword standardizer dictionaries...")
     _keyword_standardizer = KeywordStandardizer()
@@ -47,19 +47,19 @@ def initialize_dependencies():
     logger.info(f"  ✓ Loaded {len(_keyword_standardizer.position_dictionary)} positions")
     logger.info(f"  ✓ Loaded {len(_keyword_standardizer.tool_dictionary)} tools")
     logger.info(f"  ✓ Loaded {len(_keyword_standardizer.patterns)} patterns")
-    
+
     # Initialize language-specific standardizers
     logger.info("Loading language-specific standardizers...")
     _english_standardizer = EnglishStandardizer()
     _chinese_standardizer = TraditionalChineseStandardizer()
     _multilingual_standardizer = MultilingualStandardizer()
     logger.info("  ✓ English, Chinese, and Multilingual standardizers loaded")
-    
+
     # Initialize UnifiedPromptService (use existing singleton)
     logger.info("Loading unified prompt service...")
     _unified_prompt_service = get_prompt_service_instance()
     logger.info(f"  ✓ Prompt service loaded with languages: {_unified_prompt_service.SUPPORTED_LANGUAGES}")
-    
+
     logger.info("✅ All dependencies initialized successfully!")
 
 

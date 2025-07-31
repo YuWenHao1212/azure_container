@@ -29,67 +29,67 @@ class MonitoringConfig(BaseSettings):
     Monitoring configuration with smart defaults.
     Automatically configures based on environment.
     """
-    
+
     # Environment detection
     environment: Environment = Environment.LOCAL
     is_container_app: bool = False
     is_azure_function: bool = False
-    
+
     # Monitoring toggles
     monitoring_enabled: bool = False  # Heavy Application Insights
     lightweight_monitoring: bool = True
     error_capture_enabled: bool = True
-    
+
     # Error storage configuration
     error_storage_mode: StorageMode | None = None  # Auto-detect if not set
     max_memory_errors: int = 100
     error_retention_hours: int = 24
     max_capture_body_size: int = 10240  # 10KB
     capture_success_samples: bool = False
-    
+
     # Storage paths
     error_log_path: str = "/tmp/api_errors"
     error_blob_container: str = "api-errors"
-    
+
     # Azure Storage (for blob mode)
     azure_storage_connection_string: str | None = None
     azure_storage_account_name: str | None = None
     azure_storage_account_key: str | None = None
-    
+
     # Performance thresholds
     slow_request_threshold_ms: int = 2000
     error_threshold_4xx: int = 50
     error_threshold_5xx: int = 10
     stats_interval_seconds: int = 300
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = False
         extra = "ignore"  # Ignore extra fields from .env file
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
+
         # Auto-detect environment
         self._detect_environment()
-        
+
         # Auto-configure storage mode if not explicitly set
         if self.error_storage_mode is None:
             self.error_storage_mode = self._auto_select_storage_mode()
-        
+
         # Validate configuration
         self._validate_storage_config()
-    
+
     def _detect_environment(self):
         """Detect the running environment"""
         # Check if running in Container Apps
         if os.getenv("CONTAINER_APP_NAME"):
             self.is_container_app = True
-            
+
         # Check if running in Azure Functions
         if os.getenv("FUNCTIONS_WORKER_RUNTIME"):
             self.is_azure_function = True
-        
+
         # Determine environment from various sources
         env_indicators = {
             # Container Apps environments
@@ -115,17 +115,17 @@ class MonitoringConfig(BaseSettings):
                 "Production": Environment.PRODUCTION
             }
         }
-        
+
         for env_var, mappings in env_indicators.items():
             value = os.getenv(env_var, "").lower()
             if value in mappings:
                 self.environment = mappings[value]
                 break
-    
+
     def _auto_select_storage_mode(self) -> StorageMode:
         """
         Automatically select storage mode based on environment.
-        
+
         Decision matrix:
         - Local development: Memory (fast debugging)
         - Container Apps Development: Disk (persistent across requests)
@@ -136,7 +136,7 @@ class MonitoringConfig(BaseSettings):
         # Azure Functions should use memory (stateless)
         if self.is_azure_function:
             return StorageMode.MEMORY
-        
+
         # Production environment
         if self.environment == Environment.PRODUCTION:
             # Use blob if connection string is available
@@ -150,28 +150,28 @@ class MonitoringConfig(BaseSettings):
                     "Consider setting AZURE_STORAGE_CONNECTION_STRING for better scalability."
                 )
                 return StorageMode.DISK
-        
+
         # Staging environment
         if self.environment == Environment.STAGING:
             # Prefer blob if available, otherwise disk
             if self._has_blob_storage_config():
                 return StorageMode.BLOB
             return StorageMode.DISK
-        
+
         # Development on Container Apps
         if self.environment == Environment.DEVELOPMENT and self.is_container_app:
             return StorageMode.DISK
-        
+
         # Local development
         return StorageMode.MEMORY
-    
+
     def _has_blob_storage_config(self) -> bool:
         """Check if blob storage is properly configured"""
         return bool(
             self.azure_storage_connection_string or
             (self.azure_storage_account_name and self.azure_storage_account_key)
         )
-    
+
     def _validate_storage_config(self):
         """Validate storage configuration"""
         if self.error_storage_mode == StorageMode.BLOB:
@@ -181,7 +181,7 @@ class MonitoringConfig(BaseSettings):
                     "AZURE_STORAGE_CONNECTION_STRING or "
                     "AZURE_STORAGE_ACCOUNT_NAME + AZURE_STORAGE_ACCOUNT_KEY"
                 )
-        
+
         # Adjust retention based on environment
         if self.environment == Environment.PRODUCTION:
             # Production: keep errors longer
@@ -191,7 +191,7 @@ class MonitoringConfig(BaseSettings):
             # Local: shorter retention
             if self.error_retention_hours > 24:
                 self.error_retention_hours = 24
-    
+
     def get_storage_info(self) -> dict:
         """Get human-readable storage configuration"""
         return {
@@ -203,7 +203,7 @@ class MonitoringConfig(BaseSettings):
             "retention_hours": self.error_retention_hours,
             "auto_selected": os.getenv("ERROR_STORAGE_MODE") is None
         }
-    
+
     def _get_storage_location(self) -> str:
         """Get the actual storage location"""
         if self.error_storage_mode == StorageMode.MEMORY:
@@ -215,12 +215,12 @@ class MonitoringConfig(BaseSettings):
                 return f"{self.azure_storage_account_name}/{self.error_blob_container}"
             return f"Azure Blob Storage/{self.error_blob_container}"
         return "Unknown"
-    
+
     @validator("error_retention_hours")
     def validate_retention(cls, v, values):
         """Ensure reasonable retention periods"""
         environment = values.get("environment", Environment.LOCAL)
-        
+
         # Set maximum retention based on environment
         max_retention = {
             Environment.LOCAL: 24,      # 1 day
@@ -228,11 +228,11 @@ class MonitoringConfig(BaseSettings):
             Environment.STAGING: 720,   # 30 days
             Environment.PRODUCTION: 2160  # 90 days
         }
-        
+
         max_hours = max_retention.get(environment, 168)
         if v > max_hours:
             return max_hours
-        
+
         return v
 
 

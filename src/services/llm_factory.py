@@ -9,7 +9,7 @@ Implements the hybrid approach with multiple selection strategies:
 4. Default value
 """
 import logging
-from typing import Literal
+from typing import Literal, Optional
 
 from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
@@ -29,26 +29,26 @@ logger = logging.getLogger(__name__)
 
 def get_llm_client(
     model: LLMModel = None,
-    api_name: str = None
+    api_name: Optional[str] = None
 ) -> LLMClient:
     """
     Get LLM client with dynamic model selection (Basic version).
-    
+
     Args:
         model: Direct model specification ("gpt4o-2" or "gpt41-mini")
         api_name: API name for environment-based configuration
                   (e.g., "keywords", "gap_analysis", "resume_format")
-    
+
     Returns:
         LLM client instance (AzureOpenAIClient or AzureOpenAIGPT41Client)
-        
+
     Priority:
         1. Direct model parameter
         2. Environment variable (LLM_MODEL_{API_NAME})
         3. Default model from settings
     """
     settings = get_settings()
-    
+
     # Determine which model to use
     if model:
         # Direct specification takes priority
@@ -60,7 +60,7 @@ def get_llm_client(
         # e.g., LLM_MODEL_KEYWORDS, LLM_MODEL_GAP_ANALYSIS
         env_key = f"llm_model_{api_name.lower()}"
         selected_model = getattr(settings, env_key, None)
-        
+
         if selected_model:
             source = "config"
             logger.info(f"Using model from env for {api_name}: {selected_model}")
@@ -74,10 +74,10 @@ def get_llm_client(
         selected_model = getattr(settings, "llm_model_default", "gpt4o-2")
         source = "default"
         logger.info(f"Using default model: {selected_model}")
-    
+
     # Track model selection
     _track_model_selection(api_name, selected_model, source)
-    
+
     # Create and return appropriate client
     return _create_client(selected_model)
 
@@ -89,17 +89,17 @@ def get_llm_client_smart(
 ) -> LLMClient:
     """
     Get LLM client with smart model selection (Hybrid approach).
-    
+
     This is the full hybrid implementation with multiple selection strategies.
-    
+
     Args:
         api_name: API name (required for tracking and config lookup)
         request_model: Model specified in request (highest priority)
         headers: HTTP headers (may contain X-LLM-Model)
-    
+
     Returns:
         LLM client instance
-        
+
     Priority:
         1. Request parameter
         2. HTTP Header (X-LLM-Model)
@@ -109,13 +109,13 @@ def get_llm_client_smart(
     settings = get_settings()
     selected_model = None
     source: ModelSource = "default"
-    
+
     # 1. Request parameter has highest priority
     if request_model and getattr(settings, "enable_llm_model_override", True):
         selected_model = request_model
         source = "request"
         logger.info(f"Using model from request parameter: {selected_model}")
-    
+
     # 2. HTTP Header is second priority
     elif headers and getattr(settings, "enable_llm_model_header", True):
         header_model = headers.get("X-LLM-Model")
@@ -123,7 +123,7 @@ def get_llm_client_smart(
             selected_model = header_model
             source = "header"
             logger.info(f"Using model from HTTP header: {selected_model}")
-    
+
     # 3. Environment variable configuration
     if not selected_model:
         env_key = f"llm_model_{api_name.lower()}"
@@ -132,16 +132,16 @@ def get_llm_client_smart(
             selected_model = config_model
             source = "config"
             logger.info(f"Using model from config for {api_name}: {selected_model}")
-    
+
     # 4. Default fallback
     if not selected_model:
         selected_model = getattr(settings, "llm_model_default", "gpt4o-2")
         source = "default"
         logger.info(f"Using default model: {selected_model}")
-    
+
     # Track model selection with source
     _track_model_selection(api_name, selected_model, source)
-    
+
     # Create and return client
     return _create_client(selected_model)
 
@@ -149,10 +149,10 @@ def get_llm_client_smart(
 def _create_client(model: str) -> LLMClient:
     """
     Create LLM client instance based on model name.
-    
+
     Args:
         model: Model identifier
-        
+
     Returns:
         LLM client instance
     """
@@ -180,7 +180,7 @@ def _track_model_selection(
 ) -> None:
     """
     Track model selection for monitoring and analytics.
-    
+
     Args:
         api_name: Name of the API using the model
         model: Selected model name
@@ -202,10 +202,10 @@ def _track_model_selection(
 def get_llm_info(client: LLMClient) -> dict:
     """
     Get information about the LLM client.
-    
+
     Args:
         client: LLM client instance
-        
+
     Returns:
         Dictionary with client information
     """
@@ -249,12 +249,12 @@ def estimate_cost(
 ) -> dict:
     """
     Estimate the cost of using a specific model.
-    
+
     Args:
         model: Model name ("gpt4o-2" or "gpt41-mini")
         input_tokens: Number of input tokens
         output_tokens: Number of output tokens
-        
+
     Returns:
         Dictionary with cost breakdown
     """
@@ -265,11 +265,11 @@ def estimate_cost(
             "output_cost": 0,
             "total_cost": 0
         }
-    
+
     costs = MODEL_COSTS[model]
     input_cost = (input_tokens / 1000) * costs["input"]
     output_cost = (output_tokens / 1000) * costs["output"]
-    
+
     return {
         "model": model,
         "input_tokens": input_tokens,

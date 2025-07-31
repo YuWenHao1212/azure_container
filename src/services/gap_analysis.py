@@ -20,10 +20,10 @@ from src.services.unified_prompt_service import UnifiedPromptService
 def clean_and_process_lines(section_content: str | None) -> list[str]:
     """
     Clean and process text lines into HTML list items.
-    
+
     Args:
         section_content: Raw text content
-        
+
     Returns:
         List of HTML-formatted lines
     """
@@ -43,55 +43,55 @@ def clean_and_process_lines(section_content: str | None) -> list[str]:
 def parse_skill_development_priorities(skill_content: str) -> list[dict[str, str]]:
     """
     Parse skill development priorities from formatted string.
-    
+
     Expected format: SKILL_N::SkillName::CATEGORY::Description
-    
+
     Args:
         skill_content: Raw skill content
-        
+
     Returns:
         List of skill dictionaries
     """
     skills = []
     if not skill_content:
         return skills
-    
+
     lines = skill_content.strip().splitlines()
-    
+
     for line in lines:
         line = line.strip()
         if not line or '::' not in line:
             continue
-        
+
         parts = line.split('::', 3)
         if len(parts) >= 4:
             skill_id, skill_name, category, description = parts
-            
+
             # Skip if skill_name is empty
             if not skill_name.strip():
                 continue
-            
+
             # Validate category
             category = category.upper()
             if category not in ['TECHNICAL', 'NON_TECHNICAL']:
                 category = 'TECHNICAL'  # Default
-            
+
             skills.append({
                 "skill_name": skill_name.strip(),
                 "skill_category": category,
                 "description": description.strip()
             })
-    
+
     return skills
 
 
 def parse_gap_response(content: str) -> dict[str, Any]:
     """
     Parse LLM gap analysis response from XML format.
-    
+
     Args:
         content: Raw LLM response with XML tags
-        
+
     Returns:
         Parsed gap analysis dictionary
     """
@@ -101,32 +101,32 @@ def parse_gap_response(content: str) -> dict[str, Any]:
     qi = re.search(r'<quick_improvements>(.*?)</quick_improvements>', content, re.S)
     oa = re.search(r'<overall_assessment>(.*?)</overall_assessment>', content, re.S)
     sdp = re.search(r'<skill_development_priorities>(.*?)</skill_development_priorities>', content, re.S)
-    
+
     # Process each section
     strengths = clean_and_process_lines(cs.group(1) if cs else None)
     gaps = clean_and_process_lines(kg.group(1) if kg else None)
     improvements = clean_and_process_lines(qi.group(1) if qi else None)
-    
+
     # Process overall assessment (paragraph format)
     assessment_text = ''
     if oa:
         raw_assessment = oa.group(1).strip()
         logging.info(f"[GAP_ANALYSIS] Raw assessment length: {len(raw_assessment)}")
-        
+
         if raw_assessment:
             # Log FULL assessment for debugging (not just preview)
-            logging.info(f"[GAP_ANALYSIS] Raw assessment FULL content: {repr(raw_assessment)}")
-            
+            logging.info(f"[GAP_ANALYSIS] Raw assessment FULL content: {raw_assessment!r}")
+
             # Join lines
             joined_text = ' '.join(line.strip() for line in raw_assessment.splitlines() if line.strip())
             logging.info(f"[GAP_ANALYSIS] Joined text length: {len(joined_text)}")
-            logging.debug(f"[GAP_ANALYSIS] Joined text FULL: {repr(joined_text)}")
-            
+            logging.debug(f"[GAP_ANALYSIS] Joined text FULL: {joined_text!r}")
+
             # Convert to HTML
             assessment_text = convert_markdown_to_html(joined_text)
             logging.info(f"[GAP_ANALYSIS] HTML converted length: {len(assessment_text)}")
-            logging.debug(f"[GAP_ANALYSIS] HTML converted FULL: {repr(assessment_text)}")
-            
+            logging.debug(f"[GAP_ANALYSIS] HTML converted FULL: {assessment_text!r}")
+
             # Fallback if conversion resulted in empty
             if not assessment_text and joined_text:
                 logging.warning("[GAP_ANALYSIS] Markdown conversion resulted in empty text, using raw content")
@@ -139,7 +139,7 @@ def parse_gap_response(content: str) -> dict[str, Any]:
         logging.warning("[GAP_ANALYSIS] Overall assessment tag not found in response")
         # Provide a default message
         assessment_text = "Overall assessment not available. Please refer to the detailed analysis above."
-    
+
     # Process skill development priorities
     skill_queries = []
     if sdp:
@@ -151,7 +151,7 @@ def parse_gap_response(content: str) -> dict[str, Any]:
         except Exception as e:
             logging.error(f"Error processing skill_development_priorities: {e}")
             skill_queries = []
-    
+
     return {
         "strengths": strengths,
         "gaps": gaps,
@@ -164,10 +164,10 @@ def parse_gap_response(content: str) -> dict[str, Any]:
 def format_gap_analysis_html(parsed_response: dict[str, Any]) -> dict[str, Any]:
     """
     Format parsed gap analysis into HTML structure.
-    
+
     Args:
         parsed_response: Parsed gap analysis data
-        
+
     Returns:
         HTML formatted gap analysis
     """
@@ -178,11 +178,11 @@ def format_gap_analysis_html(parsed_response: dict[str, Any]) -> dict[str, Any]:
         else:
             logging.warning(f"[GAP_ANALYSIS] {field_name} is empty")
             return f'<ol><li>Unable to analyze {field_name.lower().replace("_", " ")}. Please try again.</li></ol>'
-    
+
     core_strengths = format_list_with_fallback(parsed_response.get('strengths', []), 'core_strengths')
     key_gaps = format_list_with_fallback(parsed_response.get('gaps', []), 'key_gaps')
     quick_improvements = format_list_with_fallback(parsed_response.get('improvements', []), 'quick_improvements')
-    
+
     # Overall assessment is already in paragraph format
     assessment = parsed_response.get('assessment', '')
     if assessment and assessment not in ["", "Unable to generate overall assessment. Please review the strengths and gaps above.", "Overall assessment not available. Please refer to the detailed analysis above."]:
@@ -190,15 +190,15 @@ def format_gap_analysis_html(parsed_response: dict[str, Any]) -> dict[str, Any]:
     else:
         logging.warning("[GAP_ANALYSIS] Empty or default overall assessment detected in formatting")
         overall_assessment = '<p>Unable to generate a comprehensive assessment. Please review the individual sections above for detailed analysis.</p>'
-    
+
     # Log the final HTML output
-    logging.info(f"[GAP_ANALYSIS_HTML] Final OverallAssessment HTML: {repr(overall_assessment[:200])}...")
-    
+    logging.info(f"[GAP_ANALYSIS_HTML] Final OverallAssessment HTML: {overall_assessment[:200]!r}...")
+
     # Log if we're still producing empty result
     if overall_assessment == '<p></p>':
         logging.error("[GAP_ANALYSIS] CRITICAL: Still producing empty <p></p> for OverallAssessment!")
-        logging.error(f"[GAP_ANALYSIS] Assessment value was: {repr(assessment)}")
-    
+        logging.error(f"[GAP_ANALYSIS] Assessment value was: {assessment!r}")
+
     return {
         "CoreStrengths": core_strengths,
         "KeyGaps": key_gaps,
@@ -211,15 +211,15 @@ def format_gap_analysis_html(parsed_response: dict[str, Any]) -> dict[str, Any]:
 def check_for_empty_fields(formatted_response: dict[str, Any]) -> list[str]:
     """
     Check if any gap analysis fields are empty or contain only default messages.
-    
+
     Args:
         formatted_response: The formatted gap analysis response
-        
+
     Returns:
         List of field names that are empty or contain default values
     """
     empty_fields = []
-    
+
     # Define what constitutes "empty" for each field
     field_checks = {
         "CoreStrengths": (
@@ -245,7 +245,7 @@ def check_for_empty_fields(formatted_response: dict[str, Any]) -> list[str]:
             []
         )
     }
-    
+
     # Check each field
     for field_name, (value, empty_values) in field_checks.items():
         if field_name == "SkillSearchQueries":
@@ -256,19 +256,19 @@ def check_for_empty_fields(formatted_response: dict[str, Any]) -> list[str]:
             # For other fields, check against known empty values
             if not value or value in empty_values:
                 empty_fields.append(field_name)
-    
+
     return empty_fields
 
 
 class GapAnalysisService(TokenTrackingMixin):
     """Service class for gap analysis operations."""
-    
+
     def __init__(self):
         """Initialize the service."""
         self.settings = get_settings()
         self.prompt_service = UnifiedPromptService(task_path="gap_analysis")
         self.logger = logging.getLogger(self.__class__.__name__)
-    
+
     async def analyze_gap(
         self,
         job_description: str,
@@ -280,7 +280,7 @@ class GapAnalysisService(TokenTrackingMixin):
     ) -> dict[str, Any]:
         """
         Perform gap analysis between resume and job description with retry mechanism.
-        
+
         Args:
             job_description: Job description text
             resume: Resume text
@@ -288,7 +288,7 @@ class GapAnalysisService(TokenTrackingMixin):
             matched_keywords: Keywords found in resume
             missing_keywords: Keywords not found in resume
             language: Output language (en or zh-TW)
-            
+
         Returns:
             Formatted gap analysis results
         """
@@ -297,20 +297,20 @@ class GapAnalysisService(TokenTrackingMixin):
             language = "zh-TW"
         elif language.lower() != "en":
             language = "en"
-        
+
         # Retry configuration
         max_attempts = 3
         retry_delays = [2.0, 4.0, 8.0]  # Exponential backoff: 2s, 4s, 8s
-        
+
         last_exception = None
         last_response = None
-        
+
         for attempt in range(max_attempts):
             try:
                 # Log retry attempt
                 if attempt > 0:
                     self.logger.info(f"[GAP_ANALYSIS_RETRY] Attempt {attempt + 1}/{max_attempts} for language: {language}")
-                    
+
                     # Track retry in monitoring
                     monitoring_service.track_event(
                         "GapAnalysisRetryAttempt",
@@ -321,7 +321,7 @@ class GapAnalysisService(TokenTrackingMixin):
                             "reason": "empty_fields" if last_response else "error"
                         }
                     )
-                
+
                 # Call the core analysis logic
                 result = await self._analyze_gap_core(
                     job_description=job_description,
@@ -331,25 +331,25 @@ class GapAnalysisService(TokenTrackingMixin):
                     missing_keywords=missing_keywords,
                     language=language
                 )
-                
+
                 # Check for empty fields
                 empty_fields = check_for_empty_fields(result)
-                
+
                 if empty_fields:
                     self.logger.warning(
                         f"[GAP_ANALYSIS_RETRY] Empty fields detected on attempt {attempt + 1}: "
                         f"{', '.join(empty_fields)}"
                     )
-                    
+
                     # If this is not the last attempt, retry
                     if attempt < max_attempts - 1:
                         last_response = result
-                        
+
                         # Add jitter to avoid thundering herd
                         delay = retry_delays[attempt] * (0.5 + random.random())
-                        
+
                         self.logger.info(f"[GAP_ANALYSIS_RETRY] Retrying in {delay:.1f}s due to empty fields: {', '.join(empty_fields)}")
-                        
+
                         # Track empty fields retry event
                         monitoring_service.track_event(
                             "GapAnalysisEmptyFieldsRetry",
@@ -360,7 +360,7 @@ class GapAnalysisService(TokenTrackingMixin):
                                 "delay_seconds": round(delay, 1)
                             }
                         )
-                        
+
                         await asyncio.sleep(delay)
                         continue
                     else:
@@ -369,7 +369,7 @@ class GapAnalysisService(TokenTrackingMixin):
                             f"[GAP_ANALYSIS_RETRY] Empty fields persist after {max_attempts} attempts: "
                             f"{', '.join(empty_fields)}"
                         )
-                        
+
                         monitoring_service.track_event(
                             "GapAnalysisRetryExhausted",
                             {
@@ -378,7 +378,7 @@ class GapAnalysisService(TokenTrackingMixin):
                                 "language": language
                             }
                         )
-                
+
                 # Success - either no empty fields or we've accepted the fallbacks
                 if attempt > 0:
                     self.logger.info(f"[GAP_ANALYSIS_RETRY] Success on attempt {attempt + 1}")
@@ -390,23 +390,23 @@ class GapAnalysisService(TokenTrackingMixin):
                             "had_empty_fields": len(empty_fields) > 0
                         }
                     )
-                
+
                 return result
-                
+
             except Exception as e:
                 last_exception = e
                 last_response = None
-                
+
                 # Log the error
                 self.logger.error(f"[GAP_ANALYSIS_RETRY] Error on attempt {attempt + 1}: {e}")
-                
+
                 # Check if this is a retryable error
                 error_msg = str(e).lower()
                 is_retryable = any(term in error_msg for term in [
                     "timeout", "connection", "rate limit", "throttled",
                     "503", "502", "504", "temporary", "network"
                 ])
-                
+
                 if not is_retryable or attempt == max_attempts - 1:
                     self.logger.error(f"[GAP_ANALYSIS_RETRY] Non-retryable error or max attempts reached: {e}")
                     monitoring_service.track_event(
@@ -419,23 +419,23 @@ class GapAnalysisService(TokenTrackingMixin):
                         }
                     )
                     raise
-                
+
                 # Calculate retry delay
                 delay = retry_delays[attempt] * (0.5 + random.random())
-                
+
                 self.logger.warning(
                     f"[GAP_ANALYSIS_RETRY] Retryable error on attempt {attempt + 1}: {e}. "
                     f"Retrying in {delay:.1f}s..."
                 )
-                
+
                 await asyncio.sleep(delay)
-        
+
         # Should not reach here
         if last_exception:
             raise last_exception
         else:
             return last_response
-    
+
     async def _analyze_gap_core(
         self,
         job_description: str,
@@ -447,7 +447,7 @@ class GapAnalysisService(TokenTrackingMixin):
     ) -> dict[str, Any]:
         """
         Core gap analysis logic (original analyze_gap method).
-        
+
         Args:
             job_description: Job description text
             resume: Resume text
@@ -455,11 +455,11 @@ class GapAnalysisService(TokenTrackingMixin):
             matched_keywords: Keywords found in resume
             missing_keywords: Keywords not found in resume
             language: Output language (en or zh-TW)
-            
+
         Returns:
             Formatted gap analysis results
         """
-        
+
         # Prepare prompt data
         prompt_data = {
             "job_description": job_description,
@@ -468,7 +468,7 @@ class GapAnalysisService(TokenTrackingMixin):
             "matched_keywords": ", ".join(matched_keywords) if matched_keywords else "None",
             "missing_keywords": ", ".join(missing_keywords) if missing_keywords else "None"
         }
-        
+
         # Get prompt from UnifiedPromptService
         # Use v1.2.0 for zh-TW to improve stability and output English skills
         version = "1.2.0" if language == "zh-TW" else "1.0.0"
@@ -476,24 +476,24 @@ class GapAnalysisService(TokenTrackingMixin):
             language=language,
             version=version
         )
-        
+
         # Log the prompt version being used
         self.logger.info(f"Using gap analysis prompt version: {version} for language: {language}")
-        
+
         if not prompt_config:
             raise ValueError(f"Gap analysis prompt not found for language: {language}")
-        
+
         # Format prompts
         system_prompt = prompt_config.get_system_prompt()
         user_prompt = prompt_config.format_user_prompt(**prompt_data)
-        
+
         # Get OpenAI client
         openai_client = get_azure_openai_client()
-        
+
         try:
             # Call LLM
             self.logger.info(f"Calling LLM for gap analysis with language: {language}")
-            
+
             llm_start_time = time.time()
             response = await openai_client.chat_completion(
                 messages=[
@@ -504,22 +504,22 @@ class GapAnalysisService(TokenTrackingMixin):
                 max_tokens=self.settings.gap_analysis_max_tokens
             )
             llm_time = time.time() - llm_start_time
-            
+
             # Extract response content
             llm_response = response['choices'][0]['message']['content']
             finish_reason = response['choices'][0].get('finish_reason', 'unknown')
-            
+
             # Save raw response for debugging if needed
             raw_response_before_clean = llm_response
-            
+
             # Log FULL LLM response for debugging
             self.logger.info(f"[GAP_ANALYSIS_LLM] Full raw LLM response ({len(llm_response)} chars):")
-            self.logger.info(f"[GAP_ANALYSIS_LLM] {repr(llm_response)}")
+            self.logger.info(f"[GAP_ANALYSIS_LLM] {llm_response!r}")
             self.logger.info(f"LLM finish reason: {finish_reason}")
-            
+
             # Clean LLM output
             llm_response = clean_llm_output(llm_response)
-            
+
             # Log if overall_assessment is missing
             if '<overall_assessment>' not in llm_response:
                 self.logger.warning("LLM response missing <overall_assessment> tag")
@@ -531,7 +531,7 @@ class GapAnalysisService(TokenTrackingMixin):
                 if oa_match and not oa_match.group(1).strip():
                     self.logger.warning("Overall assessment tag found but content is empty")
                     self.logger.debug(f"Response around overall_assessment: {llm_response[max(0, llm_response.find('<overall_assessment>')-100):llm_response.find('</overall_assessment>')+50]}")
-            
+
             # Track token usage and metrics
             token_info = self.track_openai_usage(
                 response,
@@ -543,19 +543,19 @@ class GapAnalysisService(TokenTrackingMixin):
                     "response_length": len(llm_response)
                 }
             )
-            
+
             # Parse response
             parsed_response = parse_gap_response(llm_response)
-            
+
             # Debug: Check if any field is empty and log raw response
-            if (not parsed_response.get('assessment') or 
+            if (not parsed_response.get('assessment') or
                 not parsed_response.get('improvements') or
                 len(parsed_response.get('strengths', [])) == 0 or
                 len(parsed_response.get('gaps', [])) == 0):
                 self.logger.warning("Empty fields detected in parsed response")
                 self.logger.debug(f"Raw LLM response before cleaning: {raw_response_before_clean}")
                 self.logger.debug(f"LLM response after cleaning: {llm_response}")
-            
+
             # Track detailed gap analysis completion
             monitoring_service.track_event(
                 "GapAnalysisCompleted",
@@ -577,10 +577,10 @@ class GapAnalysisService(TokenTrackingMixin):
                     }
                 }
             )
-            
+
             # Format as HTML
             formatted_response = format_gap_analysis_html(parsed_response)
-            
+
             # Monitor and log empty fields
             empty_fields = []
             field_checks = {
@@ -589,20 +589,20 @@ class GapAnalysisService(TokenTrackingMixin):
                 "QuickImprovements": (formatted_response.get("QuickImprovements"), ["<ol></ol>", "<ol><li>Unable to analyze quick improvements. Please try again.</li></ol>"]),
                 "OverallAssessment": (formatted_response.get("OverallAssessment"), ["<p></p>", "<p>Unable to generate a comprehensive assessment. Please review the individual sections above for detailed analysis.</p>"])
             }
-            
+
             for field_name, (value, empty_values) in field_checks.items():
                 if not value or value in empty_values:
                     empty_fields.append(field_name)
-            
+
             if empty_fields:
                 self.logger.error(f"[GAP_ANALYSIS_EMPTY] Empty fields detected: {empty_fields}")
                 self.logger.info(f"[GAP_ANALYSIS_DEBUG] Raw response length: {len(llm_response)}")
                 # Log FULL LLM response when empty fields are detected
                 self.logger.error("[GAP_ANALYSIS_EMPTY_DEBUG] Full LLM response when empty fields detected:")
-                self.logger.error(f"[GAP_ANALYSIS_EMPTY_DEBUG] {repr(llm_response)}")
+                self.logger.error(f"[GAP_ANALYSIS_EMPTY_DEBUG] {llm_response!r}")
                 self.logger.error("[GAP_ANALYSIS_EMPTY_DEBUG] Raw response before cleaning:")
-                self.logger.error(f"[GAP_ANALYSIS_EMPTY_DEBUG] {repr(raw_response_before_clean)}")
-                
+                self.logger.error(f"[GAP_ANALYSIS_EMPTY_DEBUG] {raw_response_before_clean!r}")
+
                 # Log to monitoring service
                 monitoring_service.track_event(
                     "GapAnalysisEmptyFields",
@@ -614,11 +614,11 @@ class GapAnalysisService(TokenTrackingMixin):
                         "finish_reason": finish_reason
                     }
                 )
-            
+
             self.logger.info("Gap analysis completed successfully")
-            
+
             return formatted_response
-            
+
         except Exception as e:
             self.logger.error(f"Error in gap analysis: {e}")
             raise

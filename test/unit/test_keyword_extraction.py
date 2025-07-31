@@ -138,10 +138,12 @@ class TestKeywordExtraction:
             "processing_time_ms": 2500.0
         }
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_success(self, test_client, mock_keyword_service, 
                                     mock_llm_client, valid_request_data, 
                                     successful_extraction_result):
-        """Test successful keyword extraction."""
+        """TEST: API-KW-101-UT - 基本關鍵字提取"""
         # Setup mocks
         mock_keyword_service.validate_input.return_value = valid_request_data
         mock_keyword_service.process.return_value = successful_extraction_result
@@ -175,12 +177,14 @@ class TestKeywordExtraction:
         assert data["data"]["confidence_score"] == 0.85
         assert data["data"]["extraction_method"] == "2_round_intersection"
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_validation_error_short_description(self, test_client, 
                                                                mock_keyword_service,
                                                                mock_llm_client):
-        """Test validation error for short job description."""
+        """TEST: API-KW-102-UT - 驗證錯誤處理（描述過短）"""
         request_data = {
-            "job_description": "Too short",
+            "job_description": "This job description is intentionally too short to meet the minimum 200 character requirement.",
             "max_keywords": 15
         }
         
@@ -195,10 +199,13 @@ class TestKeywordExtraction:
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "VALIDATION_ERROR"
-        assert "Job description too short" in str(data["error"])
+        assert "Job description must be at least 200 characters" in str(data["error"])
     
-    def test_extract_keywords_invalid_max_keywords(self, test_client, valid_request_data):
-        """Test validation error for invalid max_keywords."""
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
+    def test_extract_keywords_invalid_max_keywords(self, test_client, mock_keyword_service, 
+                                             mock_llm_client, valid_request_data):
+        """TEST: API-KW-103-UT - 無效的 max_keywords 參數"""
         # Test too low
         request_data = valid_request_data.copy()
         request_data["max_keywords"] = 3
@@ -211,11 +218,13 @@ class TestKeywordExtraction:
         response = test_client.post("/api/v1/extract-jd-keywords", json=request_data)
         assert response.status_code == 422
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_azure_rate_limit_error(self, test_client, 
                                                     mock_keyword_service,
                                                     mock_llm_client,
                                                     valid_request_data):
-        """Test handling of Azure OpenAI rate limit error."""
+        """TEST: API-KW-104-UT - Azure OpenAI 速率限制錯誤處理"""
         # Mock service to raise rate limit error
         mock_keyword_service.validate_input.return_value = valid_request_data
         mock_keyword_service.process.side_effect = AzureOpenAIRateLimitError(
@@ -241,11 +250,13 @@ class TestKeywordExtraction:
         assert data["success"] is False
         assert data["error"]["code"] == "SERVICE_UNAVAILABLE"
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_timeout_error(self, test_client, 
                                           mock_keyword_service,
                                           mock_llm_client,
                                           valid_request_data):
-        """Test handling of timeout error."""
+        """TEST: API-KW-105-UT - 逾時錯誤處理"""
         # Mock service to raise timeout
         mock_keyword_service.validate_input.return_value = valid_request_data
         mock_keyword_service.process.side_effect = asyncio.TimeoutError()
@@ -269,11 +280,13 @@ class TestKeywordExtraction:
         assert data["success"] is False
         assert data["error"]["code"] == "TIMEOUT_ERROR"
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_with_warning(self, test_client, 
                                          mock_keyword_service,
                                          mock_llm_client,
                                          valid_request_data):
-        """Test keyword extraction with quality warning."""
+        """TEST: API-KW-106-UT - 品質警告偵測"""
         # Create result with warning
         result_with_warning = {
             "keywords": ["Python", "Developer", "Experience", "Skills", "Team"],
@@ -319,12 +332,14 @@ class TestKeywordExtraction:
         assert data["warning"]["expected_minimum"] == 12
         assert data["warning"]["actual_extracted"] == 5
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_response_format(self, test_client, 
                                             mock_keyword_service,
                                             mock_llm_client,
                                             valid_request_data,
                                             successful_extraction_result):
-        """Test response format matches expected schema."""
+        """TEST: API-KW-107-UT - 回應格式驗證"""
         mock_keyword_service.validate_input.return_value = valid_request_data
         mock_keyword_service.process.return_value = successful_extraction_result
         
@@ -362,14 +377,19 @@ class TestKeywordExtraction:
         assert data["error"]["code"] == ""
         assert data["error"]["message"] == ""
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_chinese_job_description(self, test_client, 
                                                     mock_keyword_service,
                                                     mock_llm_client):
-        """Test extraction with Chinese job description."""
+        """TEST: API-KW-108-UT - 中文職缺描述支援"""
         chinese_request = {
             "job_description": "我們正在尋找一位資深的Python開發工程師，需要具備FastAPI框架經驗，"
                              "熟悉Docker容器技術和Azure雲端服務。理想的候選人應該對微服務架構有深入理解，"
-                             "並且有RESTful API開發經驗。具備CI/CD流程和測試驅動開發經驗者優先。",
+                             "並且有RESTful API開發經驗。具備CI/CD流程和測試驅動開發經驗者優先。"
+                             "同時需要熟悉分散式系統設計，具備系統架構規劃能力。"
+                             "有大型專案開發經驗和團隊領導經驗者優先考慮。"
+                             "需要良好的溝通能力和問題解決能力，能夠在快節奏的環境中工作。",
             "max_keywords": 12,
             "prompt_version": "latest"
         }
@@ -418,11 +438,13 @@ class TestKeywordExtraction:
         assert data["data"]["detected_language"] == "zh-TW"
         assert len(data["data"]["keywords"]) == 12
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_service_cleanup(self, test_client, 
                                             mock_keyword_service,
                                             mock_llm_client,
                                             valid_request_data):
-        """Test that service cleanup is called even on error."""
+        """TEST: API-KW-109-UT - 錯誤時的服務清理"""
         # Mock service to raise an error
         mock_keyword_service.validate_input.return_value = valid_request_data
         mock_keyword_service.process.side_effect = Exception("Test error")
@@ -443,10 +465,12 @@ class TestKeywordExtraction:
         # Service cleanup should have been called
         mock_keyword_service.close.assert_called_once()
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_extract_keywords_edge_case_max_length(self, test_client, 
                                                   mock_keyword_service,
                                                   mock_llm_client):
-        """Test extraction with very long job description."""
+        """TEST: API-KW-110-UT - 長職缺描述的邊界案例"""
         # Create a very long job description
         long_description = "Python " * 1000  # 6000 characters
         request_data = {

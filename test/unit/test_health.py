@@ -74,8 +74,10 @@ class TestHealthCheck:
                         app = create_app()
                         return TestClient(app)
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_health_check_success(self, test_client):
-        """Test successful health check response."""
+        """TEST: API-HLT-001-UT - 基本健康檢查正常回應"""
         response = test_client.get("/health")
         
         # Assert status code
@@ -101,8 +103,10 @@ class TestHealthCheck:
         except ValueError:
             pytest.fail("Invalid timestamp format")
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_health_check_response_format(self, test_client):
-        """Test health check response format matches expected structure."""
+        """TEST: API-HLT-002-UT - 健康檢查回應格式正確性"""
         response = test_client.get("/health")
         data = response.json()
         
@@ -116,8 +120,10 @@ class TestHealthCheck:
         # Verify data keys
         assert set(data["data"].keys()) == expected_data_keys
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_health_check_version_matches_settings(self, test_client, mock_settings):
-        """Test that health check returns correct version from settings."""
+        """TEST: API-HLT-003-UT - 版本資訊正確性"""
         # The version is from the actual settings, not our mock
         response = test_client.get("/health")
         data = response.json()
@@ -125,16 +131,20 @@ class TestHealthCheck:
         # Should match the actual settings.app_version which is "1.0.0"
         assert data["data"]["version"] == "1.0.0"
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_health_check_always_returns_healthy(self, test_client):
-        """Test that health check always returns healthy status."""
+        """TEST: API-HLT-004-UT - 總是回傳健康狀態"""
         # Make multiple requests
         for _ in range(5):
             response = test_client.get("/health")
             data = response.json()
             assert data["data"]["status"] == "healthy"
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_health_check_timestamp_format(self, test_client):
-        """Test timestamp format is ISO 8601."""
+        """TEST: API-HLT-005-UT - 時間戳記格式驗證"""
         response = test_client.get("/health")
         data = response.json()
         
@@ -155,8 +165,10 @@ class TestHealthCheck:
         assert (now - dt1.replace(tzinfo=None)).total_seconds() < 60
         assert (now - dt2.replace(tzinfo=None)).total_seconds() < 60
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_health_check_method_not_allowed(self, test_client):
-        """Test that non-GET methods return 405."""
+        """TEST: API-HLT-006-UT - HTTP 方法驗證"""
         # Test POST
         response = test_client.post("/health")
         assert response.status_code == 405
@@ -169,24 +181,30 @@ class TestHealthCheck:
         response = test_client.delete("/health")
         assert response.status_code == 405
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_health_check_no_authentication_required(self, test_client):
-        """Test that health check doesn't require authentication."""
+        """TEST: API-HLT-007-UT - 不需要認證"""
         # Even with API key middleware enabled, health should be accessible
         with patch.dict(os.environ, {'CONTAINER_APP_API_KEY': 'test-key'}):
             response = test_client.get("/health")
             assert response.status_code == 200
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     def test_health_check_cors_headers(self, test_client):
-        """Test CORS headers are present in health check response."""
+        """TEST: API-HLT-008-UT - CORS headers 存在"""
         response = test_client.get("/health", headers={"Origin": "https://example.com"})
         
         # Check CORS headers
         assert "access-control-allow-origin" in response.headers
         assert response.headers["access-control-allow-origin"] == "*"
     
+    @pytest.mark.precommit
+    @pytest.mark.timeout(2)
     @patch('src.main.datetime')
     def test_health_check_timestamp_mocked(self, mock_datetime, test_client):
-        """Test health check with mocked datetime for consistent testing."""
+        """TEST: API-HLT-009-UT - Mock 時間戳記測試"""
         # Mock datetime to return fixed time
         fixed_time = datetime(2025, 7, 30, 12, 0, 0)
         mock_datetime.utcnow.return_value = fixed_time

@@ -71,17 +71,43 @@ CORS_ORIGINS=https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,h
 
 ## Serena MCP 整合
 
-## Serena MCP 整合提醒
-- 每次新對話開始時，檢查是否有 Serena MCP 伺服器
-- 如有 Serena，執行："讀取 Serena 的初始指令" 或使用 `initial_instructions` 工具
+### 🚀 Serena MCP 啟動指南
 
-### 重要提醒
-**⚠️ 每次新對話或 compact 操作後，請執行：**
+#### 常見啟動錯誤
 ```
-讀取 Serena 的初始指令
-或
-uvx --from git+https://github.com/oraios/serena serena print-system-prompt --only-instructions --context ide-assistant .
+ERROR - Error activating project '.serena/project.yml' at startup: 
+Project '.serena/project.yml' not found: Not a valid project name or directory.
 ```
+**原因**：Serena 嘗試將配置檔案路徑當作專案名稱
+
+#### ✅ 正確啟動步驟
+
+**每次新對話或 compact 操作後，請依序執行：**
+
+1. **啟動專案**（最關鍵步驟）
+   ```python
+   # 使用專案名稱（推薦）
+   mcp__serena__activate_project("azure_container")
+   # 或使用當前目錄
+   mcp__serena__activate_project(".")
+   ```
+
+2. **載入初始指令**
+   ```python
+   mcp__serena__initial_instructions()
+   ```
+
+3. **檢查 Onboarding 狀態**（選擇性）
+   ```python
+   mcp__serena__check_onboarding_performed()
+   # 如果顯示 "Onboarding not performed yet"，執行：
+   mcp__serena__onboarding()
+   ```
+
+#### ⚠️ 重要提醒
+- **永遠先啟動專案**：其他所有 Serena 工具都需要先有活躍的專案
+- **使用專案名稱**：不要使用 `.serena/project.yml` 路徑
+- **每次新對話都要重新啟動**：Serena 狀態不會跨對話保存
 
 ### Serena 配置狀態
 - ✅ MCP 伺服器已添加並連接
@@ -94,6 +120,78 @@ uvx --from git+https://github.com/oraios/serena serena print-system-prompt --onl
 - ⚡ **高效編輯**：符號編輯 + 正則表達式編輯雙重模式
 - 🧠 **語義理解**：理解程式碼符號間的關係和引用
 - 📝 **記憶管理**：整合專案記憶和開發決策記錄
+
+### Serena 工具優先原則
+**🚨 重要：優先使用 Serena MCP 工具，而非 Claude 內建工具**
+
+#### 檔案操作（用 Serena 取代 Claude）
+| 任務 | ❌ 不要用 | ✅ 請用 Serena |
+|------|-----------|----------------|
+| 讀取檔案 | Read | `read_file` |
+| 建立檔案 | Write | `create_text_file` |
+| 列出目錄 | LS | `list_dir` |
+| 找檔案 | Glob | `find_file` |
+
+#### 搜尋操作（用 Serena 取代 Claude）
+| 任務 | ❌ 不要用 | ✅ 請用 Serena |
+|------|-----------|----------------|
+| 搜尋內容 | Grep | `search_for_pattern` |
+| 找函數/類別 | Grep + Read | `find_symbol` |
+| 找引用 | 手動搜尋 | `find_referencing_symbols` |
+| 程式碼概覽 | 多次 Read | `get_symbols_overview` |
+
+#### 編輯操作（用 Serena 取代 Claude）
+| 任務 | ❌ 不要用 | ✅ 請用 Serena |
+|------|-----------|----------------|
+| 編輯程式碼 | Edit/MultiEdit | `replace_symbol_body` |
+| 插入程式碼 | Edit | `insert_before_symbol`/`insert_after_symbol` |
+| 刪除程式碼 | Edit | `delete_lines` |
+| 正則替換 | Edit | `replace_regex` |
+
+### Serena 工具完整列表
+
+#### 📁 檔案操作
+- `create_text_file` - 創建/覆寫檔案
+- `read_file` - 讀取專案內的檔案
+- `list_dir` - 列出目錄內容（支援遞迴）
+- `find_file` - 在相對路徑中查找檔案
+
+#### 🔍 程式碼搜尋與分析
+- `find_symbol` - 全域或局部搜尋符號（函數、類別等）
+- `find_referencing_symbols` - 查找引用特定符號的位置
+- `get_symbols_overview` - 獲取檔案或目錄的頂層符號概覽
+- `search_for_pattern` - 在專案中搜尋模式
+
+#### ✏️ 程式碼編輯
+- `insert_at_line` - 在特定行插入內容
+- `insert_before_symbol` - 在符號定義前插入內容
+- `insert_after_symbol` - 在符號定義後插入內容
+- `replace_lines` - 替換行範圍內的內容
+- `replace_symbol_body` - 替換符號的完整定義
+- `replace_regex` - 使用正則表達式替換內容
+- `delete_lines` - 刪除行範圍
+
+#### 🧠 記憶管理
+- `write_memory` - 寫入命名記憶體（重要決策、設計理由）
+- `read_memory` - 讀取記憶體
+- `list_memories` - 列出所有記憶體
+- `delete_memory` - 刪除記憶體
+
+#### 🛠️ 專案管理
+- `onboarding` - 執行專案導入（識別結構、測試、建置）
+- `initial_instructions` - 獲取專案初始指令
+- `prepare_for_new_conversation` - 準備新對話的指令
+- `summarize_changes` - 總結程式碼變更
+
+#### 🤔 思考工具
+- `think_about_collected_information` - 思考收集資訊的完整性
+- `think_about_task_adherence` - 思考是否偏離任務
+- `think_about_whether_you_are_done` - 思考任務是否完成
+
+#### 🔧 其他工具
+- `execute_shell_command` - 執行 shell 命令（當 Bash 不適用時）
+- `restart_language_server` - 重啟語言伺服器
+- `get_current_config` - 獲取當前配置
 
 ## 快速開始
 

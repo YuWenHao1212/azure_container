@@ -30,10 +30,10 @@ CATEGORY_MAPPING = {
 def get_category_filter(category: str) -> list[str]:
     """
     取得分類過濾清單
-    
+
     Args:
         category: "Tech" 或 "Non-Tech"
-        
+
     Returns:
         對應的具體分類清單
     """
@@ -45,14 +45,14 @@ def categorize_course(course_category: str) -> str:
     """判斷課程屬於 Tech 或 Non-Tech"""
     if not course_category:
         return ""
-    
+
     for main_cat, sub_cats in CATEGORY_MAPPING.items():
         if course_category in sub_cats:
             return main_cat
-    
+
     # 預設判斷邏輯
     tech_keywords = ["tech", "data", "computer", "software", "coding"]
     if any(keyword in course_category.lower() for keyword in tech_keywords):
         return "Tech"
-    
+
     return "Non-Tech"

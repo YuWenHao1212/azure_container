@@ -3,6 +3,7 @@ Data models for keyword extraction functionality.
 Following Bubble.io compatibility - no Optional types.
 """
 from datetime import datetime
+from typing import ClassVar
 
 from pydantic import BaseModel, Field, validator
 
@@ -31,20 +32,26 @@ class KeywordExtractionRequest(BaseModel):
     )
     prompt_version: str = Field(
         default="1.4.0",
-        description="Prompt version to use (e.g., '1.0.0', '1.1.0', '1.3.0', '1.4.0', 'latest')"
+        description=(
+            "Prompt version to use (e.g., '1.0.0', '1.1.0', '1.3.0', '1.4.0', "
+            "'latest')"
+        )
     )
     language: str = Field(
         default="auto",
-        description="Language preference: 'auto' for detection, 'en' for English, 'zh-TW' for Traditional Chinese"
+        description=(
+            "Language preference: 'auto' for detection, 'en' for English, "
+            "'zh-TW' for Traditional Chinese"
+        )
     )
-    
+
     @validator('job_description')
     def validate_job_description(cls, v):
         """驗證職位描述內容"""
-        if len(v.strip()) < 50:
-            raise ValueError("Job description too short after trimming")
+        if len(v.strip()) < 200:
+            raise ValueError("Job description must be at least 200 characters")
         return v.strip()
-    
+
     @validator('language')
     def validate_language(cls, v):
         """驗證語言參數"""
@@ -52,9 +59,9 @@ class KeywordExtractionRequest(BaseModel):
         if v not in allowed:
             raise ValueError(f"Language must be one of {allowed}")
         return v
-    
+
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar = {
             "example": {
                 "job_description": "We are seeking a Senior Python Developer...",
                 "max_keywords": 16,
@@ -118,9 +125,9 @@ class KeywordExtractionData(BaseModel):
         default=0,
         description="Time spent on language detection in milliseconds"
     )
-    
+
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar = {
             "example": {
                 "keywords": ["Python", "AWS", "Machine Learning"],
                 "keyword_count": 3,
@@ -180,9 +187,9 @@ class KeywordExtractionResponse(BaseModel):
         default_factory=lambda: datetime.utcnow().isoformat(),
         description="Response timestamp"
     )
-    
+
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar = {
             "example": {
                 "success": True,
                 "data": {

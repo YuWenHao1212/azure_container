@@ -10,7 +10,7 @@ class CourseSearchSingleton:
     """全域課程搜尋服務單例"""
     _instance: CourseSearchService | None = None
     _lock = asyncio.Lock()
-    
+
     @classmethod
     async def get_instance(cls) -> CourseSearchService:
         """取得全域單例實例"""
@@ -20,7 +20,7 @@ class CourseSearchSingleton:
                     cls._instance = CourseSearchService()
                     await cls._instance.initialize()
         return cls._instance
-    
+
     @classmethod
     async def close(cls):
         """關閉單例"""

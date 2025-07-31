@@ -11,7 +11,7 @@ from .unified_prompt_service import UnifiedPromptService
 
 __all__ = [
     'KeywordExtractionService',
-    'KeywordExtractionServiceV2', 
+    'KeywordExtractionServiceV2',
     'AzureOpenAIClient',
     'UnifiedPromptService'
 ]

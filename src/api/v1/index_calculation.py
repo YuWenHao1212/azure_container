@@ -67,17 +67,17 @@ async def calculate_index(
 ) -> UnifiedResponse:
     """
     Calculate similarity index between resume and job description.
-    
+
     Args:
         request: Index calculation request data
         req: FastAPI request object
         settings: Application settings
-        
+
     Returns:
         UnifiedResponse with calculation results
     """
     start_time = time.time()
-    
+
     try:
         # Log request
         logger.info(
@@ -86,17 +86,17 @@ async def calculate_index(
             f"job_desc_length={len(request.job_description)}, "
             f"keywords_count={len(request.keywords) if isinstance(request.keywords, list) else len(request.keywords.split(','))}"
         )
-        
+
         # Create service instance
         service = IndexCalculationService()
-        
+
         # Calculate index
         result = await service.calculate_index(
             resume=request.resume,
             job_description=request.job_description,
             keywords=request.keywords
         )
-        
+
         # Track metrics
         processing_time = time.time() - start_time
         monitoring_service.track_event(
@@ -108,23 +108,23 @@ async def calculate_index(
                 "processing_time_ms": round(processing_time * 1000, 2)
             }
         )
-        
+
         # Create response data
         response_data = IndexCalculationData(
             raw_similarity_percentage=result["raw_similarity_percentage"],
             similarity_percentage=result["similarity_percentage"],
             keyword_coverage=KeywordCoverageData(**result["keyword_coverage"])
         )
-        
+
         logger.info(
             f"Index calculation completed: "
             f"similarity={result['similarity_percentage']}%, "
             f"coverage={result['keyword_coverage']['coverage_percentage']}%, "
             f"time={processing_time:.2f}s"
         )
-        
+
         return create_success_response(data=response_data.model_dump())
-        
+
     except ServiceError as e:
         logger.error(f"Service error in index calculation: {e}")
         monitoring_service.track_event(
@@ -142,7 +142,7 @@ async def calculate_index(
                 details=str(e)
             ).model_dump()
         )
-        
+
     except ValueError as e:
         logger.error(f"Validation error in index calculation: {e}")
         monitoring_service.track_event(
@@ -160,7 +160,7 @@ async def calculate_index(
                 details=str(e)
             ).model_dump()
         )
-        
+
     except Exception as e:
         logger.error(f"Unexpected error in index calculation: {e}", exc_info=True)
         monitoring_service.track_event(

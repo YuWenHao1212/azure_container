@@ -67,7 +67,7 @@ class ResumeStructure:
     sections: dict[str, ResumeSection]
     has_summary: bool
     total_sections: int
-    
+
     def get_section(self, name: str) -> ResumeSection | None:
         """Get section by name (case-insensitive)"""
         name_lower = name.lower()
@@ -75,7 +75,7 @@ class ResumeStructure:
             if section_name.lower() == name_lower:
                 return section
         return None
-    
+
     def add_section(self, name: str, content: str, order: int = 0):
         """Add a new section"""
         self.sections[name] = ResumeSection(

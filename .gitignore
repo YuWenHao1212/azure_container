@@ -167,3 +167,21 @@ error_logs/
 
 # Parent git ignore file
 .gitignore.parent
+
+# Development tools
+.devtools/
+
+# IDE/Editor specific
+.cursor/
+
+# Test environment
+.env.test
+
+# Test outputs (enhanced)
+test/logs/
+test/reports/
+test/temp/
+test/archive/
+
+# Serena cache
+.serena/cache/

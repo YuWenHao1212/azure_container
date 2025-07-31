@@ -5,6 +5,7 @@ Following FHS architecture principles.
 import math
 import re
 import time
+from typing import Optional
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -16,22 +17,22 @@ from src.services.embedding_client import get_azure_embedding_client
 from src.services.text_processing import clean_html_text
 
 
-def sigmoid_transform(x: float, x0: float = None, k: float = None) -> float:
+def sigmoid_transform(x: float, x0: Optional[float] = None, k: Optional[float] = None) -> float:
     """
     Apply sigmoid transformation to similarity score.
-    
+
     Args:
         x: Raw similarity score (0-1)
         x0: Sigmoid center point (default from config)
         k: Sigmoid steepness (default from config)
-        
+
     Returns:
         Transformed score (0-1)
     """
     settings = get_settings()
     x0 = x0 or settings.sigmoid_x0
     k = k or settings.sigmoid_k
-    
+
     try:
         return 1 / (1 + math.exp(-k * (x - x0)))
     except OverflowError:
@@ -39,16 +40,16 @@ def sigmoid_transform(x: float, x0: float = None, k: float = None) -> float:
 
 
 def analyze_keyword_coverage(
-    resume_text: str, 
+    resume_text: str,
     keywords: list[str] | str
 ) -> dict[str, int | list[str]]:
     """
     Analyze keyword coverage in resume text.
-    
+
     Args:
         resume_text: Resume text (plain text or HTML)
         keywords: List of keywords or comma-separated string
-        
+
     Returns:
         Dictionary containing:
         - total_keywords: Total number of keywords
@@ -59,7 +60,7 @@ def analyze_keyword_coverage(
     """
     # Clean HTML if present
     resume_text = clean_html_text(resume_text)
-    
+
     # Handle empty inputs
     if not keywords or not resume_text:
         return {
@@ -69,38 +70,38 @@ def analyze_keyword_coverage(
             "covered_keywords": [],
             "missed_keywords": []
         }
-    
+
     # Convert keywords to list if string
     if isinstance(keywords, str):
         keywords = [k.strip() for k in keywords.split(",") if k.strip()]
-    
+
     settings = get_settings()
-    
+
     # Prepare resume text for matching
     resume_search_text = (
-        resume_text.lower() 
-        if not settings.keyword_match_case_sensitive 
+        resume_text.lower()
+        if not settings.keyword_match_case_sensitive
         else resume_text
     )
-    
+
     covered = []
     missed = []
-    
+
     for keyword in keywords:
         keyword = keyword.strip()
         if not keyword:
             continue
-        
+
         # Prepare keyword for matching
         search_keyword = (
-            keyword.lower() 
-            if not settings.keyword_match_case_sensitive 
+            keyword.lower()
+            if not settings.keyword_match_case_sensitive
             else keyword
         )
-        
+
         # Try exact word boundary match
         found = bool(re.search(rf'\b{re.escape(search_keyword)}\b', resume_search_text))
-        
+
         # Try plural matching if enabled and not found
         if not found and settings.enable_plural_matching:
             # Check if keyword ends with 's' and try without it
@@ -111,18 +112,18 @@ def analyze_keyword_coverage(
             elif not search_keyword.endswith('s'):
                 plural = search_keyword + 's'
                 found = bool(re.search(rf'\b{re.escape(plural)}\b', resume_search_text))
-        
+
         if found:
             covered.append(keyword)
         else:
             missed.append(keyword)
-    
+
     # Calculate statistics
     total = len([k for k in keywords if k.strip()])
     covered_count = len(covered)
     # Use stable rounding for percentage calculation
     percentage = stable_percentage_round(covered_count / total) if total else 0
-    
+
     return {
         "total_keywords": total,
         "covered_count": covered_count,
@@ -133,36 +134,36 @@ def analyze_keyword_coverage(
 
 
 async def compute_similarity(
-    resume_text: str, 
+    resume_text: str,
     job_description: str
 ) -> tuple[int, int]:
     """
     Compute similarity between resume and job description using embeddings.
-    
+
     Args:
         resume_text: Resume text (plain text or HTML)
         job_description: Job description text (plain text or HTML)
-        
+
     Returns:
         Tuple of (raw_similarity_percentage, transformed_similarity_percentage)
     """
     # Clean HTML if present
     resume_text = clean_html_text(resume_text)
     job_description = clean_html_text(job_description)
-    
+
     # Check for empty texts
     if not resume_text or not job_description:
         return 0, 0
-    
+
     # Get embedding client
     embedding_client = get_azure_embedding_client()
-    
+
     try:
         # Create embeddings for both texts
         embedding_start = time.time()
         embeddings = await embedding_client.create_embeddings([resume_text, job_description])
         embedding_time = time.time() - embedding_start
-        
+
         # Track embedding performance
         monitoring_service.track_event(
             "EmbeddingPerformance",
@@ -177,16 +178,16 @@ async def compute_similarity(
                 "estimated_tokens": (len(resume_text) + len(job_description)) // 4  # Rough estimate
             }
         )
-        
+
         if len(embeddings) != 2:
             raise ValueError(f"Expected 2 embeddings, got {len(embeddings)}")
-        
+
         # Calculate cosine similarity
         resume_embedding = np.array(embeddings[0]).reshape(1, -1)
         job_embedding = np.array(embeddings[1]).reshape(1, -1)
-        
+
         raw_similarity = float(cosine_similarity(resume_embedding, job_embedding)[0][0])
-        
+
         # Debug logging for consistency issue
         monitoring_service.track_event(
             "IndexCalculationDebug",
@@ -199,14 +200,14 @@ async def compute_similarity(
                 "job_embedding_sample": str(job_embedding[0][:5].tolist())
             }
         )
-        
+
         # Apply sigmoid transformation
         transformed_similarity = sigmoid_transform(raw_similarity)
-        
+
         # Convert to percentages with detailed logging
         raw_similarity_percent = raw_similarity * 100
         transformed_similarity_percent = transformed_similarity * 100
-        
+
         # Log exact values before rounding
         monitoring_service.track_event(
             "SimilarityRoundingDebug",
@@ -219,23 +220,23 @@ async def compute_similarity(
                 "will_round_transformed_to": round(transformed_similarity_percent)
             }
         )
-        
+
         raw_percentage = stable_percentage_round(raw_similarity)
         transformed_percentage = stable_percentage_round(transformed_similarity)
-        
+
         return raw_percentage, transformed_percentage
-        
+
     finally:
         await embedding_client.close()
 
 
 class IndexCalculationService:
     """Service class for index calculation operations."""
-    
+
     def __init__(self):
         """Initialize the service."""
         self.settings = get_settings()
-    
+
     async def calculate_index(
         self,
         resume: str,
@@ -244,12 +245,12 @@ class IndexCalculationService:
     ) -> dict[str, int | dict]:
         """
         Calculate complete index including similarity and keyword coverage.
-        
+
         Args:
             resume: Resume content (HTML or plain text)
             job_description: Job description (HTML or plain text)
             keywords: Keywords list or comma-separated string
-            
+
         Returns:
             Dictionary containing:
             - raw_similarity_percentage: Raw cosine similarity (0-100)
@@ -258,13 +259,13 @@ class IndexCalculationService:
         """
         # Calculate similarity scores
         raw_similarity, transformed_similarity = await compute_similarity(
-            resume, 
+            resume,
             job_description
         )
-        
+
         # Analyze keyword coverage
         keyword_coverage = analyze_keyword_coverage(resume, keywords)
-        
+
         return {
             "raw_similarity_percentage": raw_similarity,
             "similarity_percentage": transformed_similarity,

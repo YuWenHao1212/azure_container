@@ -18,26 +18,26 @@ class SupplementInfo(BaseModel):
 class ResumeFormatRequest(BaseModel):
     """履歷格式化請求模型"""
     ocr_text: str = Field(
-        ..., 
-        min_length=100, 
+        ...,
+        min_length=100,
         description="OCR extracted text in format: types line, then content line"
     )
     supplement_info: SupplementInfo | None = Field(
         None,
         description="Optional supplementary information to fill gaps"
     )
-    
+
     @validator('ocr_text')
     def validate_ocr_text(cls, v):
         """驗證 OCR 文字長度和基本格式"""
         if len(v.strip()) < 100:
             raise ValueError("OCR text too short, minimum 100 characters required")
-        
+
         # 檢查是否至少有兩行（types 和 content）
         lines = v.strip().split('\n')
         if len(lines) < 2:
             raise ValueError("OCR text must contain at least 2 lines (types and content)")
-            
+
         return v
 
 

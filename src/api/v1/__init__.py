@@ -43,7 +43,7 @@ router.include_router(find_course_router, prefix="/courses", tags=["Course Searc
 async def v1_root():
     """
     API v1 root endpoint with available endpoints information.
-    
+
     Returns information about implemented endpoints following Work Item #347.
     """
     return {
@@ -61,14 +61,14 @@ async def v1_root():
                 },
                 "health_check": {
                     "path": "/health",
-                    "method": "GET", 
+                    "method": "GET",
                     "description": "Unified health check for all services",
                     "status": "implemented"
                 },
                 "version_info": {
                     "path": "/api/v1/version",
                     "method": "GET",
-                    "description": "Service version and capability information", 
+                    "description": "Service version and capability information",
                     "status": "implemented"
                 },
                 "prompt_version": {

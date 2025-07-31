@@ -4,7 +4,7 @@ Resume Tailoring API endpoints.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from ...core.config import Settings, get_settings
 from ...models.api.resume_tailoring import (
@@ -47,19 +47,19 @@ async def tailor_resume(
 ) -> TailoringResponse:
     """
     Tailor a resume to better match a job description.
-    
+
     This endpoint uses gap analysis results to:
     - Create or optimize Summary section
     - Convert experience bullets to STAR/PAR format
     - Integrate missing keywords naturally
     - Highlight core strengths
     - Add metric placeholders where needed
-    
+
     The output includes visual markers (CSS classes) to show optimizations.
     """
     try:
         logger.info(f"Resume tailoring request received for language: {request.options.language}")
-        
+
         # Call service (validation already handled by Pydantic field_validators)
         result = await tailoring_service.tailor_resume(
             job_description=request.job_description,
@@ -68,9 +68,9 @@ async def tailor_resume(
             language=request.options.language,
             include_markers=request.options.include_visual_markers
         )
-        
+
         logger.info(f"Resume tailoring completed: {result.markers.new_section} new sections, {result.markers.modified} modified content")
-        
+
         return TailoringResponse(
             success=True,
             data=result,
@@ -80,9 +80,9 @@ async def tailor_resume(
                 "details": ""
             }
         )
-        
+
     except ValueError as e:
-        logger.warning(f"Invalid request: {str(e)}")
+        logger.warning(f"Invalid request: {e!s}")
         return TailoringResponse(
             success=False,
             data=None,
@@ -92,9 +92,9 @@ async def tailor_resume(
                 "details": "Please check your input data"
             }
         )
-        
+
     except Exception as e:
-        logger.error(f"Resume tailoring failed: {str(e)}", exc_info=True)
+        logger.error(f"Resume tailoring failed: {e!s}", exc_info=True)
         return TailoringResponse(
             success=False,
             data=None,
@@ -118,7 +118,7 @@ async def tailor_resume(
 async def get_supported_languages():
     """Get supported languages"""
     from ...core.language_handler import LanguageHandler
-    
+
     return {
         "success": True,
         "data": {

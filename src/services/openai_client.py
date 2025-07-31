@@ -33,11 +33,11 @@ class AzureOpenAIServerError(AzureOpenAIError):
 
 class AzureOpenAIClient:
     """Azure OpenAI client for GPT-4o-2 model integration."""
-    
+
     def __init__(self, endpoint: str, api_key: str, api_version: str = "2024-02-15-preview"):
         """
         初始化 Azure OpenAI 客戶端
-        
+
         Args:
             endpoint: Azure OpenAI 端點 URL
             api_key: API 金鑰
@@ -47,7 +47,7 @@ class AzureOpenAIClient:
         self.api_key = api_key
         self.api_version = api_version
         self.deployment_id = "gpt-4o-2"  # 固定使用 GPT-4o-2 模型
-        
+
         # 設置 HTTP 客戶端
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(30.0, read=60.0),  # 30s 連接超時，60s 讀取超時
@@ -57,17 +57,17 @@ class AzureOpenAIClient:
                 "User-Agent": "Azure-FastAPI-Client/1.0.0"
             }
         )
-        
+
         # 設置日誌
         self.logger = logging.getLogger(self.__class__.__name__)
-        
+
         # 重試配置
         self.max_retries = 3
         self.retry_delays = [1, 2, 4]  # 指數退避: 1s, 2s, 4s
-    
+
     async def chat_completion(
-        self, 
-        messages: list[dict[str, str]], 
+        self,
+        messages: list[dict[str, str]],
         model: str = "gpt-4o-2",
         temperature: float = 0.7,
         max_tokens: int = 1000,
@@ -76,7 +76,7 @@ class AzureOpenAIClient:
     ) -> dict[str, Any] | AsyncGenerator[dict[str, Any], None]:
         """
         調用 chat completion API
-        
+
         Args:
             messages: 對話訊息列表
             model: 模型名稱（固定使用 gpt-4o-2）
@@ -84,24 +84,24 @@ class AzureOpenAIClient:
             max_tokens: 最大生成 token 數
             stream: 是否使用串流模式
             **kwargs: 其他 OpenAI API 參數
-            
+
         Returns:
             Dict[str, Any]: non-streaming 模式的回應
             AsyncGenerator[Dict[str, Any], None]: streaming 模式的回應生成器
-            
+
         Raises:
             AzureOpenAIError: API 調用失敗
         """
         # 驗證輸入
         if not messages:
             raise ValueError("Messages list cannot be empty")
-        
+
         if not all(isinstance(msg, dict) and "role" in msg and "content" in msg for msg in messages):
             raise ValueError("Invalid message format. Each message must have 'role' and 'content'")
-        
+
         # 構建請求 URL
         url = f"{self.endpoint}/openai/deployments/{self.deployment_id}/chat/completions"
-        
+
         # 構建請求體
         payload = {
             "messages": messages,
@@ -110,25 +110,25 @@ class AzureOpenAIClient:
             "stream": stream,
             **kwargs
         }
-        
+
         # 添加 API 版本參數
         params = {"api-version": self.api_version}
-        
+
         self.logger.info(
             f"Calling Azure OpenAI chat completion: stream={stream}, "
             f"temperature={temperature}, max_tokens={max_tokens}, "
             f"messages_count={len(messages)}"
         )
-        
+
         if stream:
             return self._chat_completion_stream(url, payload, params)
         else:
             return await self._chat_completion_non_stream(url, payload, params)
-    
+
     async def _chat_completion_non_stream(
-        self, 
-        url: str, 
-        payload: dict[str, Any], 
+        self,
+        url: str,
+        payload: dict[str, Any],
         params: dict[str, str]
     ) -> dict[str, Any]:
         """處理 non-streaming 請求"""
@@ -139,18 +139,18 @@ class AzureOpenAIClient:
                     json=payload,
                     params=params
                 )
-                
+
                 # 檢查回應狀態
                 await self._handle_response_errors(response, attempt)
-                
+
                 result = response.json()
-                
+
                 self.logger.info(
                     f"Azure OpenAI request successful: "
                     f"usage={result.get('usage', {})}, "
                     f"finish_reason={result.get('choices', [{}])[0].get('finish_reason', 'unknown')}"
                 )
-                
+
                 # Track token usage
                 from src.core.monitoring_service import monitoring_service
                 usage = result.get('usage', {})
@@ -169,9 +169,9 @@ class AzureOpenAIClient:
                             "max_tokens": payload.get('max_tokens', 1000)
                         }
                     )
-                
+
                 return result
-                
+
             except (AzureOpenAIRateLimitError, AzureOpenAIServerError) as e:
                 if attempt < self.max_retries - 1:
                     delay = self.retry_delays[attempt]
@@ -182,21 +182,21 @@ class AzureOpenAIClient:
                     await asyncio.sleep(delay)
                     continue
                 raise
-            
+
             except (AzureOpenAIAuthError, AzureOpenAIError):
                 # Don't wrap these - just re-raise directly
                 raise
-            
+
             except Exception as e:
                 self.logger.error(f"Unexpected error in Azure OpenAI request: {e}")
-                raise AzureOpenAIError(f"Request failed: {str(e)}") from e
-        
+                raise AzureOpenAIError(f"Request failed: {e!s}") from e
+
         raise AzureOpenAIError("Max retries exceeded")
-    
+
     async def _chat_completion_stream(
-        self, 
-        url: str, 
-        payload: dict[str, Any], 
+        self,
+        url: str,
+        payload: dict[str, Any],
         params: dict[str, str]
     ) -> AsyncGenerator[dict[str, Any], None]:
         """處理 streaming 請求"""
@@ -208,34 +208,34 @@ class AzureOpenAIClient:
                     json=payload,
                     params=params
                 ) as response:
-                    
+
                     # 檢查回應狀態
                     await self._handle_response_errors(response, attempt)
-                    
+
                     self.logger.info("Starting Azure OpenAI streaming response")
-                    
+
                     async for line in response.aiter_lines():
                         line = line.strip()
-                        
+
                         if not line:
                             continue
-                        
+
                         if line.startswith("data: "):
                             data = line[6:]  # 移除 "data: " 前綴
-                            
+
                             if data == "[DONE]":
                                 self.logger.info("Azure OpenAI streaming completed")
                                 return
-                            
+
                             try:
                                 chunk = json.loads(data)
                                 yield chunk
                             except json.JSONDecodeError:
                                 self.logger.warning(f"Failed to parse streaming data: {data}")
                                 continue
-                
+
                 return  # 成功完成，退出重試循環
-                
+
             except (AzureOpenAIRateLimitError, AzureOpenAIServerError) as e:
                 if attempt < self.max_retries - 1:
                     delay = self.retry_delays[attempt]
@@ -246,44 +246,44 @@ class AzureOpenAIClient:
                     await asyncio.sleep(delay)
                     continue
                 raise
-            
+
             except Exception as e:
                 self.logger.error(f"Unexpected error in Azure OpenAI streaming: {e}")
-                raise AzureOpenAIError(f"Streaming request failed: {str(e)}") from e
-        
+                raise AzureOpenAIError(f"Streaming request failed: {e!s}") from e
+
         raise AzureOpenAIError("Max retries exceeded for streaming request")
-    
+
     async def _handle_response_errors(self, response: httpx.Response, attempt: int):
         """處理 HTTP 回應錯誤"""
         if response.status_code == 200:
             return
-        
+
         error_detail = ""
         try:
             error_data = response.json()
             error_detail = error_data.get("error", {}).get("message", str(error_data))
         except Exception:
             error_detail = response.text or f"HTTP {response.status_code}"
-        
+
         if response.status_code == 401:
             raise AzureOpenAIAuthError(f"Authentication failed: {error_detail}")
-        
+
         elif response.status_code == 403:
             raise AzureOpenAIAuthError(f"Permission denied: {error_detail}")
-        
+
         elif response.status_code == 429:
             # 檢查是否有 Retry-After header
             retry_after = response.headers.get("Retry-After")
             if retry_after:
                 self.logger.warning(f"Rate limit hit, Retry-After: {retry_after}s")
             raise AzureOpenAIRateLimitError(f"Rate limit exceeded: {error_detail}")
-        
+
         elif 500 <= response.status_code < 600:
             raise AzureOpenAIServerError(f"Server error ({response.status_code}): {error_detail}")
-        
+
         else:
             raise AzureOpenAIError(f"API error ({response.status_code}): {error_detail}")
-    
+
     async def complete_text(
         self,
         prompt: str,
@@ -293,49 +293,49 @@ class AzureOpenAIClient:
     ) -> str:
         """
         Simple text completion using chat completion API.
-        
+
         Args:
             prompt: Input prompt text
             temperature: Temperature parameter (0.0-1.0)
             max_tokens: Maximum tokens to generate
             **kwargs: Additional parameters
-            
+
         Returns:
             str: Generated text response
-            
+
         Raises:
             AzureOpenAIError: API call failed
         """
         messages = [
             {"role": "user", "content": prompt}
         ]
-        
+
         response = await self.chat_completion(
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
             **kwargs
         )
-        
+
         # Extract text content from response
         if isinstance(response, dict):
             choices = response.get("choices", [])
             if choices:
                 message = choices[0].get("message", {})
                 return message.get("content", "").strip()
-        
+
         return ""
-    
+
     async def close(self):
         """關閉 HTTP 客戶端連接"""
         if self.client:
             await self.client.aclose()
             self.logger.info("Azure OpenAI client closed")
-    
+
     async def __aenter__(self):
         """async context manager 入口"""
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """async context manager 出口"""
         await self.close()
@@ -346,25 +346,25 @@ def get_azure_openai_client() -> AzureOpenAIClient:
     """
     工廠函數：建立 AzureOpenAI 客戶端實例
     從環境變數載入配置
-    
+
     Returns:
         AzureOpenAIClient: 配置好的客戶端實例
-        
+
     Raises:
         ValueError: 缺少必要的環境變數
     """
     import os
-    
+
     # Support both old (LLM2_*) and new (AZURE_OPENAI_*) environment variables
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT") or os.getenv("LLM2_ENDPOINT")
     api_key = os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("LLM2_API_KEY")
-    
+
     if not endpoint:
         raise ValueError("AZURE_OPENAI_ENDPOINT or LLM2_ENDPOINT environment variable is required")
-    
+
     if not api_key:
         raise ValueError("AZURE_OPENAI_API_KEY or LLM2_API_KEY environment variable is required")
-    
+
     return AzureOpenAIClient(
         endpoint=endpoint,
         api_key=api_key
@@ -375,8 +375,8 @@ def get_azure_openai_client() -> AzureOpenAIClient:
 async def get_azure_openai_client_async() -> AzureOpenAIClient:
     """
     非同步工廠函數：建立 AzureOpenAI 客戶端實例
-    
+
     Returns:
         AzureOpenAIClient: 配置好的客戶端實例
     """
-    return get_azure_openai_client() 
+    return get_azure_openai_client()

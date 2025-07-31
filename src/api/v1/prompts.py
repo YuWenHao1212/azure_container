@@ -34,15 +34,15 @@ async def get_prompt_version(
 ) -> UnifiedResponse:
     """
     Get active prompt version information for any task.
-    
+
     This is a generic endpoint that can query prompt versions for any task,
     not just keyword extraction. As new features are added, they can use
     this same endpoint.
-    
+
     Parameters:
     - task: Task name (required)
     - language: Language code (optional)
-    
+
     Returns:
     - Task name
     - Active prompt version details per language
@@ -54,7 +54,7 @@ async def get_prompt_version(
         if language:
             from src.services.unified_prompt_service import get_unified_prompt_service
             prompt_service = get_unified_prompt_service()
-            
+
             # Check if this is a valid task by trying to list versions
             available_versions = []
             try:
@@ -66,14 +66,14 @@ async def get_prompt_version(
                     # For other tasks, use the simple prompt manager
                     available_versions = prompt_manager.list_versions(task)
                     active_version = prompt_manager.get_active_version(task)
-                    
+
                 # If no versions found, task doesn't exist
                 if not available_versions:
                     raise ValueError(f"Task '{task}' not found")
             except Exception as e:
                 logger.warning(f"Task '{task}' not found or error listing versions: {e}")
                 raise ValueError(f"Task '{task}' not found")
-            
+
             # Get prompt config for active version if exists
             prompt_info = {}
             if active_version and task == "keyword_extraction":
@@ -94,7 +94,7 @@ async def get_prompt_version(
                     }
                 except Exception as e:
                     logger.warning(f"Failed to load prompt config: {e}")
-            
+
             response_data = {
                 "task": task,
                 "language": language,
@@ -110,14 +110,14 @@ async def get_prompt_version(
                 "languages": {},
                 "timestamp": datetime.utcnow().isoformat()
             }
-            
+
             # For keyword_extraction, check multiple languages
             if task == "keyword_extraction":
                 from src.services.unified_prompt_service import (
                     get_unified_prompt_service,
                 )
                 prompt_service = get_unified_prompt_service()
-                
+
                 for lang in ["en", "zh-TW"]:
                     try:
                         active_version = prompt_service.get_active_version(lang)
@@ -137,12 +137,12 @@ async def get_prompt_version(
                     response_data["available_versions"] = available_versions
                 except Exception:
                     raise ValueError(f"Task '{task}' not found")
-        
+
         logger.info(f"Retrieved prompt version info for task={task}")
         return create_success_response(response_data)
-        
+
     except ValueError as e:
-        logger.warning(f"Invalid request: {str(e)}")
+        logger.warning(f"Invalid request: {e!s}")
         error_response = create_error_response(
             code="INVALID_TASK",
             message="無效的任務名稱",
@@ -153,7 +153,7 @@ async def get_prompt_version(
             detail=error_response.dict()
         )
     except Exception as e:
-        logger.error(f"Failed to get prompt version: {str(e)}")
+        logger.error(f"Failed to get prompt version: {e!s}")
         error_response = create_error_response(
             code="PROMPT_VERSION_ERROR",
             message="無法取得提示版本資訊",
@@ -175,7 +175,7 @@ async def get_prompt_version(
 async def list_prompt_tasks() -> UnifiedResponse:
     """
     List all available tasks that have prompt configurations.
-    
+
     Returns:
     - List of task names
     - Brief info about each task
@@ -184,7 +184,7 @@ async def list_prompt_tasks() -> UnifiedResponse:
         # Get all subdirectories in prompts directory
         prompts_dir = prompt_manager.prompts_dir
         tasks = []
-        
+
         if prompts_dir.exists():
             for task_dir in prompts_dir.iterdir():
                 if task_dir.is_dir() and not task_dir.name.startswith('.'):
@@ -196,18 +196,18 @@ async def list_prompt_tasks() -> UnifiedResponse:
                             "prompt_count": len(yaml_files),
                             "has_multilingual": any("-" in f.stem for f in yaml_files)
                         })
-        
+
         response_data = {
             "tasks": tasks,
             "total_tasks": len(tasks),
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         logger.info(f"Listed {len(tasks)} prompt tasks")
         return create_success_response(response_data)
-        
+
     except Exception as e:
-        logger.error(f"Failed to list prompt tasks: {str(e)}")
+        logger.error(f"Failed to list prompt tasks: {e!s}")
         error_response = create_error_response(
             code="LIST_TASKS_ERROR",
             message="無法列出提示任務",

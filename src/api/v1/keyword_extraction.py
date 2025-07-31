@@ -29,6 +29,7 @@ from src.models.response import (
     create_error_response,
     create_success_response,
 )
+from src.services.exceptions import UnsupportedLanguageError
 from src.services.keyword_extraction_v2 import (
     get_keyword_extraction_service_v2,
 )
@@ -51,7 +52,10 @@ router = APIRouter()
     response_model=UnifiedResponse,
     status_code=status.HTTP_200_OK,
     summary="Extract keywords from job description",
-    description="Extract and analyze keywords from job descriptions using 2-round intersection strategy with Azure OpenAI GPT-4o-2",
+    description=(
+        "Extract and analyze keywords from job descriptions using "
+        "2-round intersection strategy with Azure OpenAI GPT-4o-2"
+    ),
     responses={
         200: {
             "description": "Keywords extracted successfully",
@@ -115,7 +119,10 @@ router = APIRouter()
                         "data": {},
                         "error": {
                             "code": "SERVICE_UNAVAILABLE",
-                            "message": "Azure OpenAI service is temporarily unavailable",
+                            "message": (
+                                "Azure OpenAI service is temporarily "
+                                "unavailable"
+                            ),
                             "details": "Please try again later"
                         },
                         "timestamp": "2025-07-01T13:09:40.123Z"
@@ -133,27 +140,27 @@ async def extract_jd_keywords(
 ) -> UnifiedResponse:
     """
     Extract keywords from job description using 2-round intersection strategy.
-    
-    **Work Item**: #347 (建立 API 端點)  
-    **Parent**: User Story #338 (建構 API 端點)  
-    **Dependencies**: 
+
+    **Work Item**: #347 (建立 API 端點)
+    **Parent**: User Story #338 (建構 API 端點)
+    **Dependencies**:
     - Work Item #343: 實作關鍵字提取核心邏輯 ✅
     - Work Item #346: 建立請求/回應模型 ✅
     - Work Item #340: 實作 OpenAI 客戶端 ✅
-    
+
     **Technical Features**:
     - 2-round intersection strategy for consistent results
-    - Parallel processing for ~50% performance improvement  
+    - Parallel processing for ~50% performance improvement
     - Azure OpenAI GPT-4o-2 integration
     - Intelligent supplementation when intersection < 12 keywords
     - Comprehensive error handling and logging
     - Bubble.io compatible response format
-    
+
     **Parameters**:
     - **job_description**: Job description text (minimum 50 characters)
     - **max_keywords**: Maximum keywords to extract (5-30, default: 15)
     - **prompt_version**: Prompt version to use (default: "latest")
-    
+
     **Response**:
     Returns UnifiedResponse with KeywordExtractionData containing:
     - keywords: List of extracted keywords
@@ -163,7 +170,7 @@ async def extract_jd_keywords(
     - intersection_stats: Detailed extraction statistics
     - warning: Quality warnings if any
     - processing_time_ms: Total processing time
-    
+
     **Error Codes**:
     - 400: VALIDATION_ERROR - Invalid input parameters
     - 500: INTERNAL_SERVER_ERROR - Unexpected processing error
@@ -176,32 +183,33 @@ async def extract_jd_keywords(
         "keyword_extraction_ms": 0,
         "total_ms": 0
     }
-    
+
     logger.info(
         f"Keyword extraction request received: "
         f"job_description_length={len(request.job_description)}, "
         f"max_keywords={request.max_keywords}, "
         f"prompt_version={request.prompt_version}"
     )
-    
+
     # Get HTTP headers for model selection (if enabled)
     headers = {}
     if http_request:
         headers = dict(http_request.headers)
-    
+
     # Use smart LLM client selection (hybrid approach)
     from src.services.llm_factory import get_llm_client_smart, get_llm_info
-    
+
     llm_client = get_llm_client_smart(
         api_name="keywords",
-        request_model=getattr(request, 'llm_model', None),  # Future: add to request model
+        request_model=getattr(request, 'llm_model', None),  # Future: add to request
+        # model
         headers=headers
     )
-    
+
     # Log which model is being used
     llm_info = get_llm_info(llm_client)
     logger.info(f"Using LLM model: {llm_info['model']} from {llm_info['region']}")
-    
+
     # Create V2 service with dynamic LLM client
     service = get_keyword_extraction_service_v2(
         llm_client=llm_client,  # Pass the dynamically selected client
@@ -210,39 +218,46 @@ async def extract_jd_keywords(
         cache_ttl_minutes=60,  # Cache for 1 hour
         enable_parallel_processing=True  # ✅ Keep parallel processing for speed
     )
-    
+
     try:
         # Validate request using Work Item #346 validator
         validation_start = time.time()
         validated_data = await service.validate_input(request.dict())
         timing_breakdown["validation_ms"] = (time.time() - validation_start) * 1000
-        
-        logger.info(f"Request validation passed in {timing_breakdown['validation_ms']:.2f}ms")
-        
+
+        logger.info(
+            f"Request validation passed in "
+            f"{timing_breakdown['validation_ms']:.2f}ms"
+        )
+
         # Process keyword extraction using Work Item #343 core logic
         extraction_start = time.time()
         result = await service.process(validated_data)
-        timing_breakdown["keyword_extraction_ms"] = (time.time() - extraction_start) * 1000
-        
+        timing_breakdown["keyword_extraction_ms"] = (
+            (time.time() - extraction_start) * 1000
+        )
+
         # Calculate total processing time
         timing_breakdown["total_ms"] = (time.time() - request_start) * 1000
         result['total_processing_time_ms'] = round(timing_breakdown["total_ms"], 2)
         result['timing_breakdown'] = timing_breakdown
-        
+
         # Track detailed processing time metrics
         monitoring_service.track_metric(
             "keyword_extraction_processing_time",
             timing_breakdown["total_ms"],
             {
                 "language": result.get('detected_language', 'unknown'),
-                "prompt_version": result.get('prompt_version_used', request.prompt_version),
+                "prompt_version": result.get(
+                    'prompt_version_used', request.prompt_version
+                ),
                 "jd_length": len(request.job_description),
                 "keyword_count": result.get('keyword_count', 0),
                 "validation_ms": timing_breakdown["validation_ms"],
                 "extraction_ms": timing_breakdown["keyword_extraction_ms"]
             }
         )
-        
+
         logger.info(
             f"Keyword extraction completed successfully: "
             f"keywords={result['keyword_count']}, "
@@ -250,7 +265,7 @@ async def extract_jd_keywords(
             f"time={timing_breakdown['total_ms']:.2f}ms, "
             f"confidence={result['confidence_score']}"
         )
-        
+
         # Log detailed timing breakdown for performance analysis
         logger.debug(
             f"Timing breakdown - "
@@ -258,20 +273,25 @@ async def extract_jd_keywords(
             f"extraction: {timing_breakdown['keyword_extraction_ms']:.2f}ms, "
             f"total: {timing_breakdown['total_ms']:.2f}ms"
         )
-        
+
         # Check for warnings in intersection stats and create appropriate response
         warning_info = WarningInfo()
         intersection_stats = result.get('intersection_stats', {})
-        
+
         if intersection_stats.get('warning', False):
             warning_info = WarningInfo(
                 has_warning=True,
-                message=intersection_stats.get('warning_message', 'Quality warning detected'),
+                message=intersection_stats.get(
+                    'warning_message', 'Quality warning detected'
+                ),
                 expected_minimum=12,
                 actual_extracted=result.get('keyword_count', 0),
-                suggestion="Consider providing a more detailed job description with specific requirements and technologies"
+                suggestion=(
+                    "Consider providing a more detailed job description with "
+                    "specific requirements and technologies"
+                )
             )
-        
+
         # Track extracted keywords for analysis (rolling window of last 100)
         if result.get('keywords'):
             monitoring_service.track_event(
@@ -281,11 +301,17 @@ async def extract_jd_keywords(
                     "keyword_count": len(result['keywords']),
                     "language": result.get('detected_language', 'unknown'),
                     "extraction_method": result.get('extraction_method', 'unknown'),
-                    "client_type": getattr(request.state, 'client_type', 'unknown') if hasattr(request, 'state') else 'unknown',
-                    "correlation_id": getattr(request.state, 'correlation_id', '') if hasattr(request, 'state') else ''
+                    "client_type": (
+                        getattr(request.state, 'client_type', 'unknown')
+                        if hasattr(request, 'state') else 'unknown'
+                    ),
+                    "correlation_id": (
+                        getattr(request.state, 'correlation_id', '')
+                        if hasattr(request, 'state') else ''
+                    )
                 }
             )
-        
+
         # Create response with warning information
         return UnifiedResponse(
             success=True,
@@ -294,12 +320,12 @@ async def extract_jd_keywords(
             warning=warning_info,
             timestamp=datetime.utcnow().isoformat()
         )
-        
+
     except ValueError as e:
         # Input validation errors (400 Bad Request)
         error_msg = str(e)
         logger.warning(f"Validation error: {error_msg}")
-        
+
         # Store failure for analysis
         await failure_storage.store_failure(
             category="validation_error",
@@ -310,7 +336,7 @@ async def extract_jd_keywords(
                 "prompt_version": request.prompt_version
             }
         )
-        
+
         # Return Bubble.io compatible error response
         # Note: JD preview tracking is handled in main.py validation_exception_handler
         error_response = create_error_response(
@@ -319,17 +345,52 @@ async def extract_jd_keywords(
             details=error_msg,
             data=KeywordExtractionData().dict()  # Empty but consistent data structure
         )
-        
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_response.dict()
+        ) from None
+
+    except UnsupportedLanguageError as e:
+        # Unsupported language errors (400 Bad Request)
+        error_msg = f"Unsupported language: {e.detected_language}"
+        logger.warning(f"Unsupported language error: {error_msg}")
+
+        # Store failure for analysis
+        await failure_storage.store_failure(
+            category="unsupported_language",
+            job_description=request.job_description,
+            failure_reason=error_msg,
+            additional_info={
+                "detected_language": e.detected_language,
+                "supported_languages": e.supported_languages,
+                "confidence": getattr(e, 'confidence', None)
+            }
         )
-        
-    except (AzureOpenAIRateLimitError, AzureOpenAIAuthError, AzureOpenAIServerError) as e:
+
+        # Return error response
+        error_response = create_error_response(
+            code="UNSUPPORTED_LANGUAGE",
+            message=f"不支援的語言: {e.detected_language}",
+            details=(
+                f"Only English and Traditional Chinese are supported. "
+                f"Detected language: {e.detected_language}"
+            ),
+            data=KeywordExtractionData().dict()
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_response.dict()
+        ) from None
+
+    except (
+        AzureOpenAIRateLimitError, AzureOpenAIAuthError, AzureOpenAIServerError
+    ) as e:
         # Azure OpenAI service errors (503 Service Unavailable)
-        error_msg = f"Azure OpenAI service error: {str(e)}"
+        error_msg = f"Azure OpenAI service error: {e!s}"
         logger.error(error_msg)
-        
+
         # Store API failure
         await failure_storage.store_failure(
             category="api_error",
@@ -339,72 +400,72 @@ async def extract_jd_keywords(
                 "error_type": type(e).__name__
             }
         )
-        
+
         error_response = create_error_response(
             code="SERVICE_UNAVAILABLE",
             message="Azure OpenAI 服務暫時無法使用",
-            details="請稍後再試，或聯繫系統管理員",
+            details="請稍後再試,或聯繫系統管理員",
             data=KeywordExtractionData().dict()
         )
-        
+
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=error_response.dict()
-        )
-        
+        ) from None
+
     except AzureOpenAIError as e:
         # General Azure OpenAI errors (500 Internal Server Error)
-        error_msg = f"OpenAI processing error: {str(e)}"
+        error_msg = f"OpenAI processing error: {e!s}"
         logger.error(error_msg)
-        
+
         error_response = create_error_response(
             code="OPENAI_ERROR",
             message="關鍵字提取服務處理失敗",
-            details="AI 服務處理時發生錯誤，請稍後再試",
+            details="AI 服務處理時發生錯誤,請稍後再試",
             data=KeywordExtractionData().dict()
         )
-        
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.dict()
-        )
-        
+        ) from None
+
     except asyncio.TimeoutError:
         # Request timeout (500 Internal Server Error)
         logger.error("Request timeout during keyword extraction")
-        
+
         error_response = create_error_response(
             code="TIMEOUT_ERROR",
             message="請求處理超時",
-            details="處理時間超過 7 秒限制，請簡化職位描述或稍後再試",
+            details="處理時間超過 7 秒限制,請簡化職位描述或稍後再試",
             data=KeywordExtractionData().dict()
         )
-        
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.dict()
-        )
-        
+        ) from None
+
     except Exception as e:
         # Unexpected errors (500 Internal Server Error)
-        error_msg = f"Unexpected error during keyword extraction: {str(e)}"
+        error_msg = f"Unexpected error during keyword extraction: {e!s}"
         logger.error(error_msg, exc_info=True)
-        
+
         # Don't expose internal error details in production
         details = str(e) if settings.debug else "請聯繫系統管理員"
-        
+
         error_response = create_error_response(
             code="INTERNAL_SERVER_ERROR",
             message="系統發生未預期錯誤",
             details=details,
             data=KeywordExtractionData().dict()
         )
-        
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.dict()
-        )
-    
+        ) from None
+
     finally:
         # Cleanup - close service if needed
         if hasattr(service, 'close'):
@@ -428,7 +489,7 @@ async def extract_jd_keywords(
 async def keyword_extraction_version() -> UnifiedResponse:
     """
     Get version and capability information for keyword extraction service.
-    
+
     Returns detailed information about:
     - Service version and build info
     - Implemented Work Items
@@ -446,13 +507,13 @@ async def keyword_extraction_version() -> UnifiedResponse:
                 "status": "completed"
             },
             {
-                "id": "#343", 
+                "id": "#343",
                 "title": "實作關鍵字提取核心邏輯",
                 "status": "completed"
             },
             {
                 "id": "#346",
-                "title": "建立請求/回應模型", 
+                "title": "建立請求/回應模型",
                 "status": "completed"
             },
             {
@@ -483,12 +544,12 @@ async def keyword_extraction_version() -> UnifiedResponse:
         },
         "api_endpoints": {
             "extract_keywords": "POST /api/v1/extract-jd-keywords",
-            "health_check": "GET /health", 
+            "health_check": "GET /health",
             "version_info": "GET /api/v1/version",
             "prompt_version": "GET /api/v1/prompt-version"
         }
     }
-    
+
     return create_success_response(version_data)
 
 
@@ -496,7 +557,10 @@ async def keyword_extraction_version() -> UnifiedResponse:
     "/prompt-version",
     response_model=UnifiedResponse,
     summary="Get active prompt version for keyword extraction",
-    description="Get the currently active prompt version and configuration details for keyword extraction task",
+    description=(
+        "Get the currently active prompt version and configuration details "
+        "for keyword extraction task"
+    ),
     tags=["Service Info"]
 )
 async def get_keyword_extraction_prompt_version(
@@ -505,10 +569,10 @@ async def get_keyword_extraction_prompt_version(
 ) -> UnifiedResponse:
     """
     Get active prompt version information for keyword extraction task.
-    
+
     Parameters:
     - language: Language code ("en" or "zh-TW")
-    
+
     Returns:
     - Task name (keyword_extraction)
     - Active prompt version details
@@ -517,19 +581,19 @@ async def get_keyword_extraction_prompt_version(
     """
     try:
         from src.services.unified_prompt_service import get_unified_prompt_service
-        
+
         # Get the prompt service
         prompt_service = get_unified_prompt_service()
-        
+
         # Task is hardcoded to keyword_extraction for this endpoint
         task = "keyword_extraction"
-        
+
         # Get active version
         active_version = prompt_service.get_active_version(language)
-        
+
         # Get available versions
         available_versions = prompt_service.list_versions(language)
-        
+
         # Get prompt config for active version if exists
         prompt_info = {}
         if active_version:
@@ -547,11 +611,13 @@ async def get_keyword_extraction_prompt_version(
                         "seed": config.llm_config.seed,
                         "top_p": config.llm_config.top_p
                     },
-                    "multi_round_enabled": config.multi_round_config.get("enabled", False)
+                    "multi_round_enabled": config.multi_round_config.get(
+                        "enabled", False
+                    )
                 }
             except Exception as e:
                 logger.warning(f"Failed to load prompt config: {e}")
-        
+
         response_data = {
             "task": task,
             "language": language,
@@ -561,23 +627,25 @@ async def get_keyword_extraction_prompt_version(
             "default_request_version": "1.4.0",  # From KeywordExtractionRequest default
             "timestamp": datetime.utcnow().isoformat()
         }
-        
-        logger.info(f"Retrieved prompt version info for task={task}, language={language}")
+
+        logger.info(
+            f"Retrieved prompt version info for task={task}, language={language}"
+        )
         return create_success_response(response_data)
-        
+
     except Exception as e:
-        logger.error(f"Failed to get prompt version: {str(e)}")
-        
+        logger.error(f"Failed to get prompt version: {e!s}")
+
         error_response = create_error_response(
             code="PROMPT_VERSION_ERROR",
             message="無法取得提示版本資訊",
             details=str(e)
         )
-        
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.dict()
-        )
+        ) from None
 
 
 # Health check endpoint removed - using unified /health endpoint in main.py

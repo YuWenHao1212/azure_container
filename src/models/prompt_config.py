@@ -16,7 +16,7 @@ class LLMConfig(BaseModel):
     top_p: float = Field(default=1.0, ge=0.0, le=1.0, description="Nucleus sampling parameter")
     frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0, description="Frequency penalty")
     presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0, description="Presence penalty")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -51,15 +51,15 @@ class PromptConfig(BaseModel):
         default_factory=dict,
         description="Configuration for multi-round extraction"
     )
-    
+
     def get_system_prompt(self) -> str:
         """Get system prompt with fallback."""
         return self.prompts.get("system", "")
-    
+
     def get_user_prompt(self) -> str:
         """Get user prompt with fallback."""
         return self.prompts.get("user", "")
-    
+
     def format_user_prompt(self, **kwargs) -> str:
         """Simple string formatting for user prompt."""
         user_prompt = self.get_user_prompt()
@@ -67,7 +67,7 @@ class PromptConfig(BaseModel):
             return user_prompt.format(**kwargs)
         except KeyError as e:
             raise ValueError(f"Missing required variable in prompt: {e}")
-    
+
     class Config:
         json_schema_extra = {
             "example": {

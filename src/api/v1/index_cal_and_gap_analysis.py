@@ -89,24 +89,24 @@ async def calculate_index_and_analyze_gap(
 ) -> UnifiedResponse:
     """
     Calculate similarity index and perform gap analysis.
-    
+
     Args:
         request: Combined calculation and analysis request data
         req: FastAPI request object
         settings: Application settings
-        
+
     Returns:
         UnifiedResponse with calculation and analysis results
     """
     start_time = time.time()
-    
+
     try:
         # Validate and normalize language (case-insensitive)
         if request.language.lower() == "zh-tw":
             request.language = "zh-TW"
         elif request.language.lower() != "en":
             request.language = "en"
-        
+
         # Log request
         logger.info(
             f"Index calculation and gap analysis request: "
@@ -115,7 +115,7 @@ async def calculate_index_and_analyze_gap(
             f"keywords_count={len(request.keywords) if isinstance(request.keywords, list) else len(request.keywords.split(','))}, "
             f"language={request.language}"
         )
-        
+
         # Step 1: Calculate index
         index_start_time = time.time()
         index_service = IndexCalculationService()
@@ -125,16 +125,16 @@ async def calculate_index_and_analyze_gap(
             keywords=request.keywords
         )
         index_end_time = time.time()
-        
+
         # Extract keyword coverage data
         keyword_coverage = index_result["keyword_coverage"]
-        
+
         # Convert keywords to list if string
         keywords_list = (
             request.keywords if isinstance(request.keywords, list)
             else [k.strip() for k in request.keywords.split(",") if k.strip()]
         )
-        
+
         # Step 2: Perform gap analysis
         gap_service = GapAnalysisService()
         gap_result = await gap_service.analyze_gap(
@@ -146,12 +146,12 @@ async def calculate_index_and_analyze_gap(
             language=request.language
         )
         gap_end_time = time.time()
-        
+
         # Track metrics
         processing_time = time.time() - start_time
         index_time = index_end_time - index_start_time
         gap_time = gap_end_time - index_end_time
-        
+
         monitoring_service.track_event(
             "IndexCalAndGapAnalysisCompleted",
             {
@@ -161,23 +161,23 @@ async def calculate_index_and_analyze_gap(
                 "keyword_coverage": keyword_coverage["coverage_percentage"],
                 "language": request.language,
                 "skills_identified": len(gap_result.get("SkillSearchQueries", [])),
-                
+
                 # Time metrics
                 "total_time_ms": round(processing_time * 1000, 2),
                 "index_calc_time_ms": round(index_time * 1000, 2),
                 "gap_analysis_time_ms": round(gap_time * 1000, 2),
-                
+
                 # Data size metrics
                 "resume_length": len(request.resume),
                 "jd_length": len(request.job_description),
                 "keywords_count": len(keywords_list),
-                
+
                 # Result metrics
                 "matched_keywords_count": len(keyword_coverage["covered_keywords"]),
                 "missed_keywords_count": len(keyword_coverage["missed_keywords"])
             }
         )
-        
+
         # Create response data
         response_data = IndexCalAndGapAnalysisData(
             raw_similarity_percentage=index_result["raw_similarity_percentage"],
@@ -193,7 +193,7 @@ async def calculate_index_and_analyze_gap(
                 ]
             )
         )
-        
+
         logger.info(
             f"Index calculation and gap analysis completed: "
             f"similarity={index_result['similarity_percentage']}%, "
@@ -202,9 +202,9 @@ async def calculate_index_and_analyze_gap(
             f"language={request.language}, "
             f"time={processing_time:.2f}s"
         )
-        
+
         return create_success_response(data=response_data.model_dump())
-        
+
     except ServiceError as e:
         logger.error(f"Service error in index cal and gap analysis: {e}")
         monitoring_service.track_event(
@@ -222,7 +222,7 @@ async def calculate_index_and_analyze_gap(
                 details=str(e)
             ).model_dump()
         )
-        
+
     except ValueError as e:
         logger.error(f"Validation error in index cal and gap analysis: {e}")
         monitoring_service.track_event(
@@ -240,7 +240,7 @@ async def calculate_index_and_analyze_gap(
                 details=str(e)
             ).model_dump()
         )
-        
+
     except Exception as e:
         logger.error(f"Unexpected error in index cal and gap analysis: {e}", exc_info=True)
         monitoring_service.track_event(

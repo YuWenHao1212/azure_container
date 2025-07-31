@@ -3,7 +3,7 @@ Custom exceptions for bilingual keyword extraction service.
 Provides specialized error handling for language detection and extraction.
 """
 
-from typing import Any
+from typing import Any, Optional
 
 
 class ServiceError(Exception):
@@ -13,13 +13,13 @@ class ServiceError(Exception):
 
 class BilingualServiceError(Exception):
     """Base exception for bilingual service errors."""
-    
-    def __init__(self, message: str, error_code: str = None, details: dict[str, Any] = None):
+
+    def __init__(self, message: str, error_code: Optional[str] = None, details: Optional[dict[str, Any]] = None):
         super().__init__(message)
         self.message = message
         self.error_code = error_code or "BILINGUAL_SERVICE_ERROR"
         self.details = details or {}
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert exception to dictionary for API response."""
         return {
@@ -32,19 +32,19 @@ class BilingualServiceError(Exception):
 class UnsupportedLanguageError(BilingualServiceError):
     """
     Exception raised when an unsupported language is detected or specified.
-    
+
     This error should be returned to the user with clear guidance about
     supported languages and alternatives.
     """
-    
-    def __init__(self, 
-                 detected_language: str, 
+
+    def __init__(self,
+                 detected_language: str,
                  supported_languages: list[str],
-                 confidence: float = None,
+                 confidence: Optional[float] = None,
                  user_specified: bool = False):
         """
         Initialize unsupported language error.
-        
+
         Args:
             detected_language: The language that was detected/specified
             supported_languages: List of supported language codes
@@ -63,7 +63,7 @@ class UnsupportedLanguageError(BilingualServiceError):
                 f"This service only supports: {', '.join(supported_languages)}. "
                 f"Please provide job descriptions in English or Traditional Chinese (Taiwan)."
             )
-        
+
         details = {
             "detected_language": detected_language,
             "supported_languages": supported_languages,
@@ -71,13 +71,13 @@ class UnsupportedLanguageError(BilingualServiceError):
             "user_specified": user_specified,
             "suggestion": "Please provide the job description in English or Traditional Chinese (Taiwan)"
         }
-        
+
         super().__init__(
             message=message,
             error_code="UNSUPPORTED_LANGUAGE",
             details=details
         )
-        
+
         self.detected_language = detected_language
         self.supported_languages = supported_languages
         self.confidence = confidence
@@ -87,25 +87,25 @@ class UnsupportedLanguageError(BilingualServiceError):
 class LanguageDetectionError(BilingualServiceError):
     """
     Exception raised when language detection fails.
-    
+
     This typically happens with very short text, mixed languages,
     or text that doesn't contain enough linguistic markers.
     """
-    
-    def __init__(self, 
-                 text_length: int = None,
-                 reason: str = None,
+
+    def __init__(self,
+                 text_length: Optional[int] = None,
+                 reason: Optional[str] = None,
                  fallback_language: str = "en"):
         """
         Initialize language detection error.
-        
+
         Args:
             text_length: Length of text that failed detection
             reason: Specific reason for detection failure
             fallback_language: Language to fall back to
         """
         reason = reason or "Unable to reliably detect language"
-        
+
         if text_length and text_length < 10:
             message = (
                 f"Text too short for language detection ({text_length} characters). "
@@ -116,20 +116,20 @@ class LanguageDetectionError(BilingualServiceError):
                 f"Language detection failed: {reason}. "
                 f"Using {fallback_language} as fallback language."
             )
-        
+
         details = {
             "text_length": text_length,
             "reason": reason,
             "fallback_language": fallback_language,
             "suggestion": "Please provide a longer, clearer job description for better language detection"
         }
-        
+
         super().__init__(
             message=message,
             error_code="LANGUAGE_DETECTION_FAILED",
             details=details
         )
-        
+
         self.text_length = text_length
         self.reason = reason
         self.fallback_language = fallback_language
@@ -138,19 +138,19 @@ class LanguageDetectionError(BilingualServiceError):
 class LowConfidenceDetectionError(BilingualServiceError):
     """
     Exception raised when language detection confidence is too low.
-    
+
     This indicates the text might be mixed language, ambiguous,
     or contain insufficient linguistic markers.
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  detected_language: str,
                  confidence: float,
                  threshold: float,
                  fallback_language: str = "en"):
         """
         Initialize low confidence detection error.
-        
+
         Args:
             detected_language: Language detected with low confidence
             confidence: Actual confidence score
@@ -162,7 +162,7 @@ class LowConfidenceDetectionError(BilingualServiceError):
             f"for '{detected_language}'. This might indicate mixed languages or ambiguous text. "
             f"Using {fallback_language} as fallback."
         )
-        
+
         details = {
             "detected_language": detected_language,
             "confidence": confidence,
@@ -170,13 +170,13 @@ class LowConfidenceDetectionError(BilingualServiceError):
             "fallback_language": fallback_language,
             "suggestion": "Please ensure the job description is written primarily in one language"
         }
-        
+
         super().__init__(
             message=message,
             error_code="LOW_CONFIDENCE_DETECTION",
             details=details
         )
-        
+
         self.detected_language = detected_language
         self.confidence = confidence
         self.threshold = threshold
@@ -186,18 +186,18 @@ class LowConfidenceDetectionError(BilingualServiceError):
 class PromptNotAvailableError(BilingualServiceError):
     """
     Exception raised when prompt is not available for a language.
-    
+
     This indicates a configuration issue where language detection
     succeeded but no prompt template exists for that language.
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  language: str,
-                 version: str = None,
-                 available_languages: list[str] = None):
+                 version: Optional[str] = None,
+                 available_languages: Optional[list[str]] = None):
         """
         Initialize prompt not available error.
-        
+
         Args:
             language: Language for which prompt is not available
             version: Requested prompt version
@@ -205,25 +205,25 @@ class PromptNotAvailableError(BilingualServiceError):
         """
         version_text = f" (version: {version})" if version else ""
         available_text = f". Available: {available_languages}" if available_languages else ""
-        
+
         message = (
             f"Prompt not available for language '{language}'{version_text}{available_text}. "
             f"This is a configuration issue."
         )
-        
+
         details = {
             "language": language,
             "version": version,
             "available_languages": available_languages or [],
             "suggestion": "Contact system administrator or use a supported language"
         }
-        
+
         super().__init__(
             message=message,
             error_code="PROMPT_NOT_AVAILABLE",
             details=details
         )
-        
+
         self.language = language
         self.version = version
         self.available_languages = available_languages
@@ -232,18 +232,18 @@ class PromptNotAvailableError(BilingualServiceError):
 class StandardizationError(BilingualServiceError):
     """
     Exception raised when keyword standardization fails.
-    
+
     This typically happens when standardization dictionaries
     are not available or corrupted for a specific language.
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  language: str,
-                 reason: str = None,
-                 keywords_count: int = None):
+                 reason: Optional[str] = None,
+                 keywords_count: Optional[int] = None):
         """
         Initialize standardization error.
-        
+
         Args:
             language: Language for which standardization failed
             reason: Specific reason for failure
@@ -251,25 +251,25 @@ class StandardizationError(BilingualServiceError):
         """
         reason = reason or "Standardization dictionary not available"
         keywords_text = f" for {keywords_count} keywords" if keywords_count else ""
-        
+
         message = (
             f"Keyword standardization failed for language '{language}'{keywords_text}: {reason}. "
             f"Keywords will be returned without standardization."
         )
-        
+
         details = {
             "language": language,
             "reason": reason,
             "keywords_count": keywords_count,
             "fallback_action": "returning unstandardized keywords"
         }
-        
+
         super().__init__(
             message=message,
             error_code="STANDARDIZATION_FAILED",
             details=details
         )
-        
+
         self.language = language
         self.reason = reason
         self.keywords_count = keywords_count
@@ -278,18 +278,18 @@ class StandardizationError(BilingualServiceError):
 class BilingualValidationError(BilingualServiceError):
     """
     Exception raised when bilingual validation fails.
-    
+
     This covers various validation issues like language parameter
     validation, text quality validation, etc.
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  validation_type: str,
                  errors: list[str],
-                 suggestions: list[str] = None):
+                 suggestions: Optional[list[str]] = None):
         """
         Initialize bilingual validation error.
-        
+
         Args:
             validation_type: Type of validation that failed
             errors: List of validation errors
@@ -297,19 +297,19 @@ class BilingualValidationError(BilingualServiceError):
         """
         errors_text = "; ".join(errors)
         message = f"Bilingual validation failed ({validation_type}): {errors_text}"
-        
+
         details = {
             "validation_type": validation_type,
             "errors": errors,
             "suggestions": suggestions or []
         }
-        
+
         super().__init__(
             message=message,
             error_code="BILINGUAL_VALIDATION_FAILED",
             details=details
         )
-        
+
         self.validation_type = validation_type
         self.errors = errors
         self.suggestions = suggestions
@@ -318,10 +318,10 @@ class BilingualValidationError(BilingualServiceError):
 def create_unsupported_language_response(error: UnsupportedLanguageError) -> dict[str, Any]:
     """
     Create a standardized API response for unsupported language errors.
-    
+
     Args:
         error: UnsupportedLanguageError instance
-        
+
     Returns:
         Standardized error response dictionary
     """
@@ -380,10 +380,10 @@ class ProcessingError(ServiceError):
 def create_language_detection_error_response(error: LanguageDetectionError) -> dict[str, Any]:
     """
     Create a standardized API response for language detection errors.
-    
+
     Args:
         error: LanguageDetectionError instance
-        
+
     Returns:
         Standardized error response dictionary with fallback processing
     """

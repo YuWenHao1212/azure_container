@@ -10,7 +10,7 @@ class CourseSearchRequest(BaseModel):
     search_context: str = ""
     limit: int = 5
     similarity_threshold: float = 0.3
-    
+
     @validator('skill_name')
     def validate_skill_name(cls, v):
         v = v.strip()
@@ -19,21 +19,21 @@ class CourseSearchRequest(BaseModel):
         if len(v) > 100:
             raise ValueError("skill_name too long (max 100 chars)")
         return v
-    
+
     @validator('search_context')
     def validate_search_context(cls, v):
         if len(v) > 500:
             raise ValueError("search_context too long (max 500 chars)")
         return v
-    
+
     @validator('limit')
     def validate_limit(cls, v):
         return max(1, min(v, 10))
-    
+
     @validator('similarity_threshold')
     def validate_threshold(cls, v):
         return max(0.1, min(v, 1.0))
-    
+
     class Config:
         schema_extra = {
             "example": {

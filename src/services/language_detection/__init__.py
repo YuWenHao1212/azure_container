@@ -11,6 +11,6 @@ from .validator import LanguageValidator
 __all__ = [
     "LanguageDetectionService",
     "MixedLanguageDetectionService",
-    "LanguageValidator", 
+    "LanguageValidator",
     "BilingualPromptManager"
 ]
