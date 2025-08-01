@@ -174,7 +174,7 @@ def validate_import_data(
         try:
             with open(existing_file, encoding='utf-8') as f:
                 existing_data = yaml.safe_load(f) or {}
-        except:
+        except Exception:
             existing_data = {}
 
         # Check for removed categories

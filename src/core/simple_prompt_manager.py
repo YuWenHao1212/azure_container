@@ -3,7 +3,6 @@ Simple Prompt Manager for handling versioned prompts.
 No template engine - just basic YAML configuration and string formatting.
 """
 import logging
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -200,7 +199,6 @@ class SimplePromptManager:
         for key in keys_to_remove:
             del self._cache[key]
 
-    @lru_cache(maxsize=32)
     def get_prompt_info(self, task: str, version: str) -> dict[str, Any]:
         """Get summary information about a prompt configuration."""
         config = self.load_prompt_config(task, version)

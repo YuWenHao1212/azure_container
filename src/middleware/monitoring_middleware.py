@@ -3,6 +3,7 @@ Monitoring middleware for request/response tracking.
 Implements comprehensive monitoring for all API endpoints.
 """
 import json
+import logging
 import time
 import uuid
 from collections.abc import Callable
@@ -80,8 +81,9 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                 async def receive():
                     return {"type": "http.request", "body": body_bytes}
                 request._receive = receive
-            except Exception:
-                pass
+            except Exception as e:
+                # S110: Add logging to try-except-pass blocks
+                logging.debug(f"Failed to capture request body: {e}")
 
         # Extract request information
         endpoint = f"{request.method} {request.url.path}"

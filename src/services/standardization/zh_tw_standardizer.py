@@ -256,9 +256,8 @@ class TraditionalChineseStandardizer(BaseStandardizer):
 
             for original, standardized in category_data['mappings'].items():
                 if (query_lower in original.lower() or
-                    query_lower in standardized.lower()):
-                    if standardized not in matches:
-                        matches.append(standardized)
+                    query_lower in standardized.lower()) and standardized not in matches:
+                    matches.append(standardized)
 
         return matches[:limit]
 
@@ -283,9 +282,8 @@ class TraditionalChineseStandardizer(BaseStandardizer):
 
             for original, standardized in category_data['mappings'].items():
                 if any(indicator in original or indicator in standardized
-                       for indicator in taiwan_indicators):
-                    if standardized not in taiwan_terms:
-                        taiwan_terms.append(standardized)
+                       for indicator in taiwan_indicators) and standardized not in taiwan_terms:
+                    taiwan_terms.append(standardized)
 
         return taiwan_terms
 

@@ -520,7 +520,7 @@ class CourseSearchService:
                 logger.warning(f"[CourseSearch] Attempt {attempt + 1} failed: {e}")
 
                 if attempt == max_retries - 1:
-                    raise Exception(f"Search failed after {max_retries} attempts: {e!s}")
+                    raise Exception(f"Search failed after {max_retries} attempts: {e!s}") from e
 
                 await asyncio.sleep(retry_delays[attempt])
 

@@ -4,7 +4,7 @@ All API responses must use these models to ensure consistency.
 Following Bubble.io compatibility requirements - no Optional types.
 """
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from pydantic import BaseModel, Field
 
@@ -41,7 +41,7 @@ class UnifiedResponse(BaseModel):
     )
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict[str, Any]] = {
             "example": {
                 "success": True,
                 "data": {

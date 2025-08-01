@@ -430,10 +430,7 @@ class KeywordExtractionServiceV2(BaseService):
                 supported_chars = stats.total_chars - unsupported_chars
                 if supported_chars > 0:
                     zh_tw_ratio = stats.traditional_chinese_chars / supported_chars
-                    if zh_tw_ratio >= 0.20:
-                        decision_reason = "zh_tw_dominant"
-                    else:
-                        decision_reason = "english_default"
+                    decision_reason = "zh_tw_dominant" if zh_tw_ratio >= 0.2 else "english_default"
                 else:
                     decision_reason = "english_default"
             else:

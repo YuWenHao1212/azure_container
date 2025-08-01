@@ -359,7 +359,9 @@ class GapAnalysisService(TokenTrackingMixin):
                         last_response = result
 
                         # Add jitter to avoid thundering herd
-                        delay = retry_delays[attempt] * (0.5 + random.random())
+                        # Note: random.random() is acceptable here as it's used for retry jitter, not cryptography
+                        # S311: random is fine for jitter (not security)
+                        delay = retry_delays[attempt] * (0.5 + random.random())  # noqa: S311
 
                         self.logger.info(
                             f"[GAP_ANALYSIS_RETRY] Retrying in {delay:.1f}s due to empty fields: "
@@ -437,7 +439,9 @@ class GapAnalysisService(TokenTrackingMixin):
                     raise
 
                 # Calculate retry delay
-                delay = retry_delays[attempt] * (0.5 + random.random())
+                # Note: random.random() is acceptable here as it's used for retry jitter, not cryptography
+                # S311: random is fine for jitter (not security)
+                delay = retry_delays[attempt] * (0.5 + random.random())  # noqa: S311  # noqa: S311
 
                 self.logger.warning(
                     f"[GAP_ANALYSIS_RETRY] Retryable error on attempt {attempt + 1}: {e}. "

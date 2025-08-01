@@ -2,6 +2,7 @@
 Error capture middleware for debugging.
 Captures request/response details for errors and stores them for analysis.
 """
+import contextlib
 import json
 import logging
 import time
@@ -114,10 +115,10 @@ class ErrorStorage:
                 container_client = client.get_container_client(container_name)
 
                 # Ensure container exists
-                try:
+                # SIM105: Use contextlib.suppress() instead of try-except-pass
+                with contextlib.suppress(Exception):
+                    # Container might already exist
                     await container_client.create_container()
-                except Exception:
-                    pass  # Container might already exist
 
                 blob_client = container_client.get_blob_client(blob_name)
                 await blob_client.upload_blob(
@@ -151,8 +152,9 @@ class ErrorStorage:
                 if file_time < cutoff_time:
                     filepath.unlink()
                     logger.info(f"Cleaned up old error file: {filepath}")
-            except Exception:
-                pass  # Skip files we can't parse
+            except Exception as e:
+                # S110: Add logging to try-except-pass blocks
+                logger.debug(f"Skipping file we can't parse: {filepath} - {e}")
 
 
 # Global error storage

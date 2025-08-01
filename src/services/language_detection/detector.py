@@ -110,7 +110,7 @@ class LanguageDetectionService:
                 raise LanguageDetectionError(
                     text_length=len(text),
                     reason=f"langdetect library error: {e!s}"
-                )
+                ) from e
 
             # 3. Refine Chinese variant detection
             has_chinese_chars = any('\u4e00' <= char <= '\u9fff' for char in text)
@@ -205,7 +205,7 @@ class LanguageDetectionService:
             raise LanguageDetectionError(
                 text_length=len(text) if text else 0,
                 reason=f"Unexpected detection error: {e!s}"
-            )
+            ) from e
 
     def _refine_chinese_variant(self, text: str) -> str:
         """

@@ -52,10 +52,9 @@ def validate_bubble_compatibility(response_body: Any) -> dict[str, Any]:
         is_valid = False
 
     # Validate success field
-    if "success" in response_body:
-        if not isinstance(response_body["success"], bool):
-            issues.append("'success' field must be boolean")
-            is_valid = False
+    if "success" in response_body and not isinstance(response_body["success"], bool):
+        issues.append("'success' field must be boolean")
+        is_valid = False
 
     # Validate data field
     if "data" in response_body:
@@ -223,9 +222,8 @@ def validate_keyword_extraction_response(data: dict[str, Any], issues: list[str]
                 issues.append(f"'{field}' should not be empty")
 
     # Check complex objects
-    if "intersection_stats" in data:
-        if not isinstance(data["intersection_stats"], dict):
-            issues.append("'intersection_stats' must be an object")
+    if "intersection_stats" in data and not isinstance(data["intersection_stats"], dict):
+        issues.append("'intersection_stats' must be an object")
 
     if "warning" in data:
         if not isinstance(data["warning"], dict):
@@ -240,9 +238,8 @@ def validate_keyword_extraction_response(data: dict[str, Any], issues: list[str]
     if "llm_config_used" in data and not isinstance(data["llm_config_used"], dict):
         issues.append("'llm_config_used' must be an object")
 
-    if "timing_breakdown" in data:
-        if not isinstance(data["timing_breakdown"], dict):
-            issues.append("'timing_breakdown' must be an object")
+    if "timing_breakdown" in data and not isinstance(data["timing_breakdown"], dict):
+        issues.append("'timing_breakdown' must be an object")
 
 
 def count_fields(obj: Any) -> int:

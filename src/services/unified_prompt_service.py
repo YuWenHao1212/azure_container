@@ -116,12 +116,9 @@ class UnifiedPromptService:
 
         # Combine system and user prompts if both exist
         system_prompt = prompt_config.get_system_prompt()
-        if system_prompt:
-            # For models that support system prompts, we'll need to handle this differently
-            # For now, we'll concatenate them
-            full_prompt = f"{system_prompt}\n\n{formatted_prompt}"
-        else:
-            full_prompt = formatted_prompt
+        # For models that support system prompts, we'll need to handle this differently
+        # For now, we'll concatenate them
+        full_prompt = f"{system_prompt}\n\n{formatted_prompt}" if system_prompt else formatted_prompt
 
         return full_prompt, prompt_config.llm_config
 

@@ -2,9 +2,12 @@
 Input parsing utilities for handling various input formats from Bubble.io and other sources.
 """
 
+import logging
 import re
 
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 def parse_flexible_keywords(value: str | list) -> list[str]:
@@ -57,12 +60,8 @@ def parse_flexible_keywords(value: str | list) -> list[str]:
         # No common separators found - might be space-separated or single keyword
         # Check if it looks like multiple keywords without separators
         # e.g., "Senior HR Data AnalystPower BI" (from Bubble.io bug)
-        if len(text) > 30 and ' ' not in text:
-            # Likely concatenated keywords - try smart splitting
-            items = _smart_split_keywords(text)
-        else:
-            # Treat as single keyword or space-separated
-            items = [text]
+        # Use ternary for simple if-else assignment
+        items = _smart_split_keywords(text) if len(text) > 30 and ' ' not in text else [text]
 
     # Clean and filter keywords
     for item in items:
@@ -122,9 +121,9 @@ def parse_multiline_items(content: str | list) -> list[str]:
 
             # If no list items, try to get all text
             text = soup.get_text()
-        except Exception:
+        except Exception as e:
             # If HTML parsing fails, continue with text parsing
-            pass
+            logger.debug(f"HTML parsing failed, falling back to text parsing: {e}")
 
     # Parse as plain text
     lines = text.split('\n')

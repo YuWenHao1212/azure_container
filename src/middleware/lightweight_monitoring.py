@@ -184,8 +184,9 @@ class LightweightMonitoringMiddleware(BaseHTTPMiddleware):
                         if "error" in data and isinstance(data["error"], dict):
                             error_code = data["error"].get("code", error_code)
                             error_message = data["error"].get("message", "")
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        # S110: Add logging to try-except-pass blocks
+                        logging.debug(f"Failed to parse response body for error details: {e}")
 
             # Track the request
             response_tracker.add_request(

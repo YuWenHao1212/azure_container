@@ -157,8 +157,9 @@ class LanguageValidator:
             )
 
             # Validate against expected language if provided
-            if expected_language and expected_language != "auto":
-                if detection_result.language != expected_language:
+            # SIM102: Combine nested if statements using 'and'
+            if (expected_language and expected_language != "auto" and
+                detection_result.language != expected_language):
                     result.add_error(
                         f"Detected language '{detection_result.language}' does not match expected '{expected_language}'"
                     )
@@ -219,8 +220,9 @@ class LanguageValidator:
                 if pattern_check(text):
                     logger.warning("Suspicious pattern detected in text")
                     return True
-            except Exception:
+            except Exception as e:
                 # Skip pattern check if it fails
+                logger.debug(f"Pattern check failed for suspicious content detection: {e}")
                 continue
 
         return False
@@ -249,8 +251,9 @@ class LanguageValidator:
             )
 
         # Basic keyword language consistency check
-        if extracted_keywords and detected_language:
-            if not self._validate_keyword_language_consistency(extracted_keywords, detected_language):
+        # SIM102: Combine nested if statements using 'and'
+        if (extracted_keywords and detected_language and
+            not self._validate_keyword_language_consistency(extracted_keywords, detected_language)):
                 result.add_error(
                     f"Keywords language inconsistent with detected language '{detected_language}'"
                 )

@@ -3,10 +3,14 @@ Text processing utilities for HTML cleaning and content manipulation.
 Provides functions for HTML sanitization, text extraction, and content validation.
 """
 
+import contextlib
 import html
+import logging
 import re
 
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 def clean_html_text(html_text: str) -> str:
@@ -162,11 +166,8 @@ def clean_llm_output(content: str) -> str:
     content = re.sub(r'\n\s*\n\s*\n', '\n\n', content)
 
     # Handle encoding issues without breaking HTML tags
-    try:
+    with contextlib.suppress(Exception):
         content = content.encode('utf-8', errors='ignore').decode('utf-8')
-    except Exception:
-        # If encoding fails, return cleaned string
-        pass
 
     return content.strip()
 

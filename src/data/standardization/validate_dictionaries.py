@@ -63,12 +63,13 @@ def check_conflicts(combined: dict[str, str]) -> list[str]:
         reverse_map[standardized.lower()].append(original)
 
     for standardized, originals in reverse_map.items():
-        if len(originals) > 1:
+        # SIM102: Combine nested if statements using 'and'
+        if (len(originals) > 1 and
+            not all(orig.replace(' ', '').replace('-', '').replace('_', '') ==
+                   originals[0].replace(' ', '').replace('-', '').replace('_', '')
+                   for orig in originals)):
             # This might be intentional (e.g., multiple variations mapping to same standard)
             # Only flag if they're very different
-            if not all(orig.replace(' ', '').replace('-', '').replace('_', '') ==
-                      originals[0].replace(' ', '').replace('-', '').replace('_', '')
-                      for orig in originals):
                 issues.append(
                     f"Multiple different terms map to '{standardized}': {', '.join(originals)}"
                 )

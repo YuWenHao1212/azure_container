@@ -16,7 +16,8 @@ class CourseSearchCache:
                      category: str, threshold: float) -> str:
         """生成快取鍵值"""
         cache_str = f"{skill_name}|{search_context}|{category}|{threshold}"
-        return hashlib.md5(cache_str.encode()).hexdigest()
+        # Use SHA256 instead of MD5 for better security practices
+        return hashlib.sha256(cache_str.encode()).hexdigest()[:16]  # Truncate for cache efficiency
 
     def get(self, key: str) -> dict | None:
         """從快取取得資料"""

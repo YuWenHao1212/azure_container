@@ -5,6 +5,7 @@ Stores failed JD samples for debugging and improvement.
 import asyncio
 import json
 import os
+import tempfile
 from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,7 +31,9 @@ class FailureStorage:
             storage_path: Path to store failure files
             max_storage_size: Maximum number of failures to keep in memory
         """
-        self.storage_path = Path(storage_path or os.getenv("FAILURE_STORAGE_PATH", "/tmp/failed_cases/"))
+        # S108: Use proper temp directory functions instead of hardcoded paths
+        default_temp_dir = os.path.join(tempfile.gettempdir(), "failed_cases")
+        self.storage_path = Path(storage_path or os.getenv("FAILURE_STORAGE_PATH", default_temp_dir))
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
         # In-memory storage with size limit
@@ -103,7 +106,11 @@ class FailureStorage:
         self._update_statistics(failure_record)
 
         # Persist to disk (async)
-        asyncio.create_task(self._persist_failure(failure_record))
+        task = asyncio.create_task(self._persist_failure(failure_record))
+        # Store task reference to avoid RUF006 warning
+        self._background_tasks = getattr(self, '_background_tasks', set())
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
         return failure_id
 

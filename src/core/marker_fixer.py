@@ -49,18 +49,23 @@ class MarkerFixer:
             # In a full implementation, we'd need the list of keywords to mark
             pass
 
-    def apply_keyword_markers(self, html: str, keywords: list[str]) -> str:
-        """Apply keyword markers to specific keywords in the HTML"""
-        soup = BeautifulSoup(html, 'html.parser')
+    def apply_keyword_markers(self, content: str, keywords: list[str]) -> str:
+        """Apply keyword markers to HTML content."""
+        if not keywords or not content.strip():
+            return content
+
+        # Parse HTML content
+        soup = BeautifulSoup(content, 'html.parser')
 
         # Process text nodes to mark keywords
         for element in soup.find_all(text=True):
             if isinstance(element, NavigableString) and element.strip():
                 # Skip if already inside a span with opt- class
                 parent = element.parent
-                if parent and parent.name == 'span' and parent.get('class'):
-                    if any(cls.startswith('opt-') for cls in parent['class']):
-                        continue
+                # SIM102: Combine nested if statements using 'and'
+                if (parent and parent.name == 'span' and parent.get('class') and
+                    any(cls.startswith('opt-') for cls in parent['class'])):
+                    continue
 
                 # Check if text contains any keywords
                 new_html = self._mark_keywords_in_text(str(element), keywords)

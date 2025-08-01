@@ -90,10 +90,7 @@ class ImprovedChineseDetector:
         # 5. 判定邏輯
         if traditional_score > simplified_score:
             # 計算信心分數
-            if traditional_score > 0:
-                confidence = min(0.95, 0.8 + (traditional_phrase_count * 0.05))
-            else:
-                confidence = 0.85
+            confidence = min(0.95, 0.8 + traditional_phrase_count * 0.05) if traditional_score > 0 else 0.85
             return 'zh-TW', confidence
 
         elif simplified_score > traditional_score:

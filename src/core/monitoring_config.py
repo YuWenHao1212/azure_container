@@ -3,6 +3,7 @@ Monitoring configuration with environment-aware defaults.
 Automatically selects appropriate storage mode based on environment.
 """
 import os
+import tempfile
 from enum import Enum
 
 from pydantic import validator
@@ -48,7 +49,8 @@ class MonitoringConfig(BaseSettings):
     capture_success_samples: bool = False
 
     # Storage paths
-    error_log_path: str = "/tmp/api_errors"
+    # S108: Use proper temp directory functions instead of hardcoded paths
+    error_log_path: str = os.path.join(tempfile.gettempdir(), "api_errors")
     error_blob_container: str = "api-errors"
 
     # Azure Storage (for blob mode)
@@ -174,23 +176,21 @@ class MonitoringConfig(BaseSettings):
 
     def _validate_storage_config(self):
         """Validate storage configuration"""
-        if self.error_storage_mode == StorageMode.BLOB:
-            if not self._has_blob_storage_config():
-                raise ValueError(
-                    "Blob storage mode requires either "
-                    "AZURE_STORAGE_CONNECTION_STRING or "
-                    "AZURE_STORAGE_ACCOUNT_NAME + AZURE_STORAGE_ACCOUNT_KEY"
-                )
+        if self.error_storage_mode == StorageMode.BLOB and not self._has_blob_storage_config():
+            raise ValueError(
+                "Blob storage mode requires either "
+                "AZURE_STORAGE_CONNECTION_STRING or "
+                "AZURE_STORAGE_ACCOUNT_NAME + AZURE_STORAGE_ACCOUNT_KEY"
+            )
 
         # Adjust retention based on environment
         if self.environment == Environment.PRODUCTION:
             # Production: keep errors longer
             if self.error_retention_hours < 168:  # 7 days
                 self.error_retention_hours = 168
-        elif self.environment == Environment.LOCAL:
+        elif self.environment == Environment.LOCAL and self.error_retention_hours > 24:
             # Local: shorter retention
-            if self.error_retention_hours > 24:
-                self.error_retention_hours = 24
+            self.error_retention_hours = 24
 
     def get_storage_info(self) -> dict:
         """Get human-readable storage configuration"""
