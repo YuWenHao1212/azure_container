@@ -47,7 +47,7 @@ jobs:
     - name: Create .env file for tests
       run: |
         cat > .env << EOF
-        ENVIRONMENT=test
+        ENVIRONMENT=development
         LOG_LEVEL=INFO
         MONITORING_ENABLED=false
         LIGHTWEIGHT_MONITORING=true
