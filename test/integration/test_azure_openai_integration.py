@@ -104,10 +104,10 @@ class TestAzureOpenAIIntegration:
         }
 
     def test_azure_openai_integration(
-        self, 
-        test_client, 
-        mock_keyword_service, 
-        mock_azure_openai_client, 
+        self,
+        test_client,
+        mock_keyword_service,
+        mock_azure_openai_client,
         valid_job_description_request
     ):
         """TEST: API-KW-111-IT - Comprehensive Azure OpenAI integration test."""
@@ -133,8 +133,11 @@ class TestAzureOpenAIIntegration:
 
         with (
             patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
-            patch('src.services.llm_factory.get_llm_client_smart') as mock_get_client,
-            patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+            patch('src.services.llm_factory.get_llm_client_smart'),
+            patch(
+                'src.services.llm_factory.get_llm_info',
+                return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}
+            ),
             patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
             patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
         ):
@@ -341,18 +344,39 @@ class TestAzureOpenAIIntegration:
         mock_keyword_service.process.return_value = expected_result
 
         def make_request():
-            with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-                with patch('src.services.llm_factory.get_llm_client_smart'):
-                    with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                        with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                            with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                                return test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
+            with (
+                patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', 
+                      return_value=mock_keyword_service),
+                patch('src.services.llm_factory.get_llm_client_smart'),
+                patch('src.services.llm_factory.get_llm_info', 
+                      return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+            ):
+                return test_client.post(
+                    "/api/v1/extract-jd-keywords", 
+                    json=valid_job_description_request
+                )
 
-        start_time = time.time()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            futures = [executor.submit(make_request) for _ in range(10)]
-            responses = [future.result() for future in concurrent.futures.as_completed(futures)]
-        end_time = time.time()
+        # Store original environment variable value for restoration
+        original_detector_setting = os.environ.get('USE_RULE_BASED_DETECTOR')
+
+        # Set thread-safe language detector for concurrent testing
+        # This prevents langdetect thread safety issues in concurrent execution
+        os.environ['USE_RULE_BASED_DETECTOR'] = 'true'
+
+        try:
+            start_time = time.time()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                futures = [executor.submit(make_request) for _ in range(10)]
+                responses = [future.result() for future in concurrent.futures.as_completed(futures)]
+            end_time = time.time()
+        finally:
+            # Restore original environment variable setting
+            if original_detector_setting is None:
+                os.environ.pop('USE_RULE_BASED_DETECTOR', None)
+            else:
+                os.environ['USE_RULE_BASED_DETECTOR'] = original_detector_setting
 
         # All requests should succeed
         for response in responses:

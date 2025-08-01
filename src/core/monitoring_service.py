@@ -4,7 +4,7 @@ Azure Application Insights integration for monitoring and telemetry.
 import logging
 import os
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from opencensus.ext.azure import metrics_exporter
@@ -81,7 +81,7 @@ class MonitoringService:
             "duration_ms": duration_ms,
             "success": success,
             "status_code": status_code,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
         if custom_properties:
@@ -116,7 +116,7 @@ class MonitoringService:
             "duration_ms": duration_ms,
             "success": success,
             "confidence_score": confidence_score,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
         # Send custom metrics
@@ -136,7 +136,7 @@ class MonitoringService:
             "error_type": error_type,
             "error_message": error_message,
             "endpoint": endpoint or "unknown",
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
         if custom_properties:
@@ -273,7 +273,7 @@ class MonitoringService:
         metric_properties = {
             "metric_name": name,
             "metric_value": value,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
         if properties:
@@ -288,7 +288,7 @@ class MonitoringService:
 
         event_properties = {
             "event_name": name,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
         if properties:
