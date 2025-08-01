@@ -55,15 +55,7 @@ def test_keyword_extraction_performance():
         },
         {
             "name": "Medium JD (500 chars)",
-            "job_description": """We are seeking an experienced Full Stack Developer to join our growing team. The ideal candidate will have:
-- 5+ years of experience with Python, FastAPI, and Django
-- Strong proficiency in React, TypeScript, and modern JavaScript
-- Experience with microservices architecture and RESTful APIs
-- Hands-on experience with Docker, Kubernetes, and CI/CD pipelines
-- Familiarity with AWS or Azure cloud services
-- Knowledge of PostgreSQL, MongoDB, and Redis
-- Experience with Agile methodologies and version control (Git)
-- Excellent communication and problem-solving skills"""
+            "job_description": """We are seeking an experienced Full Stack Developer to join our growing team. The ideal candidate will have 5+ years of experience with Python, FastAPI, and Django. Strong proficiency in React, TypeScript, and modern JavaScript is essential. Experience with microservices architecture and RESTful APIs is required. Must have hands-on experience with Docker, Kubernetes, and CI/CD pipelines. Familiarity with AWS or Azure cloud services is important. Knowledge of PostgreSQL, MongoDB, and Redis is expected. Experience with Agile methodologies and version control (Git) is necessary. Excellent communication and problem-solving skills are a must."""
         },
         {
             "name": "Large JD (1000+ chars)",
