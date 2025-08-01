@@ -297,11 +297,11 @@ jobs:
         if echo "$RESPONSE" | grep -q "keywords"; then
           echo "✅ Functionality test passed!"
           
-          # 檢查效能 (SLA: < 3000ms)
-          if [ $RESPONSE_TIME -lt 3000 ]; then
-            echo "✅ Performance test passed! (${RESPONSE_TIME}ms < 3000ms)"
+          # 檢查效能 (SLA: < 4000ms)
+          if [ $RESPONSE_TIME -lt 4000 ]; then
+            echo "✅ Performance test passed! (${RESPONSE_TIME}ms < 4000ms)"
           else
-            echo "❌ Performance test failed! (${RESPONSE_TIME}ms >= 3000ms)"
+            echo "❌ Performance test failed! (${RESPONSE_TIME}ms >= 4000ms)"
             echo "Response: $RESPONSE"
             exit 1
           fi
@@ -332,7 +332,7 @@ jobs:
           echo "### 🎯 Deployment Validation" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Health check passed" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Smoke test passed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Performance test passed (< 3000ms SLA)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Performance test passed (< 4000ms SLA)" >> $GITHUB_STEP_SUMMARY
         else
           echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

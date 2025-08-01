@@ -137,9 +137,41 @@ ${BLUE}=== 詳細測試統計 ===${NC}"
         fi
     fi
     
-    # Calculate totals and display
-    # ... (display logic similar to original but simplified)
-    log "Test statistics collection complete"
+    # Calculate totals for each module
+    # Health module
+    local health_total_passed=$(echo "$health_unit_counts $health_int_counts" | awk -F'/' '{sum=0; for(i=1;i<=NF;i+=2) sum+=$i; print sum}')
+    local health_total_failed=$(echo "$health_unit_counts $health_int_counts" | awk -F'/' '{sum=0; for(i=2;i<=NF;i+=2) sum+=$i; print sum}')
+    log "| Health Check      | $health_unit_counts             | $health_int_counts             | -                   | $health_total_passed/$health_total_failed             |"
+    
+    # Keyword Extraction module
+    local kw_unit_passed=$(echo "$kw_unit1_counts $kw_unit2_counts" | awk -F'/' '{p1=$1; p2=$3} END {print p1+p2}')
+    local kw_unit_failed=$(echo "$kw_unit1_counts $kw_unit2_counts" | awk -F'/' '{f1=$2; f2=$4} END {print f1+f2}')
+    local kw_total_passed=$(echo "$kw_unit_passed $kw_int_counts" | awk -F'/' '{sum=$1+$2; print sum}')
+    local kw_total_failed=$(echo "$kw_unit_failed $kw_int_counts" | awk -F'/' '{sum=$1+$3; print sum}')
+    log "| Keyword Extract   | $kw_unit_passed/$kw_unit_failed             | $kw_int_counts             | $perf_counts             | $kw_total_passed/$kw_total_failed             |"
+    
+    # Language Detection module
+    local lang_int_passed=$(echo "$lang_int_counts" | cut -d'/' -f1)
+    local lang_int_failed=$(echo "$lang_int_counts" | cut -d'/' -f2)
+    local lang_total_passed=$(echo "$lang_unit_counts $lang_int_counts" | awk -F'/' '{sum=$1+$3; print sum}')
+    local lang_total_failed=$(echo "$lang_unit_counts $lang_int_counts" | awk -F'/' '{sum=$2+$4; print sum}')
+    log "| Language Detect   | $lang_unit_counts             | $lang_int_counts             | -                   | $lang_total_passed/$lang_total_failed             |"
+    
+    # Prompt Manager module
+    log "| Prompt Manager    | $prompt_unit_counts             | -                   | -                   | $prompt_unit_counts             |"
+    
+    # LLM Factory module
+    log "| LLM Factory       | $llm_unit_counts              | -                   | -                   | $llm_unit_counts              |"
+    
+    log "|-------------------|---------------------|---------------------|---------------------|------------------|"
+    
+    # Calculate grand totals
+    local grand_total_passed=$((health_total_passed + kw_total_passed + lang_total_passed + $(echo "$prompt_unit_counts" | cut -d'/' -f1) + $(echo "$llm_unit_counts" | cut -d'/' -f1)))
+    local grand_total_failed=$((health_total_failed + kw_total_failed + lang_total_failed + $(echo "$prompt_unit_counts" | cut -d'/' -f2) + $(echo "$llm_unit_counts" | cut -d'/' -f2)))
+    
+    log "| **總計**          | -                   | -                   | -                   | **$grand_total_passed/$grand_total_failed**         |"
+    
+    log "\nTest statistics collection complete"
 }
 
 # Main test execution function
