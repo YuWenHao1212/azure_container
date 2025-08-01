@@ -8,7 +8,6 @@ Handles job description keyword extraction functionality with:
 - Bubble.io compatible responses
 - Comprehensive error handling (400, 500, 503)
 """
-import asyncio
 import logging
 import time
 from datetime import datetime
@@ -430,7 +429,7 @@ async def extract_jd_keywords(
             detail=error_response.dict()
         ) from None
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         # Request timeout (500 Internal Server Error)
         logger.error("Request timeout during keyword extraction")
 

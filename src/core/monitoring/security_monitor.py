@@ -4,7 +4,7 @@ Monitors for suspicious patterns and unauthorized access attempts.
 """
 import re
 from collections import defaultdict, deque
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Request
 
@@ -218,7 +218,7 @@ class SecurityMonitor:
 
     def _check_rate_limit(self, client_ip: str) -> dict[str, any]:
         """Check if IP exceeds rate limit."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         minute_ago = now - timedelta(minutes=1)
 
         # Clean old requests
@@ -286,7 +286,7 @@ class SecurityMonitor:
 
         # Check temporary blocks
         if ip in self.temp_blocked_ips:
-            if datetime.now(timezone.utc) < self.temp_blocked_ips[ip]:
+            if datetime.now(UTC) < self.temp_blocked_ips[ip]:
                 return True
             else:
                 # Unblock if time expired
@@ -296,7 +296,7 @@ class SecurityMonitor:
 
     def _block_ip_temporarily(self, ip: str, minutes: int = 15):
         """Temporarily block an IP address."""
-        unblock_time = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+        unblock_time = datetime.now(UTC) + timedelta(minutes=minutes)
         self.temp_blocked_ips[ip] = unblock_time
 
         monitoring_service.track_event(
@@ -343,7 +343,7 @@ class SecurityMonitor:
                 "client_ip": security_result["client_ip"],
                 "risk_level": security_result["risk_level"],
                 "threats": ", ".join(security_result["threats"]),
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         )
 

@@ -7,7 +7,7 @@ import json
 import os
 import tempfile
 from collections import deque
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -81,13 +81,13 @@ class FailureStorage:
         truncated_jd = job_description[:500] if len(job_description) > 500 else job_description
 
         # Generate failure ID
-        failure_id = f"{category}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S_%f')}"
+        failure_id = f"{category}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}"
 
         # Create failure record
         failure_record = {
             "id": failure_id,
             "category": category,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "job_description": truncated_jd,
             "job_description_length": len(job_description),
             "failure_reason": failure_reason,
@@ -118,7 +118,7 @@ class FailureStorage:
         """Persist failure to disk."""
         try:
             # Create daily directory
-            date_dir = self.storage_path / datetime.now(timezone.utc).strftime("%Y%m%d")
+            date_dir = self.storage_path / datetime.now(UTC).strftime("%Y%m%d")
             date_dir.mkdir(exist_ok=True)
 
             # Save failure record
@@ -234,7 +234,7 @@ class FailureStorage:
         Args:
             days: Number of days to keep
         """
-        cutoff_date = datetime.now(timezone.utc).timestamp() - (days * 86400)
+        cutoff_date = datetime.now(UTC).timestamp() - (days * 86400)
 
         # Clear from memory
         self.failures = deque(
@@ -260,7 +260,7 @@ class FailureStorage:
         """Load existing failures from disk on startup."""
         try:
             # Load only recent failures (last 2 days)
-            cutoff_date = datetime.now(timezone.utc).timestamp() - (2 * 86400)
+            cutoff_date = datetime.now(UTC).timestamp() - (2 * 86400)
 
             for date_dir in sorted(self.storage_path.iterdir(), reverse=True):
                 if date_dir.is_dir():
@@ -313,7 +313,7 @@ class FailureStorage:
                 category: self.get_recent_failures(category, 5)
                 for category in self.failure_categories
             },
-            "generated_at": datetime.now(timezone.utc).isoformat()
+            "generated_at": datetime.now(UTC).isoformat()
         }
 
 

@@ -4,7 +4,7 @@ Azure Application Insights integration for monitoring and telemetry.
 import logging
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from opencensus.ext.azure import metrics_exporter
@@ -12,8 +12,14 @@ from opencensus.ext.azure.log_exporter import AzureLogHandler
 from opencensus.ext.azure.trace_exporter import AzureExporter
 from opencensus.stats import (
     aggregation as aggregation_module,
+)
+from opencensus.stats import (
     measure as measure_module,
+)
+from opencensus.stats import (
     stats as stats_module,
+)
+from opencensus.stats import (
     view as view_module,
 )
 from opencensus.tags import tag_key as tag_key_module
@@ -81,7 +87,7 @@ class MonitoringService:
             "duration_ms": duration_ms,
             "success": success,
             "status_code": status_code,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
         if custom_properties:
@@ -116,7 +122,7 @@ class MonitoringService:
             "duration_ms": duration_ms,
             "success": success,
             "confidence_score": confidence_score,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
         # Send custom metrics
@@ -136,7 +142,7 @@ class MonitoringService:
             "error_type": error_type,
             "error_message": error_message,
             "endpoint": endpoint or "unknown",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
         if custom_properties:
@@ -273,7 +279,7 @@ class MonitoringService:
         metric_properties = {
             "metric_name": name,
             "metric_value": value,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
         if properties:
@@ -288,7 +294,7 @@ class MonitoringService:
 
         event_properties = {
             "event_name": name,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
         if properties:

@@ -3,7 +3,7 @@ Endpoint-level metrics collection and monitoring.
 Tracks error rates, performance, and usage patterns per endpoint.
 """
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from src.core.monitoring_service import monitoring_service
@@ -68,7 +68,7 @@ class EndpointMetrics:
         metrics["min_duration_ms"] = min(metrics["min_duration_ms"], duration_ms)
         metrics["max_duration_ms"] = max(metrics["max_duration_ms"], duration_ms)
         metrics["status_codes"][status_code] += 1
-        metrics["last_updated"] = datetime.now(timezone.utc)
+        metrics["last_updated"] = datetime.now(UTC)
 
         # Track failures
         if status_code >= 400:
@@ -77,7 +77,7 @@ class EndpointMetrics:
                 metrics["errors_by_type"][error_type] += 1
 
         # Update hourly stats
-        current_hour = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H")
+        current_hour = datetime.now(UTC).strftime("%Y-%m-%d-%H")
         hourly = metrics["hourly_stats"][current_hour]
         hourly["requests"] += 1
         hourly["total_duration"] += duration_ms

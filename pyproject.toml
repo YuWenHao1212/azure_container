@@ -17,6 +17,7 @@ select = [
 ]
 ignore = [
     "N802",   # Function name should be lowercase
+    "N805",   # First argument of a method should be named `self` (needed for Pydantic validators)
     "N806",   # Variable in function should be lowercase
     "B008",   # Do not perform function call in argument defaults
     "UP007",  # Use `X | Y` for type annotations
