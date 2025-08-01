@@ -88,7 +88,8 @@ jobs:
       run: |
         # 確保測試腳本有執行權限
         chmod +x test/scripts/run_complete_test_suite_ci.sh
-        # 執行測試並捕獲輸出
+        # 執行測試並捕獲輸出，同時保留退出碼
+        set -o pipefail
         ./test/scripts/run_complete_test_suite_ci.sh | tee test_output.log
         
     - name: Upload test results
