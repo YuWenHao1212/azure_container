@@ -15,9 +15,9 @@
 
 ## 📊 執行摘要
 
-- **總測試文件**: 9 個
-- **總測試案例**: 102 個（含 1 個效能測試）
-- **規格符合度**: 100% (102/102)
+- **總測試文件**: 10 個
+- **總測試案例**: 110 個（含 1 個效能測試）
+- **規格符合度**: 100% (110/110)
 - **執行成功率**: 100%
 
 ---
@@ -33,10 +33,11 @@
 | 3 | test/unit/test_keyword_extraction_extended.py | 單元測試 | API-KW-401~416 | 16 |
 | 4 | test/unit/test_language_detection.py | 單元測試 | API-KW-211~236 | 26 |
 | 5 | test/unit/test_prompt_manager.py | 單元測試 | API-KW-241~264 | 24 |
-| 6 | test/integration/test_keyword_extraction_language.py | 整合測試 | API-KW-301~314 | 14 |
-| 7 | test/integration/test_health_integration.py | 整合測試 | API-HLT-010-IT | 1 |
-| 8 | test/integration/test_azure_openai_integration.py | 整合測試 | API-KW-111-IT | 1 |
-| 9 | test/performance/test_keyword_extraction_performance_simple.py | 效能測試 | API-KW-315-PT | 1 |
+| 6 | test/unit/test_llm_factory_deployment_mapping.py | 單元測試 | API-LLM-001~008 | 8 |
+| 7 | test/integration/test_keyword_extraction_language.py | 整合測試 | API-KW-301~314 | 14 |
+| 8 | test/integration/test_health_integration.py | 整合測試 | API-HLT-010-IT | 1 |
+| 9 | test/integration/test_azure_openai_integration.py | 整合測試 | API-KW-111-IT | 1 |
+| 10 | test/performance/test_keyword_extraction_performance_simple.py | 效能測試 | API-KW-315-PT | 1 |
 
 ### 1.2 模組符合度分析
 
@@ -47,8 +48,9 @@
 | 語言檢測 (KW 211-236) | 26 | 26 | 100% | ✅ 優秀 |
 | Prompt管理 (KW 241-264) | 24 | 24 | 100% | ✅ 優秀 |
 | 關鍵字提取擴展 (KW 401-416) | 16 | 16 | 100% | ✅ 優秀 |
+| LLM Factory 部署映射 (LLM 001-008) | 8 | 8 | 100% | ✅ 優秀 |
 | 語言檢測整合 (KW 301-315) | 15 | 15 | 100% | ✅ 優秀 |
-| **總計** | **102** | **102** | **100%** | **✅ 完美** |
+| **總計** | **110** | **110** | **100%** | **✅ 完美** |
 
 ---
 

@@ -1,0 +1,138 @@
+# LLM Model Configuration for Azure Container Apps
+# This file defines all available models and their configurations
+
+models:
+  # GPT-4.1 Mini Japan East (High Performance, Low Cost)
+  gpt41-mini:
+    display_name: "GPT-4.1 Mini (Japan East)"
+    model_type: "gpt4-mini"
+    deployment_name: "gpt-4-1-mini-japaneast"
+    endpoint: "https://airesumeadvisor.openai.azure.com/"
+    api_version: "2025-01-01-preview"
+    region: "japaneast"
+    client_class: "src.services.openai_client_gpt41.AzureOpenAIGPT41Client"
+    client_factory_function: "get_gpt41_mini_client"
+    cost_info:
+      input_cost: 0.00015
+      output_cost: 0.0006
+      currency: "USD"
+    performance_info:
+      avg_latency_ms: 800
+      tokens_per_second: 50
+      max_tokens: 16384
+      context_window: 128000
+    is_active: true
+    supports_streaming: true
+    supports_function_calling: true
+    endpoint_env_var: "GPT41_MINI_JAPANEAST_ENDPOINT"
+    api_key_env_var: "GPT41_MINI_JAPANEAST_API_KEY"
+    deployment_env_var: "GPT41_MINI_JAPANEAST_DEPLOYMENT"
+
+  # GPT-4.1 Japan East (Standard Quality)
+  gpt4o-2:
+    display_name: "GPT-4.1 (Japan East)"
+    model_type: "gpt4"
+    deployment_name: "gpt-4.1-japan"
+    endpoint: "https://airesumeadvisor.openai.azure.com"
+    api_version: "2025-01-01-preview"
+    region: "japaneast"
+    client_class: "src.services.openai_client.AzureOpenAIClient"
+    client_factory_function: "get_azure_openai_client"
+    cost_info:
+      input_cost: 0.01
+      output_cost: 0.03
+      currency: "USD"
+    performance_info:
+      avg_latency_ms: 1200
+      tokens_per_second: 30
+      max_tokens: 4096
+      context_window: 128000
+    is_active: true
+    supports_streaming: true
+    supports_function_calling: true
+    endpoint_env_var: "AZURE_OPENAI_ENDPOINT"
+    api_key_env_var: "AZURE_OPENAI_API_KEY"
+    deployment_env_var: "AZURE_OPENAI_GPT4_DEPLOYMENT"
+
+  # Future model placeholder - GPT-4 Turbo US East
+  gpt4-turbo-us:
+    display_name: "GPT-4 Turbo (US East)"
+    model_type: "gpt4"
+    deployment_name: "gpt-4-turbo-us"
+    endpoint: "https://example-us.openai.azure.com"
+    api_version: "2025-01-01-preview"
+    region: "eastus"
+    client_class: "src.services.openai_client.AzureOpenAIClient"
+    client_factory_function: "get_azure_openai_client"
+    cost_info:
+      input_cost: 0.005
+      output_cost: 0.015
+      currency: "USD"
+    performance_info:
+      avg_latency_ms: 1000
+      tokens_per_second: 40
+      max_tokens: 8192
+      context_window: 128000
+    is_active: false  # Not yet deployed
+    supports_streaming: true
+    supports_function_calling: true
+    endpoint_env_var: "GPT4_TURBO_US_ENDPOINT"
+    api_key_env_var: "GPT4_TURBO_US_API_KEY"
+    deployment_env_var: "GPT4_TURBO_US_DEPLOYMENT"
+
+# Model aliases for backward compatibility and convenience
+aliases:
+  # Backward compatibility
+  gpt4-1-mini: "gpt41-mini"
+  gpt4-japan: "gpt4o-2"
+  
+  # Convenience aliases
+  default: "gpt4o-2"
+  fast: "gpt41-mini"
+  quality: "gpt4o-2"
+  cheap: "gpt41-mini"
+  premium: "gpt4o-2"
+  
+  # Use case specific aliases
+  keywords: "gpt41-mini"     # Fast keyword extraction
+  analysis: "gpt4o-2"       # Detailed analysis
+  formatting: "gpt4o-2"     # Quality formatting
+  tailoring: "gpt4o-2"      # Content customization
+
+# API endpoint to model mapping (environment variable based)
+# This allows per-API customization via environment variables
+api_model_mapping:
+  keywords: "LLM_MODEL_KEYWORDS"
+  gap_analysis: "LLM_MODEL_GAP_ANALYSIS"
+  resume_format: "LLM_MODEL_RESUME_FORMAT"
+  resume_tailor: "LLM_MODEL_RESUME_TAILOR"
+  index_calculation: "LLM_MODEL_INDEX_CALCULATION"
+
+# Default fallback strategy
+default_selection_strategy:
+  # Priority order for model selection
+  # 1. request_parameter (highest)
+  # 2. http_header
+  # 3. environment_variable
+  # 4. default_model (lowest)
+  default_model: "gpt4o-2"
+  enable_request_override: true
+  enable_header_override: true
+  header_name: "X-LLM-Model"
+
+# Performance and cost optimization rules
+optimization_rules:
+  # Automatically use cheaper models for specific operations
+  auto_optimization:
+    enabled: false
+    rules:
+      - condition: "token_count < 1000"
+        prefer_model: "gpt41-mini"
+      - condition: "api_name == 'keywords'"
+        prefer_model: "gpt41-mini"
+  
+  # Cost tracking
+  cost_tracking:
+    enabled: true
+    log_expensive_requests: true
+    expensive_threshold_usd: 0.10

@@ -10,6 +10,8 @@ from typing import Any
 
 import httpx
 
+logger = logging.getLogger(__name__)
+
 
 class AzureOpenAIError(Exception):
     """Base exception for Azure OpenAI client errors."""
@@ -34,19 +36,20 @@ class AzureOpenAIServerError(AzureOpenAIError):
 class AzureOpenAIClient:
     """Azure OpenAI client for GPT-4o-2 model integration."""
 
-    def __init__(self, endpoint: str, api_key: str, api_version: str = "2024-02-15-preview"):
+    def __init__(self, endpoint: str, api_key: str, deployment_name: str = "gpt-4o-2", api_version: str = "2024-02-15-preview"):
         """
         初始化 Azure OpenAI 客戶端
 
         Args:
             endpoint: Azure OpenAI 端點 URL
             api_key: API 金鑰
+            deployment_name: 部署名稱（動態指定，預設為 gpt-4o-2 保持向後相容）
             api_version: API 版本
         """
         self.endpoint = endpoint.rstrip('/')
         self.api_key = api_key
         self.api_version = api_version
-        self.deployment_id = "gpt-4o-2"  # 固定使用 GPT-4o-2 模型
+        self.deployment_id = deployment_name  # 使用動態指定的部署名稱
 
         # 設置 HTTP 客戶端
         self.client = httpx.AsyncClient(
@@ -58,12 +61,9 @@ class AzureOpenAIClient:
             }
         )
 
-        # 設置日誌
-        self.logger = logging.getLogger(self.__class__.__name__)
-
-        # 重試配置
-        self.max_retries = 3
-        self.retry_delays = [1, 2, 4]  # 指數退避: 1s, 2s, 4s
+        # 配置日誌
+        self.logger = logger
+        self.logger.info(f"Initialized AzureOpenAI client for deployment: {self.deployment_id}")  # 指數退避: 1s, 2s, 4s
 
     async def chat_completion(
         self,
@@ -342,10 +342,13 @@ class AzureOpenAIClient:
 
 
 # Factory function for dependency injection
-def get_azure_openai_client() -> AzureOpenAIClient:
+def get_azure_openai_client(deployment_name: str = "gpt-4o-2") -> AzureOpenAIClient:
     """
     工廠函數：建立 AzureOpenAI 客戶端實例
     從環境變數載入配置
+
+    Args:
+        deployment_name: Azure OpenAI 部署名稱（可選，預設為 gpt-4o-2）
 
     Returns:
         AzureOpenAIClient: 配置好的客戶端實例
@@ -367,7 +370,8 @@ def get_azure_openai_client() -> AzureOpenAIClient:
 
     return AzureOpenAIClient(
         endpoint=endpoint,
-        api_key=api_key
+        api_key=api_key,
+        deployment_name=deployment_name
     )
 
 

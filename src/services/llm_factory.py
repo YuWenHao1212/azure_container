@@ -24,6 +24,12 @@ LLMModel = Literal["gpt4o-2", "gpt41-mini"]
 LLMClient = AzureOpenAIClient | AzureOpenAIGPT41Client
 ModelSource = Literal["request", "header", "config", "default"]
 
+# Model to Azure deployment name mapping
+DEPLOYMENT_MAP = {
+    "gpt4o-2": "gpt-4.1-japan",
+    "gpt41-mini": "gpt-4-1-mini-japaneast"
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -166,11 +172,14 @@ def _create_client(model: str) -> LLMClient:
                 f"Failed to create GPT-4.1 mini client: {e}. "
                 "Falling back to GPT-4o-2"
             )
-            return get_azure_openai_client()
+            # Fallback to GPT-4o-2 with correct deployment name
+            deployment_name = DEPLOYMENT_MAP.get("gpt4o-2", "gpt-4.1-japan")
+            return get_azure_openai_client(deployment_name=deployment_name)
     else:
-        # Default to GPT-4o-2
-        logger.info("Creating GPT-4o-2 client")
-        return get_azure_openai_client()
+        # Default to GPT-4o-2 with correct deployment name
+        deployment_name = DEPLOYMENT_MAP.get(model, "gpt-4.1-japan")
+        logger.info(f"Creating {model} client with deployment: {deployment_name}")
+        return get_azure_openai_client(deployment_name=deployment_name)
 
 
 def _track_model_selection(

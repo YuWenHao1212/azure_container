@@ -23,8 +23,13 @@ git clone <repository-url>
 cd azure_container
 
 # 2. 設定環境變數
+# 方法一：使用簡化配置（推薦）
+cp .env.simple .env
+# 只需要設定 AZURE_OPENAI_API_KEY 即可
+
+# 方法二：完整配置
 cp .env.example .env
-# 編輯 .env 檔案，填入實際的 API keys
+# 編輯 .env 檔案，填入所有配置
 
 # 3. 安裝依賴
 pip install -r requirements.txt
@@ -81,7 +86,7 @@ az login
 - **框架**: FastAPI 0.104.1
 - **Python**: 3.11
 - **架構**: FHS (Functional Hierarchy Structure)
-- **AI 模型**: GPT-4.1 mini + GPT-4o-2
+- **AI 模型**: GPT-4.1 (主要) + GPT-4.1 mini (關鍵字提取)
 - **部署**: Azure Container Apps
 - **監控**: Application Insights + 輕量監控
 
@@ -113,10 +118,12 @@ pytest tests/integration/ -v
 ### 環境配置
 
 關鍵環境變數：
-- `AZURE_OPENAI_API_KEY` - Azure OpenAI API 金鑰
-- `GPT41_MINI_JAPANEAST_API_KEY` - GPT-4.1 mini 金鑰
-- `EMBEDDING_API_KEY` - 嵌入模型 API 金鑰
+
+**簡化配置 (Japan East 統一部署)**：
+- `AZURE_OPENAI_API_KEY` - 共用的 API 金鑰（所有模型都使用此金鑰）
 - `CONTAINER_APP_API_KEY` - Container Apps 認證金鑰
+
+所有 Azure OpenAI 服務（GPT-4.1、GPT-4.1 mini、Embeddings）都部署在 Japan East，使用同一個 API Key。詳見 `.env.example` 或使用 `.env.simple` 快速開始。
 
 ## 生產環境
 

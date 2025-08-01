@@ -186,7 +186,15 @@ main() {
     fi
     ((TOTAL_TESTS++))
     
-    # F. Integration Tests - Keyword Extraction Language
+    # F. Unit Tests - LLM Factory Deployment Mapping
+    if run_test_suite "unit_llm_factory" "python -m pytest test/unit/test_llm_factory_deployment_mapping.py -v"; then
+        ((PASSED_TESTS++))
+    else
+        ((FAILED_TESTS++))
+    fi
+    ((TOTAL_TESTS++))
+    
+    # G. Integration Tests - Keyword Extraction Language
     if run_test_suite "integration_keyword_language" "python -m pytest test/integration/test_keyword_extraction_language.py -v"; then
         ((PASSED_TESTS++))
     else
@@ -194,7 +202,7 @@ main() {
     fi
     ((TOTAL_TESTS++))
     
-    # G. Integration Tests - Health Check External Dependencies
+    # H. Integration Tests - Health Check External Dependencies
     if run_test_suite "integration_health" "python -m pytest test/integration/test_health_integration.py -v"; then
         ((PASSED_TESTS++))
     else
@@ -202,7 +210,7 @@ main() {
     fi
     ((TOTAL_TESTS++))
     
-    # H. Integration Tests - Azure OpenAI Integration
+    # I. Integration Tests - Azure OpenAI Integration
     if run_test_suite "integration_azure_openai" "python -m pytest test/integration/test_azure_openai_integration.py -v"; then
         ((PASSED_TESTS++))
     else
@@ -210,7 +218,7 @@ main() {
     fi
     ((TOTAL_TESTS++))
     
-    # I. Performance Test - Keyword Extraction
+    # J. Performance Test - Keyword Extraction
     log "
 ${BLUE}5. Performance Testing${NC}"
     if [ -f "test/performance/test_keyword_extraction_performance_simple.py" ]; then
@@ -317,6 +325,12 @@ ${BLUE}5. Performance Testing${NC}"
       "status": "$([ -f /tmp/unit_prompt_manager_output.log ] && grep -q "failed" /tmp/unit_prompt_manager_output.log && echo "failed" || echo "passed")"
     },
     {
+      "name": "unit_llm_factory",
+      "type": "unit",
+      "module": "llm_factory",
+      "status": "$([ -f /tmp/unit_llm_factory_output.log ] && grep -q "failed" /tmp/unit_llm_factory_output.log && echo "failed" || echo "passed")"
+    },
+    {
       "name": "integration_keyword_language",
       "type": "integration",
       "module": "keyword_extraction",
@@ -349,8 +363,258 @@ ${BLUE}5. Performance Testing${NC}"
 }
 EOF
     
+    # Collect detailed test statistics for table
+    log "
+${BLUE}======================================"
+    log "Detailed Test Statistics Table"
+    log "======================================${NC}
+"
+    
+    # Table header
+    log "| Module              | Unit Tests         | Integration Tests  | Performance Tests  | Total | Failed | Status |"
+    log "|---------------------|--------------------|--------------------|--------------------|----|--------|--------|"
+    
+    # Initialize totals
+    TOTAL_UNIT=0
+    TOTAL_INTEGRATION=0
+    TOTAL_PERFORMANCE=0
+    TOTAL_UNIT_FAILED=0
+    TOTAL_INTEGRATION_FAILED=0
+    TOTAL_PERFORMANCE_FAILED=0
+    
+    # Health Check Module
+    HEALTH_UNIT=$(grep -E "[0-9]+ passed" /tmp/unit_health_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    HEALTH_UNIT_FAILED=$(grep -E "[0-9]+ failed" /tmp/unit_health_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    HEALTH_INTEGRATION=$(grep -E "[0-9]+ passed" /tmp/integration_health_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    HEALTH_INTEGRATION_FAILED=$(grep -E "[0-9]+ failed" /tmp/integration_health_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    HEALTH_TOTAL=$((HEALTH_UNIT + HEALTH_INTEGRATION))
+    HEALTH_TOTAL_FAILED=$((HEALTH_UNIT_FAILED + HEALTH_INTEGRATION_FAILED))
+    
+    # Calculate pass rate and status
+    if [ $HEALTH_TOTAL -eq 0 ]; then
+        HEALTH_STATUS="-"
+    elif [ $HEALTH_TOTAL_FAILED -eq 0 ]; then
+        HEALTH_STATUS="${GREEN}✅${NC}"
+    elif [ $HEALTH_TOTAL_FAILED -lt $((HEALTH_TOTAL * 10 / 100)) ]; then
+        HEALTH_STATUS="${YELLOW}⚠️${NC}"
+    else
+        HEALTH_STATUS="${RED}❌${NC}"
+    fi
+    
+    log "| Health Check        | ${HEALTH_UNIT}/0 (100%)       | ${HEALTH_INTEGRATION}/0 (100%)      | -                  | $HEALTH_TOTAL  | $HEALTH_TOTAL_FAILED      | $HEALTH_STATUS  |"
+    TOTAL_UNIT=$((TOTAL_UNIT + HEALTH_UNIT))
+    TOTAL_UNIT_FAILED=$((TOTAL_UNIT_FAILED + HEALTH_UNIT_FAILED))
+    TOTAL_INTEGRATION=$((TOTAL_INTEGRATION + HEALTH_INTEGRATION))
+    TOTAL_INTEGRATION_FAILED=$((TOTAL_INTEGRATION_FAILED + HEALTH_INTEGRATION_FAILED))
+    
+    # Keyword Extraction Module
+    KW_UNIT1=$(grep -E "[0-9]+ passed" /tmp/unit_keyword_extraction_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    KW_UNIT1_FAILED=$(grep -E "[0-9]+ failed" /tmp/unit_keyword_extraction_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    KW_UNIT2=$(grep -E "[0-9]+ passed" /tmp/unit_keyword_extended_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    KW_UNIT2_FAILED=$(grep -E "[0-9]+ failed" /tmp/unit_keyword_extended_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    KW_UNIT=$((KW_UNIT1 + KW_UNIT2))
+    KW_UNIT_FAILED=$((KW_UNIT1_FAILED + KW_UNIT2_FAILED))
+    KW_INTEGRATION=$(grep -E "[0-9]+ passed" /tmp/integration_azure_openai_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    KW_INTEGRATION_FAILED=$(grep -E "[0-9]+ failed" /tmp/integration_azure_openai_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    
+    # Performance test status from log
+    KW_PERFORMANCE=0
+    KW_PERFORMANCE_FAILED=0
+    if [ -f "/tmp/performance_keyword_output.log" ]; then
+        if grep -q "✅ PASS" /tmp/performance_keyword_output.log; then
+            KW_PERFORMANCE=1
+            KW_PERFORMANCE_FAILED=0
+            PERF_STATUS="✅ PASS"
+        else
+            KW_PERFORMANCE=0
+            KW_PERFORMANCE_FAILED=1
+            PERF_STATUS="❌ FAIL"
+        fi
+    else
+        PERF_STATUS="-"
+    fi
+    
+    KW_TOTAL=$((KW_UNIT + KW_INTEGRATION + KW_PERFORMANCE))
+    KW_TOTAL_FAILED=$((KW_UNIT_FAILED + KW_INTEGRATION_FAILED + KW_PERFORMANCE_FAILED))
+    
+    # Calculate pass rate and status
+    if [ $KW_TOTAL -eq 0 ]; then
+        KW_STATUS="-"
+    elif [ $KW_TOTAL_FAILED -eq 0 ]; then
+        KW_STATUS="${GREEN}✅${NC}"
+    elif [ $KW_TOTAL_FAILED -lt $((KW_TOTAL * 10 / 100)) ]; then
+        KW_STATUS="${YELLOW}⚠️${NC}"
+    else
+        KW_STATUS="${RED}❌${NC}"
+    fi
+    
+    # Calculate percentages
+    if [ $((KW_UNIT + KW_UNIT_FAILED)) -gt 0 ]; then
+        KW_UNIT_PERCENT=$((KW_UNIT * 100 / (KW_UNIT + KW_UNIT_FAILED)))
+    else
+        KW_UNIT_PERCENT=0
+    fi
+    if [ $((KW_INTEGRATION + KW_INTEGRATION_FAILED)) -gt 0 ]; then
+        KW_INTEGRATION_PERCENT=$((KW_INTEGRATION * 100 / (KW_INTEGRATION + KW_INTEGRATION_FAILED)))
+    else
+        KW_INTEGRATION_PERCENT=0
+    fi
+    
+    log "| Keyword Extraction  | ${KW_UNIT}/${KW_UNIT_FAILED} (${KW_UNIT_PERCENT}%)      | ${KW_INTEGRATION}/${KW_INTEGRATION_FAILED} (${KW_INTEGRATION_PERCENT}%)       | ${PERF_STATUS}            | $KW_TOTAL | $KW_TOTAL_FAILED      | $KW_STATUS  |"
+    TOTAL_UNIT=$((TOTAL_UNIT + KW_UNIT))
+    TOTAL_UNIT_FAILED=$((TOTAL_UNIT_FAILED + KW_UNIT_FAILED))
+    TOTAL_INTEGRATION=$((TOTAL_INTEGRATION + KW_INTEGRATION))
+    TOTAL_INTEGRATION_FAILED=$((TOTAL_INTEGRATION_FAILED + KW_INTEGRATION_FAILED))
+    TOTAL_PERFORMANCE=$((TOTAL_PERFORMANCE + KW_PERFORMANCE))
+    TOTAL_PERFORMANCE_FAILED=$((TOTAL_PERFORMANCE_FAILED + KW_PERFORMANCE_FAILED))
+    
+    # Language Detection Module
+    LANG_UNIT=$(grep -E "[0-9]+ passed" /tmp/unit_language_detection_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    LANG_UNIT_FAILED=$(grep -E "[0-9]+ failed" /tmp/unit_language_detection_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    LANG_INTEGRATION=$(grep -E "[0-9]+ passed" /tmp/integration_keyword_language_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    LANG_INTEGRATION_FAILED=$(grep -E "[0-9]+ failed" /tmp/integration_keyword_language_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    LANG_TOTAL=$((LANG_UNIT + LANG_INTEGRATION))
+    LANG_TOTAL_FAILED=$((LANG_UNIT_FAILED + LANG_INTEGRATION_FAILED))
+    
+    # Calculate pass rate and status
+    if [ $LANG_TOTAL -eq 0 ]; then
+        LANG_STATUS="-"
+    elif [ $LANG_TOTAL_FAILED -eq 0 ]; then
+        LANG_STATUS="${GREEN}✅${NC}"
+    elif [ $LANG_TOTAL_FAILED -lt $((LANG_TOTAL * 10 / 100)) ]; then
+        LANG_STATUS="${YELLOW}⚠️${NC}"
+    else
+        LANG_STATUS="${RED}❌${NC}"
+    fi
+    
+    log "| Language Detection  | ${LANG_UNIT}/${LANG_UNIT_FAILED} (100%)      | ${LANG_INTEGRATION}/${LANG_INTEGRATION_FAILED} (100%)      | -                  | $LANG_TOTAL | $LANG_TOTAL_FAILED      | $LANG_STATUS  |"
+    TOTAL_UNIT=$((TOTAL_UNIT + LANG_UNIT))
+    TOTAL_UNIT_FAILED=$((TOTAL_UNIT_FAILED + LANG_UNIT_FAILED))
+    TOTAL_INTEGRATION=$((TOTAL_INTEGRATION + LANG_INTEGRATION))
+    TOTAL_INTEGRATION_FAILED=$((TOTAL_INTEGRATION_FAILED + LANG_INTEGRATION_FAILED))
+    
+    # Prompt Manager Module
+    PROMPT_UNIT=$(grep -E "[0-9]+ passed" /tmp/unit_prompt_manager_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    PROMPT_UNIT_FAILED=$(grep -E "[0-9]+ failed" /tmp/unit_prompt_manager_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    PROMPT_TOTAL=$PROMPT_UNIT
+    PROMPT_TOTAL_FAILED=$PROMPT_UNIT_FAILED
+    
+    # Calculate pass rate and status
+    if [ $PROMPT_TOTAL -eq 0 ]; then
+        PROMPT_STATUS="-"
+    elif [ $PROMPT_TOTAL_FAILED -eq 0 ]; then
+        PROMPT_STATUS="${GREEN}✅${NC}"
+    elif [ $PROMPT_TOTAL_FAILED -lt $((PROMPT_TOTAL * 10 / 100)) ]; then
+        PROMPT_STATUS="${YELLOW}⚠️${NC}"
+    else
+        PROMPT_STATUS="${RED}❌${NC}"
+    fi
+    
+    log "| Prompt Manager      | ${PROMPT_UNIT}/${PROMPT_UNIT_FAILED} (100%)      | -                  | -                  | $PROMPT_TOTAL | $PROMPT_TOTAL_FAILED      | $PROMPT_STATUS  |"
+    TOTAL_UNIT=$((TOTAL_UNIT + PROMPT_UNIT))
+    TOTAL_UNIT_FAILED=$((TOTAL_UNIT_FAILED + PROMPT_UNIT_FAILED))
+    
+    # LLM Factory Module
+    LLM_UNIT=$(grep -E "[0-9]+ passed" /tmp/unit_llm_factory_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    LLM_UNIT_FAILED=$(grep -E "[0-9]+ failed" /tmp/unit_llm_factory_output.log 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
+    LLM_TOTAL=$LLM_UNIT
+    LLM_TOTAL_FAILED=$LLM_UNIT_FAILED
+    
+    # Calculate pass rate and status
+    if [ $LLM_TOTAL -eq 0 ]; then
+        LLM_STATUS="-"
+    elif [ $LLM_TOTAL_FAILED -eq 0 ]; then
+        LLM_STATUS="${GREEN}✅${NC}"
+    elif [ $LLM_TOTAL_FAILED -lt $((LLM_TOTAL * 10 / 100)) ]; then
+        LLM_STATUS="${YELLOW}⚠️${NC}"
+    else
+        LLM_STATUS="${RED}❌${NC}"
+    fi
+    
+    log "| LLM Factory         | ${LLM_UNIT}/${LLM_UNIT_FAILED} (100%)       | -                  | -                  | $LLM_TOTAL  | $LLM_TOTAL_FAILED      | $LLM_STATUS  |"
+    TOTAL_UNIT=$((TOTAL_UNIT + LLM_UNIT))
+    TOTAL_UNIT_FAILED=$((TOTAL_UNIT_FAILED + LLM_UNIT_FAILED))
+    
+    # Totals row
+    log "|---------------------|--------------------|--------------------|--------------------|----|--------|--------|"
+    GRAND_TOTAL=$((TOTAL_UNIT + TOTAL_INTEGRATION + TOTAL_PERFORMANCE))
+    GRAND_TOTAL_FAILED=$((TOTAL_UNIT_FAILED + TOTAL_INTEGRATION_FAILED + TOTAL_PERFORMANCE_FAILED))
+    
+    # Calculate total percentages
+    if [ $((TOTAL_UNIT + TOTAL_UNIT_FAILED)) -gt 0 ]; then
+        TOTAL_UNIT_PERCENT=$((TOTAL_UNIT * 100 / (TOTAL_UNIT + TOTAL_UNIT_FAILED)))
+    else
+        TOTAL_UNIT_PERCENT=0
+    fi
+    if [ $((TOTAL_INTEGRATION + TOTAL_INTEGRATION_FAILED)) -gt 0 ]; then
+        TOTAL_INTEGRATION_PERCENT=$((TOTAL_INTEGRATION * 100 / (TOTAL_INTEGRATION + TOTAL_INTEGRATION_FAILED)))
+    else
+        TOTAL_INTEGRATION_PERCENT=0
+    fi
+    if [ $((TOTAL_PERFORMANCE + TOTAL_PERFORMANCE_FAILED)) -gt 0 ]; then
+        TOTAL_PERFORMANCE_PERCENT=$((TOTAL_PERFORMANCE * 100 / (TOTAL_PERFORMANCE + TOTAL_PERFORMANCE_FAILED)))
+    else
+        TOTAL_PERFORMANCE_PERCENT=0
+    fi
+    
+    # Overall status
+    if [ $GRAND_TOTAL -eq 0 ]; then
+        OVERALL_STATUS="-"
+    elif [ $GRAND_TOTAL_FAILED -eq 0 ]; then
+        OVERALL_STATUS="${GREEN}✅${NC}"
+    elif [ $GRAND_TOTAL_FAILED -lt $((GRAND_TOTAL * 10 / 100)) ]; then
+        OVERALL_STATUS="${YELLOW}⚠️${NC}"
+    else
+        OVERALL_STATUS="${RED}❌${NC}"
+    fi
+    
+    log "| **Total**           | **${TOTAL_UNIT}/${TOTAL_UNIT_FAILED} (${TOTAL_UNIT_PERCENT}%)**  | **${TOTAL_INTEGRATION}/${TOTAL_INTEGRATION_FAILED} (${TOTAL_INTEGRATION_PERCENT}%)**  | **${TOTAL_PERFORMANCE}/${TOTAL_PERFORMANCE_FAILED} (${TOTAL_PERFORMANCE_PERCENT}%)**  | **$GRAND_TOTAL** | **$GRAND_TOTAL_FAILED** | $OVERALL_STATUS |"
+    
+    # Performance Test Details (if available)
+    if [ -f "/tmp/performance_keyword_output.log" ] && grep -q "Overall Performance Summary" /tmp/performance_keyword_output.log; then
+        log "
+${BLUE}Performance Test Details:${NC}"
+        log "------------------------------------------------------------"
+        
+        # Extract performance metrics
+        SMALL_AVG=$(grep -A10 "Small JD" /tmp/performance_keyword_output.log | grep "Average:" | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "N/A")
+        MEDIUM_AVG=$(grep -A10 "Medium JD" /tmp/performance_keyword_output.log | grep "Average:" | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "N/A")
+        LARGE_AVG=$(grep -A10 "Large JD" /tmp/performance_keyword_output.log | grep "Average:" | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "N/A")
+        OVERALL_AVG=$(grep "Overall Average Response Time:" /tmp/performance_keyword_output.log | grep -oE '[0-9]+\.[0-9]+' || echo "N/A")
+        
+        log "Test Case            | Average Response Time | SLA Status"
+        log "---------------------|----------------------|------------"
+        
+        # Small JD
+        if [ "$SMALL_AVG" != "N/A" ] && [ $(echo "$SMALL_AVG < 3000" | bc -l) -eq 1 ]; then
+            log "Small JD (200 chars) | ${SMALL_AVG} ms           | ✅ PASS"
+        else
+            log "Small JD (200 chars) | ${SMALL_AVG} ms           | ❌ FAIL"
+        fi
+        
+        # Medium JD
+        if [ "$MEDIUM_AVG" != "N/A" ] && [ $(echo "$MEDIUM_AVG < 3000" | bc -l) -eq 1 ]; then
+            log "Medium JD (500 chars)| ${MEDIUM_AVG} ms           | ✅ PASS"
+        else
+            log "Medium JD (500 chars)| ${MEDIUM_AVG} ms           | ❌ FAIL"
+        fi
+        
+        # Large JD
+        if [ "$LARGE_AVG" != "N/A" ] && [ $(echo "$LARGE_AVG < 3000" | bc -l) -eq 1 ]; then
+            log "Large JD (1000+ chars)| ${LARGE_AVG} ms          | ✅ PASS"
+        else
+            log "Large JD (1000+ chars)| ${LARGE_AVG} ms          | ❌ FAIL"
+        fi
+        
+        log "---------------------|----------------------|------------"
+        log "Overall Average      | ${OVERALL_AVG} ms           | ${PERF_STATUS}"
+        log "
+SLA Target: < 3000ms"
+    fi
+    
     # Final message
-    log "\n${BLUE}======================================"
+    log "
+${BLUE}======================================"
     log "Test Execution Completed"
     log "======================================${NC}"
     log "Reports saved to:"

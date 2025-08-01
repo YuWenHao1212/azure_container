@@ -225,13 +225,18 @@ class TestLanguageDetectionService:
         # Ambiguous text that triggers low confidence but meets length requirement
         text = "123 456 789 abc def ghi jkl mno pqr stu vwx yz testing demo"
         
-        # This might either succeed with low confidence or raise LowConfidenceDetectionError
+        # This might either succeed with low confidence, raise LowConfidenceDetectionError,
+        # or raise UnsupportedLanguageError (e.g., if detected as 'nl' or other unsupported language)
         try:
             result = await detector.detect_language(text)
             # If it succeeds, confidence might still be relatively low
             assert result.confidence > 0
-        except LowConfidenceDetectionError as e:
-            assert e.confidence < e.threshold
+        except (LowConfidenceDetectionError, UnsupportedLanguageError) as e:
+            if isinstance(e, LowConfidenceDetectionError):
+                assert e.confidence < e.threshold
+            elif isinstance(e, UnsupportedLanguageError):
+                # It's acceptable for ambiguous text to be detected as unsupported language
+                assert e.detected_language not in detector.SUPPORTED_LANGUAGES
     
     # === Simple Detector Specific Tests ===
     

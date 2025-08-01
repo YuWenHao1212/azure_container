@@ -1,0 +1,65 @@
+{
+  "analysis_timestamp": "2025-08-01",
+  "test_cases": [
+    {
+      "name": "Small JD (200 chars)",
+      "characteristics": {
+        "char_count": 240,
+        "word_count": 34,
+        "line_count": 1,
+        "paragraph_count": 1,
+        "sentence_count": 4,
+        "bullet_points": 1,
+        "special_chars": 8,
+        "uppercase_words": 1,
+        "technical_terms": 6,
+        "complexity_score": 33.2
+      }
+    },
+    {
+      "name": "Medium JD (500 chars)",
+      "characteristics": {
+        "char_count": 569,
+        "word_count": 84,
+        "line_count": 9,
+        "paragraph_count": 1,
+        "sentence_count": 2,
+        "bullet_points": 10,
+        "special_chars": 24,
+        "uppercase_words": 3,
+        "technical_terms": 14,
+        "complexity_score": 80.09
+      }
+    },
+    {
+      "name": "Large JD (1000+ chars)",
+      "characteristics": {
+        "char_count": 1258,
+        "word_count": 179,
+        "line_count": 29,
+        "paragraph_count": 5,
+        "sentence_count": 3,
+        "bullet_points": 25,
+        "special_chars": 49,
+        "uppercase_words": 7,
+        "technical_terms": 27,
+        "complexity_score": 183.48
+      }
+    }
+  ],
+  "anomalies": [],
+  "summary": {
+    "char_counts": [
+      240,
+      569,
+      1258
+    ],
+    "complexity_scores": [
+      33.2,
+      80.09,
+      183.48
+    ],
+    "avg_complexity": 98.92333333333333,
+    "complexity_variance": 5912.040433333333
+  }
+}

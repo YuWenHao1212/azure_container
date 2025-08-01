@@ -1,5 +1,19 @@
 # Azure Container API - Claude Code 協作指南
 
+## 🚨 對話啟動必做事項
+
+**每次新對話或 compact 後，立即執行：**
+1. 初始化 Serena：使用 `mcp__serena__activate_project("azure_container")`
+2. 如果初始化失敗，改用 `mcp__serena__activate_project(".")`
+
+**Serena 工具速查**：
+- 檔案：`read_file` > Read、`create_text_file` > Write、`list_dir` > LS、`find_file` > Glob
+- 搜尋：`find_symbol` > Grep、`search_for_pattern` > 搜尋內容、`find_referencing_symbols` > 找引用
+- 編輯：`replace_symbol_body` > Edit、`insert_before/after_symbol` > 插入、`replace_regex` > 正則替換
+- 記得：優先用 Serena MCP 工具，除非任務明確需要 Claude 內建工具
+
+---
+
 > 基於原有 azure_fastapi 專案，從容器中還原並針對 Container Apps 最佳化
 
 ## 專案概述
@@ -18,19 +32,21 @@
 - **框架**: FastAPI (原生運行，無 ASGI 適配層)
 - **架構模式**: FHS (Functional Hierarchy Structure)
 - **部署平台**: Azure Container Apps (Japan East)
-- **AI 模型**: GPT-4.1 mini + GPT-4o-2
+- **AI 模型**: GPT-4.1 (主要) + GPT-4.1 mini (關鍵字提取)
 - **資料庫**: PostgreSQL + pgvector (課程搜尋)
 
 ## 已部署環境
 
-### 生產環境
+### 生產環境 (目前開發中使用)
 - **URL**: https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io
 - **鏡像**: `airesumeadvisorregistry.azurecr.io/airesumeadvisor-api:20250730-100726-3530cfd`
 - **資源**: 1 CPU, 2GB RAM, 4GB 暫存空間
+- **狀態**: ✅ 活躍使用中 - 所有開發測試都在此環境進行
 
-### 開發環境  
+### 開發環境 (未來規劃)
 - **URL**: https://airesumeadvisor-api-dev.calmisland-ea7fe91e.japaneast.azurecontainerapps.io
 - **鏡像**: `airesumeadvisorregistry.azurecr.io/airesumeadvisor-api:dev-secure`
+- **狀態**: ⏸️ 暫未使用 - 預留給未來測試需求
 
 ## 環境配置
 
@@ -41,157 +57,42 @@ LOG_LEVEL=INFO
 MONITORING_ENABLED=false
 LIGHTWEIGHT_MONITORING=true
 
-# Azure OpenAI
+# Azure OpenAI - Japan East Region (統一配置)
+# 所有模型都部署在 Japan East，使用共同的 API Key
 AZURE_OPENAI_ENDPOINT=https://airesumeadvisor.openai.azure.com
-AZURE_OPENAI_GPT4_DEPLOYMENT=gpt-4.1-japan
+AZURE_OPENAI_API_KEY=<secret>  # 共用的 API Key
 AZURE_OPENAI_API_VERSION=2025-01-01-preview
 
-# GPT-4.1 Mini Japan East (高效能)
-GPT41_MINI_JAPANEAST_ENDPOINT=https://airesumeadvisor.openai.azure.com/
-GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast
-GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview
+# Model Deployments (都在 Japan East)
+AZURE_OPENAI_GPT4_DEPLOYMENT=gpt-4.1-japan              # 主要 GPT-4.1 模型
+GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast  # 高效能 GPT-4.1 Mini
 
-# Embedding Service
-LLM2_ENDPOINT=https://wenha-m7qan2zj-swedencentral.cognitiveservices.azure.com
-EMBEDDING_ENDPOINT=https://wenha-m7qan2zj-swedencentral.cognitiveservices.azure.com/openai/deployments/text-embedding-3-large/embeddings?api-version=2023-05-15
+# GPT-4.1 Mini 配置 (使用相同的 endpoint 和 key)
+GPT41_MINI_JAPANEAST_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+GPT41_MINI_JAPANEAST_API_KEY=${AZURE_OPENAI_API_KEY}
+GPT41_MINI_JAPANEAST_API_VERSION=${AZURE_OPENAI_API_VERSION}
+
+# Embedding Services (都在 Japan East，共用 API Key)
+EMBEDDING_ENDPOINT=https://airesumeadvisor.openai.azure.com/openai/deployments/embedding-3-large-japan/embeddings?api-version=2023-05-15
+EMBEDDING_API_KEY=${AZURE_OPENAI_API_KEY}
+
+# Course Embedding (課程搜尋專用)
+COURSE_EMBEDDING_ENDPOINT=https://airesumeadvisor.openai.azure.com/openai/deployments/embedding-3-small-japan/embeddings?api-version=2023-05-15
+COURSE_EMBEDDING_API_KEY=${AZURE_OPENAI_API_KEY}
 
 # Model Selection
-LLM_MODEL_KEYWORDS=gpt41-mini  # 高效能關鍵字提取
+LLM_MODEL_KEYWORDS=gpt41-mini     # 快速關鍵字提取
+LLM_MODEL_GAP_ANALYSIS=gpt4o-2    # 詳細分析
+LLM_MODEL_RESUME_FORMAT=gpt4o-2   # 高品質格式化
+LLM_MODEL_RESUME_TAILOR=gpt4o-2   # 履歷客製化
 
-# Security (stored as secrets)
-AZURE_OPENAI_API_KEY=<secret>
-EMBEDDING_API_KEY=<secret>
-GPT41_MINI_JAPANEAST_API_KEY=<secret>
+# Security
 JWT_SECRET_KEY=<secret>
 CONTAINER_APP_API_KEY=<secret>
 
 # CORS
 CORS_ORIGINS=https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com
 ```
-
-## Serena MCP 整合
-
-### 🚀 Serena MCP 啟動指南
-
-#### 常見啟動錯誤
-```
-ERROR - Error activating project '.serena/project.yml' at startup: 
-Project '.serena/project.yml' not found: Not a valid project name or directory.
-```
-**原因**：Serena 嘗試將配置檔案路徑當作專案名稱
-
-#### ✅ 正確啟動步驟
-
-**每次新對話或 compact 操作後，請依序執行：**
-
-1. **啟動專案**（最關鍵步驟）
-   ```python
-   # 使用專案名稱（推薦）
-   mcp__serena__activate_project("azure_container")
-   # 或使用當前目錄
-   mcp__serena__activate_project(".")
-   ```
-
-2. **載入初始指令**
-   ```python
-   mcp__serena__initial_instructions()
-   ```
-
-3. **檢查 Onboarding 狀態**（選擇性）
-   ```python
-   mcp__serena__check_onboarding_performed()
-   # 如果顯示 "Onboarding not performed yet"，執行：
-   mcp__serena__onboarding()
-   ```
-
-#### ⚠️ 重要提醒
-- **永遠先啟動專案**：其他所有 Serena 工具都需要先有活躍的專案
-- **使用專案名稱**：不要使用 `.serena/project.yml` 路徑
-- **每次新對話都要重新啟動**：Serena 狀態不會跨對話保存
-
-### Serena 配置狀態
-- ✅ MCP 伺服器已添加並連接
-- ✅ 上下文模式：`ide-assistant`
-- ✅ 專案路徑：`/Users/yuwenhao/Documents/GitHub/azure_container`
-- ✅ 工具：語義檢索、符號編輯、智能程式碼分析
-
-### Serena 核心功能
-- 🔍 **智能程式碼閱讀**：避免讀取不必要的檔案，使用符號工具精確定位
-- ⚡ **高效編輯**：符號編輯 + 正則表達式編輯雙重模式
-- 🧠 **語義理解**：理解程式碼符號間的關係和引用
-- 📝 **記憶管理**：整合專案記憶和開發決策記錄
-
-### Serena 工具優先原則
-**🚨 重要：優先使用 Serena MCP 工具，而非 Claude 內建工具**
-
-#### 檔案操作（用 Serena 取代 Claude）
-| 任務 | ❌ 不要用 | ✅ 請用 Serena |
-|------|-----------|----------------|
-| 讀取檔案 | Read | `read_file` |
-| 建立檔案 | Write | `create_text_file` |
-| 列出目錄 | LS | `list_dir` |
-| 找檔案 | Glob | `find_file` |
-
-#### 搜尋操作（用 Serena 取代 Claude）
-| 任務 | ❌ 不要用 | ✅ 請用 Serena |
-|------|-----------|----------------|
-| 搜尋內容 | Grep | `search_for_pattern` |
-| 找函數/類別 | Grep + Read | `find_symbol` |
-| 找引用 | 手動搜尋 | `find_referencing_symbols` |
-| 程式碼概覽 | 多次 Read | `get_symbols_overview` |
-
-#### 編輯操作（用 Serena 取代 Claude）
-| 任務 | ❌ 不要用 | ✅ 請用 Serena |
-|------|-----------|----------------|
-| 編輯程式碼 | Edit/MultiEdit | `replace_symbol_body` |
-| 插入程式碼 | Edit | `insert_before_symbol`/`insert_after_symbol` |
-| 刪除程式碼 | Edit | `delete_lines` |
-| 正則替換 | Edit | `replace_regex` |
-
-### Serena 工具完整列表
-
-#### 📁 檔案操作
-- `create_text_file` - 創建/覆寫檔案
-- `read_file` - 讀取專案內的檔案
-- `list_dir` - 列出目錄內容（支援遞迴）
-- `find_file` - 在相對路徑中查找檔案
-
-#### 🔍 程式碼搜尋與分析
-- `find_symbol` - 全域或局部搜尋符號（函數、類別等）
-- `find_referencing_symbols` - 查找引用特定符號的位置
-- `get_symbols_overview` - 獲取檔案或目錄的頂層符號概覽
-- `search_for_pattern` - 在專案中搜尋模式
-
-#### ✏️ 程式碼編輯
-- `insert_at_line` - 在特定行插入內容
-- `insert_before_symbol` - 在符號定義前插入內容
-- `insert_after_symbol` - 在符號定義後插入內容
-- `replace_lines` - 替換行範圍內的內容
-- `replace_symbol_body` - 替換符號的完整定義
-- `replace_regex` - 使用正則表達式替換內容
-- `delete_lines` - 刪除行範圍
-
-#### 🧠 記憶管理
-- `write_memory` - 寫入命名記憶體（重要決策、設計理由）
-- `read_memory` - 讀取記憶體
-- `list_memories` - 列出所有記憶體
-- `delete_memory` - 刪除記憶體
-
-#### 🛠️ 專案管理
-- `onboarding` - 執行專案導入（識別結構、測試、建置）
-- `initial_instructions` - 獲取專案初始指令
-- `prepare_for_new_conversation` - 準備新對話的指令
-- `summarize_changes` - 總結程式碼變更
-
-#### 🤔 思考工具
-- `think_about_collected_information` - 思考收集資訊的完整性
-- `think_about_task_adherence` - 思考是否偏離任務
-- `think_about_whether_you_are_done` - 思考任務是否完成
-
-#### 🔧 其他工具
-- `execute_shell_command` - 執行 shell 命令（當 Bash 不適用時）
-- `restart_language_server` - 重啟語言伺服器
-- `get_current_config` - 獲取當前配置
 
 ## 快速開始
 
@@ -346,3 +247,94 @@ git push origin feature/new-feature
 **建立日期**: 2025-07-30  
 **基於**: 生產容器 `20250730-100726-3530cfd`  
 **維護者**: Claude Code + WenHao
+
+---
+
+## 附錄：Serena MCP 工具完整參考
+
+### Serena 工具詳細對照表
+
+#### 檔案操作（用 Serena 取代 Claude）
+| 任務 | ❌ 不要用 | ✅ 請用 Serena |
+|------|-----------|----------------|
+| 讀取檔案 | Read | `read_file` |
+| 建立檔案 | Write | `create_text_file` |
+| 列出目錄 | LS | `list_dir` |
+| 找檔案 | Glob | `find_file` |
+
+#### 搜尋操作（用 Serena 取代 Claude）
+| 任務 | ❌ 不要用 | ✅ 請用 Serena |
+|------|-----------|----------------|
+| 搜尋內容 | Grep | `search_for_pattern` |
+| 找函數/類別 | Grep + Read | `find_symbol` |
+| 找引用 | 手動搜尋 | `find_referencing_symbols` |
+| 程式碼概覽 | 多次 Read | `get_symbols_overview` |
+
+#### 編輯操作（用 Serena 取代 Claude）
+| 任務 | ❌ 不要用 | ✅ 請用 Serena |
+|------|-----------|----------------|
+| 編輯程式碼 | Edit/MultiEdit | `replace_symbol_body` |
+| 插入程式碼 | Edit | `insert_before_symbol`/`insert_after_symbol` |
+| 刪除程式碼 | Edit | `delete_lines` |
+| 正則替換 | Edit | `replace_regex` |
+
+### Serena 工具完整列表
+
+#### 📁 檔案操作
+- `create_text_file` - 創建/覆寫檔案
+- `read_file` - 讀取專案內的檔案
+- `list_dir` - 列出目錄內容（支援遞迴）
+- `find_file` - 在相對路徑中查找檔案
+
+#### 🔍 程式碼搜尋與分析
+- `find_symbol` - 全域或局部搜尋符號（函數、類別等）
+- `find_referencing_symbols` - 查找引用特定符號的位置
+- `get_symbols_overview` - 獲取檔案或目錄的頂層符號概覽
+- `search_for_pattern` - 在專案中搜尋模式
+
+#### ✏️ 程式碼編輯
+- `insert_at_line` - 在特定行插入內容
+- `insert_before_symbol` - 在符號定義前插入內容
+- `insert_after_symbol` - 在符號定義後插入內容
+- `replace_lines` - 替換行範圍內的內容
+- `replace_symbol_body` - 替換符號的完整定義
+- `replace_regex` - 使用正則表達式替換內容
+- `delete_lines` - 刪除行範圍
+
+#### 🧠 記憶管理
+- `write_memory` - 寫入命名記憶體（重要決策、設計理由）
+- `read_memory` - 讀取記憶體
+- `list_memories` - 列出所有記憶體
+- `delete_memory` - 刪除記憶體
+
+#### 🛠️ 專案管理
+- `onboarding` - 執行專案導入（識別結構、測試、建置）
+- `initial_instructions` - 獲取專案初始指令
+- `prepare_for_new_conversation` - 準備新對話的指令
+- `summarize_changes` - 總結程式碼變更
+
+#### 🤔 思考工具
+- `think_about_collected_information` - 思考收集資訊的完整性
+- `think_about_task_adherence` - 思考是否偏離任務
+- `think_about_whether_you_are_done` - 思考任務是否完成
+
+#### 🔧 其他工具
+- `execute_shell_command` - 執行 shell 命令（當 Bash 不適用時）
+- `restart_language_server` - 重啟語言伺服器
+- `get_current_config` - 獲取當前配置
+
+### Serena 啟動故障排除
+
+#### 常見錯誤與解決方案
+
+1. **錯誤**: `Project '.serena/project.yml' not found`
+   - **原因**: 嘗試使用配置檔案路徑而非專案名稱
+   - **解決**: 使用 `mcp__serena__activate_project("azure_container")`
+
+2. **錯誤**: 工具無法使用
+   - **原因**: 未先啟動專案
+   - **解決**: 確保先執行專案啟動步驟
+
+3. **錯誤**: 狀態遺失
+   - **原因**: 新對話或 compact 後狀態重置
+   - **解決**: 重新執行啟動步驟
