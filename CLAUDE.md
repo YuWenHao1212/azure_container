@@ -165,6 +165,42 @@ Container Apps 支援兩種認證方式：
 
 ## 開發指南
 
+### 程式碼品質要求 (Ruff)
+
+**重要：撰寫程式碼時必須遵循 Ruff 規範，避免在 commit 時出現錯誤**
+
+#### 主要規則：
+1. **行長度限制**: 120 字元 (設定在 pyproject.toml)
+2. **Import 排序**: 使用 isort 規則，自動分組和排序
+3. **命名規範**: 遵循 PEP8 (類別用 PascalCase，函數用 snake_case)
+4. **型別標註**: 使用 Python 3.11+ 語法
+5. **例外處理**: 使用 `raise ... from e` 進行異常鏈接
+
+#### 常見錯誤預防：
+- **F401**: 不要 import 未使用的模組
+- **E501**: 行長度不要超過 120 字元
+- **B904**: 重新拋出異常時使用 `from e`
+- **RUF012**: 類別的可變屬性使用 `ClassVar` 標註
+- **SIM102**: 合併巢狀的 if 條件使用 `and`
+- **SIM108**: 使用三元運算符取代簡單的 if-else
+- **S110**: try-except-pass 要加上日誌記錄
+
+#### 特殊處理：
+- **S311**: `random.random()` 用於非安全性用途時加上 `# noqa: S311`
+- **S324**: 使用 MD5 做快取時加上 `# noqa: S324`
+
+#### 執行檢查：
+```bash
+# 檢查程式碼
+ruff check src/ --line-length=120
+
+# 自動修復可修復的問題
+ruff check src/ --fix
+
+# 檢查並修復 (包含較不安全的修復)
+ruff check src/ --fix --unsafe-fixes
+```
+
 ### 測試執行
 ```bash
 # 程式碼風格檢查
