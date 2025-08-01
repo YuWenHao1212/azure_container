@@ -41,8 +41,7 @@ jobs:
     - name: Run Ruff check
       run: |
         pip install ruff
-        # TODO: Fix all ruff issues, for now just report without failing
-        ruff check src/ --fix || true
+        ruff check src/ --fix
         
     - name: Create .env file for tests
       run: |
@@ -147,10 +146,7 @@ jobs:
       id: extract-tag
       run: |
         # 從 metadata tags 中提取帶時間戳的標籤
-        # metadata-action 輸出的 tags 是以換行符分隔的多個標籤
         TAGS="${{ steps.meta.outputs.tags }}"
-        echo "All tags from metadata:"
-        echo "$TAGS"
         
         # 尋找包含時間戳格式的標籤 (YYYYMMDD-HHmmss-sha)
         TIMESTAMP_TAG=""
@@ -174,8 +170,7 @@ jobs:
         echo "tag=$TIMESTAMP_TAG" >> $GITHUB_OUTPUT
         echo "full-image=$FULL_IMAGE" >> $GITHUB_OUTPUT
         
-        echo "Extracted tag: $TIMESTAMP_TAG"
-        echo "Full image: $FULL_IMAGE"
+        echo "Using image: $FULL_IMAGE"
         
   deploy:
     name: Deploy to Azure Container Apps
@@ -205,13 +200,6 @@ jobs:
           --resource-group ${{ env.RESOURCE_GROUP }} \
           --query "properties.latestRevisionName" -o tsv)
         echo "current-revision=$CURRENT_REVISION" >> $GITHUB_OUTPUT
-        
-    - name: Debug image output
-      run: |
-        echo "Build job outputs:"
-        echo "image-tag: ${{ needs.build-and-push.outputs.image-tag }}"
-        echo "image-digest: ${{ needs.build-and-push.outputs.image-digest }}"
-        echo "image-with-tag: ${{ needs.build-and-push.outputs.image-with-tag }}"
         
     - name: Deploy to Container App
       run: |
@@ -284,9 +272,14 @@ jobs:
           exit 1
         fi
         
-    - name: Smoke test
+    - name: Smoke test with performance check
       run: |
-        # 測試關鍵字提取端點（使用符合長度要求的測試資料）
+        # 測試關鍵字提取端點並檢查效能
+        echo "Running smoke test with performance measurement..."
+        
+        # 記錄開始時間
+        START_TIME=$(date +%s%3N)
+        
         RESPONSE=$(curl -s -X POST https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/api/v1/extract-jd-keywords \
           -H "Content-Type: application/json" \
           -H "X-API-Key: ${{ secrets.CONTAINER_APP_API_KEY }}" \
@@ -294,10 +287,27 @@ jobs:
             "job_description": "We are looking for an experienced Python developer with strong FastAPI framework knowledge to join our engineering team. The ideal candidate should have at least 3 years of experience in building RESTful APIs, microservices architecture, and cloud deployment. Required skills include Python, FastAPI, PostgreSQL, Docker, and Azure cloud services. Experience with async programming and performance optimization is a plus."
           }')
         
+        # 記錄結束時間
+        END_TIME=$(date +%s%3N)
+        RESPONSE_TIME=$((END_TIME - START_TIME))
+        
+        echo "Response time: ${RESPONSE_TIME}ms"
+        
+        # 檢查回應是否包含 keywords
         if echo "$RESPONSE" | grep -q "keywords"; then
-          echo "Smoke test passed!"
+          echo "✅ Functionality test passed!"
+          
+          # 檢查效能 (SLA: < 3000ms)
+          if [ $RESPONSE_TIME -lt 3000 ]; then
+            echo "✅ Performance test passed! (${RESPONSE_TIME}ms < 3000ms)"
+          else
+            echo "❌ Performance test failed! (${RESPONSE_TIME}ms >= 3000ms)"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
         else
-          echo "Smoke test failed. Response: $RESPONSE"
+          echo "❌ Functionality test failed!"
+          echo "Response: $RESPONSE"
           exit 1
         fi
         
@@ -318,6 +328,11 @@ jobs:
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎯 Deployment Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Health check passed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Smoke test passed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Performance test passed (< 3000ms SLA)" >> $GITHUB_STEP_SUMMARY
         else
           echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

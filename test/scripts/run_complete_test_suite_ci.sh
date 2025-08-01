@@ -256,16 +256,7 @@ ${BLUE}=== Complete Test Suite ===${NC}"
         ((TOTAL_TESTS++))
     done
     
-    # Performance Test
-    log "\n${BLUE}5. Performance Test${NC}"
-    if [ -f "test/performance/test_keyword_extraction_performance_simple.py" ]; then
-        if run_test_suite "performance_keyword" "python test/performance/test_keyword_extraction_performance_simple.py"; then
-            ((PASSED_TESTS++))
-        else
-            ((FAILED_TESTS++))
-        fi
-        ((TOTAL_TESTS++))
-    fi
+    # Performance test removed - now part of smoke test in deployment
     
     # Stop API server
     kill $API_PID 2>/dev/null || true
