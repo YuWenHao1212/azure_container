@@ -139,13 +139,14 @@ pytest tests/integration/ -v
 
 ## 部署與 CI/CD
 
-### GitHub Actions CI/CD
+### GitHub Actions CI/CD ✅
 本專案使用 GitHub Actions 實現自動化部署：
 
 - **自動部署**: 推送到 `main` 分支自動觸發測試和部署
 - **測試驗證**: 執行 113 個測試確保程式碼品質
 - **零停機部署**: 使用 Azure Container Apps 的藍綠部署
 - **回滾機制**: 支援快速回滾到任何歷史版本
+- **設定完成**: 2025-08-01 - CI/CD 已就緒
 
 詳細設定請參考 [DEPLOYMENT.md](./DEPLOYMENT.md)
 
