@@ -1,0 +1,256 @@
+name: CI/CD Pipeline - Main
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # 允許手動觸發
+
+env:
+  REGISTRY: airesumeadvisorregistry.azurecr.io
+  IMAGE_NAME: airesumeadvisor-api
+  CONTAINER_APP_NAME: airesumeadvisor-api-production
+  RESOURCE_GROUP: airesumeadvisorfastapi
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11.8'
+        
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run Ruff check
+      run: |
+        pip install ruff
+        ruff check src/ --fix --exit-non-zero-on-fix
+        
+    - name: Create .env file for tests
+      run: |
+        cat > .env << EOF
+        ENVIRONMENT=test
+        LOG_LEVEL=INFO
+        MONITORING_ENABLED=false
+        LIGHTWEIGHT_MONITORING=true
+        
+        # Azure OpenAI
+        AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        AZURE_OPENAI_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+        AZURE_OPENAI_API_VERSION=2025-01-01-preview
+        AZURE_OPENAI_GPT4_DEPLOYMENT=gpt-4.1-japan
+        GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast
+        GPT41_MINI_JAPANEAST_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        GPT41_MINI_JAPANEAST_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+        GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview
+        
+        # Embedding Services
+        EMBEDDING_ENDPOINT=${{ secrets.EMBEDDING_ENDPOINT }}
+        EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+        COURSE_EMBEDDING_ENDPOINT=${{ secrets.COURSE_EMBEDDING_ENDPOINT }}
+        COURSE_EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+        
+        # Model Selection
+        LLM_MODEL_KEYWORDS=gpt41-mini
+        LLM_MODEL_GAP_ANALYSIS=gpt4o-2
+        LLM_MODEL_RESUME_FORMAT=gpt4o-2
+        LLM_MODEL_RESUME_TAILOR=gpt4o-2
+        
+        # Security
+        JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+        CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }}
+        
+        # CORS
+        CORS_ORIGINS=https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com
+        EOF
+        
+    - name: Run tests
+      run: |
+        # 確保測試腳本有執行權限
+        chmod +x test/scripts/run_complete_test_suite.sh
+        # 執行測試並捕獲輸出
+        ./test/scripts/run_complete_test_suite.sh | tee test_output.log
+        
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          test/reports/
+          test_output.log
+          
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Azure Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+        
+    - name: Generate metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=raw,value=latest
+          type=raw,value={{date 'YYYYMMDD-HHmmss'}}-{{sha}}
+          type=sha,prefix={{date 'YYYYMMDD'}}-
+          
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+        cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+        
+  deploy:
+    name: Deploy to Azure Container Apps
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Get current revision for backup
+      id: backup
+      run: |
+        CURRENT_REVISION=$(az containerapp show \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query "properties.latestRevisionName" -o tsv)
+        echo "current-revision=$CURRENT_REVISION" >> $GITHUB_OUTPUT
+        
+    - name: Deploy to Container App
+      run: |
+        # 取得最新的映像標籤
+        LATEST_TAG=$(echo "${{ needs.build-and-push.outputs.image-tag }}" | grep -E "[0-9]{8}-[0-9]{6}-[a-f0-9]+" | head -1)
+        
+        # 更新 Container App
+        az containerapp update \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --image $LATEST_TAG \
+          --revision-suffix $(date +%Y%m%d%H%M%S) \
+          --set-env-vars \
+            ENVIRONMENT=production \
+            LOG_LEVEL=INFO \
+            MONITORING_ENABLED=false \
+            LIGHTWEIGHT_MONITORING=true \
+            AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }} \
+            AZURE_OPENAI_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
+            AZURE_OPENAI_API_VERSION=2025-01-01-preview \
+            AZURE_OPENAI_GPT4_DEPLOYMENT=gpt-4.1-japan \
+            GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast \
+            GPT41_MINI_JAPANEAST_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }} \
+            GPT41_MINI_JAPANEAST_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
+            GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview \
+            EMBEDDING_ENDPOINT=${{ secrets.EMBEDDING_ENDPOINT }} \
+            EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
+            COURSE_EMBEDDING_ENDPOINT=${{ secrets.COURSE_EMBEDDING_ENDPOINT }} \
+            COURSE_EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
+            LLM_MODEL_KEYWORDS=gpt41-mini \
+            LLM_MODEL_GAP_ANALYSIS=gpt4o-2 \
+            LLM_MODEL_RESUME_FORMAT=gpt4o-2 \
+            LLM_MODEL_RESUME_TAILOR=gpt4o-2 \
+            JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
+            CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
+            CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com"
+            
+    - name: Wait for deployment
+      run: sleep 30
+      
+    - name: Health check
+      run: |
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/health)
+        if [ $RESPONSE -eq 200 ]; then
+          echo "Health check passed!"
+        else
+          echo "Health check failed with status code: $RESPONSE"
+          exit 1
+        fi
+        
+    - name: Smoke test
+      run: |
+        # 測試關鍵字提取端點（使用簡單的測試資料）
+        RESPONSE=$(curl -s -X POST https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/api/v1/extract-jd-keywords \
+          -H "Content-Type: application/json" \
+          -H "X-API-Key: ${{ secrets.CONTAINER_APP_API_KEY }}" \
+          -d '{"job_description": "Python developer with FastAPI experience"}')
+        
+        if echo "$RESPONSE" | grep -q "keywords"; then
+          echo "Smoke test passed!"
+        else
+          echo "Smoke test failed. Response: $RESPONSE"
+          exit 1
+        fi
+        
+  notify:
+    name: Notify Deployment Status
+    needs: [test, build-and-push, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Create deployment summary
+      run: |
+        if [ "${{ needs.deploy.result }}" == "success" ]; then
+          echo "## ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+          echo "- **App URL**: https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
+        fi

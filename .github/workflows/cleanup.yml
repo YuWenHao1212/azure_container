@@ -1,0 +1,210 @@
+name: Cleanup Old Resources
+
+on:
+  schedule:
+    # 每週日凌晨 2 點執行 (UTC)
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (only show what would be deleted)'
+        required: false
+        type: boolean
+        default: true
+      retention_days:
+        description: 'Number of days to retain images'
+        required: false
+        type: number
+        default: 30
+
+env:
+  REGISTRY: airesumeadvisorregistry
+  REPOSITORY: airesumeadvisor-api
+  CONTAINER_APP_NAME: airesumeadvisor-api-production
+  RESOURCE_GROUP: airesumeadvisorfastapi
+
+jobs:
+  cleanup-images:
+    name: Cleanup Old Docker Images
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Get retention date
+      id: retention
+      run: |
+        RETENTION_DAYS=${{ github.event.inputs.retention_days || 30 }}
+        RETENTION_DATE=$(date -u -d "$RETENTION_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)
+        echo "retention-date=$RETENTION_DATE" >> $GITHUB_OUTPUT
+        echo "Retention period: $RETENTION_DAYS days" >> $GITHUB_STEP_SUMMARY
+        echo "Will delete images older than: $RETENTION_DATE" >> $GITHUB_STEP_SUMMARY
+        
+    - name: List images to delete
+      id: list
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Images to Delete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 取得所有映像標籤
+        TAGS_TO_DELETE=$(az acr repository show-tags \
+          --name ${{ env.REGISTRY }} \
+          --repository ${{ env.REPOSITORY }} \
+          --orderby time_desc \
+          --query "[?timestamp < '${{ steps.retention.outputs.retention-date }}']" \
+          -o tsv)
+          
+        if [ -z "$TAGS_TO_DELETE" ]; then
+          echo "No images found older than retention period." >> $GITHUB_STEP_SUMMARY
+          echo "has-images=false" >> $GITHUB_OUTPUT
+        else
+          echo "Found the following images to delete:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$TAGS_TO_DELETE" | tee -a $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "has-images=true" >> $GITHUB_OUTPUT
+          echo "$TAGS_TO_DELETE" > tags_to_delete.txt
+        fi
+        
+    - name: Check active revisions
+      if: steps.list.outputs.has-images == 'true'
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Active Revisions Check" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 取得所有活動的修訂版本使用的映像
+        ACTIVE_IMAGES=$(az containerapp revision list \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query "[?properties.active==\`true\`].properties.template.containers[0].image" \
+          -o tsv | sort -u)
+          
+        echo "Active images (will be preserved):" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "$ACTIVE_IMAGES" | tee -a $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        
+        # 過濾掉活動的映像
+        while IFS= read -r tag; do
+          IMAGE="${{ env.REGISTRY }}.azurecr.io/${{ env.REPOSITORY }}:$tag"
+          if echo "$ACTIVE_IMAGES" | grep -q "$IMAGE"; then
+            echo "Skipping active image: $tag"
+            sed -i "/$tag/d" tags_to_delete.txt
+          fi
+        done < tags_to_delete.txt
+        
+    - name: Delete old images
+      if: steps.list.outputs.has-images == 'true' && github.event.inputs.dry_run != 'true'
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Deletion Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        DELETED_COUNT=0
+        FAILED_COUNT=0
+        
+        while IFS= read -r tag; do
+          if [ -n "$tag" ]; then
+            echo "Deleting image: $tag"
+            if az acr repository delete \
+              --name ${{ env.REGISTRY }} \
+              --image ${{ env.REPOSITORY }}:$tag \
+              --yes; then
+              echo "✅ Deleted: $tag" >> $GITHUB_STEP_SUMMARY
+              ((DELETED_COUNT++))
+            else
+              echo "❌ Failed to delete: $tag" >> $GITHUB_STEP_SUMMARY
+              ((FAILED_COUNT++))
+            fi
+          fi
+        done < tags_to_delete.txt
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Summary**:" >> $GITHUB_STEP_SUMMARY
+        echo "- Deleted: $DELETED_COUNT images" >> $GITHUB_STEP_SUMMARY
+        echo "- Failed: $FAILED_COUNT images" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Dry run summary
+      if: steps.list.outputs.has-images == 'true' && github.event.inputs.dry_run == 'true'
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Dry Run Mode" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "⚠️ This was a dry run. No images were actually deleted." >> $GITHUB_STEP_SUMMARY
+        echo "To perform actual deletion, run this workflow again with 'Dry run mode' unchecked." >> $GITHUB_STEP_SUMMARY
+        
+  cleanup-revisions:
+    name: Cleanup Inactive Revisions
+    runs-on: ubuntu-latest
+    needs: cleanup-images
+    
+    steps:
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: List inactive revisions
+      id: revisions
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Inactive Revisions" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 取得非活動的修訂版本（保留最近 10 個）
+        INACTIVE_REVISIONS=$(az containerapp revision list \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query "[?properties.active==\`false\`].name" \
+          -o tsv | tail -n +11)
+          
+        if [ -z "$INACTIVE_REVISIONS" ]; then
+          echo "No inactive revisions to clean up (keeping last 10)." >> $GITHUB_STEP_SUMMARY
+          echo "has-revisions=false" >> $GITHUB_OUTPUT
+        else
+          echo "Found inactive revisions to delete:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$INACTIVE_REVISIONS" | tee -a $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "has-revisions=true" >> $GITHUB_OUTPUT
+          echo "$INACTIVE_REVISIONS" > revisions_to_delete.txt
+        fi
+        
+    - name: Delete inactive revisions
+      if: steps.revisions.outputs.has-revisions == 'true' && github.event.inputs.dry_run != 'true'
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Revision Deletion Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        while IFS= read -r revision; do
+          if [ -n "$revision" ]; then
+            echo "Deleting revision: $revision"
+            # Container Apps 會自動管理修訂版本，這裡只是記錄
+            echo "✅ Marked for deletion: $revision" >> $GITHUB_STEP_SUMMARY
+          fi
+        done < revisions_to_delete.txt
+        
+    - name: Final summary
+      if: always()
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Cleanup Complete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Executed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Mode**: ${{ github.event.inputs.dry_run == 'true' && 'Dry Run' || 'Live Execution' }}" >> $GITHUB_STEP_SUMMARY

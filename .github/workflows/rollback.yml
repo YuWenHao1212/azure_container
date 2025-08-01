@@ -1,0 +1,145 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Revision name to rollback to (leave empty to rollback to previous)'
+        required: false
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+
+env:
+  CONTAINER_APP_NAME: airesumeadvisor-api-production
+  RESOURCE_GROUP: airesumeadvisorfastapi
+
+jobs:
+  rollback:
+    name: Rollback Container App
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Get revision history
+      id: history
+      run: |
+        echo "## Revision History" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 取得修訂版本歷史
+        az containerapp revision list \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query "[?properties.active==\`true\`].{Name:name,Created:properties.createdTime,Traffic:properties.trafficWeight}" \
+          --output table | tee -a $GITHUB_STEP_SUMMARY
+          
+        # 取得當前活動的修訂版本
+        CURRENT_REVISION=$(az containerapp show \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query "properties.latestRevisionName" -o tsv)
+          
+        echo "current-revision=$CURRENT_REVISION" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Current revision**: $CURRENT_REVISION" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Determine target revision
+      id: target
+      run: |
+        if [ -z "${{ github.event.inputs.revision }}" ]; then
+          # 如果沒有指定修訂版本，取得前一個版本
+          TARGET_REVISION=$(az containerapp revision list \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query "[?properties.active==\`true\` && name!='${{ steps.history.outputs.current-revision }}'] | [0].name" -o tsv)
+        else
+          TARGET_REVISION="${{ github.event.inputs.revision }}"
+        fi
+        
+        if [ -z "$TARGET_REVISION" ]; then
+          echo "❌ No previous revision found to rollback to!" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+        
+        echo "target-revision=$TARGET_REVISION" >> $GITHUB_OUTPUT
+        echo "**Target revision**: $TARGET_REVISION" >> $GITHUB_STEP_SUMMARY
+        echo "**Rollback reason**: ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Perform rollback
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Rollback Process" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 設定流量到目標修訂版本
+        az containerapp ingress traffic set \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --revision-weight ${{ steps.target.outputs.target-revision }}=100
+          
+        echo "✅ Traffic switched to revision: ${{ steps.target.outputs.target-revision }}" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Deactivate current revision
+      run: |
+        # 停用當前的修訂版本
+        az containerapp revision deactivate \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --revision ${{ steps.history.outputs.current-revision }}
+          
+        echo "✅ Deactivated revision: ${{ steps.history.outputs.current-revision }}" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Wait for rollback
+      run: sleep 30
+      
+    - name: Verify rollback
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Verification" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 健康檢查
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/health)
+        
+        if [ $RESPONSE -eq 200 ]; then
+          echo "✅ Health check passed!" >> $GITHUB_STEP_SUMMARY
+          echo "Health check passed!"
+        else
+          echo "❌ Health check failed with status code: $RESPONSE" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+        
+        # 取得新的當前修訂版本
+        NEW_CURRENT=$(az containerapp show \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query "properties.latestRevisionName" -o tsv)
+          
+        echo "**New current revision**: $NEW_CURRENT" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Create rollback record
+      if: always()
+      run: |
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Rollback Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Initiated by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+        echo "- **From revision**: ${{ steps.history.outputs.current-revision }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **To revision**: ${{ steps.target.outputs.target-revision }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Reason**: ${{ github.event.inputs.reason }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

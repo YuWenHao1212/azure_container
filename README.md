@@ -137,6 +137,28 @@ pytest tests/integration/ -v
 - **儲存**: 4GB 暫存空間
 - **自動擴展**: 1-10 實例
 
+## 部署與 CI/CD
+
+### GitHub Actions CI/CD
+本專案使用 GitHub Actions 實現自動化部署：
+
+- **自動部署**: 推送到 `main` 分支自動觸發測試和部署
+- **測試驗證**: 執行 113 個測試確保程式碼品質
+- **零停機部署**: 使用 Azure Container Apps 的藍綠部署
+- **回滾機制**: 支援快速回滾到任何歷史版本
+
+詳細設定請參考 [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+### 手動部署
+```bash
+# 建置並推送到 Azure Container Registry
+docker build -t airesumeadvisorregistry.azurecr.io/airesumeadvisor-api:latest .
+docker push airesumeadvisorregistry.azurecr.io/airesumeadvisor-api:latest
+
+# 使用部署腳本
+./deploy-container-app.sh
+```
+
 ## 監控與除錯
 
 ### 健康檢查
