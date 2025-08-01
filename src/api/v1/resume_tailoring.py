@@ -58,7 +58,9 @@ async def tailor_resume(
     The output includes visual markers (CSS classes) to show optimizations.
     """
     try:
-        logger.info(f"Resume tailoring request received for language: {request.options.language}")
+        logger.info(
+            f"Resume tailoring request for language: {request.options.language}"
+        )
 
         # Call service (validation already handled by Pydantic field_validators)
         result = await tailoring_service.tailor_resume(

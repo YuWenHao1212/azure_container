@@ -110,7 +110,7 @@ async def v1_root():
                 "tailor_resume": {
                     "path": "/api/v1/tailor-resume",
                     "method": "POST",
-                    "description": "Optimize resume based on job description and gap analysis",
+                    "description": "Optimize resume based on JD and gap analysis",
                     "status": "implemented"
                 },
                 "tailor_resume_languages": {

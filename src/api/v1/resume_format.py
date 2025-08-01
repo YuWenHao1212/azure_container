@@ -127,7 +127,9 @@ async def format_resume(
             warnings.append(
                 WarningInfo(
                     code="MISSING_SECTIONS",
-                    message=f"Some resume sections could not be detected: {', '.join(missing_sections)}",
+                    message=(
+                        f"Missing sections: {', '.join(missing_sections)}"
+                    ),
                     details={"missing_sections": missing_sections}
                 )
             )
@@ -189,7 +191,7 @@ async def format_resume(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=create_error_response(
                 code="RATE_LIMIT_ERROR",
-                message="Service is temporarily unavailable due to high demand. Please try again later.",
+                message="Service unavailable. Please try again later.",
                 details="Rate limit exceeded"
             ).model_dump()
         ) from e
@@ -208,7 +210,7 @@ async def format_resume(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=create_error_response(
                 code="OPENAI_SERVICE_ERROR",
-                message="OpenAI service is currently unavailable. Please try again later.",
+                message="OpenAI service unavailable. Try again later.",
                 details=str(e)
             ).model_dump()
         ) from e

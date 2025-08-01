@@ -25,14 +25,23 @@ router = APIRouter()
     "/prompts/version",
     response_model=UnifiedResponse,
     summary="Get active prompt version for any task",
-    description="Get the currently active prompt version and configuration details for specified task",
+    description=(
+        "Get the currently active prompt version and configuration details "
+        "for specified task"
+    ),
     tags=["Prompt Management"]
 )
 async def get_prompt_version(
-    task: str = Query(..., description="Task name (e.g., 'keyword_extraction', 'resume_analysis', etc.)"),
+    task: str = Query(
+        ...,
+        description="Task name (e.g., 'keyword_extraction', 'resume_analysis', etc.)"
+    ),
     language: str | None = Query(
         None,
-        description="Language code (e.g., 'en', 'zh-TW'). If not specified, returns info for all languages."
+        description=(
+            "Language code (e.g., 'en', 'zh-TW'). "
+            "If not specified, returns info for all languages."
+        )
     )
 ) -> UnifiedResponse:
     """
@@ -74,7 +83,7 @@ async def get_prompt_version(
                 if not available_versions:
                     raise ValueError(f"Task '{task}' not found") from None
             except Exception as e:
-                logger.warning(f"Task '{task}' not found or error listing versions: {e}")
+                logger.warning(f"Task '{task}' not found or error: {e}")
                 raise ValueError(f"Task '{task}' not found") from e
 
             # Get prompt config for active version if exists

@@ -24,15 +24,17 @@ from src.services.index_calculation import IndexCalculationService
 class IndexCalAndGapAnalysisRequest(BaseModel):
     """Request model for combined index calculation and gap analysis."""
     resume: str = Field(..., description="Resume content (HTML or plain text)")
-    job_description: str = Field(..., description="Job description (HTML or plain text)")
-    keywords: list[str] | str = Field(..., description="Keywords list or comma-separated string")
+    job_description: str = Field(..., description="JD (HTML or plain text)")
+    keywords: list[str] | str = Field(..., description="Keywords list or CSV string")
     language: str = Field(default="en", description="Output language (en or zh-TW)")
 
 
 class SkillQuery(BaseModel):
     """Skill development query model."""
     skill_name: str = Field(default="", description="Skill name")
-    skill_category: str = Field(default="", description="Skill category (TECHNICAL or NON_TECHNICAL)")
+    skill_category: str = Field(
+        default="", description="Category: TECHNICAL or NON_TECHNICAL"
+    )
     description: str = Field(default="", description="Skill description")
 
 
@@ -42,7 +44,9 @@ class GapAnalysisData(BaseModel):
     KeyGaps: str = Field(default="", description="Key gaps HTML")
     QuickImprovements: str = Field(default="", description="Quick improvements HTML")
     OverallAssessment: str = Field(default="", description="Overall assessment HTML")
-    SkillSearchQueries: list[SkillQuery] = Field(default_factory=list, description="Skill development priorities")
+    SkillSearchQueries: list[SkillQuery] = Field(
+        default_factory=list, description="Skill development priorities"
+    )
 
 
 class KeywordCoverageData(BaseModel):
@@ -50,14 +54,22 @@ class KeywordCoverageData(BaseModel):
     total_keywords: int = Field(default=0, description="Total number of keywords")
     covered_count: int = Field(default=0, description="Number of keywords found")
     coverage_percentage: int = Field(default=0, description="Coverage percentage")
-    covered_keywords: list[str] = Field(default_factory=list, description="Found keywords")
-    missed_keywords: list[str] = Field(default_factory=list, description="Missing keywords")
+    covered_keywords: list[str] = Field(
+        default_factory=list, description="Found keywords"
+    )
+    missed_keywords: list[str] = Field(
+        default_factory=list, description="Missing keywords"
+    )
 
 
 class IndexCalAndGapAnalysisData(BaseModel):
     """Response data for combined index calculation and gap analysis."""
-    raw_similarity_percentage: int = Field(default=0, description="Raw cosine similarity percentage")
-    similarity_percentage: int = Field(default=0, description="Transformed similarity percentage")
+    raw_similarity_percentage: int = Field(
+        default=0, description="Raw cosine similarity percentage"
+    )
+    similarity_percentage: int = Field(
+        default=0, description="Transformed similarity percentage"
+    )
     keyword_coverage: KeywordCoverageData = Field(
         default_factory=KeywordCoverageData,
         description="Keyword coverage analysis"
@@ -80,7 +92,10 @@ router = APIRouter()
     response_model=UnifiedResponse,
     status_code=status.HTTP_200_OK,
     summary="Calculate Index and Perform Gap Analysis",
-    description="Calculate similarity index and perform comprehensive gap analysis between resume and job description"
+    description=(
+        "Calculate similarity index and perform comprehensive gap analysis "
+        "between resume and job description"
+    )
 )
 async def calculate_index_and_analyze_gap(
     request: IndexCalAndGapAnalysisRequest,
@@ -193,7 +208,8 @@ async def calculate_index_and_analyze_gap(
                 QuickImprovements=gap_result.get("QuickImprovements", ""),
                 OverallAssessment=gap_result.get("OverallAssessment", ""),
                 SkillSearchQueries=[
-                    SkillQuery(**skill) for skill in gap_result.get("SkillSearchQueries", [])
+                    SkillQuery(**skill)
+                    for skill in gap_result.get("SkillSearchQueries", [])
                 ]
             )
         )
@@ -246,7 +262,10 @@ async def calculate_index_and_analyze_gap(
         ) from e
 
     except Exception as e:
-        logger.error(f"Unexpected error in index cal and gap analysis: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error in index cal and gap analysis: {e}",
+            exc_info=True
+        )
         monitoring_service.track_event(
             "IndexCalAndGapAnalysisUnexpectedError",
             {
