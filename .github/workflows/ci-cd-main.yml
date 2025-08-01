@@ -79,6 +79,9 @@ jobs:
         
         # CORS
         CORS_ORIGINS=https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com
+        
+        # Language Detection
+        USE_RULE_BASED_DETECTOR=true
         EOF
         
     - name: Run tests
@@ -257,7 +260,8 @@ jobs:
             LLM_MODEL_RESUME_TAILOR=gpt4o-2 \
             JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
             CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
-            CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com"
+            CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \
+            USE_RULE_BASED_DETECTOR=true
             
     - name: Wait for deployment
       run: sleep 30
