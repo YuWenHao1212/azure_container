@@ -104,9 +104,9 @@ jobs:
     runs-on: ubuntu-latest
     
     outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
+      image-tag: ${{ steps.extract-tag.outputs.tag }}
       image-digest: ${{ steps.build.outputs.digest }}
-      image-with-tag: ${{ steps.image.outputs.image }}
+      image-with-tag: ${{ steps.extract-tag.outputs.full-image }}
     
     steps:
     - name: Checkout code
@@ -143,13 +143,13 @@ jobs:
         cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
         cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
         
-    - name: Export image with specific tag
-      id: image
+    - name: Extract image tag for deployment
+      id: extract-tag
       run: |
         # 從 metadata tags 中提取帶時間戳的標籤
         # metadata-action 輸出的 tags 是以換行符分隔的多個標籤
         TAGS="${{ steps.meta.outputs.tags }}"
-        echo "All tags:"
+        echo "All tags from metadata:"
         echo "$TAGS"
         
         # 尋找包含時間戳格式的標籤 (YYYYMMDD-HHmmss-sha)
@@ -169,8 +169,13 @@ jobs:
         fi
         
         FULL_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TIMESTAMP_TAG}"
-        echo "image=$FULL_IMAGE" >> $GITHUB_OUTPUT
-        echo "Exported image: $FULL_IMAGE"
+        
+        # 設置 outputs
+        echo "tag=$TIMESTAMP_TAG" >> $GITHUB_OUTPUT
+        echo "full-image=$FULL_IMAGE" >> $GITHUB_OUTPUT
+        
+        echo "Extracted tag: $TIMESTAMP_TAG"
+        echo "Full image: $FULL_IMAGE"
         
   deploy:
     name: Deploy to Azure Container Apps
