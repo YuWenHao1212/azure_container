@@ -286,11 +286,13 @@ jobs:
         
     - name: Smoke test
       run: |
-        # 測試關鍵字提取端點（使用簡單的測試資料）
+        # 測試關鍵字提取端點（使用符合長度要求的測試資料）
         RESPONSE=$(curl -s -X POST https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/api/v1/extract-jd-keywords \
           -H "Content-Type: application/json" \
           -H "X-API-Key: ${{ secrets.CONTAINER_APP_API_KEY }}" \
-          -d '{"job_description": "Python developer with FastAPI experience"}')
+          -d '{
+            "job_description": "We are looking for an experienced Python developer with strong FastAPI framework knowledge to join our engineering team. The ideal candidate should have at least 3 years of experience in building RESTful APIs, microservices architecture, and cloud deployment. Required skills include Python, FastAPI, PostgreSQL, Docker, and Azure cloud services. Experience with async programming and performance optimization is a plus."
+          }')
         
         if echo "$RESPONSE" | grep -q "keywords"; then
           echo "Smoke test passed!"
