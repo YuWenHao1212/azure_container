@@ -160,7 +160,7 @@ class MixedLanguageDetectionService(LanguageDetectionService):
                 raise LanguageDetectionError(
                     text_length=len(text),
                     reason=f"langdetect library error: {e!s}"
-                )
+                ) from e
 
             # 4. Special handling for Japanese before applying Taiwan JD rules
             if detected_lang == 'ja':
@@ -178,7 +178,8 @@ class MixedLanguageDetectionService(LanguageDetectionService):
                 else:
                     # No kana found, might be misdetected Chinese
                     logger.info("Japanese detected but no kana found, checking if it's actually Chinese")
-                    if lang_stats.chinese_ratio >= self.TRADITIONAL_CHINESE_THRESHOLD and lang_stats.traditional_chars >= lang_stats.simplified_chars:
+                    if (lang_stats.chinese_ratio >= self.TRADITIONAL_CHINESE_THRESHOLD
+                        and lang_stats.traditional_chars >= lang_stats.simplified_chars):
                         detected_lang = 'zh-TW'
                         confidence = max(confidence, 0.85)
                         logger.info(f"Corrected ja -> zh-TW (Chinese ratio: {lang_stats.chinese_ratio:.1%})")
@@ -186,11 +187,13 @@ class MixedLanguageDetectionService(LanguageDetectionService):
             # 5. Apply Taiwan JD rules: Check 20% threshold for Traditional Chinese
             elif lang_stats.chinese_chars >= 10:
                 # Check if Traditional Chinese ratio meets threshold
-                if lang_stats.chinese_ratio >= self.TRADITIONAL_CHINESE_THRESHOLD and lang_stats.traditional_chars >= lang_stats.simplified_chars:
+                if (lang_stats.chinese_ratio >= self.TRADITIONAL_CHINESE_THRESHOLD
+                    and lang_stats.traditional_chars >= lang_stats.simplified_chars):
                     if detected_lang == 'en':
                         # Mixed English-Chinese content with sufficient Chinese
                         logger.info(
-                            f"Taiwan JD rule: English with {lang_stats.chinese_ratio:.1%} Traditional Chinese (>= 20%), "
+                            f"Taiwan JD rule: English with {lang_stats.chinese_ratio:.1%} "
+                            f"Traditional Chinese (>= 20%), "
                             f"switching to zh-TW"
                         )
                         detected_lang = 'zh-TW'
@@ -201,12 +204,14 @@ class MixedLanguageDetectionService(LanguageDetectionService):
                     elif detected_lang in ['ko', 'vi']:
                         # Korean or Vietnamese detected but has sufficient Traditional Chinese
                         logger.info(
-                            f"Taiwan JD rule: {detected_lang} with {lang_stats.chinese_ratio:.1%} Traditional Chinese (>= 20%), "
+                            f"Taiwan JD rule: {detected_lang} with {lang_stats.chinese_ratio:.1%} "
+                            f"Traditional Chinese (>= 20%), "
                             f"switching to zh-TW"
                         )
                         detected_lang = 'zh-TW'
                         confidence = min(0.95, 0.8 + lang_stats.chinese_ratio * 0.3)
-                elif lang_stats.simplified_chars > lang_stats.traditional_chars and lang_stats.chinese_ratio >= self.TRADITIONAL_CHINESE_THRESHOLD:
+                elif (lang_stats.simplified_chars > lang_stats.traditional_chars
+                      and lang_stats.chinese_ratio >= self.TRADITIONAL_CHINESE_THRESHOLD):
                     # Simplified Chinese with sufficient ratio
                     if detected_lang != 'zh-CN':
                         detected_lang = 'zh-CN'
@@ -219,7 +224,8 @@ class MixedLanguageDetectionService(LanguageDetectionService):
                     )
 
             # 6. Handle other Asian languages (Korean, Vietnamese) with less Chinese content
-            elif detected_lang in ['ko', 'vi'] and lang_stats.chinese_chars >= 10 and lang_stats.chinese_ratio < self.TRADITIONAL_CHINESE_THRESHOLD:
+            elif (detected_lang in ['ko', 'vi'] and lang_stats.chinese_chars >= 10
+                  and lang_stats.chinese_ratio < self.TRADITIONAL_CHINESE_THRESHOLD):
                 # For Korean and Vietnamese with Chinese content below threshold
                 original_lang = detected_lang
                 chinese_variant = self._refine_chinese_variant(text)
@@ -278,4 +284,4 @@ class MixedLanguageDetectionService(LanguageDetectionService):
             raise LanguageDetectionError(
                 text_length=len(text) if text else 0,
                 reason=f"Unexpected detection error: {e!s}"
-            )
+            ) from e

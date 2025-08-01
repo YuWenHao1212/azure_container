@@ -7,17 +7,18 @@ Date: 2025-07-03
 """
 
 import logging
+from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class ImprovedChineseDetector:
     """
-    改進的中文變體檢測器，更準確區分繁體和簡體中文
+    改進的中文變體檢測器, 更準確區分繁體和簡體中文
     """
 
-    # 擴展的繁體中文特徵字符集（基於台灣職場常用詞彙）
-    TRADITIONAL_CHARS = set(
+    # 擴展的繁體中文特徵字符集 (基於台灣職場常用詞彙)
+    TRADITIONAL_CHARS: ClassVar[set] = set(
         '繁體語機業資訊軟體開發設計測試資料庫網路計劃團隊責任工作經驗技能專業證照學歷'
         '維護系統候選尋找精通熟悉需要具備負責優秀歡迎薪酬福利環境條件職缺應徵履歷'
         '產業領域創新願景價值觀國際視野溝通協調執行專案管理分析報告決策建議方案'
@@ -25,15 +26,15 @@ class ImprovedChineseDetector:
     )
 
     # 簡體中文特徵字符集
-    SIMPLIFIED_CHARS = set(
+    SIMPLIFIED_CHARS: ClassVar[set] = set(
         '简体语机业资讯软体开发设计测试资料库网络计划团队责任工作经验技能专业证照学历'
         '维护系统候选寻找精通熟悉需要具备负责优秀欢迎薪酬福利环境条件职缺应征履历'
         '产业领域创新愿景价值观国际视野沟通协调执行专案管理分析报告决策建议方案'
         '绩效评估晋升机会训练课程认证资格学习成长挑战机会弹性工时远端办公奖金'
     )
 
-    # 繁體專有詞彙（這些詞彙組合強烈暗示繁體中文）
-    TRADITIONAL_PHRASES = {
+    # 繁體專有詞彙 (這些詞彙組合強烈暗示繁體中文)
+    TRADITIONAL_PHRASES: ClassVar[set] = {
         '程式設計', '資料庫', '軟體工程', '網路安全', '雲端運算', '機器學習',
         '專案管理', '系統分析', '使用者介面', '資訊安全', '品質保證', '技術支援',
         '業務開發', '客戶服務', '人力資源', '財務會計', '行銷企劃', '產品經理',
@@ -41,7 +42,7 @@ class ImprovedChineseDetector:
     }
 
     # 簡體專有詞彙
-    SIMPLIFIED_PHRASES = {
+    SIMPLIFIED_PHRASES: ClassVar[set] = {
         '程序设计', '数据库', '软件工程', '网络安全', '云端运算', '机器学习',
         '项目管理', '系统分析', '用户界面', '信息安全', '质量保证', '技术支持',
         '业务开发', '客户服务', '人力资源', '财务会计', '营销企划', '产品经理',
@@ -50,7 +51,7 @@ class ImprovedChineseDetector:
 
     def detect_chinese_variant(self, text: str) -> tuple[str, float]:
         """
-        檢測中文變體（繁體或簡體）
+        檢測中文變體 (繁體或簡體)
 
         Args:
             text: 要檢測的文本
@@ -100,8 +101,8 @@ class ImprovedChineseDetector:
             return 'zh-CN', confidence
 
         else:
-            # 分數相同，檢查其他因素
-            # 如果有大量中文字符但沒有明確指標，預設為繁體（針對台灣市場）
+            # 分數相同, 檢查其他因素
+            # 如果有大量中文字符但沒有明確指標, 預設為繁體 (針對台灣市場)
             if chinese_char_count >= 20:
                 return 'zh-TW', 0.75
             else:
@@ -124,14 +125,14 @@ class ImprovedChineseDetector:
             chinese_ratio = sum(1 for c in text if '\u4e00' <= c <= '\u9fff') / len(text)
             english_ratio = sum(1 for c in text if c.isalpha() and ord(c) < 128) / len(text)
 
-            # 如果中英文都佔有一定比例，認為是混合文本
+            # 如果中英文都佔有一定比例, 認為是混合文本
             return chinese_ratio > 0.1 and english_ratio > 0.1
 
         return False
 
     def get_language_features(self, text: str) -> dict:
         """
-        獲取語言特徵詳細信息（用於調試和分析）
+        獲取語言特徵詳細信息 (用於調試和分析)
 
         Args:
             text: 要分析的文本

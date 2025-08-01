@@ -4,6 +4,7 @@ Combines multilingual support with YAML-based configuration management.
 """
 import logging
 from pathlib import Path
+from typing import ClassVar
 
 from src.core.simple_prompt_manager import SimplePromptManager
 from src.models.prompt_config import LLMConfig, PromptConfig
@@ -20,7 +21,7 @@ class UnifiedPromptService:
     4. Handles version management
     """
 
-    SUPPORTED_LANGUAGES = ["en", "zh-TW"]
+    SUPPORTED_LANGUAGES: ClassVar[list] = ["en", "zh-TW"]
 
     # Task path for all languages (now using unified directory with language-specific filenames)
     TASK_PATH = "keyword_extraction"
@@ -103,7 +104,7 @@ class UnifiedPromptService:
                 raise ValueError(
                     f"Version '{version}' not available for language '{language}'. "
                     f"Available: {self.list_versions(language)}"
-                )
+                ) from e
         else:
             prompt_config = self._cache[cache_key]
 

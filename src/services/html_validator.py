@@ -4,6 +4,7 @@ Validates and cleans HTML for TinyMCE compatibility and security.
 """
 import logging
 import re
+from typing import ClassVar
 
 from bs4 import BeautifulSoup
 
@@ -14,13 +15,13 @@ class HTMLValidator:
     """HTML 驗證和清理服務"""
 
     # 允許的 HTML 標籤白名單
-    ALLOWED_TAGS = {
+    ALLOWED_TAGS: ClassVar[set] = {
         'h1', 'h2', 'h3', 'h4', 'p', 'ul', 'li',
         'strong', 'em', 'br', 'a'
     }
 
     # 允許的屬性
-    ALLOWED_ATTRS = {
+    ALLOWED_ATTRS: ClassVar[dict] = {
         'a': ['href']
     }
 
@@ -71,20 +72,20 @@ class HTMLValidator:
 
     def _remove_disallowed_tags(self, soup: BeautifulSoup) -> None:
         """移除不允許的標籤"""
-        # 先移除危險標籤及其內容（script, style 等）
+        # 先移除危險標籤及其內容 (script, style 等)
         dangerous_tags = ['script', 'style', 'iframe', 'object', 'embed']
         for tag_name in dangerous_tags:
             for tag in soup.find_all(tag_name):
                 tag.decompose()  # 完全移除標籤及其內容
 
-        # 再處理其他不允許的標籤（保留內容）
+        # 再處理其他不允許的標籤 (保留內容)
         for tag in soup.find_all(True):
             if tag.name not in self.ALLOWED_TAGS and tag.name not in dangerous_tags:
-                # 保留內容，只移除標籤
+                # 保留內容, 只移除標籤
                 tag.unwrap()
 
     def _clean_attributes(self, soup: BeautifulSoup) -> None:
-        """清理標籤屬性，只保留允許的屬性"""
+        """清理標籤屬性, 只保留允許的屬性"""
         for tag in soup.find_all(True):
             # 獲取允許的屬性列表
             allowed = self.ALLOWED_ATTRS.get(tag.name, [])
@@ -162,14 +163,14 @@ class HTMLValidator:
             next_sibling = h2.find_next_sibling()
             while next_sibling:
                 if next_sibling.name == 'p':
-                    # 檢查是否像摘要（長度、不是聯絡資訊）
+                    # 檢查是否像摘要 (長度, 不是聯絡資訊)
                     text = next_sibling.get_text().strip()
                     if (len(text) > 50 and
                         not any(marker in text for marker in ['Email:', 'Location:', 'LinkedIn:', 'Phone:'])):
                         return True
                     break
                 elif next_sibling.name == 'h2':
-                    # 遇到下一個 h2，停止搜尋
+                    # 遇到下一個 h2, 停止搜尋
                     break
                 next_sibling = next_sibling.find_next_sibling()
 

@@ -185,11 +185,18 @@ def format_gap_analysis_html(parsed_response: dict[str, Any]) -> dict[str, Any]:
 
     # Overall assessment is already in paragraph format
     assessment = parsed_response.get('assessment', '')
-    if assessment and assessment not in ["", "Unable to generate overall assessment. Please review the strengths and gaps above.", "Overall assessment not available. Please refer to the detailed analysis above."]:
+    if assessment and assessment not in [
+        "",
+        "Unable to generate overall assessment. Please review the strengths and gaps above.",
+        "Overall assessment not available. Please refer to the detailed analysis above."
+    ]:
         overall_assessment = f'<p>{assessment}</p>'
     else:
         logging.warning("[GAP_ANALYSIS] Empty or default overall assessment detected in formatting")
-        overall_assessment = '<p>Unable to generate a comprehensive assessment. Please review the individual sections above for detailed analysis.</p>'
+        overall_assessment = (
+            '<p>Unable to generate a comprehensive assessment. '
+            'Please review the individual sections above for detailed analysis.</p>'
+        )
 
     # Log the final HTML output
     logging.info(f"[GAP_ANALYSIS_HTML] Final OverallAssessment HTML: {overall_assessment[:200]!r}...")
@@ -236,7 +243,10 @@ def check_for_empty_fields(formatted_response: dict[str, Any]) -> list[str]:
         ),
         "OverallAssessment": (
             formatted_response.get("OverallAssessment"),
-            ["<p></p>", "<p>Unable to generate a comprehensive assessment. Please review the individual sections above for detailed analysis.</p>",
+            [
+                "<p></p>",
+                "<p>Unable to generate a comprehensive assessment. "
+                "Please review the individual sections above for detailed analysis.</p>",
              "<p>Unable to generate overall assessment. Please review the strengths and gaps above.</p>",
              "<p>Overall assessment not available. Please refer to the detailed analysis above.</p>"]
         ),
@@ -309,7 +319,10 @@ class GapAnalysisService(TokenTrackingMixin):
             try:
                 # Log retry attempt
                 if attempt > 0:
-                    self.logger.info(f"[GAP_ANALYSIS_RETRY] Attempt {attempt + 1}/{max_attempts} for language: {language}")
+                    self.logger.info(
+                        f"[GAP_ANALYSIS_RETRY] Attempt {attempt + 1}/{max_attempts} "
+                        f"for language: {language}"
+                    )
 
                     # Track retry in monitoring
                     monitoring_service.track_event(
@@ -348,7 +361,10 @@ class GapAnalysisService(TokenTrackingMixin):
                         # Add jitter to avoid thundering herd
                         delay = retry_delays[attempt] * (0.5 + random.random())
 
-                        self.logger.info(f"[GAP_ANALYSIS_RETRY] Retrying in {delay:.1f}s due to empty fields: {', '.join(empty_fields)}")
+                        self.logger.info(
+                            f"[GAP_ANALYSIS_RETRY] Retrying in {delay:.1f}s due to empty fields: "
+                            f"{', '.join(empty_fields)}"
+                        )
 
                         # Track empty fields retry event
                         monitoring_service.track_event(
@@ -530,7 +546,11 @@ class GapAnalysisService(TokenTrackingMixin):
                 oa_match = re.search(r'<overall_assessment>(.*?)</overall_assessment>', llm_response, re.S)
                 if oa_match and not oa_match.group(1).strip():
                     self.logger.warning("Overall assessment tag found but content is empty")
-                    self.logger.debug(f"Response around overall_assessment: {llm_response[max(0, llm_response.find('<overall_assessment>')-100):llm_response.find('</overall_assessment>')+50]}")
+                    debug_start = max(0, llm_response.find('<overall_assessment>') - 100)
+                    debug_end = llm_response.find('</overall_assessment>') + 50
+                    self.logger.debug(
+                        f"Response around overall_assessment: {llm_response[debug_start:debug_end]}"
+                    )
 
             # Track token usage and metrics
             token_info = self.track_openai_usage(
@@ -584,10 +604,26 @@ class GapAnalysisService(TokenTrackingMixin):
             # Monitor and log empty fields
             empty_fields = []
             field_checks = {
-                "CoreStrengths": (formatted_response.get("CoreStrengths"), ["<ol></ol>", "<ol><li>Unable to analyze core strengths. Please try again.</li></ol>"]),
-                "KeyGaps": (formatted_response.get("KeyGaps"), ["<ol></ol>", "<ol><li>Unable to analyze key gaps. Please try again.</li></ol>"]),
-                "QuickImprovements": (formatted_response.get("QuickImprovements"), ["<ol></ol>", "<ol><li>Unable to analyze quick improvements. Please try again.</li></ol>"]),
-                "OverallAssessment": (formatted_response.get("OverallAssessment"), ["<p></p>", "<p>Unable to generate a comprehensive assessment. Please review the individual sections above for detailed analysis.</p>"])
+                "CoreStrengths": (
+                    formatted_response.get("CoreStrengths"),
+                    ["<ol></ol>", "<ol><li>Unable to analyze core strengths. Please try again.</li></ol>"]
+                ),
+                "KeyGaps": (
+                    formatted_response.get("KeyGaps"),
+                    ["<ol></ol>", "<ol><li>Unable to analyze key gaps. Please try again.</li></ol>"]
+                ),
+                "QuickImprovements": (
+                    formatted_response.get("QuickImprovements"),
+                    ["<ol></ol>", "<ol><li>Unable to analyze quick improvements. Please try again.</li></ol>"]
+                ),
+                "OverallAssessment": (
+                    formatted_response.get("OverallAssessment"),
+                    [
+                        "<p></p>",
+                        "<p>Unable to generate a comprehensive assessment. "
+                        "Please review the individual sections above for detailed analysis.</p>"
+                    ]
+                )
             }
 
             for field_name, (value, empty_values) in field_checks.items():

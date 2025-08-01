@@ -6,7 +6,7 @@ Manages language-specific prompts for English and Traditional Chinese.
 import json
 import logging
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any, ClassVar, NamedTuple
 
 from src.services.exceptions import PromptNotAvailableError
 
@@ -30,7 +30,7 @@ class BilingualPromptManager:
     - Traditional Chinese prompts (zh-TW): v1.2.0-zh-TW
     """
 
-    SUPPORTED_LANGUAGES = ["en", "zh-TW"]
+    SUPPORTED_LANGUAGES: ClassVar[list] = ["en", "zh-TW"]
     DEFAULT_VERSION = "latest"
 
     def __init__(self, prompt_base_path: str | None = None):
@@ -110,12 +110,15 @@ CRITICAL RULES FOR CONSISTENCY:
 EXAMPLES OF CORRECT EXTRACTION:
 
 Example 1:
-Input: "Senior data analyst with expertise in data visualization tools, creating dashboards and strategic decision-making"
-Output: {{"keywords": ["Data Analysis", "Data Visualization", "Dashboards", "Strategic Decision Making", "Senior Analyst", ...]}}
+Input: "Senior data analyst with expertise in data visualization tools, creating dashboards and "\
+"strategic decision-making"
+Output: {{"keywords": ["Data Analysis", "Data Visualization", "Dashboards", "\
+"Strategic Decision Making", "Senior Analyst", ...]}}
 
 Example 2:
 Input: "Cross-functional collaboration with teams, HR compensation and benefits analysis using Python programming"
-Output: {{"keywords": ["Cross-Functional Collaboration", "Compensation and Benefits", "HR", "Python", "Data Analysis", ...]}}
+Output: {{"keywords": ["Cross-Functional Collaboration", "Compensation and Benefits", "\
+"HR", "Python", "Data Analysis", ...]}}
 
 Example 3:
 Input: "Machine learning algorithms expert with AWS cloud services and React.js development skills"
@@ -132,7 +135,8 @@ Extract keywords from this job description with ABSOLUTE CONSISTENCY:
 Job Description:
 {job_description}
 
-CONSISTENCY REMINDER: Review your keywords to ensure no variations like "Cross-functional Teams" vs "Cross-Functional Collaboration" exist.
+CONSISTENCY REMINDER: Review your keywords to ensure no variations like "\
+"Cross-functional Teams" vs "Cross-Functional Collaboration" exist.
 
 Return only JSON with exactly 25 keywords: {{"keywords": ["Term1", "Term2", ..., "Term25"]}}"""
 
@@ -152,19 +156,19 @@ Return only JSON with exactly 25 keywords: {{"keywords": ["Term1", "Term2", ...,
         # Traditional Chinese v1.2.0-zh-TW prompt
         chinese_prompt = """您是專業的關鍵字提取專家。請分析以下職位描述並提取相關的專業關鍵字。
 
-要求：
+要求:
 1. 提取 25 個最能代表職位要求的專業關鍵字
-2. 專注於：技能、技術、工具、框架、證照、經驗水平
-3. 優先考慮技術技能和硬技能，而非軟技能
-4. 使用標準的業界術語（繁體中文）
+2. 專注於: 技能, 技術, 工具, 框架, 證照, 經驗水平
+3. 優先考慮技術技能和硬技能, 而非軟技能
+4. 使用標準的業界術語 (繁體中文)
 5. 移除重複項目並合併相似術語
-6. 格式為簡單清單，每行一個關鍵字
+6. 格式為簡單清單, 每行一個關鍵字
 7. 不使用編號、項目符號或額外格式
 
-職位描述：
+職位描述:
 {job_description}
 
-關鍵字："""
+關鍵字:"""
 
         self._prompt_cache["zh-TW-1.2.0-zh-TW"] = PromptConfig(
             version="1.2.0-zh-TW",
@@ -183,20 +187,20 @@ Return only JSON with exactly 25 keywords: {{"keywords": ["Term1", "Term2", ...,
         # Traditional Chinese v1.3.0-zh-TW prompt (latest)
         chinese_prompt_v13 = """您是專業的關鍵字提取專家。一致性是您的首要任務。
 
-從以下職位描述中提取關鍵字，確保絕對一致性：
+從以下職位描述中提取關鍵字, 確保絕對一致性:
 
 1. 提取精確 25 個關鍵字
 2. 必須包含所有提及的程式語言和工具
-3. 必須包含完整的職位頭銜（含職級）
-4. 套用標準化規則（如機器學習演算法→機器學習）
-5. 英文使用一致的標題大小寫（縮寫大寫）
+3. 必須包含完整的職位頭銜 (含職級)
+4. 套用標準化規則 (如機器學習演算法→機器學習)
+5. 英文使用一致的標題大小寫 (縮寫大寫)
 6. 按職位匹配重要性排序
 7. 仔細檢查優先關鍵字都已包含
 
-職位描述：
+職位描述:
 {job_description}
 
-僅回傳包含 25 個關鍵字的 JSON：{"keywords": ["詞彙1", "詞彙2", ..., "詞彙25"]}"""
+僅回傳包含 25 個關鍵字的 JSON: {"keywords": ["詞彙1", "詞彙2", ..., "詞彙25"]}"""
 
         self._prompt_cache["zh-TW-1.3.0-zh-TW"] = PromptConfig(
             version="1.3.0-zh-TW",
@@ -240,7 +244,10 @@ Return only JSON with exactly 25 keywords: {{"keywords": ["Term1", "Term2", ...,
 
         if version not in self._version_mapping[language]:
             available_versions = list(self._version_mapping[language].keys())
-            raise PromptNotAvailableError(f"Version '{version}' not available for language '{language}'. Available: {available_versions}")
+            raise PromptNotAvailableError(
+                f"Version '{version}' not available for language '{language}'. "
+                f"Available: {available_versions}"
+            )
 
         actual_version = self._version_mapping[language][version]
         cache_key = f"{language}-{actual_version}"

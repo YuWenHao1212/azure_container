@@ -3,7 +3,7 @@ Simplified prompt configuration models for LLM prompt management.
 No template engine required - just basic configuration.
 """
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -18,7 +18,7 @@ class LLMConfig(BaseModel):
     presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0, description="Presence penalty")
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict] = {
             "example": {
                 "temperature": 0.0,
                 "max_tokens": 400,
@@ -66,10 +66,10 @@ class PromptConfig(BaseModel):
         try:
             return user_prompt.format(**kwargs)
         except KeyError as e:
-            raise ValueError(f"Missing required variable in prompt: {e}")
+            raise ValueError(f"Missing required variable in prompt: {e}") from e
 
     class Config:
-        json_schema_extra = {
+        json_schema_extra: ClassVar[dict] = {
             "example": {
                 "version": "1.0.0",
                 "metadata": {

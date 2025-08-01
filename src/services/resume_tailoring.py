@@ -186,7 +186,10 @@ class ResumeTailoringService:
             original_resume=original_resume_html,
             core_strengths=gap_analysis.core_strengths if isinstance(gap_analysis.core_strengths, list) else [],
             key_gaps=gap_analysis.key_gaps if isinstance(gap_analysis.key_gaps, list) else [],
-            quick_improvements=gap_analysis.quick_improvements if isinstance(gap_analysis.quick_improvements, list) else [],
+            quick_improvements=(
+                gap_analysis.quick_improvements
+                if isinstance(gap_analysis.quick_improvements, list) else []
+            ),
             covered_keywords=covered_keywords,
             missing_keywords=missing_keywords,
             language=language,

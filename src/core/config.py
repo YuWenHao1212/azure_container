@@ -41,12 +41,18 @@ class Settings(BaseSettings):
     course_embedding_endpoint: str = Field(
         default="https://ai-azureai700705952086.cognitiveservices.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2023-05-15",
         validation_alias=AliasChoices("COURSE_EMBEDDING_ENDPOINT", "AZURE_OPENAI_COURSE_EMBEDDING_ENDPOINT"),
-        description="Course embedding endpoint - supports both COURSE_EMBEDDING_ENDPOINT and AZURE_OPENAI_COURSE_EMBEDDING_ENDPOINT"
+        description=(
+            "Course embedding endpoint - supports both COURSE_EMBEDDING_ENDPOINT "
+            "and AZURE_OPENAI_COURSE_EMBEDDING_ENDPOINT"
+        )
     )
     course_embedding_api_key: str = Field(
         default="",
         validation_alias=AliasChoices("COURSE_EMBEDDING_API_KEY", "AZURE_OPENAI_COURSE_EMBEDDING_API_KEY"),
-        description="Course embedding API key - supports both COURSE_EMBEDDING_API_KEY and AZURE_OPENAI_COURSE_EMBEDDING_API_KEY"
+        description=(
+            "Course embedding API key - supports both COURSE_EMBEDDING_API_KEY "
+            "and AZURE_OPENAI_COURSE_EMBEDDING_API_KEY"
+        )
     )
     course_embedding_model: str = "text-embedding-3-small"
 

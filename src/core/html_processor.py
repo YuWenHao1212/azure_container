@@ -3,6 +3,7 @@ HTML processor for parsing and rebuilding resume HTML.
 """
 
 import logging
+from typing import ClassVar
 
 from bs4 import BeautifulSoup, Tag
 
@@ -15,7 +16,7 @@ class HTMLProcessor:
     """Process HTML resumes for parsing and reconstruction"""
 
     # CSS classes for optimization markers
-    CSS_CLASSES = {
+    CSS_CLASSES: ClassVar[dict] = {
         OptimizationType.STRENGTH: "opt-strength",
         OptimizationType.KEYWORD: "opt-keyword",
         OptimizationType.PLACEHOLDER: "opt-placeholder",
@@ -24,7 +25,7 @@ class HTMLProcessor:
     }
 
     # Common section headers to look for
-    SECTION_HEADERS = ["h2", "h3"]
+    SECTION_HEADERS: ClassVar[list] = ["h2", "h3"]
 
     def parse_resume(self, html: str) -> ResumeStructure:
         """Parse HTML resume into structured sections"""
@@ -232,7 +233,10 @@ class HTMLProcessor:
 
                 # Only standardize if the title is actually different
                 if original_title != new_title:
-                    logger.info(f"Standardizing section title: '{original_title}' → '{new_title}' (will be marked as opt-modified)")
+                    logger.info(
+                        f"Standardizing section title: '{original_title}' → '{new_title}' "
+                        f"(will be marked as opt-modified)"
+                    )
 
                     # Clear the header and add new content with opt-modified
                     header.clear()

@@ -295,6 +295,7 @@ def generate_validation_report(response_body: Any) -> str:
         report.append("\nNo issues found.")
 
     report.append("\nResponse Structure:")
-    report.append(json.dumps(response_body, indent=2)[:500] + "..." if len(json.dumps(response_body)) > 500 else json.dumps(response_body, indent=2))
+    json_str = json.dumps(response_body, indent=2)
+    report.append(json_str[:500] + "..." if len(json_str) > 500 else json_str)
 
     return "\n".join(report)

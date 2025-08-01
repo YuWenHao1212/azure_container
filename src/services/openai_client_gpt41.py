@@ -30,7 +30,7 @@ class AzureOpenAIGPT41Client:
 
         # 設置 HTTP 客戶端
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(30.0, read=60.0),  # 30s 連接超時，60s 讀取超時
+            timeout=httpx.Timeout(30.0, read=60.0),  # 30s 連接超時, 60s 讀取超時
             headers={
                 "api-key": self.api_key,
                 "Content-Type": "application/json",
@@ -78,7 +78,10 @@ class AzureOpenAIGPT41Client:
             raise ValueError("Invalid message format. Each message must have 'role' and 'content'")
 
         # 構建請求 URL
-        url = f"{self.endpoint}/openai/deployments/{self.deployment_name}/chat/completions?api-version={self.api_version}"
+        url = (
+            f"{self.endpoint}/openai/deployments/{self.deployment_name}/"
+            f"chat/completions?api-version={self.api_version}"
+        )
 
         # 構建請求參數
         request_params = {
@@ -128,7 +131,9 @@ class AzureOpenAIGPT41Client:
 
         raise Exception("Max retries exceeded")
 
-    async def _stream_chat_completion(self, url: str, request_params: dict[str, Any]) -> AsyncGenerator[dict[str, Any], None]:
+    async def _stream_chat_completion(
+        self, url: str, request_params: dict[str, Any]
+    ) -> AsyncGenerator[dict[str, Any], None]:
         """處理串流模式的請求"""
         # Streaming implementation similar to original but with GPT-4.1 mini
         raise NotImplementedError("Streaming not implemented for GPT-4.1 mini client")
@@ -224,7 +229,7 @@ class AzureOpenAIGPT41Client:
 # Factory function for dependency injection
 def get_gpt41_mini_client() -> AzureOpenAIGPT41Client:
     """
-    工廠函數：建立 GPT-4.1 mini 客戶端實例
+    工廠函數: 建立 GPT-4.1 mini 客戶端實例
     從環境變數載入配置
 
     Returns:
@@ -254,7 +259,7 @@ def get_gpt41_mini_client() -> AzureOpenAIGPT41Client:
 # Async factory function for dependency injection
 async def get_gpt41_mini_client_async() -> AzureOpenAIGPT41Client:
     """
-    非同步工廠函數：建立 GPT-4.1 mini 客戶端實例
+    非同步工廠函數: 建立 GPT-4.1 mini 客戶端實例
 
     Returns:
         AzureOpenAIGPT41Client: 配置好的客戶端實例

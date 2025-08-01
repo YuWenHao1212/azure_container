@@ -1,7 +1,7 @@
 # flake8: noqa
 """
 完整的 Coursera ETL + Embedding Pipeline
-包含測試模式（3個課程）和完整模式（所有課程）
+包含測試模式 (3個課程) 和完整模式 (所有課程)
 ETL script with CLI output - print statements are intentional
 """
 import asyncio
@@ -52,7 +52,7 @@ class CourseraFullPipeline:
         
     def handle_interrupt(self, signum, frame):
         """處理中斷信號"""
-        print("\n\n⚠️  收到中斷信號，正在優雅地停止...")
+        print("\n\n⚠️  收到中斷信號, 正在優雅地停止...")
         self.should_stop = True
         self._save_progress()
         
@@ -146,10 +146,10 @@ class CourseraFullPipeline:
             print(f"   已有 embeddings: {embedding_count}")
             
             if self.test_mode:
-                print("   ⚠️  測試模式：將只處理前 3 個新課程")
+                print("   ⚠️  測試模式: 將只處理前 3 個新課程")
             elif course_count >= 8760:
-                print("   ✅ 資料已完整！")
-                response = input("\n要重新執行嗎？(y/N): ")
+                print("   ✅ 資料已完整!")
+                response = input("\n要重新執行嗎?(y/N): ")
                 if response.lower() != 'y':
                     self.should_stop = True
                     
@@ -214,12 +214,12 @@ class CourseraFullPipeline:
                             self._save_progress()
                         
                         # 速率限制和 API 限制檢查
-                        await asyncio.sleep(1.0)  # 增加延遲，更保守
+                        await asyncio.sleep(1.0)  # 增加延遲, 更保守
                         
-                        # 檢查 rate limit（從 response headers）
+                        # 檢查 rate limit (從 response headers)
                         remaining = response.headers.get('x-ratelimit-remaining-hour')
                         if remaining and int(remaining) < 100:
-                            print(f"\n⚠️  API 速率限制接近上限，剩餘: {remaining}/1000")
+                            print(f"\n⚠️  API 速率限制接近上限, 剩餘: {remaining}/1000")
                             print("   暫停 60 秒...")
                             await asyncio.sleep(60)
                         
@@ -504,15 +504,15 @@ async def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Coursera ETL + Embedding Pipeline')
-    parser.add_argument('--test', action='store_true', help='測試模式（只處理3個課程）')
-    parser.add_argument('--full', action='store_true', help='完整模式（處理所有課程）')
+    parser.add_argument('--test', action='store_true', help='測試模式 (只處理3個課程)')
+    parser.add_argument('--full', action='store_true', help='完整模式 (處理所有課程)')
     
     args = parser.parse_args()
     
     if not args.test and not args.full:
         print("請指定模式:")
-        print("  --test  測試模式（3個課程）")
-        print("  --full  完整模式（所有課程）")
+        print("  --test  測試模式 (3個課程)")
+        print("  --full  完整模式 (所有課程)")
         return
     
     # 執行 pipeline

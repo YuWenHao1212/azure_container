@@ -108,11 +108,15 @@ async def calculate_index_and_analyze_gap(
             request.language = "en"
 
         # Log request
+        keywords_count = (
+            len(request.keywords) if isinstance(request.keywords, list)
+            else len(request.keywords.split(','))
+        )
         logger.info(
             f"Index calculation and gap analysis request: "
             f"resume_length={len(request.resume)}, "
             f"job_desc_length={len(request.job_description)}, "
-            f"keywords_count={len(request.keywords) if isinstance(request.keywords, list) else len(request.keywords.split(','))}, "
+            f"keywords_count={keywords_count}, "
             f"language={request.language}"
         )
 
@@ -221,7 +225,7 @@ async def calculate_index_and_analyze_gap(
                 message="Service temporarily unavailable",
                 details=str(e)
             ).model_dump()
-        )
+        ) from e
 
     except ValueError as e:
         logger.error(f"Validation error in index cal and gap analysis: {e}")
@@ -239,7 +243,7 @@ async def calculate_index_and_analyze_gap(
                 message="Invalid request data",
                 details=str(e)
             ).model_dump()
-        )
+        ) from e
 
     except Exception as e:
         logger.error(f"Unexpected error in index cal and gap analysis: {e}", exc_info=True)
@@ -258,4 +262,4 @@ async def calculate_index_and_analyze_gap(
                 message="An unexpected error occurred",
                 details="Please try again later"
             ).model_dump()
-        )
+        ) from e

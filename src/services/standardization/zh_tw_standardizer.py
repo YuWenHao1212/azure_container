@@ -118,18 +118,18 @@ class TraditionalChineseStandardizer(BaseStandardizer):
         """
         # Remove common Chinese punctuation that shouldn't be in keywords
         punctuation_map = {
-            '，': '',
+            '，': '',  # noqa: RUF001
             '。': '',
-            '！': '',
-            '？': '',
-            '：': '',
-            '；': '',
+            '！': '',  # noqa: RUF001
+            '？': '',  # noqa: RUF001
+            '：': '',  # noqa: RUF001
+            '；': '',  # noqa: RUF001
             '「': '',
             '」': '',
             '『': '',
             '』': '',
-            '（': '',
-            '）': '',
+            '（': '',  # noqa: RUF001
+            '）': '',  # noqa: RUF001
             '【': '',
             '】': ''
         }

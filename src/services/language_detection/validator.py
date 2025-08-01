@@ -128,7 +128,9 @@ class LanguageValidator:
         logger.debug(f"Text validation passed for {len(text)} characters")
         return LanguageValidationResult(is_valid=True)
 
-    async def validate_with_detection(self, text: str, expected_language: Optional[str] = None) -> LanguageValidationResult:
+    async def validate_with_detection(
+        self, text: str, expected_language: Optional[str] = None
+    ) -> LanguageValidationResult:
         """
         Validate text with actual language detection.
 

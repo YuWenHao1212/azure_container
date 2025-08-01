@@ -5,7 +5,7 @@ Uses langdetect library with Traditional Chinese support.
 
 import logging
 import time
-from typing import NamedTuple
+from typing import ClassVar, NamedTuple
 
 from langdetect import detect, detect_langs
 from langdetect.lang_detect_exception import LangDetectException
@@ -45,13 +45,13 @@ class LanguageDetectionService:
     - And all other languages
     """
 
-    SUPPORTED_LANGUAGES = ['en', 'zh-TW']
+    SUPPORTED_LANGUAGES: ClassVar[list] = ['en', 'zh-TW']
     CONFIDENCE_THRESHOLD = 0.8
     MIN_TEXT_LENGTH = 50
 
     # Comprehensive Traditional vs Simplified Chinese character sets for accurate differentiation
     # These sets focus on the most distinguishing characters commonly found in job descriptions
-    TRADITIONAL_CHARS = set(
+    TRADITIONAL_CHARS: ClassVar[set] = set(
         # Core traditional technology terms
         '繁體語機業資訊軟體開發設計測試資料庫網路計劃團隊責任工作經驗技能專業證照學歷維護系統候選尋找精通熟悉需要具備負責'
         # Extended traditional-specific characters
@@ -63,7 +63,7 @@ class LanguageDetectionService:
         '團隊合作協作配合默契溝通交流互動參與投入貢獻價值創造生產製作建設構建設計開發維護升級更新改進完善優化調整修改'
     )
 
-    SIMPLIFIED_CHARS = set(
+    SIMPLIFIED_CHARS: ClassVar[set] = set(
         # Core simplified technology terms
         '繁体语机业资讯软体开发设计测试资料库网络计划团队责任工作经验技能专业证照学历维护系统候选寻找精通熟悉需要具备负责'
         # Extended simplified-specific characters
@@ -184,7 +184,10 @@ class LanguageDetectionService:
 
             detection_time_ms = int((time.time() - start_time) * 1000)
 
-            logger.info(f"Language detected: {detected_lang}, confidence: {confidence:.3f}, time: {detection_time_ms}ms")
+            logger.info(
+                f"Language detected: {detected_lang}, confidence: {confidence:.3f}, "
+                f"time: {detection_time_ms}ms"
+            )
 
             return LanguageDetectionResult(
                 language=detected_lang,
@@ -221,7 +224,10 @@ class LanguageDetectionService:
         # Count total Chinese characters
         chinese_chars = sum(1 for char in text if '\u4e00' <= char <= '\u9fff')
 
-        logger.debug(f"Chinese variant analysis - Traditional: {traditional_count}, Simplified: {simplified_count}, Total Chinese: {chinese_chars}")
+        logger.debug(
+            f"Chinese variant analysis - Traditional: {traditional_count}, "
+            f"Simplified: {simplified_count}, Total Chinese: {chinese_chars}"
+        )
 
         # More strict Traditional Chinese detection
         if traditional_count > 0 and traditional_count > simplified_count:

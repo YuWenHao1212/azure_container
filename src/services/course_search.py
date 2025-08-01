@@ -71,7 +71,7 @@ class CourseSearchService:
             filters: 額外過濾條件 (例如: {"manufacturer": "Google"})
 
         Returns:
-            相似課程列表，包含相似度分數
+            相似課程列表, 包含相似度分數
         """
         start_time = datetime.now()
 
@@ -136,7 +136,7 @@ class CourseSearchService:
                         params.append(filters['category'])
                         param_index += 1
 
-                    # 支援 category_list 過濾（多個分類）
+                    # 支援 category_list 過濾 (多個分類)
                     if 'category_list' in filters:
                         placeholders = ','.join([f'${param_index + i}' for i in range(len(filters['category_list']))])
                         filter_conditions.append(f"c.category IN ({placeholders})")
@@ -154,7 +154,10 @@ class CourseSearchService:
                 params.append(limit)
 
                 # 執行查詢
-                logger.debug(f"[CourseSearch] Executing vector search with threshold={similarity_threshold}, limit={limit}")
+                logger.debug(
+                    f"[CourseSearch] Executing vector search with threshold={similarity_threshold}, "
+                    f"limit={limit}"
+                )
                 results = await conn.fetch(base_query, *params)
 
                 # 格式化結果
@@ -163,7 +166,10 @@ class CourseSearchService:
                     course = {
                         "id": row['id'],
                         "name": row['name'],
-                        "description": row['description'][:500] + "..." if len(row['description']) > 500 else row['description'],
+                        "description": (
+                            row['description'][:500] + "..."
+                            if len(row['description']) > 500 else row['description']
+                        ),
                         "provider": row['provider'],
                         "provider_standardized": row['provider_standardized'] or '',
                         "provider_logo_url": row['provider_logo_url'] or '',
@@ -239,7 +245,7 @@ class CourseSearchService:
             if target_embedding is None:
                 return []
 
-            # 搜尋相似課程（排除自己）
+            # 搜尋相似課程 (排除自己)
             results = await conn.fetch("""
                 SELECT
                     c.id,
@@ -262,7 +268,7 @@ class CourseSearchService:
                 LIMIT $3
             """, target_embedding, course_id, limit)
 
-            # 不再需要映射，直接使用 course_type_standard
+            # 不再需要映射, 直接使用 course_type_standard
 
             # 格式化結果
             similar_courses = []
@@ -276,7 +282,10 @@ class CourseSearchService:
                 course = {
                     "id": row['id'],
                     "name": row['name'],
-                    "description": row['description'][:300] + "..." if len(row['description']) > 300 else row['description'],
+                    "description": (
+                        row['description'][:300] + "..."
+                        if len(row['description']) > 300 else row['description']
+                    ),
                     "provider": row['provider'],
                     "provider_standardized": row['provider_standardized'] or '',
                     "provider_logo_url": row['provider_logo_url'] or '',
@@ -341,13 +350,13 @@ class CourseSearchService:
         similarity_threshold: float = 0.3
     ) -> dict[str, Any]:
         """
-        改進版課程搜尋（第二版）
+        改進版課程搜尋 (第二版)
 
         Args:
             skill_name: 技能名稱
             search_context: 搜尋情境描述
-            limit: 回傳結果數量（預設 5，最大 10）
-            similarity_threshold: 相似度門檻（預設 0.3）
+            limit: 回傳結果數量 (預設 5, 最大 10)
+            similarity_threshold: 相似度門檻 (預設 0.3)
 
         Returns:
             CourseSearchResponse 格式的字典
@@ -385,7 +394,7 @@ class CourseSearchService:
             # 建立查詢文本
             query_text = f"{skill_name} {search_context}".strip()
 
-            # 向量搜尋（含重試）
+            # 向量搜尋 (含重試)
             courses = await self._search_with_retry(
                 query_text=query_text,
                 limit=limit,
@@ -412,7 +421,7 @@ class CourseSearchService:
                 # 取得課程類型
                 course_type = course.get('course_type', 'course')
 
-                # 統計課程類型（直接使用 course_type_standard 的值）
+                # 統計課程類型 (直接使用 course_type_standard 的值)
                 if course_type in type_counts:
                     type_counts[course_type] += 1
 
@@ -462,7 +471,7 @@ class CourseSearchService:
             # 記錄錯誤
             self._track_search_error(e, skill_name, search_context)
 
-            # 回傳錯誤（Bubble.io 相容）
+            # 回傳錯誤 (Bubble.io 相容)
             return CourseSearchResponse(
                 success=False,
                 data=CourseSearchData(),
@@ -522,7 +531,7 @@ class CourseSearchService:
         limit: int,
         threshold: float
     ) -> list[dict[str, Any]]:
-        """執行向量搜尋（第二版）"""
+        """執行向量搜尋 (第二版)"""
         # 從連線池取得連線
         async with self._connection_pool.acquire() as conn:
             # 註冊 vector 類型
@@ -567,7 +576,7 @@ class CourseSearchService:
             logger.debug(f"[CourseSearch] Executing vector search with threshold={threshold}, limit={limit}")
             results = await conn.fetch(base_query, *params)
 
-            # 不再需要映射，直接使用 course_type_standard
+            # 不再需要映射, 直接使用 course_type_standard
 
             # 格式化結果
             courses = []

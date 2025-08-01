@@ -127,7 +127,7 @@ class SimplePromptManager:
         try:
             return template.format(**variables)
         except KeyError as e:
-            raise ValueError(f"Missing required variable in prompt: {e}")
+            raise ValueError(f"Missing required variable in prompt: {e}") from e
 
     def list_versions(self, task: str) -> list[str]:
         """List all available versions for a task."""

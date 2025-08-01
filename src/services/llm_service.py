@@ -97,7 +97,7 @@ class LLMService(TokenTrackingMixin):
                 "error_type": "AzureOpenAIError",
                 "error_message": str(e)
             })
-            raise LLMServiceError(f"LLM formatting failed: {e!s}")
+            raise LLMServiceError(f"LLM formatting failed: {e!s}") from e
 
         except Exception as e:
             logger.error(f"Unexpected error in LLM formatting: {e!s}")
@@ -106,7 +106,7 @@ class LLMService(TokenTrackingMixin):
                 "error_type": type(e).__name__,
                 "error_message": str(e)
             })
-            raise LLMServiceError(f"LLM formatting failed: {e!s}")
+            raise LLMServiceError(f"LLM formatting failed: {e!s}") from e
 
     def _extract_html_content(self, content: str) -> str:
         """

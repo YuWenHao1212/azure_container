@@ -80,11 +80,15 @@ async def calculate_index(
 
     try:
         # Log request
+        keywords_count = (
+            len(request.keywords) if isinstance(request.keywords, list)
+            else len(request.keywords.split(','))
+        )
         logger.info(
             f"Index calculation request: "
             f"resume_length={len(request.resume)}, "
             f"job_desc_length={len(request.job_description)}, "
-            f"keywords_count={len(request.keywords) if isinstance(request.keywords, list) else len(request.keywords.split(','))}"
+            f"keywords_count={keywords_count}"
         )
 
         # Create service instance
@@ -141,7 +145,7 @@ async def calculate_index(
                 message="Service temporarily unavailable",
                 details=str(e)
             ).model_dump()
-        )
+        ) from e
 
     except ValueError as e:
         logger.error(f"Validation error in index calculation: {e}")
@@ -159,7 +163,7 @@ async def calculate_index(
                 message="Invalid request data",
                 details=str(e)
             ).model_dump()
-        )
+        ) from e
 
     except Exception as e:
         logger.error(f"Unexpected error in index calculation: {e}", exc_info=True)
@@ -178,4 +182,4 @@ async def calculate_index(
                 message="An unexpected error occurred",
                 details="Please try again later"
             ).model_dump()
-        )
+        ) from e

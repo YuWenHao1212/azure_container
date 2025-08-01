@@ -4,6 +4,7 @@ Handles OCR error correction specific to resume formatting.
 """
 import logging
 import re
+from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +13,8 @@ class ResumeTextProcessor:
     """履歷文字處理服務 - 專門處理 OCR 錯誤"""
 
     # OCR 錯誤修正對照表
-    EMAIL_CORRECTIONS = {
-        '＠': '@',
+    EMAIL_CORRECTIONS: ClassVar[dict] = {
+        '＠': '@',  # noqa: RUF001
         '.c0m': '.com',
         '.c0n': '.com',
         '.con': '.com',
@@ -25,7 +26,7 @@ class ResumeTextProcessor:
         'hotmai1': 'hotmail'
     }
 
-    PHONE_CORRECTIONS = {
+    PHONE_CORRECTIONS: ClassVar[dict] = {
         'O': '0',
         'o': '0',
         'I': '1',
@@ -37,7 +38,7 @@ class ResumeTextProcessor:
     }
 
     # 常見公司/學校名稱修正
-    INSTITUTION_CORRECTIONS = {
+    INSTITUTION_CORRECTIONS: ClassVar[dict] = {
         'Micr0soft': 'Microsoft',
         'G00gle': 'Google',
         'Amaz0n': 'Amazon',
@@ -57,7 +58,7 @@ class ResumeTextProcessor:
         """
         預處理 OCR 文字
 
-        只支援新格式：【Type】:Content（每行一個項目）
+        只支援新格式: 【Type】:Content (每行一個項目)
         """
         # 重置計數器
         self.email_fix_count = 0
@@ -65,7 +66,7 @@ class ResumeTextProcessor:
         self.ocr_error_count = 0
         self.date_fix_count = 0
 
-        # 處理新格式：保留每行結構，只清理內容部分
+        # 處理新格式: 保留每行結構, 只清理內容部分
         lines = text.strip().split('\n')
         cleaned_lines = []
 
@@ -91,7 +92,7 @@ class ResumeTextProcessor:
                 else:
                     cleaned_lines.append(line)
             else:
-                # 不符合格式的行，進行基本清理
+                # 不符合格式的行, 進行基本清理
                 cleaned_lines.append(line)
 
         return '\n'.join(cleaned_lines)
@@ -116,8 +117,8 @@ class ResumeTextProcessor:
                 self.email_fix_count += 1
 
         # 使用正則表達式修正 email 格式
-        # 匹配可能的 email 模式，包括錯誤的 @ 符號
-        email_pattern = r'([a-zA-Z0-9._%+-]+)[@＠]([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
+        # 匹配可能的 email 模式, 包括錯誤的 @ 符號
+        email_pattern = r'([a-zA-Z0-9._%+-]+)[@＠]([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'  # noqa: RUF001
         matches = re.findall(email_pattern, text)
 
         for match in matches:
@@ -136,13 +137,13 @@ class ResumeTextProcessor:
     def _fix_phone_errors(self, text: str) -> str:
         """修正電話號碼相關的 OCR 錯誤"""
         # 尋找可能的電話號碼模式
-        # 支援多種格式：+1 (123) 456-7890, 123-456-7890, etc.
+        # 支援多種格式: +1 (123) 456-7890, 123-456-7890, etc.
         phone_patterns = [
-            # 國際格式：+1-555-123-4567, +86 138 0000 0000
+            # 國際格式: +1-555-123-4567, +86 138 0000 0000
             r'\+[0-9IOl]{1,3}[\s.-]?[0-9IOl]{3,4}[\s.-]?[0-9IOl]{3,4}[\s.-]?[0-9IOl]{3,4}',
-            # 基本格式：555-123-4567, 555.123.4567
+            # 基本格式: 555-123-4567, 555.123.4567
             r'[0-9IOl]{3}[\s.-][0-9IOl]{3}[\s.-][0-9IOl]{4}',
-            # 帶括號格式：(408) 555-0123
+            # 帶括號格式: (408) 555-0123
             r'\([0-9IOl]{3}\)\s*[0-9IOl]{3}[\s.-][0-9IOl]{4}',
             # 更寬鬆的格式來捕捉各種變化
             r'[\+\(]?[0-9IOl]{1,4}[\)\s.-]?[0-9IOl]{3,4}[\s.-]?[0-9IOl]{3,4}[\s.-]?[0-9IOl]{3,4}'
@@ -214,9 +215,17 @@ class ResumeTextProcessor:
             # 2023-01, 2023-1
             (r'\b(\d{4})-(\d{1,2})\b', self._convert_iso_date),
             # January 2023, Jan 2023
-            (r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\b', self._convert_full_month),
+            (
+                r'\b(January|February|March|April|May|June|July|August|'
+                r'September|October|November|December)\s+(\d{4})\b',
+                self._convert_full_month
+            ),
             # Sept 2023, Oct. 2023 等縮寫格式
-            (r'\b(Jan\.?|Feb\.?|Mar\.?|Apr\.?|May\.?|Jun\.?|Jul\.?|Aug\.?|Sept\.?|Oct\.?|Nov\.?|Dec\.?)\s+(\d{4})\b', self._convert_abbrev_month),
+            (
+                r'\b(Jan\.?|Feb\.?|Mar\.?|Apr\.?|May\.?|Jun\.?|Jul\.?|Aug\.?|'
+                r'Sept\.?|Oct\.?|Nov\.?|Dec\.?)\s+(\d{4})\b',
+                self._convert_abbrev_month
+            ),
             # 01-2023, 1-2023
             (r'\b(\d{1,2})-(\d{4})\b', self._convert_numeric_date)
         ]

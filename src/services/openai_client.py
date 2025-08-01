@@ -36,14 +36,20 @@ class AzureOpenAIServerError(AzureOpenAIError):
 class AzureOpenAIClient:
     """Azure OpenAI client for GPT-4o-2 model integration."""
 
-    def __init__(self, endpoint: str, api_key: str, deployment_name: str = "gpt-4o-2", api_version: str = "2024-02-15-preview"):
+    def __init__(
+        self,
+        endpoint: str,
+        api_key: str,
+        deployment_name: str = "gpt-4o-2",
+        api_version: str = "2024-02-15-preview"
+    ):
         """
         初始化 Azure OpenAI 客戶端
 
         Args:
             endpoint: Azure OpenAI 端點 URL
             api_key: API 金鑰
-            deployment_name: 部署名稱（動態指定，預設為 gpt-4o-2 保持向後相容）
+            deployment_name: 部署名稱 (動態指定, 預設為 gpt-4o-2 保持向後相容)
             api_version: API 版本
         """
         self.endpoint = endpoint.rstrip('/')
@@ -53,7 +59,7 @@ class AzureOpenAIClient:
 
         # 設置 HTTP 客戶端
         self.client = httpx.AsyncClient(
-            timeout=httpx.Timeout(30.0, read=60.0),  # 30s 連接超時，60s 讀取超時
+            timeout=httpx.Timeout(30.0, read=60.0),  # 30s 連接超時, 60s 讀取超時
             headers={
                 "api-key": self.api_key,
                 "Content-Type": "application/json",
@@ -79,7 +85,7 @@ class AzureOpenAIClient:
 
         Args:
             messages: 對話訊息列表
-            model: 模型名稱（固定使用 gpt-4o-2）
+            model: 模型名稱 (固定使用 gpt-4o-2)
             temperature: 溫度參數 (0.0-1.0)
             max_tokens: 最大生成 token 數
             stream: 是否使用串流模式
@@ -234,7 +240,7 @@ class AzureOpenAIClient:
                                 self.logger.warning(f"Failed to parse streaming data: {data}")
                                 continue
 
-                return  # 成功完成，退出重試循環
+                return  # 成功完成, 退出重試循環
 
             except (AzureOpenAIRateLimitError, AzureOpenAIServerError) as e:
                 if attempt < self.max_retries - 1:
@@ -344,11 +350,11 @@ class AzureOpenAIClient:
 # Factory function for dependency injection
 def get_azure_openai_client(deployment_name: str = "gpt-4o-2") -> AzureOpenAIClient:
     """
-    工廠函數：建立 AzureOpenAI 客戶端實例
+    工廠函數: 建立 AzureOpenAI 客戶端實例
     從環境變數載入配置
 
     Args:
-        deployment_name: Azure OpenAI 部署名稱（可選，預設為 gpt-4o-2）
+        deployment_name: Azure OpenAI 部署名稱 (可選, 預設為 gpt-4o-2)
 
     Returns:
         AzureOpenAIClient: 配置好的客戶端實例
@@ -378,7 +384,7 @@ def get_azure_openai_client(deployment_name: str = "gpt-4o-2") -> AzureOpenAICli
 # Async factory function for dependency injection
 async def get_azure_openai_client_async() -> AzureOpenAIClient:
     """
-    非同步工廠函數：建立 AzureOpenAI 客戶端實例
+    非同步工廠函數: 建立 AzureOpenAI 客戶端實例
 
     Returns:
         AzureOpenAIClient: 配置好的客戶端實例

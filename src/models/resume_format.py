@@ -33,7 +33,7 @@ class ResumeFormatRequest(BaseModel):
         if len(v.strip()) < 100:
             raise ValueError("OCR text too short, minimum 100 characters required")
 
-        # 檢查是否至少有兩行（types 和 content）
+        # 檢查是否至少有兩行 (types 和 content)
         lines = v.strip().split('\n')
         if len(lines) < 2:
             raise ValueError("OCR text must contain at least 2 lines (types and content)")

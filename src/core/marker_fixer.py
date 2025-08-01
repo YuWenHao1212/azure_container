@@ -3,7 +3,7 @@ Marker Fixer - Ensures optimization markers are only applied to specific keyword
 """
 
 import re
-from typing import Optional
+from typing import ClassVar, Optional
 
 from bs4 import BeautifulSoup, NavigableString
 
@@ -12,10 +12,10 @@ class MarkerFixer:
     """Fix incorrectly applied optimization markers in HTML"""
 
     # Optimization CSS classes that should only be on spans
-    SPAN_ONLY_CLASSES = ["opt-keyword", "opt-strength", "opt-placeholder", "opt-improvement"]
+    SPAN_ONLY_CLASSES: ClassVar[list] = ["opt-keyword", "opt-strength", "opt-placeholder", "opt-improvement"]
 
     # Classes that can be on block elements
-    BLOCK_ALLOWED_CLASSES = ["opt-new"]
+    BLOCK_ALLOWED_CLASSES: ClassVar[list] = ["opt-new"]
 
     def fix_markers(self, html: str) -> str:
         """Fix optimization markers to ensure they're only on appropriate elements"""

@@ -69,7 +69,10 @@ async def tailor_resume(
             include_markers=request.options.include_visual_markers
         )
 
-        logger.info(f"Resume tailoring completed: {result.markers.new_section} new sections, {result.markers.modified} modified content")
+        logger.info(
+            f"Resume tailoring completed: {result.markers.new_section} new sections, "
+            f"{result.markers.modified} modified content"
+        )
 
         return TailoringResponse(
             success=True,

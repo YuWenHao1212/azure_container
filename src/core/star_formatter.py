@@ -3,14 +3,14 @@ STAR/PAR formatter for converting experience descriptions.
 """
 
 import re
-from typing import Optional
+from typing import ClassVar, Optional
 
 
 class STARFormatter:
     """Format experience descriptions using STAR/PAR methodology"""
 
     # Common action verbs by experience level
-    ACTION_VERBS = {
+    ACTION_VERBS: ClassVar[dict] = {
         "junior": [
             "Assisted", "Contributed", "Participated", "Supported",
             "Learned", "Developed", "Created", "Built", "Implemented"
@@ -26,7 +26,7 @@ class STARFormatter:
     }
 
     # Patterns that indicate STAR/PAR format markers (to be removed)
-    FORMAT_MARKERS = [
+    FORMAT_MARKERS: ClassVar[list] = [
         r'\s*\(S\)\s*', r'\s*\(T\)\s*', r'\s*\(A\)\s*', r'\s*\(R\)\s*',
         r'\s*\(P\)\s*', r'\s*\[S\]\s*', r'\s*\[T\]\s*', r'\s*\[A\]\s*',
         r'\s*\[R\]\s*', r'\s*\[P\]\s*'

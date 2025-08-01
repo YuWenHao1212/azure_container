@@ -186,7 +186,11 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                     "client_type": client_info["client_type"],
                     "client_category": client_category,
                     "bubble_compatible": validation_result.get("bubble_compatible") if validation_result else None,
-                    "validation_issues": validation_result.get("issues") if validation_result and not validation_result.get("bubble_compatible") else None
+                    "validation_issues": (
+                        validation_result.get("issues")
+                        if validation_result and not validation_result.get("bubble_compatible")
+                        else None
+                    )
                 }
             )
 
@@ -228,7 +232,10 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                         "status_code": response.status_code,
                         "duration_ms": duration_ms,
                         "bubble_compatible": validation_result.get("bubble_compatible") if validation_result else None,
-                        "has_validation_issues": len(validation_result.get("issues", [])) > 0 if validation_result else None
+                        "has_validation_issues": (
+                            len(validation_result.get("issues", [])) > 0
+                            if validation_result else None
+                        )
                     }
                 )
 

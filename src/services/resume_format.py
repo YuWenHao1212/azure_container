@@ -48,7 +48,7 @@ class ResumeFormatService(TokenTrackingMixin):
         格式化履歷主流程
 
         Args:
-            ocr_text: OCR 提取的文字（格式：第一行types，第二行content）
+            ocr_text: OCR 提取的文字 (格式: 第一行types, 第二行content)
             supplement_info: 可選的補充資訊
 
         Returns:
@@ -62,7 +62,7 @@ class ResumeFormatService(TokenTrackingMixin):
             cleaned_text = self.text_processor.preprocess_ocr_text(ocr_text)
 
             # 2. 準備 LLM 輸入
-            # OCR 輸出格式：第一行是逗號分隔的 types，第二行是逗號分隔的內容
+            # OCR 輸出格式: 第一行是逗號分隔的 types, 第二行是逗號分隔的內容
             logger.info("Preparing LLM input")
             llm_input = self._prepare_llm_input(cleaned_text, supplement_info)
 
@@ -70,7 +70,7 @@ class ResumeFormatService(TokenTrackingMixin):
             logger.info("Calling LLM for resume formatting")
             formatted_html = await self._call_llm_with_retry(llm_input)
 
-            # 4. 文字後處理（OCR 錯誤修正等）
+            # 4. 文字後處理 (OCR 錯誤修正等)
             logger.info("Post-processing HTML content")
             processed_html = self.text_processor.postprocess_html(formatted_html)
 
@@ -120,7 +120,7 @@ class ResumeFormatService(TokenTrackingMixin):
                 "ocr_text_length": len(ocr_text)
             })
 
-            raise ProcessingError(f"Resume formatting failed: {e!s}")
+            raise ProcessingError(f"Resume formatting failed: {e!s}") from e
 
     def _prepare_llm_input(
         self,
@@ -166,7 +166,10 @@ class ResumeFormatService(TokenTrackingMixin):
                 system_prompt = prompt_config.get_system_prompt()
                 user_prompt = prompt_config.format_user_prompt(**llm_input)
 
-                logger.info(f"Prompt config loaded - system: {len(system_prompt) if system_prompt else 0} chars, user template exists: {hasattr(prompt_config, 'user_prompt')}")
+                logger.info(
+                    f"Prompt config loaded - system: {len(system_prompt) if system_prompt else 0} chars, "
+                    f"user template exists: {hasattr(prompt_config, 'user_prompt')}"
+                )
 
                 # 準備訊息
                 messages = []
@@ -215,7 +218,7 @@ class ResumeFormatService(TokenTrackingMixin):
                 if not content or not content.strip():
                     raise LLMServiceError("LLM returned empty response")
 
-                # 清理 HTML 內容（移除可能的 markdown 標記）
+                # 清理 HTML 內容 (移除可能的 markdown 標記)
                 cleaned_content = self._extract_html_content(content)
 
                 return cleaned_content
@@ -240,7 +243,7 @@ class ResumeFormatService(TokenTrackingMixin):
                 else:
                     raise LLMServiceError(
                         f"LLM formatting failed after {max_retries} attempts: {e!s}"
-                    )
+                    ) from e
 
     def _detect_sections(self, html: str) -> SectionsDetected:
         """檢測履歷中的各個區段"""

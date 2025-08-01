@@ -1,5 +1,5 @@
 """Course Search Models for Bubble.io compatibility"""
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, validator
 
@@ -35,7 +35,7 @@ class CourseSearchRequest(BaseModel):
         return max(0.1, min(v, 1.0))
 
     class Config:
-        schema_extra = {
+        schema_extra: ClassVar[dict] = {
             "example": {
                 "skill_name": "Python",
                 "search_context": "for data analysis and machine learning",
@@ -84,7 +84,7 @@ class ErrorModel(BaseModel):
     details: str = ""
 
 class CourseSearchResponse(BaseModel):
-    """課程搜尋回應（Bubble.io 相容）"""
+    """課程搜尋回應 (Bubble.io 相容)"""
     success: bool
     data: CourseSearchData
     error: ErrorModel

@@ -8,6 +8,7 @@ import time
 from collections import defaultdict, deque
 from datetime import datetime
 from threading import Lock
+from typing import ClassVar
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -82,7 +83,10 @@ class ResponseTimeTracker:
             for error_code, count in self.error_counts.items():
                 stats["errors"][error_code] = {
                     "count": count,
-                    "last_seen": list(self.last_errors[error_code])[-1]["timestamp"] if self.last_errors[error_code] else None,
+                    "last_seen": (
+                        list(self.last_errors[error_code])[-1]["timestamp"]
+                        if self.last_errors[error_code] else None
+                    ),
                     "recent_examples": list(self.last_errors[error_code])[-3:]
                 }
 
@@ -107,7 +111,7 @@ class LightweightMonitoringMiddleware(BaseHTTPMiddleware):
     """
 
     # Error code mapping
-    ERROR_CODE_MAP = {
+    ERROR_CODE_MAP: ClassVar[dict] = {
         # Client errors (4xx)
         400: "INVALID_REQUEST",
         401: "UNAUTHORIZED",

@@ -169,7 +169,7 @@ class SimplifiedLanguageDetector(LanguageDetectionService):
                 raise LanguageDetectionError(
                     text_length=len(text),
                     reason=f"langdetect library error: {e!s}"
-                )
+                ) from e
 
             # 3. Analyze language composition
             stats = self.analyze_language_composition(text)
@@ -280,4 +280,4 @@ class SimplifiedLanguageDetector(LanguageDetectionService):
             raise LanguageDetectionError(
                 text_length=len(text) if text else 0,
                 reason=f"Unexpected detection error: {e!s}"
-            )
+            ) from e

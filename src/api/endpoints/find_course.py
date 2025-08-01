@@ -17,7 +17,7 @@ async def search_courses(request: CourseSearchRequest) -> CourseSearchResponse:
     """
     搜尋相關課程
 
-    根據技能名稱和搜尋情境，使用向量相似度搜尋最相關的課程。
+    根據技能名稱和搜尋情境, 使用向量相似度搜尋最相關的課程。
     支援 Tech/Non-Tech 分類過濾。
     """
     try:
@@ -42,7 +42,7 @@ async def search_courses(request: CourseSearchRequest) -> CourseSearchResponse:
             "search_context": request.search_context
         })
 
-        # Bubble.io 相容：總是回傳 200 狀態碼
+        # Bubble.io 相容: 總是回傳 200 狀態碼
         return CourseSearchResponse(
             success=False,
             data=CourseSearchData(),

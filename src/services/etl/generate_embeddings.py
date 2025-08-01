@@ -43,7 +43,7 @@ class CourseEmbeddingGenerator:
             self.stats["total_courses"] = len(courses)
             
             if not courses:
-                print("✅ 所有課程都已有 embeddings！")
+                print("✅ 所有課程都已有 embeddings!")
                 return
             
             print(f"📚 找到 {len(courses)} 個需要產生 embedding 的課程")
@@ -73,7 +73,7 @@ class CourseEmbeddingGenerator:
             duration = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()
             
             print("\n" + "=" * 60)
-            print("✅ Embedding 產生完成！")
+            print("✅ Embedding 產生完成!")
             print(f"   總時間: {duration:.2f} 秒")
             print(f"   總課程數: {self.stats['total_courses']}")
             print(f"   已處理: {self.stats['processed']}")
@@ -152,7 +152,7 @@ class CourseEmbeddingGenerator:
             embeddings = await self.embedding_client.create_embeddings(texts)
             
             duration = (datetime.now() - start_time).total_seconds()
-            print(f"   ✅ 完成！耗時: {duration:.2f} 秒")
+            print(f"   ✅ 完成!耗時: {duration:.2f} 秒")
             
             # 儲存到資料庫
             await self._save_embeddings(valid_courses, embeddings)
@@ -179,7 +179,7 @@ class CourseEmbeddingGenerator:
     
     def _create_embedding_text(self, course: dict[str, Any]) -> str:
         """建立用於 embedding 的文本"""
-        # 組合相關欄位，給予不同權重
+        # 組合相關欄位, 給予不同權重
         parts = []
         
         # 課程名稱 (最重要)
@@ -309,7 +309,7 @@ async def main():
     await check_embedding_status()
     
     # 詢問是否繼續
-    response = input("\n要開始產生 embeddings 嗎？(y/N): ")
+    response = input("\n要開始產生 embeddings 嗎?(y/N): ")
     if response.lower() != 'y':
         print("已取消。")
         return

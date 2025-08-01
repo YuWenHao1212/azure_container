@@ -25,7 +25,7 @@ class CourseSearchCache:
             if datetime.now() - timestamp < self.ttl:
                 return data
             else:
-                # 過期，移除
+                # 過期, 移除
                 del self.cache[key]
         return None
 

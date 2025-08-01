@@ -62,7 +62,7 @@ class CourseraETL:
             self.stats["end_time"] = datetime.now()
             duration = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()
             
-            print("\n✅ ETL 完成！")
+            print("\n✅ ETL 完成!")
             print(f"   總時間: {duration:.2f} 秒")
             print(f"   抓取課程: {self.stats['total_fetched']}")
             print(f"   新增課程: {self.stats['new_courses']}")
@@ -110,7 +110,7 @@ class CourseraETL:
                         if total_pages is None:
                             total_pages = int(data.get("@numpages", 1))
                             total_items = int(data.get("@total", 0))
-                            print(f"\n   總共 {total_items} 個課程，{total_pages} 頁")
+                            print(f"\n   總共 {total_items} 個課程, {total_pages} 頁")
                         
                         items = data.get("Items", [])
                         courses.extend(items)
@@ -334,7 +334,7 @@ class CourseraETL:
                         """,
                         course_id,
                         course['original_url'],
-                        course['original_url'],  # 暫時相同，之後可加入自訂參數
+                        course['original_url'],  # 暫時相同, 之後可加入自訂參數
                         json.dumps(course.get('tracking_params', {}))
                         )
                         

@@ -1,23 +1,23 @@
 """
 Language handler for multi-language support in resume tailoring.
 """
-
+from typing import ClassVar
 
 
 class LanguageHandler:
     """Handles language-related operations for resume tailoring"""
 
-    SUPPORTED_LANGUAGES = ["en", "zh-TW"]
+    SUPPORTED_LANGUAGES: ClassVar[list] = ["en", "zh-TW"]
     DEFAULT_LANGUAGE = "en"
 
     # Language name mapping for LLM
-    LANGUAGE_NAMES = {
+    LANGUAGE_NAMES: ClassVar[dict] = {
         "en": "English",
         "zh-TW": "Traditional Chinese (繁體中文)"
     }
 
     # Section name mappings for different languages
-    SECTION_MAPPINGS = {
+    SECTION_MAPPINGS: ClassVar[dict] = {
         "en": {
             "summary": ["summary", "objective", "profile", "about"],
             "experience": ["experience", "work experience", "employment", "work"],

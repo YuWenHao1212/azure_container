@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 # Configuration for error context logging
 ERROR_CONTEXT_CONFIG = {
-    "enable_stack_trace": False,  # 初期先關閉，需要時開啟
+    "enable_stack_trace": False,  # 初期先關閉, 需要時開啟
     "enable_memory_stats": False,  # 需要時再開啟
     "enable_request_body": True,   # 422 錯誤需要
     "max_preview_length": 200,     # 預覽長度限制

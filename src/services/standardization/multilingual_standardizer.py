@@ -4,6 +4,7 @@ Coordinates standardization across multiple languages.
 """
 
 import logging
+from typing import ClassVar
 
 from .base_standardizer import BaseStandardizer, StandardizationResult
 from .en_standardizer import EnglishStandardizer
@@ -21,7 +22,7 @@ class MultilingualStandardizer:
     - Traditional Chinese (zh-TW): Taiwan-specific professional terminology
     """
 
-    SUPPORTED_LANGUAGES = ["en", "zh-TW"]
+    SUPPORTED_LANGUAGES: ClassVar[list] = ["en", "zh-TW"]
 
     def __init__(self):
         """Initialize multilingual standardizer with language-specific standardizers."""
@@ -82,7 +83,10 @@ class MultilingualStandardizer:
         # Apply language-specific standardization
         try:
             result = standardizer.standardize_keywords(keywords)
-            logger.info(f"Standardization complete for {language}: {len(keywords)} -> {len(result.standardized_keywords)}")
+            logger.info(
+                f"Standardization complete for {language}: {len(keywords)} -> "
+                f"{len(result.standardized_keywords)}"
+            )
             return result
 
         except Exception as e:

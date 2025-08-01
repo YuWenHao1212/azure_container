@@ -174,7 +174,7 @@ async def format_resume(
                 message=str(e),
                 details="Input validation failed"
             ).model_dump()
-        )
+        ) from e
 
     except AzureOpenAIRateLimitError as e:
         # Handle rate limit errors (503)
@@ -192,7 +192,7 @@ async def format_resume(
                 message="Service is temporarily unavailable due to high demand. Please try again later.",
                 details="Rate limit exceeded"
             ).model_dump()
-        )
+        ) from e
 
     except (AzureOpenAIAuthError, AzureOpenAIServerError) as e:
         # Handle OpenAI service errors (503)
@@ -211,7 +211,7 @@ async def format_resume(
                 message="OpenAI service is currently unavailable. Please try again later.",
                 details=str(e)
             ).model_dump()
-        )
+        ) from e
 
     except Exception as e:
         # Handle unexpected errors (500)
@@ -233,4 +233,4 @@ async def format_resume(
                 message="An unexpected error occurred while formatting the resume.",
                 details=str(e)
             ).model_dump()
-        )
+        ) from e

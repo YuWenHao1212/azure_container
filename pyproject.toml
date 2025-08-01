@@ -13,12 +13,9 @@ select = [
     "B",  # flake8-bugbear
     "SIM", # flake8-simplify
     "RUF", # Ruff-specific rules
+    "S",  # flake8-bandit
 ]
 ignore = [
-    "E501",  # Line too long - 我們用 120 而不是 88
-    "RUF002", # Ambiguous unicode character in docstring
-    "RUF003", # Ambiguous unicode character in comment
-    "SIM102", # Use a single if statement instead of nested if
     "N802",   # Function name should be lowercase
     "N806",   # Variable in function should be lowercase
     "B008",   # Do not perform function call in argument defaults
@@ -29,6 +26,8 @@ ignore = [
 # 測試文件可以有更寬鬆的規則
 "test/*" = ["E501", "F401"]
 "tests/*" = ["E501", "F401"]
+# Pydantic models Config class doesn't need ClassVar
+"src/models/*.py" = ["RUF012"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]

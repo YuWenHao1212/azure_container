@@ -30,7 +30,10 @@ router = APIRouter()
 )
 async def get_prompt_version(
     task: str = Query(..., description="Task name (e.g., 'keyword_extraction', 'resume_analysis', etc.)"),
-    language: str | None = Query(None, description="Language code (e.g., 'en', 'zh-TW'). If not specified, returns info for all languages.")
+    language: str | None = Query(
+        None,
+        description="Language code (e.g., 'en', 'zh-TW'). If not specified, returns info for all languages."
+    )
 ) -> UnifiedResponse:
     """
     Get active prompt version information for any task.
@@ -69,10 +72,10 @@ async def get_prompt_version(
 
                 # If no versions found, task doesn't exist
                 if not available_versions:
-                    raise ValueError(f"Task '{task}' not found")
+                    raise ValueError(f"Task '{task}' not found") from None
             except Exception as e:
                 logger.warning(f"Task '{task}' not found or error listing versions: {e}")
-                raise ValueError(f"Task '{task}' not found")
+                raise ValueError(f"Task '{task}' not found") from e
 
             # Get prompt config for active version if exists
             prompt_info = {}
@@ -136,7 +139,7 @@ async def get_prompt_version(
                     response_data["active_version"] = active_version
                     response_data["available_versions"] = available_versions
                 except Exception:
-                    raise ValueError(f"Task '{task}' not found")
+                    raise ValueError(f"Task '{task}' not found") from None
 
         logger.info(f"Retrieved prompt version info for task={task}")
         return create_success_response(response_data)
@@ -151,7 +154,7 @@ async def get_prompt_version(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_response.dict()
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Failed to get prompt version: {e!s}")
         error_response = create_error_response(
@@ -162,7 +165,7 @@ async def get_prompt_version(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.dict()
-        )
+        ) from e
 
 
 @router.get(
@@ -216,4 +219,4 @@ async def list_prompt_tasks() -> UnifiedResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.dict()
-        )
+        ) from e

@@ -4,7 +4,7 @@ Monitors cache hit rates and calculates cost savings.
 """
 from collections import deque
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, ClassVar
 
 from src.core.monitoring_service import monitoring_service
 
@@ -21,7 +21,7 @@ class CacheMetrics:
     """
 
     # OpenAI API pricing (as of 2025)
-    OPENAI_PRICING = {
+    OPENAI_PRICING: ClassVar[dict] = {
         "gpt-4o": {
             "input": 0.03,   # per 1K tokens
             "output": 0.06   # per 1K tokens
