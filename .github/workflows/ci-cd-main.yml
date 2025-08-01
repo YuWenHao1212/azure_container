@@ -201,12 +201,39 @@ jobs:
           --query "properties.latestRevisionName" -o tsv)
         echo "current-revision=$CURRENT_REVISION" >> $GITHUB_OUTPUT
         
+    - name: Debug image output
+      run: |
+        echo "Build job outputs:"
+        echo "image-tag: ${{ needs.build-and-push.outputs.image-tag }}"
+        echo "image-digest: ${{ needs.build-and-push.outputs.image-digest }}"
+        echo "image-with-tag: ${{ needs.build-and-push.outputs.image-with-tag }}"
+        
     - name: Deploy to Container App
       run: |
         # 使用 build job 輸出的映像
         FULL_IMAGE="${{ needs.build-and-push.outputs.image-with-tag }}"
         
+        # 如果 image-with-tag 為空，嘗試從 image-tag 構建
+        if [ -z "$FULL_IMAGE" ]; then
+          echo "Warning: image-with-tag is empty, trying to construct from image-tag"
+          # 從 image-tag 中找到時間戳標籤
+          TAGS="${{ needs.build-and-push.outputs.image-tag }}"
+          TIMESTAMP_TAG=$(echo "$TAGS" | grep -oE '[0-9]{8}-[0-9]{6}-[a-f0-9]+' | head -1)
+          if [ -n "$TIMESTAMP_TAG" ]; then
+            FULL_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TIMESTAMP_TAG}"
+          else
+            echo "Error: Could not construct image tag"
+            exit 1
+          fi
+        fi
+        
         echo "Deploying image: $FULL_IMAGE"
+        
+        # 再次檢查確保有映像
+        if [ -z "$FULL_IMAGE" ]; then
+          echo "Error: No image specified for deployment"
+          exit 1
+        fi
         
         # 更新 Container App
         az containerapp update \
