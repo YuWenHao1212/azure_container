@@ -10,8 +10,8 @@ from .openai_client import AzureOpenAIClient
 from .unified_prompt_service import UnifiedPromptService
 
 __all__ = [
+    'AzureOpenAIClient',
     'KeywordExtractionService',
     'KeywordExtractionServiceV2',
-    'AzureOpenAIClient',
     'UnifiedPromptService'
 ]

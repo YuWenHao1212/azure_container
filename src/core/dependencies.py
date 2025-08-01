@@ -16,8 +16,6 @@ from src.services.standardization.zh_tw_standardizer import (
 )
 from src.services.unified_prompt_service import (
     UnifiedPromptService,
-)
-from src.services.unified_prompt_service import (
     get_unified_prompt_service as get_prompt_service_instance,
 )
 

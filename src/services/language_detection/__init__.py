@@ -9,8 +9,8 @@ from .mixed_language_detector import MixedLanguageDetectionService
 from .validator import LanguageValidator
 
 __all__ = [
+    "BilingualPromptManager",
     "LanguageDetectionService",
-    "MixedLanguageDetectionService",
     "LanguageValidator",
-    "BilingualPromptManager"
+    "MixedLanguageDetectionService"
 ]

@@ -10,7 +10,7 @@ from .zh_tw_standardizer import TraditionalChineseStandardizer
 
 __all__ = [
     "BaseStandardizer",
-    "TraditionalChineseStandardizer",
     "EnglishStandardizer",
-    "MultilingualStandardizer"
+    "MultilingualStandardizer",
+    "TraditionalChineseStandardizer"
 ]
