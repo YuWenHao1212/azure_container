@@ -169,25 +169,15 @@ Container Apps 支援兩種認證方式：
 
 **重要：撰寫程式碼時必須遵循 Ruff 規範，避免在 commit 時出現錯誤**
 
-#### 主要規則：
-1. **行長度限制**: 120 字元 (設定在 pyproject.toml)
-2. **Import 排序**: 使用 isort 規則，自動分組和排序
-3. **命名規範**: 遵循 PEP8 (類別用 PascalCase，函數用 snake_case)
-4. **型別標註**: 使用 Python 3.11+ 語法
-5. **例外處理**: 使用 `raise ... from e` 進行異常鏈接
+#### 強制檢查規則：
+**⚠️ 所有功能實作和 bug 修復完成前，必須執行以下檢查：**
 
-#### 常見錯誤預防：
-- **F401**: 不要 import 未使用的模組
-- **E501**: 行長度不要超過 120 字元
-- **B904**: 重新拋出異常時使用 `from e`
-- **RUF012**: 類別的可變屬性使用 `ClassVar` 標註
-- **SIM102**: 合併巢狀的 if 條件使用 `and`
-- **SIM108**: 使用三元運算符取代簡單的 if-else
-- **S110**: try-except-pass 要加上日誌記錄
+```bash
+# 🚨 必須通過檢查 - 不得有任何錯誤
+ruff check src/ --line-length=120
+```
 
-#### 特殊處理：
-- **S311**: `random.random()` 用於非安全性用途時加上 `# noqa: S311`
-- **S324**: 使用 MD5 做快取時加上 `# noqa: S324`
+**如果有錯誤，必須修復後才能回報完成任務**
 
 #### 執行檢查：
 ```bash
@@ -195,11 +185,34 @@ Container Apps 支援兩種認證方式：
 ruff check src/ --line-length=120
 
 # 自動修復可修復的問題
-ruff check src/ --fix
+ruff check src/ --fix --line-length=120
 
 # 檢查並修復 (包含較不安全的修復)
-ruff check src/ --fix --unsafe-fixes
+ruff check src/ --fix --unsafe-fixes --line-length=120
 ```
+
+#### 主要規則：
+1. **行長度限制**: 120 字元 (設定在 pyproject.toml)
+2. **Import 排序**: 使用 isort 規則，自動分組和排序
+3. **命名規範**: 遵循 PEP8 (類別用 PascalCase，函數用 snake_case)
+4. **型別註解**: 必要時使用 ClassVar for mutable class attributes
+5. **例外處理**: 使用 "raise ... from e" 進行例外鏈結
+6. **程式碼風格**: 使用三元運算子、合併 if 條件等
+
+#### 常見錯誤與解決：
+- **E501**: 行太長 → 分行或重構
+- **F401**: 未使用 import → 移除或加到 __all__
+- **B904**: 例外鏈結缺失 → 使用 "from e"
+- **RUF012**: 可變類別屬性 → 使用 ClassVar
+- **I001**: Import 順序錯誤 → 重新排序
+- **SIM102/108**: 可簡化的條件 → 使用三元運算子
+
+#### 任務完成檢查清單：
+- [ ] 功能實作完成
+- [ ] **🚨 執行 `ruff check src/ --line-length=120` 通過 (0 errors)**
+- [ ] 相關測試通過
+- [ ] 文檔更新完成
+- [ ] 才可回報任務完成
 
 ### 測試執行
 ```bash
