@@ -1,0 +1,159 @@
+{
+  "standard_resumes": [
+    {
+      "id": "resume_small_1",
+      "content": "Python developer with 5 years experience in building scalable web applications. Skilled in FastAPI, Django, Docker, and AWS cloud services.",
+      "format": "text",
+      "size_kb": 0.5,
+      "category": "small"
+    },
+    {
+      "id": "resume_medium_1",
+      "content": "Senior Software Engineer with 8+ years of experience in full-stack development. Expertise in Python, JavaScript, React, and Node.js. Led development of multiple enterprise applications using microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Strong background in database design with PostgreSQL and MongoDB. Experience with agile methodologies and team leadership. Contributed to open-source projects and technical blog writing. Master's degree in Computer Science from National Taiwan University.",
+      "format": "text",
+      "size_kb": 2,
+      "category": "medium"
+    },
+    {
+      "id": "resume_large_1",
+      "content": "Accomplished Full-Stack Software Engineer with over 10 years of experience in designing, developing, and deploying enterprise-level applications. Specialized in Python backend development using FastAPI, Django, and Flask frameworks. Extensive frontend expertise with React, Vue.js, Angular, and modern JavaScript/TypeScript. Led cross-functional teams of 5-15 engineers in delivering complex projects on time and within budget.\n\nTechnical Skills:\n- Programming Languages: Python, JavaScript, TypeScript, Java, Go, C++\n- Backend Frameworks: FastAPI, Django, Flask, Spring Boot, Express.js\n- Frontend Technologies: React, Vue.js, Angular, Next.js, Redux, MobX\n- Databases: PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, Cassandra\n- Cloud Platforms: AWS (EC2, S3, Lambda, RDS, DynamoDB), Google Cloud Platform, Azure\n- DevOps Tools: Docker, Kubernetes, Jenkins, GitLab CI/CD, Terraform, Ansible\n- Testing: PyTest, Jest, Selenium, Cypress, Unit Testing, Integration Testing\n- Architecture: Microservices, Event-Driven, REST APIs, GraphQL, gRPC\n\nProfessional Experience:\n\nSenior Software Engineer - Tech Corp (2018-Present)\n- Architected and implemented a microservices-based e-commerce platform serving 1M+ daily active users\n- Reduced system latency by 60% through optimization and caching strategies\n- Mentored junior developers and conducted technical interviews\n- Established coding standards and best practices across the engineering organization\n\nSoftware Engineer - StartupXYZ (2015-2018)\n- Built RESTful APIs and real-time features using WebSocket\n- Implemented automated testing achieving 90% code coverage\n- Migrated legacy monolithic application to microservices architecture\n\nEducation:\n- Master of Science in Computer Science - National Taiwan University (2013-2015)\n- Bachelor of Science in Computer Science - National Cheng Kung University (2009-2013)\n\nCertifications:\n- AWS Certified Solutions Architect - Professional\n- Google Cloud Professional Cloud Architect\n- Certified Kubernetes Administrator (CKA)",
+      "format": "text",
+      "size_kb": 10,
+      "category": "large"
+    },
+    {
+      "id": "resume_html_1",
+      "content": "<div><h2>Professional Summary</h2><p>Experienced <strong>Python Developer</strong> with expertise in:</p><ul><li>FastAPI and Django frameworks</li><li>Docker &amp; Kubernetes</li><li>AWS cloud services</li></ul><p>&nbsp;</p><h2>Skills</h2><p style=\"color: #333;\">Python, JavaScript, SQL, REST APIs</p></div>",
+      "format": "html",
+      "size_kb": 1,
+      "category": "html"
+    },
+    {
+      "id": "resume_chinese_1",
+      "content": "資深軟體工程師，擁有8年以上全端開發經驗。專精於Python後端開發，熟悉FastAPI、Django框架。前端技術包括React、Vue.js。具備雲端服務經驗（AWS、GCP），熟悉Docker容器化技術及Kubernetes編排。曾帶領5人團隊完成多個企業級專案。國立台灣大學資訊工程碩士畢業。",
+      "format": "text",
+      "size_kb": 1.5,
+      "category": "chinese"
+    },
+    {
+      "id": "resume_mixed_language_1",
+      "content": "Full-Stack Engineer 全端工程師\n\n技術專長 Technical Skills:\n- Backend 後端: Python (FastAPI, Django), Node.js\n- Frontend 前端: React, Vue.js, TypeScript\n- Database 資料庫: PostgreSQL, MongoDB, Redis\n- Cloud 雲端: AWS, Docker, K8s\n\n工作經驗 Experience:\n- Senior Engineer at 科技公司 (2020-Present)\n- 負責架構設計 and system optimization\n- 帶領團隊 developing microservices",
+      "format": "text", 
+      "size_kb": 1.2,
+      "category": "mixed_language"
+    }
+  ],
+  "job_descriptions": [
+    {
+      "id": "jd_small_1",
+      "content": "Looking for a Python developer with experience in FastAPI and Docker. Knowledge of AWS is a plus.",
+      "keywords": ["Python", "FastAPI", "Docker", "AWS"],
+      "size_kb": 0.2,
+      "category": "small"
+    },
+    {
+      "id": "jd_medium_1", 
+      "content": "We are seeking a Senior Full-Stack Developer to join our growing team. The ideal candidate will have 5+ years of experience in web development, with strong expertise in Python backend frameworks (FastAPI, Django) and modern JavaScript frameworks (React, Vue.js). You will be responsible for designing and implementing scalable microservices, working with cloud technologies (AWS, Docker, Kubernetes), and mentoring junior developers. Experience with PostgreSQL, Redis, and CI/CD pipelines is required. Strong problem-solving skills and ability to work in an agile environment are essential.",
+      "keywords": ["Python", "Full-Stack", "React", "Vue.js", "FastAPI", "Django", "AWS", "Docker", "Kubernetes", "PostgreSQL", "Redis", "CI/CD", "Microservices", "Agile"],
+      "size_kb": 1.5,
+      "category": "medium"
+    },
+    {
+      "id": "jd_large_1",
+      "content": "Job Title: Principal Software Engineer - Platform Architecture\n\nAbout the Role:\nWe are looking for an exceptional Principal Software Engineer to lead the design and development of our next-generation platform. This is a unique opportunity to shape the technical direction of our products and mentor a team of talented engineers.\n\nKey Responsibilities:\n- Architect and implement highly scalable distributed systems serving millions of users\n- Lead technical design reviews and establish architectural best practices\n- Collaborate with product managers to define technical roadmap and strategy\n- Mentor and guide senior engineers across multiple teams\n- Drive adoption of new technologies and frameworks across the organization\n- Ensure system reliability, performance, and security at scale\n- Contribute to open-source projects and represent the company at technical conferences\n\nRequired Qualifications:\n- 8+ years of software development experience with at least 3 years in a senior/lead role\n- Expert-level proficiency in Python and at least one other programming language (Go, Java, Rust)\n- Deep experience with microservices architecture and distributed systems\n- Strong knowledge of cloud platforms (AWS, GCP, or Azure) and container orchestration (Kubernetes)\n- Proven track record of designing and implementing large-scale systems\n- Experience with both SQL and NoSQL databases at scale\n- Excellent understanding of software design patterns and principles\n- Strong communication skills and ability to influence technical decisions\n\nPreferred Qualifications:\n- Experience with event-driven architectures and message queuing systems\n- Knowledge of machine learning and data processing pipelines\n- Contributions to significant open-source projects\n- Advanced degree in Computer Science or related field\n- Experience with GraphQL and modern API design\n- Background in security best practices and compliance\n\nWhat We Offer:\n- Competitive salary and equity package\n- Flexible work arrangements and remote-first culture\n- Professional development budget and conference attendance\n- Latest hardware and tools of your choice\n- Comprehensive health and wellness benefits",
+      "keywords": ["Python", "Go", "Java", "Rust", "Microservices", "Distributed Systems", "AWS", "GCP", "Azure", "Kubernetes", "SQL", "NoSQL", "Architecture", "Leadership", "GraphQL", "Security", "Machine Learning", "Event-Driven", "Principal Engineer"],
+      "size_kb": 5,
+      "category": "large"
+    },
+    {
+      "id": "jd_chinese_1",
+      "content": "誠徵資深Python工程師\n\n職位需求：\n- 5年以上Python開發經驗\n- 熟悉FastAPI或Django框架\n- 具備Docker容器化經驗\n- 了解微服務架構\n- 良好的團隊合作能力\n\n加分條件：\n- AWS雲端服務經驗\n- Kubernetes使用經驗\n- 開源專案貢獻",
+      "keywords": ["Python", "FastAPI", "Django", "Docker", "微服務", "AWS", "Kubernetes"],
+      "size_kb": 0.8,
+      "category": "chinese"
+    },
+    {
+      "id": "jd_mixed_language_1",
+      "content": "Senior Backend Engineer 資深後端工程師\n\nWe're looking for 優秀的後端工程師 to join our team!\n\nRequirements 需求:\n- Strong Python skills (FastAPI/Django)\n- 熟悉 RESTful API 設計\n- Experience with 雲端服務 (AWS/GCP)\n- Docker & K8s 容器化經驗\n- 良好的 problem-solving 能力",
+      "keywords": ["Python", "Backend", "FastAPI", "Django", "REST API", "AWS", "GCP", "Docker", "Kubernetes"],
+      "size_kb": 0.6,
+      "category": "mixed_language"
+    }
+  ],
+  "edge_cases": {
+    "empty_resume": "",
+    "empty_job_description": "",
+    "very_short_resume": "Python",
+    "very_short_jd": "Developer",
+    "html_with_special_chars": "<p>Experience with C++ &amp; C#, &lt;5 years&gt;</p><div>&nbsp;&nbsp;&nbsp;</div>",
+    "only_whitespace": "   \n\t  \n   ",
+    "unicode_content": "Developer with experience in 開發經驗 and λ-calculus, работа с базами данных",
+    "repeated_content": "Python Python Python Python Python Python Python Python Python Python",
+    "no_matching_keywords": {
+      "resume": "Graphic designer with expertise in Photoshop, Illustrator, and InDesign",
+      "jd": "Looking for a backend developer with Java and Spring Boot experience",
+      "keywords": ["Java", "Spring Boot", "MySQL", "REST API"]
+    },
+    "all_matching_keywords": {
+      "resume": "Python developer skilled in FastAPI, Docker, Kubernetes, PostgreSQL, and Redis",
+      "jd": "Need Python developer with FastAPI, Docker, Kubernetes, PostgreSQL, and Redis",
+      "keywords": ["Python", "FastAPI", "Docker", "Kubernetes", "PostgreSQL", "Redis"]
+    },
+    "case_sensitivity_test": {
+      "resume": "python developer with FASTAPI and docker experience",
+      "keywords": ["Python", "FastAPI", "Docker"]
+    },
+    "plural_matching_test": {
+      "resume": "Strong skills in APIs and Python frameworks",
+      "keywords": ["API", "framework", "skill"]
+    },
+    "word_boundary_test": {
+      "resume": "JavaScript developer with Java knowledge",
+      "keywords": ["Java", "Script"]
+    },
+    "extremely_large_content": "Python developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer developer"
+  },
+  "test_keywords": {
+    "technical_skills": ["Python", "JavaScript", "TypeScript", "Java", "Go", "C++", "React", "Vue.js", "Angular", "FastAPI", "Django", "Flask", "Docker", "Kubernetes", "AWS", "GCP", "Azure", "PostgreSQL", "MongoDB", "Redis"],
+    "soft_skills": ["Leadership", "Communication", "Problem-solving", "Teamwork", "Agile"],
+    "common_variations": ["API", "APIs", "framework", "frameworks", "database", "databases"],
+    "case_variations": ["python", "PYTHON", "Python", "PyThOn"],
+    "special_characters": ["C++", "C#", ".NET", "Node.js"],
+    "chinese_keywords": ["工程師", "開發", "資料庫", "雲端", "架構"],
+    "mixed_keywords": ["Full-Stack", "全端", "Backend", "後端", "DevOps"]
+  },
+  "performance_test_data": {
+    "load_test_scenarios": [
+      {
+        "name": "standard_load",
+        "concurrent_users": 10,
+        "duration_seconds": 60,
+        "request_interval_ms": 100
+      },
+      {
+        "name": "peak_load", 
+        "concurrent_users": 50,
+        "duration_seconds": 60,
+        "request_interval_ms": 50
+      },
+      {
+        "name": "stress_test",
+        "concurrent_users": 100,
+        "duration_seconds": 30,
+        "request_interval_ms": 20
+      }
+    ],
+    "cache_test_scenarios": [
+      {
+        "name": "cache_warmup",
+        "unique_requests": 20,
+        "repeat_count": 3
+      },
+      {
+        "name": "cache_eviction",
+        "unique_requests": 1100,
+        "cache_size_limit": 1000
+      }
+    ]
+  }
+}
