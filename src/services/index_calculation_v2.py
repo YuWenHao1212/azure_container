@@ -26,6 +26,12 @@ from src.core.utils import stable_percentage_round
 from src.services.base import BaseService
 from src.services.embedding_client import get_azure_embedding_client
 from src.services.exceptions import ServiceError
+from src.services.openai_client import (
+    AzureOpenAIAuthError,
+    AzureOpenAIError,
+    AzureOpenAIRateLimitError,
+    AzureOpenAIServerError,
+)
 from src.services.text_processing import clean_html_text
 
 logger = logging.getLogger(__name__)
@@ -337,8 +343,24 @@ class IndexCalculationServiceV2(BaseService):
         self.calculation_stats["cache_misses"] += 1
 
         # Create embedding
-        embeddings = await self.embedding_client.create_embeddings([text])
-        embedding = embeddings[0]
+        try:
+            embeddings = await self.embedding_client.create_embeddings([text])
+            embedding = embeddings[0]
+        except AzureOpenAIRateLimitError as e:
+            # Handle rate limit errors
+            raise ServiceError("Azure OpenAI rate limit exceeded") from e
+        except AzureOpenAIAuthError as e:
+            # Handle authentication errors
+            raise ServiceError("Azure OpenAI authentication failed") from e
+        except AzureOpenAIServerError as e:
+            # Handle server errors
+            raise ServiceError("Azure OpenAI server error") from e
+        except AzureOpenAIError as e:
+            # Handle other Azure OpenAI errors
+            raise ServiceError(f"Azure OpenAI service error: {e}") from e
+        except Exception as e:
+            # Handle unexpected errors
+            raise ServiceError(f"Failed to create embeddings: {e}") from e
 
         # Cache the result
         self._cache_result(cache_key, embedding)

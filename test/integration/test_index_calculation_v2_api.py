@@ -281,6 +281,10 @@ class TestIndexCalculationV2Integration:
         
         驗證 embedding 服務失敗時的錯誤處理。
         """
+        # Reset the service singleton to ensure clean state
+        import src.services.index_calculation_v2
+        src.services.index_calculation_v2._index_calculation_service_v2 = None
+        
         # Test rate limit error
         mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = AzureOpenAIRateLimitError(
@@ -288,19 +292,20 @@ class TestIndexCalculationV2Integration:
         )
         mock_embedding_client.close = AsyncMock()
 
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.embedding_client.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
-                      return_value=mock_embedding_client):
-                response = test_client.post(
-                    "/api/v1/index-calculation",
-                    json=valid_index_calc_request
-                )
+            response = test_client.post(
+                "/api/v1/index-calculation",
+                json=valid_index_calc_request
+            )
 
         assert response.status_code == 503
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "SERVICE_ERROR"
+        
+        # Reset singleton for next test
+        src.services.index_calculation_v2._index_calculation_service_v2 = None
         
         # Test authentication error
         mock_embedding_client = AsyncMock()
@@ -309,17 +314,18 @@ class TestIndexCalculationV2Integration:
         )
         mock_embedding_client.close = AsyncMock()
 
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.embedding_client.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
-                      return_value=mock_embedding_client):
-                response = test_client.post(
-                    "/api/v1/index-calculation",
-                    json=valid_index_calc_request
-                )
+            response = test_client.post(
+                "/api/v1/index-calculation",
+                json=valid_index_calc_request
+            )
 
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SERVICE_ERROR"
+        
+        # Reset singleton for next test
+        src.services.index_calculation_v2._index_calculation_service_v2 = None
         
         # Test server error
         mock_embedding_client = AsyncMock()
@@ -328,34 +334,36 @@ class TestIndexCalculationV2Integration:
         )
         mock_embedding_client.close = AsyncMock()
 
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.embedding_client.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
-                      return_value=mock_embedding_client):
-                response = test_client.post(
-                    "/api/v1/index-calculation",
-                    json=valid_index_calc_request
-                )
+            response = test_client.post(
+                "/api/v1/index-calculation",
+                json=valid_index_calc_request
+            )
 
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SERVICE_ERROR"
+        
+        # Reset singleton for next test
+        src.services.index_calculation_v2._index_calculation_service_v2 = None
         
         # Test timeout
         mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = asyncio.TimeoutError()
         mock_embedding_client.close = AsyncMock()
 
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.embedding_client.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
-                      return_value=mock_embedding_client):
-                response = test_client.post(
-                    "/api/v1/index-calculation",
-                    json=valid_index_calc_request
-                )
+            response = test_client.post(
+                "/api/v1/index-calculation",
+                json=valid_index_calc_request
+            )
 
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SERVICE_ERROR"
+        
+        # Final cleanup
+        src.services.index_calculation_v2._index_calculation_service_v2 = None
 
     # TEST: API-IC-105-IT
     def test_concurrent_request_handling(
