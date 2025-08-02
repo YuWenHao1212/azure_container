@@ -8,10 +8,10 @@
   - ✅ 關鍵字提取 (`/api/v1/extract-jd-keywords`)
   - 🔄 其他 API 優化中
 - **開發環境**: 尚未開始建置
-- **部署分支**: `main` 分支（手動部署）
+- **部署分支**: `main` 分支（手動部署） <- git action cicd is ready
 
 ## 環境需求
-
+S
 ### 本地開發
 - Python 3.11.8
 - Azure CLI
@@ -54,7 +54,7 @@
 
 ### GitHub Actions Workflow
 ```bash
-# .github/workflows/deploy.yml
+# .github/workflows/deploy.yml.  <- 這是名字打錯? (ci-cd-main.yml)  
 - 建置映像標籤：{date}-{commit_hash}
 - 支援手動觸發部署
 - 環境變數從 GitHub Secrets 注入

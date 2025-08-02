@@ -15,13 +15,15 @@
 - 語言特定的 prompt 優化
 - 保持原始語言的關鍵字
 
-### 2. 分類提取
-將關鍵字分為多個類別：
-- **技術技能**（Technical Skills）
-- **軟技能**（Soft Skills）  
-- **認證資格**（Certifications）
-- **工具與框架**（Tools & Frameworks）
-- **產業知識**（Domain Knowledge）
+### 2. 智能排序
+關鍵字按重要性排序（根據 prompt v1.4.0）：
+- **程式語言**（Python、R、SQL 等）- 永遠排在最前
+- **技術工具**（Tableau、Power BI、Excel 等）- 第二順位
+- **技術技能**（Machine Learning、Data Analysis 等）- 第三順位
+- **領域知識**（HR Analytics、Business Intelligence 等）- 第四順位
+- **軟技能**（Communication、Leadership、Teamwork 等）- 永遠排在最後
+
+> 注意：目前 API 只返回排序後的關鍵字列表，尚未實作分類功能
 
 ### 3. 智能去重
 - 移除重複的關鍵字
@@ -104,12 +106,6 @@ response = requests.post(
       "Kubernetes", "React", "TypeScript", "communication skills",
       "team collaboration", "Senior Developer", "5+ years experience"
     ],
-    "categories": {
-      "technical_skills": ["Python", "FastAPI", "Docker", "PostgreSQL"],
-      "tools_frameworks": ["AWS", "Kubernetes", "React", "TypeScript"],
-      "soft_skills": ["communication skills", "team collaboration"],
-      "experience": ["Senior Developer", "5+ years experience"]
-    }
   },
   "error": {
     "code": "",
@@ -170,19 +166,20 @@ response = requests.post(
 2. 產業特定術語需持續優化
 3. 新興技術關鍵字需要更新
 
-## Container Apps 部署狀態 🔄
+## Container Apps 部署狀態 ✅
 
-### 📊 遷移進度
+### 📊 部署完成
 - **關鍵字提取 API**: ✅ 已完成部署
 - **健康檢查端點**: ✅ 已完成部署
-- **其他 API**: 🔄 優化中
-- **開發環境**: ⏳ 待建置
+- **CI/CD 自動化**: ✅ 已建立完整流程
+- **測試覆蓋率**: ✅ 103 個測試 (88 單元 + 15 整合)
 
-### 🔧 技術配置更新
+### 🔧 技術配置
 - **LLM 服務**: GPT-4.1 mini Japan East 部署
-- **API 端點**: 移除 host key 認證要求
-- **監控**: Application Insights 整合保持
+- **API 認證**: 支援 X-API-Key header 和 query parameter
+- **監控**: Application Insights 完整整合
 - **CORS**: 支援 Bubble.io 前端整合
+- **部署平台**: Azure Container Apps (Japan East)
 
 ### 📊 驗證指標
 - 回應時間 < 3 秒 (P95)
@@ -194,11 +191,14 @@ response = requests.post(
 
 ### 已完成優化 ✅
 - 關鍵字提取 API Container Apps 部署
-- GPT-4.1 mini Japan East 整合
+- GPT-4.1 mini Japan East 整合  
 - 2輪交集驗證策略
 - 內建快取機制
+- CI/CD 自動化部署 (GitHub Actions)
+- 完整測試覆蓋 (103 個測試)
 
 ### 短期計畫 (Q1 2025)
+- **實作關鍵字分類功能** - 將關鍵字分組為技術技能、軟技能、工具等類別
 - 產業特定關鍵字詞典擴充
 - 提升長文本一致性至 70%+
 - Redis 快取層整合

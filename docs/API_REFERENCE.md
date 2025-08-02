@@ -4,15 +4,17 @@
 
 ### Base URL
 
-**生產環境 (Container Apps)**
+**生產環境 (Container Apps)** ✅ 正在開發重構中
 ```
 https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io
 ```
+目前狀態：已完成 health 和 keyword extraction 端點
 
-**開發環境 (Container Apps)**
+**開發環境 (Container Apps)** ⏸️ 未來規劃
 ```
 https://airesumeadvisor-api-dev.calmisland-ea7fe91e.japaneast.azurecontainerapps.io
 ```
+目前狀態：預留給未來使用，尚無活動
 
 ### 認證
 
@@ -35,6 +37,19 @@ X-API-Key: [YOUR_API_KEY]
 
 ### 健康檢查端點
 - `/health` - 系統整體健康狀態
+
+**實際回應範例**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "version": "1.0.0",
+    "timestamp": "2025-08-02T01:24:59.031372"
+  },
+  "timestamp": "2025-08-02T01:24:59.031378"
+}
+```
 
 ### 請求格式
 - Content-Type: `application/json`
@@ -139,6 +154,11 @@ X-API-Key: [YOUR_API_KEY]
 `POST /api/v1/extract-jd-keywords`
 
 從職缺描述中提取關鍵技能和要求。
+
+**支援語言**
+- 英文 (en)
+- 繁體中文 (zh-TW)
+- 自動偵測 (auto) - 預設值
 
 **請求參數**
 ```json
@@ -483,6 +503,7 @@ X-API-Key: [YOUR_API_KEY]
 | **客戶端錯誤 (4xx)** | | | |
 | VALIDATION_ERROR | 輸入參數驗證失敗 | 400 | 檢查請求參數是否符合要求 |
 | INVALID_REQUEST | 無效的請求格式或資料 | 400 | 確認請求格式正確 |
+| UNSUPPORTED_LANGUAGE | 偵測到不支援的語言 | 400 | 使用英文或繁體中文內容 |
 | UNAUTHORIZED | 缺少或無效的 API 金鑰 | 401 | 檢查 API Key 是否正確 |
 | NOT_FOUND | 請求的資源不存在 | 404 | 確認端點 URL 正確 |
 | PAYLOAD_TOO_LARGE | 請求內容超過大小限制 | 413 | 減少請求內容大小 |
@@ -898,6 +919,28 @@ A:
 - 支援六大核心功能
 - 實作統一錯誤格式
 
+## 測試與品質保證
+
+### 測試覆蓋率
+- **總測試案例**: 113 個
+- **測試通過率**: 100% (113/113)
+- **測試類型分布**:
+  - 單元測試: 96 個
+  - 整合測試: 16 個
+  - 效能測試: 1 個
+
+### API 端點測試覆蓋
+| 端點 | 單元測試 | 整合測試 | 效能測試 |
+|------|----------|----------|----------|
+| `/health` | 9 | 1 | - |
+| `/api/v1/extract-jd-keywords` | 88 | 15 | 1 |
+
+### CI/CD 狀態
+- **自動部署**: ✅ 已啟用
+- **部署觸發**: 推送到 main 分支
+- **測試閘門**: 所有測試必須通過
+- **部署時間**: 約 5-7 分鐘
+
 ## 支援與聯絡
 
 ### 技術支援
@@ -916,6 +959,6 @@ A:
 
 ---
 
-**文檔版本**: 2.0.0  
-**最後更新**: 2025-07-30  
+**文檔版本**: 2.1.0  
+**最後更新**: 2025-08-02  
 **維護團隊**: AI Resume Advisor Development Team

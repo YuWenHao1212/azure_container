@@ -6,7 +6,12 @@
 
 ### 工作流程
 1. 推送程式碼到 `main` 分支
-2. 自動執行測試（113 個測試）
+2. 自動執行測試套件
+   - Level 0: Prompt 驗證
+   - Level 1: 程式碼風格 (Ruff)
+   - Level 2: 單元測試 (96 個)
+   - Level 3: 整合測試 (16 個)
+   - Level 4: 效能測試 (1 個)
 3. 建置 Docker 映像並推送到 Azure Container Registry
 4. 部署到 Azure Container Apps
 5. 執行健康檢查和煙霧測試
@@ -170,6 +175,21 @@ az containerapp logs show \
   --revision <revision-name>
 ```
 
+## 🧪 測試與品質保證
+
+### 測試統計
+- **總測試案例**: 113 個
+- **測試通過率**: 100%
+- **測試層級**:
+  - 單元測試: 96 個
+  - 整合測試: 16 個
+  - 效能測試: 1 個
+
+### 測試報告
+- 位置: `/test/logs/`
+- 格式: JSON 和文字報告
+- 保留策略: 最新 6 份
+
 ## 📊 監控
 
 ### Application Insights
@@ -216,5 +236,5 @@ az containerapp logs show \
 
 ---
 
-**最後更新**: 2025-08-01  
+**最後更新**: 2025-08-02  
 **維護者**: DevOps Team

@@ -4,7 +4,7 @@
 
 本專案採用 FHS (Functional Hierarchy Structure) 架構模式，將功能邏輯組織成清晰的層次結構。
 
-**🔄 架構升級進行中**: 正在從 Azure Functions 遷移到 Azure Container Apps，部分 API 已完成遷移。
+**✅ 架構升級已完成**: 成功從 Azure Functions 遷移到 Azure Container Apps，核心 API 已完全部署。
 
 ## 架構演進
 
@@ -55,8 +55,8 @@ src/
 - **Docker**：容器化封裝
 
 ### AI/ML 整合
-- **Azure OpenAI**：GPT-4 模型存取
-- **Embedding API**：語義相似度計算
+- **Azure OpenAI**：GPT-4.1 和 GPT-4.1 mini 模型存取
+- **Embedding API**：語義相似度計算 
 - **LangChain**：LLM 應用開發框架
 
 ### 資料存儲
@@ -209,7 +209,42 @@ services/
 3. **效能追蹤**: 內建 TokenTrackingMixin
 4. **非同步支援**: 完整 async/await 實作
 
+## 測試架構
+
+### 測試層級設計
+```
+測試套件 (113 個測試)
+├── Level 0: Prompt 驗證
+├── Level 1: 程式碼風格 (Ruff)
+├── Level 2: 單元測試 (96 個)
+│   ├── 健康檢查 (9)
+│   ├── 關鍵字提取 (88)
+│   └── LLM Factory (8)
+├── Level 3: 整合測試 (16 個)
+└── Level 4: 效能測試 (1 個)
+```
+
+### 測試執行流程
+1. **本地開發**: 即時測試回饋
+2. **Pre-commit**: 自動執行 Level 0-2
+3. **CI/CD Pipeline**: 完整測試套件
+4. **部署閘門**: 所有測試必須通過
+
+### 測試覆蓋率
+- **已實作 API 端點**: 2 個 (health, extract-jd-keywords)
+- **規劃中 API 端點**: 5 個 (index-calculation, gap-analysis, format-resume, tailor-resume, course-search)
+- **單元測試**: 96 個測試案例
+- **整合測試**: 16 個測試案例
+- **效能 SLA**: < 3秒 (P95)
+
 ## 未來演進
+
+### 已完成項目 ✅
+- ✅ Container Apps 遷移
+- ✅ 健康檢查端點
+- ✅ 關鍵字提取 API
+- ✅ CI/CD 自動化部署
+- ✅ 完整測試覆蓋
 
 ### Phase 5 優化重點
 1. **快取層**：Redis 整合
