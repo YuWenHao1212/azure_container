@@ -235,7 +235,7 @@ Test Coverage by Module:
 ```
 
 ### 2. JSON 報告
-路徑：`/Users/yuwenhao/Documents/GitHub/azure_container/test/reports/test_report_YYYYMMDD_HHMM.json`
+路徑：`/Users/yuwenhao/Documents/GitHub/azure_container/test/logs/test_report_YYYYMMDD_HHMM.json`
 
 包含結構化的測試結果，方便程式化處理。
 
@@ -243,12 +243,12 @@ Test Coverage by Module:
 
 ```bash
 # 查看最新的文字報告
-ls -la test/reports/*.txt | tail -1
-cat test/reports/test_report_20250801_1030.txt
+ls -la test/logs/*.txt | tail -1
+cat test/logs/test_report_20250801_1030.txt
 
 # 查看最新的 JSON 報告
-ls -la test/reports/*.json | tail -1
-cat test/reports/test_report_20250801_1030.json | jq '.'
+ls -la test/logs/*.json | tail -1
+cat test/logs/test_report_20250801_1030.json | jq '.'
 
 # 查看特定測試套件的詳細日誌
 cat /tmp/unit_keyword_extraction_output.log

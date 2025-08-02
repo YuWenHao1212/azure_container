@@ -10,6 +10,7 @@ import os
 import sys
 import subprocess
 from datetime import datetime
+from log_manager import get_log_dir, prepare_log_dir, get_log_path
 import json
 
 # Add parent directory to path
@@ -18,12 +19,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def run_tests():
     """Run Level 2 unit tests and log results."""
-    # Create timestamp for log file
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_file = f"test/logs/level2_unit_{timestamp}.log"
+    # Setup log directory and clean old logs
+    log_dir = get_log_dir()
+    prepare_log_dir(log_dir, "level2_unit_*.log", keep_count=6)
     
-    # Ensure log directory exists
-    os.makedirs("test/logs", exist_ok=True)
+    # Get log file path
+    log_file = str(get_log_path("level2_unit"))
     
     print(f"Running Level 2 unit tests...")
     print(f"Log file: {log_file}")
@@ -91,7 +92,8 @@ def run_tests():
     print(f"Full results logged to: {log_file}")
     
     # Also create a summary file for quick reference
-    summary_file = f"test/logs/level2_unit_{timestamp}_summary.txt"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    summary_file = str(get_log_path(f"level2_unit_{timestamp}_summary", ".txt"))
     with open(summary_file, "w") as sf:
         sf.write(f"Level 2 Unit Test Summary\n")
         sf.write(f"Timestamp: {timestamp}\n")

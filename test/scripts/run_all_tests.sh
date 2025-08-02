@@ -5,6 +5,12 @@
 
 set -e  # 遇到錯誤立即停止
 
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Source log utilities
+source "$SCRIPT_DIR/log_utils.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -12,13 +18,13 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Get script directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Change to script directory
 cd "$SCRIPT_DIR"
 
-# Create logs directory if not exists
-mkdir -p logs
-mkdir -p reports
+# Setup log directory with cleanup
+LOG_DIR="$(get_log_dir)"
+prepare_log_dir "$LOG_DIR" "level*_all_*.log"
+prepare_log_dir "$LOG_DIR" "test_summary_*.txt"
 
 # Test summary variables
 TOTAL_TESTS=0
@@ -79,26 +85,26 @@ echo ""
 print_header "Level 0: Prompt 驗證測試"
 run_test "Level 0 - YAML Prompt 驗證" \
     "bash scripts/run_level0_tests.sh" \
-    "logs/level0_all_${TIMESTAMP}.log" || true
+    "$LOG_DIR/level0_all_${TIMESTAMP}.log" || true
 
 # Level 1: Code Style Tests  
 print_header "Level 1: 程式碼風格測試"
 run_test "Level 1 - Ruff 程式碼風格檢查" \
     "bash run_level1_tests.sh" \
-    "logs/level1_all_${TIMESTAMP}.log" || true
+    "$LOG_DIR/level1_all_${TIMESTAMP}.log" || true
 
 # Level 2: Unit Tests
 print_header "Level 2: 單元測試"
 run_test "Level 2 - 單元測試套件" \
     "python run_level2_tests.py" \
-    "logs/level2_all_${TIMESTAMP}.log" || true
+    "$LOG_DIR/level2_all_${TIMESTAMP}.log" || true
 
 # Level 3: Integration Tests (if exists)
 if [ -f "scripts/run_level3_tests.sh" ]; then
     print_header "Level 3: 整合測試"
     run_test "Level 3 - 整合測試套件" \
         "bash scripts/run_level3_tests.sh" \
-        "logs/level3_all_${TIMESTAMP}.log" || true
+        "$LOG_DIR/level3_all_${TIMESTAMP}.log" || true
 else
     echo -e "${YELLOW}Level 3 整合測試尚未實作${NC}"
 fi
@@ -122,7 +128,7 @@ echo ""
 echo -e "${BLUE}完整測試報告已儲存至: $REPORT_FILE${NC}"
 
 # Generate simple summary for CI/CD
-SUMMARY_FILE="reports/test_summary_${TIMESTAMP}.json"
+SUMMARY_FILE="$LOG_DIR/test_summary_${TIMESTAMP}.json"
 cat > "$SUMMARY_FILE" <<EOF
 {
   "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",

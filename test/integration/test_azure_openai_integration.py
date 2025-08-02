@@ -347,7 +347,7 @@ class TestAzureOpenAIIntegration:
             with (
                 patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', 
                       return_value=mock_keyword_service),
-                patch('src.services.llm_factory.get_llm_client_smart'),
+                patch('src.services.llm_factory.get_llm_client_smart', return_value=mock_azure_openai_client),
                 patch('src.services.llm_factory.get_llm_info', 
                       return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
                 patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),

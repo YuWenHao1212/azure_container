@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 
 # Get timestamp for report
 TIMESTAMP=$(date +%Y%m%d_%H%M)
-REPORT_DIR="/Users/yuwenhao/Documents/GitHub/azure_container/test/reports"
+REPORT_DIR="/Users/yuwenhao/Documents/GitHub/azure_container/test/logs"
 ERROR_LOG="${REPORT_DIR}/error_${TIMESTAMP}.log"
 
 # Create reports directory if not exists

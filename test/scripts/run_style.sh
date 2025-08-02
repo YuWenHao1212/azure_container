@@ -9,10 +9,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TEST_DIR="$PROJECT_ROOT/test"
 SRC_DIR="$PROJECT_ROOT/src"
-LOG_DIR="$TEST_DIR/logs"
 
-# Create log directory if it doesn't exist
-mkdir -p "$LOG_DIR"
+# Source log utilities
+source "$SCRIPT_DIR/log_utils.sh"
+
+# Setup log directory with cleanup
+LOG_DIR="$(get_log_dir)"
+prepare_log_dir "$LOG_DIR" "level1_style_*.log"
 
 # Generate timestamp for log file
 TIMESTAMP=$(date "+%Y%m%d_%H%M%S")

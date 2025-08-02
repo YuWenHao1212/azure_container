@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 
 # Determine project root (works in both local and CI environments)
 PROJECT_ROOT="${GITHUB_WORKSPACE:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
-REPORT_DIR="${PROJECT_ROOT}/test/reports"
+REPORT_DIR="${PROJECT_ROOT}/test/logs"
 TIMESTAMP=$(date +%Y%m%d_%H%M)
 ERROR_LOG="${REPORT_DIR}/error_${TIMESTAMP}.log"
 
