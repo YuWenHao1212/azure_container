@@ -14,8 +14,10 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-# Business events logger
-business_logger = logging.getLogger("business_events")
+# Business events logger with dual output support
+from src.core.monitoring_logger import get_business_logger
+
+business_logger = get_business_logger()
 
 
 class ResponseTimeTracker:

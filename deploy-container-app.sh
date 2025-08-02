@@ -2,6 +2,12 @@
 
 # Azure Container Apps Deployment Script
 # Based on existing production configuration
+#
+# Monitoring Log Configuration:
+# - MONITORING_LOG_FILE is intentionally not set (empty) for Azure deployment
+# - This enables automatic stdout collection by Azure Container Apps
+# - All monitoring logs flow to Azure Log Analytics automatically
+# - For local development, set MONITORING_LOG_FILE=logs/monitoring.log in .env
 
 set -e
 

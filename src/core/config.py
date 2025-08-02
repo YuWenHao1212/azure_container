@@ -163,6 +163,27 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
+    # Monitoring Log File Configuration
+    monitoring_log_file: str = Field(
+        default="",
+        validation_alias="MONITORING_LOG_FILE",
+        description=(
+            "Path to monitoring log file for local development. "
+            "If empty, logs go to stdout (Azure Container Apps will auto-collect). "
+            "Example: 'logs/monitoring.log'"
+        )
+    )
+    monitoring_log_max_size: int = Field(
+        default=10,
+        validation_alias="MONITORING_LOG_MAX_SIZE_MB",
+        description="Maximum size of monitoring log file in MB before rotation"
+    )
+    monitoring_log_backup_count: int = Field(
+        default=5,
+        validation_alias="MONITORING_LOG_BACKUP_COUNT",
+        description="Number of backup log files to keep during rotation"
+    )
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

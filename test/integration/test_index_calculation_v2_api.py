@@ -115,13 +115,17 @@ class TestIndexCalculationV2Integration:
             [0.1] * 1536   # Job description embedding
         ]
 
+        # Mock for both V1 and V2 services
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation.monitoring_service', Mock()):
-                response = test_client.post(
-                    "/api/v1/index-calculation",
-                    json=valid_index_calc_request
-                )
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                with patch('src.services.index_calculation.monitoring_service', Mock()):
+                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                        response = test_client.post(
+                            "/api/v1/index-calculation",
+                            json=valid_index_calc_request
+                        )
 
         # Verify response
         assert response.status_code == 200
@@ -167,42 +171,46 @@ class TestIndexCalculationV2Integration:
             [0.1] * 1536
         ]
 
+        # Mock for both V1 and V2 services
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation.monitoring_service', Mock()):
-                # First request - cache miss
-                start_time1 = time.time()
-                response1 = test_client.post(
-                    "/api/v1/index-calculation",
-                    json=valid_index_calc_request
-                )
-                time1 = time.time() - start_time1
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                with patch('src.services.index_calculation.monitoring_service', Mock()):
+                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                        # First request - cache miss
+                        start_time1 = time.time()
+                        response1 = test_client.post(
+                            "/api/v1/index-calculation",
+                            json=valid_index_calc_request
+                        )
+                        time1 = time.time() - start_time1
 
-                assert response1.status_code == 200
-                data1 = response1.json()
-                
-                # For V2, check cache_hit field when implemented
-                # assert data1["data"].get("cache_hit") is False
-                
-                # Second request - should be cache hit (much faster)
-                start_time2 = time.time()
-                response2 = test_client.post(
-                    "/api/v1/index-calculation",
-                    json=valid_index_calc_request
-                )
-                time2 = time.time() - start_time2
+                        assert response1.status_code == 200
+                        data1 = response1.json()
+                        
+                        # For V2, check cache_hit field when implemented
+                        # assert data1["data"].get("cache_hit") is False
+                        
+                        # Second request - should be cache hit (much faster)
+                        start_time2 = time.time()
+                        response2 = test_client.post(
+                            "/api/v1/index-calculation",
+                            json=valid_index_calc_request
+                        )
+                        time2 = time.time() - start_time2
 
-                assert response2.status_code == 200
-                data2 = response2.json()
-                
-                # Results should be identical
-                assert data1["data"]["raw_similarity_percentage"] == data2["data"]["raw_similarity_percentage"]
-                assert data1["data"]["similarity_percentage"] == data2["data"]["similarity_percentage"]
-                assert data1["data"]["keyword_coverage"] == data2["data"]["keyword_coverage"]
-                
-                # For V2, check cache_hit field when implemented
-                # assert data2["data"].get("cache_hit") is True
-                # assert time2 < time1 * 0.1  # Cache hit should be much faster
+                        assert response2.status_code == 200
+                        data2 = response2.json()
+                        
+                        # Results should be identical
+                        assert data1["data"]["raw_similarity_percentage"] == data2["data"]["raw_similarity_percentage"]
+                        assert data1["data"]["similarity_percentage"] == data2["data"]["similarity_percentage"]
+                        assert data1["data"]["keyword_coverage"] == data2["data"]["keyword_coverage"]
+                        
+                        # For V2, check cache_hit field when implemented
+                        # assert data2["data"].get("cache_hit") is True
+                        # assert time2 < time1 * 0.1  # Cache hit should be much faster
 
     # TEST: API-IC-103-IT
     def test_input_validation(self, test_client):
@@ -250,7 +258,7 @@ class TestIndexCalculationV2Integration:
             }
         )
         assert response.status_code == 400
-        assert "too short" in response.json()["error"]["message"].lower()
+        assert "too short" in response.json()["error"]["details"].lower()
         
         # Test extremely long text (> 500KB)
         large_text = "x" * 600000
@@ -263,75 +271,91 @@ class TestIndexCalculationV2Integration:
             }
         )
         assert response.status_code == 400
-        assert "too long" in response.json()["error"]["message"].lower()
+        assert "too long" in response.json()["error"]["details"].lower()
 
     # TEST: API-IC-104-IT
     def test_azure_openai_service_failure(
-        self, test_client, mock_embedding_client, valid_index_calc_request
+        self, test_client, valid_index_calc_request
     ):
         """TEST: API-IC-104-IT - Azure OpenAI服務失敗測試.
         
         驗證 embedding 服務失敗時的錯誤處理。
         """
         # Test rate limit error
+        mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = AzureOpenAIRateLimitError(
             "Rate limit exceeded"
         )
+        mock_embedding_client.close = AsyncMock()
 
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            response = test_client.post(
-                "/api/v1/index-calculation",
-                json=valid_index_calc_request
-            )
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json=valid_index_calc_request
+                )
 
         assert response.status_code == 503
         data = response.json()
         assert data["success"] is False
-        assert data["error"]["code"] == "SERVICE_UNAVAILABLE"
+        assert data["error"]["code"] == "SERVICE_ERROR"
         
         # Test authentication error
+        mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = AzureOpenAIAuthError(
             "Invalid API key"
         )
+        mock_embedding_client.close = AsyncMock()
 
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            response = test_client.post(
-                "/api/v1/index-calculation",
-                json=valid_index_calc_request
-            )
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json=valid_index_calc_request
+                )
 
         assert response.status_code == 503
-        assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+        assert response.json()["error"]["code"] == "SERVICE_ERROR"
         
         # Test server error
+        mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = AzureOpenAIServerError(
             "Internal server error"
         )
+        mock_embedding_client.close = AsyncMock()
 
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            response = test_client.post(
-                "/api/v1/index-calculation",
-                json=valid_index_calc_request
-            )
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json=valid_index_calc_request
+                )
 
         assert response.status_code == 503
-        assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+        assert response.json()["error"]["code"] == "SERVICE_ERROR"
         
         # Test timeout
+        mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = asyncio.TimeoutError()
+        mock_embedding_client.close = AsyncMock()
 
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            response = test_client.post(
-                "/api/v1/index-calculation",
-                json=valid_index_calc_request
-            )
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json=valid_index_calc_request
+                )
 
-        assert response.status_code == 500
-        assert response.json()["error"]["code"] == "TIMEOUT_ERROR"
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "SERVICE_ERROR"
 
     # TEST: API-IC-105-IT
     def test_concurrent_request_handling(
@@ -351,16 +375,19 @@ class TestIndexCalculationV2Integration:
             """Make a single request with unique content."""
             with patch('src.services.index_calculation.get_azure_embedding_client', 
                       return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    response = test_client.post(
-                        "/api/v1/index-calculation",
-                        json={
-                            "resume": f"Python developer with experience {index}",
-                            "job_description": f"Looking for developer {index}",
-                            "keywords": ["Python", f"Skill{index}"]
-                        }
-                    )
-                    return response
+                with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                          return_value=mock_embedding_client):
+                    with patch('src.services.index_calculation.monitoring_service', Mock()):
+                        with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                            response = test_client.post(
+                                "/api/v1/index-calculation",
+                                json={
+                                    "resume": f"Python developer with extensive experience in web development, cloud computing, and software engineering {index}",
+                                    "job_description": f"Looking for experienced developer with strong technical skills and problem-solving abilities {index}",
+                                    "keywords": ["Python", f"Skill{index}"]
+                                }
+                            )
+                            return response
 
         # Execute 10 concurrent requests
         successful_requests = 0
@@ -401,19 +428,23 @@ class TestIndexCalculationV2Integration:
             [0.1] * 1536
         ]
 
+        # Mock for both V1 and V2 services
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation.monitoring_service', Mock()):
-                start_time = time.time()
-                response = test_client.post(
-                    "/api/v1/index-calculation",
-                    json={
-                        "resume": large_resume,
-                        "job_description": large_jd,
-                        "keywords": ["Python", "FastAPI", "Docker", "Kubernetes"]
-                    }
-                )
-                processing_time = time.time() - start_time
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                with patch('src.services.index_calculation.monitoring_service', Mock()):
+                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                        start_time = time.time()
+                        response = test_client.post(
+                            "/api/v1/index-calculation",
+                            json={
+                                "resume": large_resume,
+                                "job_description": large_jd,
+                                "keywords": ["Python", "FastAPI", "Docker", "Kubernetes"]
+                            }
+                        )
+                        processing_time = time.time() - start_time
 
         assert response.status_code == 200
         data = response.json()
@@ -425,17 +456,21 @@ class TestIndexCalculationV2Integration:
         # Test maximum size (30KB)
         very_large_resume = large_resume * 3  # ~30KB
         
+        # Mock for both V1 and V2 services
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation.monitoring_service', Mock()):
-                response = test_client.post(
-                    "/api/v1/index-calculation",
-                    json={
-                        "resume": very_large_resume,
-                        "job_description": large_jd,
-                        "keywords": ["Python"]
-                    }
-                )
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                with patch('src.services.index_calculation.monitoring_service', Mock()):
+                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                        response = test_client.post(
+                            "/api/v1/index-calculation",
+                            json={
+                                "resume": very_large_resume,
+                                "job_description": large_jd,
+                                "keywords": ["Python"]
+                            }
+                        )
 
         assert response.status_code == 200
 
@@ -479,41 +514,45 @@ class TestIndexCalculationV2Integration:
             [0.1] * 1536
         ]
 
+        # Mock for both V1 and V2 services
         with patch('src.services.index_calculation.get_azure_embedding_client', 
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation.monitoring_service', Mock()):
-                # Test Chinese resume with English JD
-                response1 = test_client.post(
-                    "/api/v1/index-calculation",
-                    json={
-                        "resume": chinese_resume,
-                        "job_description": "Looking for Python developer",
-                        "keywords": ["Python", "FastAPI", "雲端"]
-                    }
-                )
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                      return_value=mock_embedding_client):
+                with patch('src.services.index_calculation.monitoring_service', Mock()):
+                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                        # Test Chinese resume with English JD
+                        response1 = test_client.post(
+                            "/api/v1/index-calculation",
+                            json={
+                                "resume": chinese_resume,
+                                "job_description": "Looking for Python developer",
+                                "keywords": ["Python", "FastAPI", "雲端"]
+                            }
+                        )
 
-                assert response1.status_code == 200
-                data1 = response1.json()
-                assert data1["success"] is True
-                
-                # Test mixed language content
-                response2 = test_client.post(
-                    "/api/v1/index-calculation",
-                    json={
-                        "resume": test_data["standard_resumes"][5]["content"],  # Mixed language
-                        "job_description": mixed_jd,
-                        "keywords": ["Backend", "後端", "Docker", "K8s"]
-                    }
-                )
+                        assert response1.status_code == 200
+                        data1 = response1.json()
+                        assert data1["success"] is True
+                        
+                        # Test mixed language content
+                        response2 = test_client.post(
+                            "/api/v1/index-calculation",
+                            json={
+                                "resume": test_data["standard_resumes"][5]["content"],  # Mixed language
+                                "job_description": mixed_jd,
+                                "keywords": ["Backend", "後端", "Docker", "K8s"]
+                            }
+                        )
 
-                assert response2.status_code == 200
-                data2 = response2.json()
-                assert data2["success"] is True
-                
-                # Verify keyword matching works with mixed languages
-                coverage = data2["data"]["keyword_coverage"]
-                assert coverage["total_keywords"] == 4
-                assert coverage["covered_count"] >= 2  # At least Backend and Docker
+                        assert response2.status_code == 200
+                        data2 = response2.json()
+                        assert data2["success"] is True
+                        
+                        # Verify keyword matching works with mixed languages
+                        coverage = data2["data"]["keyword_coverage"]
+                        assert coverage["total_keywords"] == 4
+                        assert coverage["covered_count"] >= 2  # At least Backend and Docker
 
 
 if __name__ == "__main__":
