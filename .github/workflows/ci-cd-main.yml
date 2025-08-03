@@ -279,42 +279,13 @@ jobs:
         
     - name: Smoke test with performance check
       run: |
-        # 測試關鍵字提取端點並檢查效能
-        echo "Running smoke test with performance measurement..."
+        # 確保測試腳本有執行權限
+        chmod +x test/scripts/ci_smoke_test.sh
         
-        # 記錄開始時間
-        START_TIME=$(date +%s%3N)
-        
-        RESPONSE=$(curl -s -X POST https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/api/v1/extract-jd-keywords \
-          -H "Content-Type: application/json" \
-          -H "X-API-Key: ${{ secrets.CONTAINER_APP_API_KEY }}" \
-          -d '{
-            "job_description": "We are looking for an experienced Python developer with strong FastAPI framework knowledge to join our engineering team. The ideal candidate should have at least 3 years of experience in building RESTful APIs, microservices architecture, and cloud deployment. Required skills include Python, FastAPI, PostgreSQL, Docker, and Azure cloud services. Experience with async programming and performance optimization is a plus."
-          }')
-        
-        # 記錄結束時間
-        END_TIME=$(date +%s%3N)
-        RESPONSE_TIME=$((END_TIME - START_TIME))
-        
-        echo "Response time: ${RESPONSE_TIME}ms"
-        
-        # 檢查回應是否包含 keywords
-        if echo "$RESPONSE" | grep -q "keywords"; then
-          echo "✅ Functionality test passed!"
-          
-          # 檢查效能 (SLA: < 4000ms)
-          if [ $RESPONSE_TIME -lt 4000 ]; then
-            echo "✅ Performance test passed! (${RESPONSE_TIME}ms < 4000ms)"
-          else
-            echo "❌ Performance test failed! (${RESPONSE_TIME}ms >= 4000ms)"
-            echo "Response: $RESPONSE"
-            exit 1
-          fi
-        else
-          echo "❌ Functionality test failed!"
-          echo "Response: $RESPONSE"
-          exit 1
-        fi
+        # 執行 smoke test
+        CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
+        API_URL=https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io \
+        ./test/scripts/ci_smoke_test.sh
         
   notify:
     name: Notify Deployment Status
@@ -336,8 +307,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🎯 Deployment Validation" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Health check passed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Smoke test passed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Performance test passed (< 4000ms SLA)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Smoke tests passed (2 critical endpoints)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Keyword Extraction: < 4000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
+          echo "  - Index Calculation V2: < 2000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
         else
           echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

@@ -364,12 +364,12 @@ ${BLUE}Index Calculation V2 效能測試詳情:${NC}"
         log "------------------------------------------------------------"
         
         # Extract performance metrics
-        local small_p50=$(grep -A5 "Small.*P50:" /tmp/performance_index_calc_v2_output.log | grep "P50:" | grep -oE '[0-9]+' | head -1 || echo "N/A")
-        local medium_p50=$(grep -A5 "Medium.*P50:" /tmp/performance_index_calc_v2_output.log | grep "P50:" | grep -oE '[0-9]+' | head -1 || echo "N/A")
-        local large_p50=$(grep -A5 "Large.*P50:" /tmp/performance_index_calc_v2_output.log | grep "P50:" | grep -oE '[0-9]+' | head -1 || echo "N/A")
-        local overall_p50=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P50:" | grep -oE '[0-9]+' | head -1 || echo "N/A")
-        local overall_p95=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P95:" | grep -oE '[0-9]+' | head -1 || echo "N/A")
-        local overall_p99=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P99:" | grep -oE '[0-9]+' | head -1 || echo "N/A")
+        local small_p50=$(grep "Small.*P50:" /tmp/performance_index_calc_v2_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
+        local medium_p50=$(grep "Medium.*P50:" /tmp/performance_index_calc_v2_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
+        local large_p50=$(grep "Large.*P50:" /tmp/performance_index_calc_v2_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
+        local overall_p50=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P50:" | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' || echo "N/A")
+        local overall_p95=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P95:" | sed -E 's/^.*P95: ([0-9]+)ms.*$/\1/' || echo "N/A")
+        local overall_p99=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P99:" | sed -E 's/^.*P99: ([0-9]+)ms.*$/\1/' || echo "N/A")
         
         log "測試案例             | P50 回應時間 | SLA 狀態"
         log "---------------------|--------------|----------"
