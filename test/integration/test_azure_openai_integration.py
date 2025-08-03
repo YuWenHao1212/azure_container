@@ -45,7 +45,7 @@ from src.services.openai_client import (
 )
 
 
-@pytest.mark.skip(reason="TEST-001: Known 10% intermittent failure rate due to mock configuration issues. See docs/issues/TEST-001-intermittent-azure-openai-complete-report.md")
+@pytest.mark.xfail(reason="TEST-001: Known 10% intermittent failure rate due to mock configuration issues. See docs/issues/TEST-001-intermittent-azure-openai-complete-report.md", strict=False)
 class TestAzureOpenAIIntegration:
     """Integration tests for Azure OpenAI service integration."""
 
