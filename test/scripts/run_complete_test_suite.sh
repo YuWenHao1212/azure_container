@@ -554,7 +554,7 @@ ${BLUE}=== Complete Test Suite ===${NC}"
         
         if [ "$STAGE_EXEC" = "performance" ] || ([ -z "$STAGE_EXEC" ] && [ "$INCLUDE_PERFORMANCE" = true ]); then
             TEST_SUITES+=(
-                "performance_keyword:python -m pytest test/performance/test_keyword_extraction_performance.py -v"
+                "performance_keyword:python -m pytest test/performance/test_keyword_extraction_performance.py -v -s"
                 "performance_index_calc_v2:python -m pytest test/performance/test_index_calculation_v2_performance.py -v"
             )
         fi
