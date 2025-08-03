@@ -6,9 +6,10 @@ import asyncio
 import gc
 import os
 import sys
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
 import threading
+from unittest.mock import AsyncMock
+
+import pytest
 
 
 def reset_global_services():
@@ -17,7 +18,7 @@ def reset_global_services():
     if 'src.services.keyword_extraction_v2' in sys.modules:
         import src.services.keyword_extraction_v2
         src.services.keyword_extraction_v2._keyword_extraction_service_v2 = None
-    
+
     # 重置其他可能的全域狀態
     # 可以根據需要添加更多服務的重置
 
@@ -30,24 +31,24 @@ def isolate_test_environment():
     """
     # 保存當前環境狀態
     original_env = os.environ.copy()
-    
+
     # 清除已知的全域狀態
     reset_global_services()
-    
+
     # 記錄測試開始
-    test_name = os.environ.get('PYTEST_CURRENT_TEST', 'unknown')
-    thread_id = threading.current_thread().ident
-    
+    os.environ.get('PYTEST_CURRENT_TEST', 'unknown')
+    threading.current_thread().ident  # noqa: B018
+
     yield
-    
+
     # 測試後清理
     # 恢復環境變數
     os.environ.clear()
     os.environ.update(original_env)
-    
+
     # 再次清除全域狀態
     reset_global_services()
-    
+
     # 強制垃圾回收
     gc.collect()
 
@@ -57,18 +58,18 @@ def clean_event_loop():
     """為測試創建乾淨的 event loop"""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     yield loop
-    
+
     # 清理未完成的任務
     try:
         pending = asyncio.all_tasks(loop)
         for task in pending:
             task.cancel()
-        
+
         if pending:
             loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-    except Exception:
+    except Exception:  # noqa: S110
         pass
     finally:
         loop.close()
@@ -77,10 +78,10 @@ def clean_event_loop():
 def create_configured_async_mock():
     """
     創建完整配置的 AsyncMock
-    用於替代簡單的 AsyncMock()，確保行為一致
+    用於替代簡單的 AsyncMock(), 確保行為一致
     """
     mock = AsyncMock()
-    
+
     # 配置 chat completion 方法
     mock.chat_completion = AsyncMock(return_value={
         "choices": [{
@@ -94,23 +95,23 @@ def create_configured_async_mock():
             "total_tokens": 150
         }
     })
-    
+
     # 配置 complete_text 方法
     mock.complete_text = AsyncMock(return_value={
         "text": '{"keywords": ["Python"], "confidence": 0.85}'
     })
-    
+
     # 配置關閉方法
     mock.close = AsyncMock()
-    
-    # 配置重試相關屬性（防止 AttributeError）
+
+    # 配置重試相關屬性 (防止 AttributeError)
     mock.max_retries = 3
     mock.retry_delays = [1, 2, 4]
-    
+
     # 確保 mock 可以作為 async context manager
     mock.__aenter__ = AsyncMock(return_value=mock)
     mock.__aexit__ = AsyncMock(return_value=None)
-    
+
     return mock
 
 
@@ -121,7 +122,7 @@ class ThreadSafeEnvironment:
     """
     _local = threading.local()
     _lock = threading.Lock()
-    
+
     @classmethod
     def set(cls, key: str, value: str):
         """線程安全地設置環境變數"""
@@ -131,7 +132,7 @@ class ThreadSafeEnvironment:
             cls._local.env[key] = value
             # 同時更新真實的環境變數
             os.environ[key] = value
-    
+
     @classmethod
     def get(cls, key: str, default=None):
         """線程安全地獲取環境變數"""
@@ -143,7 +144,7 @@ class ThreadSafeEnvironment:
             if value is None:
                 value = os.environ.get(key, default)
             return value
-    
+
     @classmethod
     def clear(cls):
         """清除線程本地的環境變數"""
@@ -185,5 +186,5 @@ def stable_mock_factory():
             return mock
         else:
             return AsyncMock()
-    
+
     return _create_mock

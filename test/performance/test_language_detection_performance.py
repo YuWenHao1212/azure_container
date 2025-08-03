@@ -662,7 +662,7 @@ Nice to Have:
                             await rule_based_detector.detect_language(text)
                             end_time = time.perf_counter()
                             group_results["RuleBasedLanguageDetector"].append((end_time - start_time) * 1000)
-                        except Exception:
+                        except Exception:  # noqa: S112
                             # Skip failed detections in performance test
                             continue
 
@@ -672,7 +672,7 @@ Nice to Have:
                             await simplified_detector.detect_language(text)
                             end_time = time.perf_counter()
                             group_results["SimplifiedLanguageDetector"].append((end_time - start_time) * 1000)
-                        except Exception:
+                        except Exception:  # noqa: S112
                             # Skip failed detections in performance test
                             continue
 
@@ -815,7 +815,7 @@ if __name__ == "__main__":
     elif args.pytest:
         # Run with pytest
         import subprocess
-        subprocess.run([
+        subprocess.run([  # noqa: S607
             "python", "-m", "pytest",
             "test/performance/test_language_detection_performance.py",
             "-v", "-s"

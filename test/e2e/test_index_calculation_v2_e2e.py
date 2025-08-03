@@ -7,12 +7,6 @@ Tests:
 - API-IC-303-E2E: 監控和日誌整合測試
 """
 
-from src.services.openai_client import (
-    AzureOpenAIRateLimitError,
-    AzureOpenAIServerError,
-)
-from src.main import create_app
-import asyncio
 import json
 import os
 import sys
@@ -21,6 +15,12 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+
+from src.main import create_app
+from src.services.openai_client import (
+    AzureOpenAIRateLimitError,
+    AzureOpenAIServerError,
+)
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
@@ -81,7 +81,7 @@ class TestIndexCalculationV2E2E:
             os.path.dirname(__file__),
             '../fixtures/index_calculation/test_data.json'
         )
-        with open(fixture_path, 'r', encoding='utf-8') as f:
+        with open(fixture_path, encoding='utf-8') as f:
             return json.load(f)
 
     @pytest.fixture
@@ -124,18 +124,23 @@ class TestIndexCalculationV2E2E:
                        return_value=mock_embedding_client):
                 with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                            return_value=mock_embedding_client):
-                    with patch('src.services.index_calculation.monitoring_service', mock_monitoring_service):
-                        with patch('src.services.index_calculation_v2.monitoring_service', mock_monitoring_service):
-                            # Step 1: Make the API request
-                            start_time = time.time()
-                            response = test_client.post(
-                                "/api/v1/index-calculation",
-                                json={
-                                    "resume": real_resume,
-                                    "job_description": real_jd,
-                                    "keywords": real_keywords
-                                }
-                            )
+                    with (
+
+                        patch('src.services.index_calculation.monitoring_service', mock_monitoring_service),
+
+                        patch('src.services.index_calculation_v2.monitoring_service', mock_monitoring_service)
+
+                    ):
+                        # Step 1: Make the API request
+                        start_time = time.time()
+                        response = test_client.post(
+                            "/api/v1/index-calculation",
+                            json={
+                                "resume": real_resume,
+                                "job_description": real_jd,
+                                "keywords": real_keywords
+                            }
+                        )
                         processing_time = time.time() - start_time
 
                         # Step 2: Verify response structure and content
@@ -254,17 +259,22 @@ class TestIndexCalculationV2E2E:
                    return_value=mock_embedding_client):
             with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                        return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', mock_monitoring_service):
-                    with patch('src.services.index_calculation_v2.monitoring_service', mock_monitoring_service):
-                        # First request fails
-                        response1 = test_client.post(
-                            "/api/v1/index-calculation",
-                            json={
-                                "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
-                                "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
-                                "keywords": ["Python"]
-                            }
-                        )
+                with (
+
+                    patch('src.services.index_calculation.monitoring_service', mock_monitoring_service),
+
+                    patch('src.services.index_calculation_v2.monitoring_service', mock_monitoring_service)
+
+                ):
+                    # First request fails
+                    response1 = test_client.post(
+                        "/api/v1/index-calculation",
+                        json={
+                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
+                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
+                            "keywords": ["Python"]
+                        }
+                    )
                     # AzureOpenAI errors should return 503
                     assert response1.status_code == 503
                     assert response1.json()["success"] is False
@@ -276,8 +286,8 @@ class TestIndexCalculationV2E2E:
                     response2 = test_client.post(
                         "/api/v1/index-calculation",
                         json={
-                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
-                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
+                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
+                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
                             "keywords": ["Python"]
                         }
                     )
@@ -290,8 +300,8 @@ class TestIndexCalculationV2E2E:
                     response3 = test_client.post(
                         "/api/v1/index-calculation",
                         json={
-                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
-                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
+                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
+                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
                             "keywords": ["Python"]
                         }
                     )
@@ -322,22 +332,22 @@ class TestIndexCalculationV2E2E:
                 response4 = test_client.post(
                     "/api/v1/index-calculation",
                     json={
-                        "resume": "Java developer with extensive experience in enterprise application development, web services, and cloud computing. Strong background in building scalable Java applications, RESTful APIs, and microservices architecture. Proficient in Spring Framework, Docker, Kubernetes, and CI/CD pipelines.",
-                        "job_description": "Need Java developer with strong technical skills and problem-solving abilities. Must have expertise in enterprise Java development, cloud technologies, and modern application architecture. Knowledge of containerization, orchestration, and DevOps practices is essential.",
+                        "resume": "Java developer with extensive experience in enterprise application development, web services, and cloud computing. Strong background in building scalable Java applications, RESTful APIs, and microservices architecture. Proficient in Spring Framework, Docker, Kubernetes, and CI/CD pipelines.",  # noqa: E501
+                        "job_description": "Need Java developer with strong technical skills and problem-solving abilities. Must have expertise in enterprise Java development, cloud technologies, and modern application architecture. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
                         "keywords": ["Java"]
                     }
                 )
                 assert response4.status_code == 503  # AzureOpenAIRateLimitError returns 503
-                
+
                 # Reset singleton
                 src.services.index_calculation_v2._index_calculation_service_v2 = None
-                
+
                 # After backing off, request succeeds
                 response5 = test_client.post(
                     "/api/v1/index-calculation",
                     json={
-                        "resume": "Java developer with extensive experience in enterprise application development, web services, and cloud computing. Strong background in building scalable Java applications, RESTful APIs, and microservices architecture. Proficient in Spring Framework, Docker, Kubernetes, and CI/CD pipelines.",
-                        "job_description": "Need Java developer with strong technical skills and problem-solving abilities. Must have expertise in enterprise Java development, cloud technologies, and modern application architecture. Knowledge of containerization, orchestration, and DevOps practices is essential.",
+                        "resume": "Java developer with extensive experience in enterprise application development, web services, and cloud computing. Strong background in building scalable Java applications, RESTful APIs, and microservices architecture. Proficient in Spring Framework, Docker, Kubernetes, and CI/CD pipelines.",  # noqa: E501
+                        "job_description": "Need Java developer with strong technical skills and problem-solving abilities. Must have expertise in enterprise Java development, cloud technologies, and modern application architecture. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
                         "keywords": ["Java"]
                     }
                 )
@@ -370,8 +380,13 @@ class TestIndexCalculationV2E2E:
                    return_value=mock_embedding_client):
             with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                        return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', mock_monitoring_service):
-                    with patch('src.services.index_calculation_v2.monitoring_service', mock_monitoring_service):
+                with (
+
+                    patch('src.services.index_calculation.monitoring_service', mock_monitoring_service),
+
+                    patch('src.services.index_calculation_v2.monitoring_service', mock_monitoring_service)
+
+                ):
                         # Scenario 1: Successful request - verify all
                         # monitoring points
                         response = test_client.post(
@@ -394,7 +409,7 @@ class TestIndexCalculationV2E2E:
                         # Note: V2 doesn't track SimilarityRoundingDebug event
 
                         # Verify event properties
-                        embedding_events = [e for e in mock_monitoring_service.events
+                        [e for e in mock_monitoring_service.events
                                             if e["name"] == "EmbeddingPerformance"]
                         # Note: V2 doesn't track EmbeddingPerformance events
                         # individually
@@ -424,8 +439,8 @@ class TestIndexCalculationV2E2E:
                         response2 = test_client.post(
                             "/api/v1/index-calculation",
                             json={
-                                "resume": "Test resume with extensive experience in software development, web technologies, and modern programming frameworks. Strong background in building scalable applications, RESTful APIs, and microservices architecture. Proficient in various programming languages and cloud technologies.",
-                                "job_description": "Test JD looking for experienced developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization and DevOps practices is essential.",
+                                "resume": "Test resume with extensive experience in software development, web technologies, and modern programming frameworks. Strong background in building scalable applications, RESTful APIs, and microservices architecture. Proficient in various programming languages and cloud technologies.",  # noqa: E501
+                                "job_description": "Test JD looking for experienced developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization and DevOps practices is essential.",  # noqa: E501
                                 "keywords": ["Test"]
                             }
                         )
@@ -449,7 +464,7 @@ class TestIndexCalculationV2E2E:
                         assert stats_response.status_code in [200, 404]
 
                         if stats_response.status_code == 200:
-                            stats = stats_response.json()
+                            stats_response.json()
 
         # Final cleanup
         src.services.index_calculation_v2._index_calculation_service_v2 = None

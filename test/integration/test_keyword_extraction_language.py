@@ -36,16 +36,15 @@ class TestKeywordExtractionLanguageIntegration:
     @pytest.fixture
     def test_client(self):
         """Create test client with mocked dependencies."""
-        with patch('src.core.config.get_settings'):
-            with patch('src.main.monitoring_service', Mock()):
-                with patch.dict(os.environ, {
-                    'MONITORING_ENABLED': 'false',
-                    'LIGHTWEIGHT_MONITORING': 'false',
-                    'ERROR_CAPTURE_ENABLED': 'false',
-                    'CONTAINER_APP_API_KEY': ''
-                }):
-                    app = create_app()
-                    return TestClient(app)
+        with patch('src.core.config.get_settings'), patch('src.main.monitoring_service', Mock()):
+            with patch.dict(os.environ, {
+                'MONITORING_ENABLED': 'false',
+                'LIGHTWEIGHT_MONITORING': 'false',
+                'ERROR_CAPTURE_ENABLED': 'false',
+                'CONTAINER_APP_API_KEY': ''
+            }):
+                app = create_app()
+                return TestClient(app)
 
     @pytest.fixture
     def mock_keyword_service(self):
@@ -99,17 +98,20 @@ class TestKeywordExtractionLanguageIntegration:
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 200
         data = response.json()
@@ -149,17 +151,20 @@ class TestKeywordExtractionLanguageIntegration:
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 200
         data = response.json()
@@ -203,17 +208,20 @@ class TestKeywordExtractionLanguageIntegration:
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 200
         data = response.json()
@@ -249,17 +257,20 @@ class TestKeywordExtractionLanguageIntegration:
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 200
         data = response.json()
@@ -291,17 +302,20 @@ class TestKeywordExtractionLanguageIntegration:
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 400
         data = response.json()
@@ -330,17 +344,20 @@ class TestKeywordExtractionLanguageIntegration:
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 400
         data = response.json()
@@ -369,17 +386,20 @@ class TestKeywordExtractionLanguageIntegration:
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 400
         data = response.json()
@@ -410,17 +430,20 @@ class TestKeywordExtractionLanguageIntegration:
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 400
         data = response.json()
@@ -460,17 +483,20 @@ class TestKeywordExtractionLanguageIntegration:
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 200
         data = response.json()
@@ -501,17 +527,20 @@ class TestKeywordExtractionLanguageIntegration:
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 400
         data = response.json()
@@ -561,17 +590,20 @@ class TestKeywordExtractionLanguageIntegration:
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 200
         data = response.json()
@@ -598,17 +630,20 @@ class TestKeywordExtractionLanguageIntegration:
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 422
         data = response.json()
@@ -644,17 +679,20 @@ class TestKeywordExtractionLanguageIntegration:
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 200
         data = response.json()
@@ -675,7 +713,7 @@ class TestKeywordExtractionLanguageIntegration:
             "job_description": "Nous recherchons un développeur Python senior avec plus de 5 ans d'expérience " +
                              "dans le développement d'applications web évolutives utilisant FastAPI et Django. " +
                              "Une solide connaissance de Docker, Kubernetes et des services cloud AWS est requise. " +
-                             "Le candidat idéal doit avoir d'excellentes compétences en résolution de problèmes.",  # French
+                             "Le candidat idéal doit avoir d'excellentes compétences en résolution de problèmes.",  # French  # noqa: E501
             "max_keywords": 15
         }
 
@@ -688,17 +726,20 @@ class TestKeywordExtractionLanguageIntegration:
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart',
-                      return_value=mock_llm_client):
-                with patch('src.services.llm_factory.get_llm_info',
-                          return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
-                        with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post(
-                                "/api/v1/extract-jd-keywords",
-                                json=request_data
-                            )
+                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with (
+
+                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
+
+                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
+
+            ):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=request_data
+                    )
 
         assert response.status_code == 400
         data = response.json()

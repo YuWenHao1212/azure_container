@@ -13,22 +13,22 @@ test_mappings = [
 ]
 
 # 讀取檔案
-with open('test/unit/test_prompt_manager.py', 'r', encoding='utf-8') as f:
+with open('test/unit/test_prompt_manager.py', encoding='utf-8') as f:
     content = f.read()
 
 # 替換每個測試函數的 docstring
 for test_name, test_id, description in test_mappings:
     # 找到測試函數定義
     pattern = rf'(def {test_name}\([^)]*\):\s*\n\s*)("""[^"]*""")?'
-    
+
     # 新的 docstring
     new_docstring = f'"""TEST: {test_id} - {description}"""'
-    
+
     # 替換
     def replacer(match):
         func_def = match.group(1)
-        return func_def + new_docstring
-    
+        return func_def + new_docstring  # noqa: B023
+
     content = re.sub(pattern, replacer, content)
 
 # 寫回檔案

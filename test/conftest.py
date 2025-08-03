@@ -2,10 +2,11 @@
 Pytest configuration for unit tests.
 """
 
-import pytest
-import sys
 import os
+import sys
 from unittest.mock import Mock, patch
+
+import pytest
 
 # Add src to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
@@ -48,7 +49,9 @@ def mock_monitoring_service():
 @pytest.fixture(autouse=True)
 def mock_openai_clients():
     """Automatically mock OpenAI clients for all tests."""
-    with patch('src.services.openai_client.get_azure_openai_client'):
-        with patch('src.services.openai_client_gpt41.get_gpt41_mini_client'):
-            with patch('src.services.keyword_extraction.get_keyword_extraction_service'):
-                yield
+    with (
+        patch('src.services.openai_client.get_azure_openai_client'),
+        patch('src.services.openai_client_gpt41.get_gpt41_mini_client'),
+        patch('src.services.keyword_extraction.get_keyword_extraction_service')
+    ):
+        yield

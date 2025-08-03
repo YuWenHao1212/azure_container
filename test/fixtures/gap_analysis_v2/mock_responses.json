@@ -1,0 +1,180 @@
+{
+  "service_mocks": {
+    "combined_analysis_service_v2": {
+      "successful_analyze": {
+        "index_result": {
+          "raw_similarity": 0.68,
+          "transformed_similarity": 0.78,
+          "keyword_coverage": {
+            "total_keywords": 8,
+            "covered_count": 3,
+            "coverage_percentage": 38,
+            "covered_keywords": ["Python", "FastAPI", "Docker"],
+            "missed_keywords": ["React", "Kubernetes", "AWS", "CI/CD", "DevOps"]
+          }
+        },
+        "gap_result": {
+          "CoreStrengths": ["Strong Python backend expertise", "8+ years experience", "Leadership skills"],
+          "KeyGaps": ["Missing React experience", "No Kubernetes skills", "Lack of AWS experience"],
+          "QuickImprovements": ["Add React projects", "Include Docker experience", "Highlight cloud experience"],
+          "OverallAssessment": "Strong backend developer needing frontend and DevOps skills",
+          "SkillSearchQueries": [
+            {"skill_name": "React", "skill_category": "TECHNICAL"},
+            {"skill_name": "Kubernetes", "skill_category": "TECHNICAL"},
+            {"skill_name": "AWS", "skill_category": "TECHNICAL"}
+          ]
+        }
+      },
+      "partial_success": {
+        "index_result": {
+          "raw_similarity": 0.68,
+          "transformed_similarity": 0.78,
+          "keyword_coverage": {
+            "total_keywords": 8,
+            "covered_count": 3,
+            "coverage_percentage": 38,
+            "covered_keywords": ["Python", "FastAPI", "Docker"],
+            "missed_keywords": ["React", "Kubernetes", "AWS", "CI/CD", "DevOps"]
+          }
+        },
+        "gap_result": null,
+        "error": "Gap analysis service timeout"
+      }
+    },
+    "resource_pool_manager": {
+      "stats": {
+        "total_clients": 10,
+        "active_clients": 3,
+        "idle_clients": 7,
+        "total_requests": 1000,
+        "cache_hits": 850,
+        "cache_misses": 150,
+        "reuse_rate": 0.85,
+        "average_wait_time_ms": 5
+      },
+      "client_states": {
+        "client_1": {"id": "client_1", "state": "idle", "last_used": "2025-08-03T10:00:00Z"},
+        "client_2": {"id": "client_2", "state": "active", "last_used": "2025-08-03T10:29:00Z"},
+        "client_3": {"id": "client_3", "state": "idle", "last_used": "2025-08-03T10:28:00Z"}
+      }
+    },
+    "adaptive_retry_strategy": {
+      "error_configs": {
+        "empty_fields": {
+          "max_attempts": 2,
+          "backoff": "linear",
+          "base_delay": 0.1,
+          "max_delay": 0.5
+        },
+        "timeout": {
+          "max_attempts": 3,
+          "backoff": "exponential",
+          "base_delay": 0.5,
+          "max_delay": 5.0
+        },
+        "rate_limit": {
+          "max_attempts": 5,
+          "backoff": "exponential",
+          "base_delay": 5.0,
+          "max_delay": 60.0
+        },
+        "unknown": {
+          "max_attempts": 1,
+          "backoff": "none",
+          "base_delay": 0,
+          "max_delay": 0
+        }
+      }
+    },
+    "embedding_responses": {
+      "standard": {
+        "embeddings": [
+          [0.1, 0.2, 0.3, 0.4, 0.5],
+          [0.1, 0.2, 0.3, 0.4, 0.5]
+        ],
+        "dimensions": 1536,
+        "note": "Actual embeddings would be 1536-dimensional vectors"
+      },
+      "similar_documents": {
+        "resume_embedding": [0.8, 0.6, 0.4, 0.2, 0.1],
+        "jd_embedding": [0.75, 0.65, 0.35, 0.25, 0.15],
+        "expected_similarity": 0.95
+      },
+      "dissimilar_documents": {
+        "resume_embedding": [0.9, 0.1, 0.1, 0.1, 0.1],
+        "jd_embedding": [0.1, 0.9, 0.1, 0.1, 0.1],
+        "expected_similarity": 0.20
+      }
+    },
+    "llm_responses": {
+      "gap_analysis_prompt_response": {
+        "CoreStrengths": "<ol><li>Strong Python backend expertise with FastAPI framework proficiency</li><li>Extensive 8+ years of software engineering experience exceeding the 5+ years requirement</li><li>Proven leadership experience managing development teams</li><li>Solid microservices architecture understanding</li><li>Experience with containerization using Docker</li></ol>",
+        "KeyGaps": "<ol><li>Missing React frontend development experience required for full-stack role</li><li>No demonstrated Kubernetes container orchestration skills</li><li>Lack of specific AWS cloud platform experience</li><li>No mention of CI/CD pipeline implementation or DevOps practices</li><li>Missing experience with modern JavaScript frameworks beyond basic JavaScript</li></ol>",
+        "QuickImprovements": "<ol><li>Add any React projects or frontend JavaScript framework experience to the skills section</li><li>Expand Docker experience to mention any container orchestration or Kubernetes exposure</li><li>Highlight Azure experience as transferable cloud skills comparable to AWS</li><li>Include any CI/CD tools used (Jenkins, GitLab CI, GitHub Actions) in past projects</li><li>Quantify team leadership experience with specific team sizes and project outcomes</li></ol>",
+        "OverallAssessment": "<p>The candidate demonstrates strong backend development capabilities with 60% more experience than required (8+ years vs 5+ years). Their Python and FastAPI expertise directly matches core requirements. However, significant gaps exist in full-stack capabilities, particularly React frontend development and DevOps practices (Kubernetes, CI/CD). With only 38% keyword coverage, the candidate currently profiles as a backend specialist rather than a full-stack developer. To be competitive, they would need 3-6 months of focused learning in React and Kubernetes. Immediate resume improvements highlighting any frontend experience and cloud transferable skills could increase their match to 50-60%. The candidate has strong potential but needs to bridge the full-stack gap.</p>",
+        "SkillSearchQueries": [
+          {
+            "skill_name": "React",
+            "skill_category": "TECHNICAL",
+            "description": "Frontend JavaScript library for building user interfaces, essential for full-stack development"
+          },
+          {
+            "skill_name": "Kubernetes",
+            "skill_category": "TECHNICAL",
+            "description": "Container orchestration platform for automating deployment, scaling, and management"
+          },
+          {
+            "skill_name": "AWS",
+            "skill_category": "TECHNICAL",
+            "description": "Amazon Web Services cloud platform for scalable application deployment"
+          },
+          {
+            "skill_name": "CI/CD",
+            "skill_category": "TECHNICAL",
+            "description": "Continuous Integration/Deployment practices for automated software delivery"
+          },
+          {
+            "skill_name": "DevOps",
+            "skill_category": "TECHNICAL",
+            "description": "Development and operations practices for rapid, reliable software delivery"
+          }
+        ]
+      },
+      "empty_fields_response": {
+        "CoreStrengths": "",
+        "KeyGaps": "<ol><li>Missing React frontend development experience</li></ol>",
+        "QuickImprovements": "",
+        "OverallAssessment": "<p>Incomplete analysis due to empty fields.</p>",
+        "SkillSearchQueries": []
+      }
+    },
+    "monitoring_events": {
+      "index_calculation_v2": {
+        "event_name": "IndexCalculationV2Completed",
+        "properties": {
+          "processing_time_ms": 800,
+          "cache_hit": false,
+          "version": "v2"
+        }
+      },
+      "gap_analysis_v2": {
+        "event_name": "GapAnalysisV2Completed",
+        "properties": {
+          "processing_time_ms": 1700,
+          "retry_count": 0,
+          "version": "v2"
+        }
+      },
+      "combined_analysis_v2": {
+        "event_name": "IndexCalAndGapAnalysisV2Completed",
+        "properties": {
+          "processing_time_ms": 2500,
+          "index_time_ms": 800,
+          "gap_time_ms": 1700,
+          "partial_result": false,
+          "version": "v2"
+        }
+      }
+    }
+  }
+}
