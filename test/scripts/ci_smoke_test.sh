@@ -91,7 +91,8 @@ test_endpoint \
     "/api/v1/index-calculation" \
     '{
         "resume": "Professional Summary: Experienced software engineer with 5 years of expertise in Python development and API design. Strong background in FastAPI, Django, and cloud technologies. Proven track record of building scalable microservices and RESTful APIs. Skills: Python, FastAPI, Django, PostgreSQL, MongoDB, Docker, Kubernetes, AWS, Azure, Git, CI/CD, Agile methodologies. Experience: Senior Python Developer at Tech Corp (2020-Present): Led development of microservices architecture using FastAPI. Implemented async programming patterns for high-performance APIs. Deployed applications on Azure cloud platform.",
-        "job_description": "We are seeking a Python developer with FastAPI experience to build our next-generation API platform. Requirements: 3+ years Python experience, FastAPI framework knowledge, PostgreSQL database skills, Docker containerization, Azure cloud deployment experience."
+        "job_description": "We are seeking a Python developer with FastAPI experience to build our next-generation API platform. Requirements: 3+ years Python experience, FastAPI framework knowledge, PostgreSQL database skills, Docker containerization, Azure cloud deployment experience.",
+        "keywords": ["Python", "FastAPI", "PostgreSQL", "Docker", "Azure", "API", "microservices", "async programming"]
     }' \
     $INDEX_CALC_SLA
 
