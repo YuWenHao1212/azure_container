@@ -1,209 +1,306 @@
-# 履歷差距分析
+# 指數計算與差距分析（Index Calculation and Gap Analysis）
 
 ## 功能概述
 
-深入分析履歷與職缺要求之間的差距，提供具體的改進建議，幫助求職者有針對性地提升競爭力。
+結合履歷匹配指數計算與深度差距分析，提供求職者全面的職位適配度評估和改進建議。這是一個組合型 API，同時執行兩項核心分析。
 
 ## API 端點
 
-`POST /api/v1/analyze-resume-gaps`
+`POST /api/v1/index-cal-and-gap-analysis`
 
 ## 核心功能
 
-### 1. 差距識別
-- **技能差距**：缺少的技術技能
-- **經驗差距**：不足的工作經歷
-- **資格差距**：缺少的證照或學歷
-- **軟技能差距**：需要加強的軟實力
+### 1. 履歷匹配指數計算
+- **相似度評分**：使用 Azure OpenAI Embeddings 計算履歷與職缺的語義相似度
+- **關鍵字覆蓋分析**：評估履歷中職缺關鍵字的覆蓋程度
+- **雙重評分機制**：
+  - 原始相似度（Raw Similarity）：直接的餘弦相似度
+  - 轉換相似度（Transformed Similarity）：經 Sigmoid 函數優化的分數
 
-### 2. 優先級評估
-- **關鍵差距**：必須解決的核心問題
-- **重要差距**：顯著影響競爭力
-- **次要差距**：加分但非必要
-- **潛在優勢**：可以強調的亮點
+### 2. 差距分析（Gap Analysis）
+- **核心優勢識別**：找出候選人與職位要求高度匹配的 3-5 項優勢
+- **關鍵差距分析**：識別影響候選資格的 3-5 項關鍵缺失
+- **快速改進建議**：提供 3-5 項立即可執行的履歷優化建議
+- **整體評估報告**：150-250 字的綜合評估，包含適配度和成功機率
+- **技能發展優先級**：基於差距分析推薦 3-6 項需要學習的技能
 
-### 3. 改進建議
-- 具體的學習路徑
-- 推薦的認證課程
-- 經驗累積策略
-- 履歷優化技巧
+### 3. 多語言支援
+- 英文（en）- 預設
+- 繁體中文（zh-TW）
+- 自動保持輸出語言與請求一致
 
 ## 技術實作
 
-### 分析流程
-1. 職缺需求解構
-2. 履歷能力評估
-3. 差距矩陣計算
-4. 優先級排序
-5. 建議方案生成
-
-### AI 分析引擎
-- LLM：Azure OpenAI GPT-4o
-- 提示工程：結構化分析
-- 重試機制：確保穩定性
-
-### 資料處理
-```python
-差距分析 = {
-    "技能差距": 職缺技能 - 履歷技能,
-    "經驗差距": 職缺經驗要求 - 實際經驗,
-    "改進優先級": 依重要性排序(差距項目)
-}
+### 處理流程
 ```
+請求接收
+    │
+    ├─> 指數計算（並行處理）
+    │   ├─> 履歷 Embedding 生成
+    │   ├─> 職缺 Embedding 生成
+    │   └─> 關鍵字覆蓋分析
+    │       ├─> matched_keywords (匹配的關鍵字)
+    │       └─> missing_keywords (缺失的關鍵字)
+    │
+    └─> 差距分析（依賴指數計算結果）
+        ├─> 接收 matched_keywords 和 missing_keywords
+        ├─> LLM 分析（GPT-4）- 使用關鍵字匹配資訊
+        ├─> 結構化解析
+        └─> HTML 格式化
+    │
+    └─> 結果整合與返回
+```
+
+### 關鍵技術組件
+1. **IndexCalculationService**
+   - Embedding 生成：text-embedding-3-large
+   - 相似度計算：Cosine Similarity
+   - Sigmoid 轉換：x0=0.373, k=15.0
+
+2. **GapAnalysisService**
+   - LLM 模型：gpt-4.1-japan (部署在 Japan East)
+   - 重試機制：最多 3 次，指數退避
+   - 空欄位檢測與自動重試
+   - 依賴 IndexCalculationService 的關鍵字匹配結果
+
+### 效能特性
+- **並行處理**：Embedding 生成採用並行處理
+- **錯誤重試**：Gap Analysis 具備智能重試機制
+- **監控追蹤**：詳細的時間分解和指標收集
 
 ## 使用範例
 
 ### 請求範例
+
 ```python
 import requests
 
 response = requests.post(
-    "https://airesumeadvisor-fastapi.azurewebsites.net/api/v1/analyze-resume-gaps",
-    params={"code": "YOUR_HOST_KEY"},
+    "https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/api/v1/index-cal-and-gap-analysis",
+    headers={"X-API-Key": "YOUR_API_KEY"},
     json={
-        "resume": "5年網頁開發經驗，精通React、Node.js...",
-        "job_description": "徵求全端工程師，需要Python、Docker...",
-        "language": "zh-TW"
+        # resume 可以是 HTML 或純文字格式，系統會自動處理 HTML 標籤
+        "resume": """
+        Senior Software Engineer with 8+ years of experience in Python and cloud technologies.
+        Expertise in FastAPI, Django, and microservices architecture.
+        Led development teams and delivered scalable solutions for enterprise clients.
+        """,
+        "job_description": """
+        Seeking a Python Full Stack Developer with 5+ years of experience.
+        Required: Python, FastAPI, React, Docker, Kubernetes, AWS.
+        Experience with CI/CD pipelines and DevOps practices is essential.
+        """,
+        "keywords": ["Python", "FastAPI", "React", "Docker", "Kubernetes", "AWS", "CI/CD", "DevOps"],
+        "language": "en"  # 或 "zh-TW"
     }
 )
 ```
 
 ### 回應範例
+
 ```json
 {
   "success": true,
   "data": {
-    "missing_skills": [
-      {
-        "skill": "Python",
-        "importance": "critical",
-        "description": "後端開發核心技能"
-      },
-      {
-        "skill": "Docker",
-        "importance": "important",
-        "description": "容器化部署技術"
-      }
-    ],
-    "improvement_suggestions": [
-      {
-        "area": "後端開發",
-        "priority": "high",
-        "suggestions": [
-          "學習 Python 基礎與 FastAPI 框架",
-          "完成一個 Python 專案並加入履歷"
-        ]
-      },
-      {
-        "area": "DevOps",
-        "priority": "medium",
-        "suggestions": [
-          "學習 Docker 基本概念",
-          "練習容器化現有專案"
-        ]
-      }
-    ],
-    "strengths": [
-      "前端開發經驗豐富",
-      "具備全端開發潛力"
-    ],
-    "overall_readiness": 65.0
+    "raw_similarity_percentage": 68,
+    "similarity_percentage": 78,
+    "keyword_coverage": {
+      "total_keywords": 8,
+      "covered_count": 3,
+      "coverage_percentage": 38,
+      "covered_keywords": ["Python", "FastAPI", "Docker"],
+      "missed_keywords": ["React", "Kubernetes", "AWS", "CI/CD", "DevOps"]
+    },
+    "gap_analysis": {
+      "CoreStrengths": "<ol><li>Strong Python backend expertise with FastAPI framework</li><li>8+ years of software engineering experience exceeding requirements</li><li>Leadership experience managing development teams</li></ol>",
+      "KeyGaps": "<ol><li>Missing React frontend development experience</li><li>No demonstrated Kubernetes container orchestration skills</li><li>Lack of AWS cloud platform experience</li><li>No mention of CI/CD pipeline implementation</li></ol>",
+      "QuickImprovements": "<ol><li>Add specific React projects or mention any frontend JavaScript experience</li><li>Include Docker experience and mention any container-related work</li><li>Highlight any cloud platform experience (Azure, GCP) as transferable skills</li><li>Add any automation or deployment pipeline experience</li></ol>",
+      "OverallAssessment": "<p>The candidate shows strong backend development skills with 60% higher experience than required. However, significant gaps exist in frontend (React), DevOps (Kubernetes, CI/CD), and cloud (AWS) technologies. With a 38% keyword match, the candidate would need 3-6 months of focused learning to become competitive. Immediate resume improvements and highlighting transferable skills could increase match to 50-60%. Currently positioned as a backend specialist rather than full-stack developer.</p>",
+      "SkillSearchQueries": [
+        {
+          "skill_name": "React",
+          "skill_category": "TECHNICAL",
+          "description": "Frontend framework for building interactive user interfaces required for full-stack role"
+        },
+        {
+          "skill_name": "Kubernetes",
+          "skill_category": "TECHNICAL",
+          "description": "Container orchestration platform essential for modern DevOps practices"
+        },
+        {
+          "skill_name": "AWS",
+          "skill_category": "TECHNICAL",
+          "description": "Cloud platform knowledge required for deploying and managing applications"
+        }
+      ]
+    }
   },
   "error": {
     "code": "",
-    "message": ""
-  }
+    "message": "",
+    "details": ""
+  },
+  "timestamp": "2025-08-03T10:30:00.000Z"
 }
 ```
 
-## 分析維度
+## 差距分析詳解
 
-### 技能分析
-| 類型 | 評估方式 | 權重 |
-|------|----------|------|
-| 程式語言 | 直接匹配 | 高 |
-| 框架工具 | 相似度匹配 | 中 |
-| 軟技能 | 語境分析 | 中 |
-| 領域知識 | 關鍵字匹配 | 低 |
+### 1. 核心優勢（Core Strengths）
+識別候選人相對於職位要求的優勢：
+- 直接匹配的技術技能
+- 超越要求的經驗年資
+- 相關的成就和專案經驗
+- 可轉移的技能和知識
 
-### 經驗分析
-- **年資要求**：數值比較
-- **產業經驗**：領域匹配
-- **專案經驗**：相關性評分
-- **管理經驗**：層級匹配
+### 2. 關鍵差距（Key Gaps）
+分析影響候選資格的缺失：
+- 技術技能差距（工具、軟體、方法論）
+- 經驗差距（產業、職級、特定職能）
+- 知識差距（領域專業、認證、方法論）
+- 按重要性排序的差距
 
-## 改進建議類型
+### 3. 快速改進（Quick Improvements）
+提供立即可執行的履歷優化建議：
+- 調整措辭以更好匹配職缺語言
+- 添加細節以突出相關經驗
+- 重組建議以提升影響力
+- 量化現有成就的機會
+- 關鍵字整合建議
 
-### 1. 學習建議
-- 線上課程推薦
-- 技術文件連結
-- 實作專案建議
-- 社群資源
+### 4. 整體評估（Overall Assessment）
+平衡的綜合評估包含：
+- 目前的適配度和競爭力
+- 最關鍵的改進領域
+- 縮小差距的實際時間表
+- 定位策略建議
+- 信心水平和成功機率
 
-### 2. 經驗建議
-- 實習機會
-- 開源貢獻
-- 副業專案
-- 志工服務
-
-### 3. 認證建議
-- 產業認證
-- 技術證照
-- 語言檢定
-- 專業資格
+### 5. 技能發展優先級（SkillSearchQueries）
+基於差距分析的學習建議：
+- 可通過課程/培訓發展的具體技能
+- 按對工作成功的影響和學習可行性排序
+- 技術和非技術技能的混合
+- 足夠具體以便課程匹配
+- 考慮候選人當前水平和學習路徑
 
 ## 效能指標
 
-### 分析品質
-- 差距識別準確率：> 85%
-- 建議相關性：> 90%
-- 使用者滿意度：> 4.5/5
+### 回應時間
+- **平均總時間**：3-5 秒（目標：< 4 秒）
+- **指數計算**：1-2 秒
+- **差距分析**：2-3 秒
+- **並行處理優化**：節省約 30% 時間
 
-### 系統效能
-- 平均回應時間：2.5 秒
-- P95 回應時間：< 3 秒
-- 並發處理能力：20 req/s
+### 準確度與品質
+- **相似度計算一致性**：> 95%
+- **差距分析完整性**：90%（具有重試機制）
+- **多語言支援品質**：英文和中文同等品質
 
 ## 最佳實踐
 
-### 使用建議
-1. 提供完整履歷內容
-2. 使用最新的職缺描述
-3. 定期更新分析結果
-4. 追蹤改進進度
+### 輸入準備
+1. **履歷內容**
+   - 提供完整、結構化的履歷
+   - 包含技能、經驗、成就等關鍵資訊
+   - HTML 或純文字格式均可（系統會使用 `clean_html_text` 自動處理 HTML 標籤）
 
-### 結果應用
-1. 制定學習計畫
-2. 調整求職策略
-3. 優化履歷內容
-4. 準備面試重點
+2. **職缺描述**
+   - 完整的職位要求和責任描述
+   - 明確列出必要和優先的技能
+   - 保持原始格式
+
+3. **關鍵字列表**
+   - 從職缺中提取的關鍵技能和要求
+   - 可使用關鍵字提取 API 預處理
+   - 支援陣列或逗號分隔字串
+
+### 結果解讀
+1. **匹配指數**
+   - 75% 以上：高度匹配
+   - 60-74%：中等匹配，需要一些改進
+   - 45-59%：部分匹配，需要顯著提升
+   - 45% 以下：匹配度低，需要大幅改進
+
+2. **差距分析應用**
+   - 優先處理快速改進建議
+   - 根據技能發展優先級制定學習計劃
+   - 使用整體評估調整求職策略
 
 ## 限制與注意事項
 
+### 技術限制
+- 最大文本長度：履歷 30KB，職缺 30KB（純文本約 2000 字）
+- 關鍵字數量：建議 5-25 個
+- 語言限制：僅支援英文和繁體中文
+
 ### 分析限制
-- 無法評估實際能力深度
-- 不考慮地理位置因素
-- 僅基於文字內容分析
+1. 無法評估軟性因素（如文化契合度）
+2. 不考慮地理位置或薪資要求
+3. 技能評估基於文本匹配，可能遺漏隱含能力
 
-### 使用限制
-- 每日請求限制：100 次
-- 文字長度限制：5000 字元
-- 支援語言：中英文
+### API 限制
+- 請求頻率限制：遵循整體 API 配額
+- 回應時間：高峰期可能稍有延長
+- 並發請求：建議控制在合理範圍
 
-## 未來改進
+## 錯誤處理
+
+### 常見錯誤
+| 錯誤碼 | 說明 | 解決方案 |
+|--------|------|----------|
+| VALIDATION_ERROR | 輸入驗證失敗 | 檢查必填欄位和格式 |
+| TEXT_TOO_SHORT | 文本長度不足 | 確保履歷/職缺有足夠內容 |
+| SERVICE_ERROR | 服務暫時不可用 | 稍後重試 |
+| LANGUAGE_NOT_SUPPORTED | 不支援的語言 | 使用 en 或 zh-TW |
+
+### 重試策略
+- Gap Analysis 具有內建重試機制（最多 3 次）
+- 客戶端建議實施指數退避重試
+- 監控空欄位警告並適當處理
+
+## 未來改進方向
 
 ### 短期優化
-- 增加產業特定分析
-- 提供更詳細的學習路徑
-- 整合課程推薦系統
+- **快取機制**：為相同輸入實施結果快取
+- **批次處理**：支援多個履歷同時分析
+- **更精確的技能匹配**：整合技能標準化服務
 
-### 長期規劃
-- 建立技能知識圖譜
-- 個人化成長追蹤
-- AI 職涯顧問功能
+### 中期增強
+- **產業特定分析**：根據不同產業調整評估標準
+- **視覺化報告**：生成圖表和視覺化分析結果
+- **歷史追蹤**：追蹤候選人改進進度
+
+### 長期願景
+- **AI 驅動的改進建議**：更智能的個人化建議
+- **即時互動分析**：支援即時調整和重新分析
+- **整合學習平台**：直接連結到推薦的學習資源
+
+## V2 版本說明
+
+### 升級中的 V2 API
+
+正在開發中的 V2 版本 (`/api/v1/index-cal-and-gap-analysis-v2`) 將提供：
+
+1. **效能優化**
+   - 利用 IndexCalculationServiceV2 的快取機制
+   - 預期 P50 < 2秒，P95 < 4秒
+   - 減少重複 embedding 計算
+
+2. **完全向後相容**
+   - 保持相同的回應格式
+   - 新增可選的效能指標欄位
+   - 支援漸進式升級
+
+3. **增強功能**
+   - 部分結果支援（如 gap analysis 失敗時仍返回 index 結果）
+   - 更詳細的服務時間分解
+   - 智能重試機制
+
+V2 版本目前處於規劃階段，將在完成測試後逐步部署。
 
 ## 相關功能
 
-- [關鍵字提取](keyword_extraction.md)
-- [匹配指數計算](index_calculation.md)
-- [課程搜尋](course_search.md)
+- [關鍵字提取](keyword_extraction.md) - 預處理職缺關鍵字
+- [履歷客製化](resume_tailoring.md) - 基於差距分析優化履歷
+- [課程搜尋](course_search.md) - 尋找技能發展資源
