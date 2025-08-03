@@ -108,6 +108,15 @@ if [ "$SHOW_HELP" = true ]; then
     show_help
 fi
 
+# Auto-enable background execution for performance tests
+if [ "$INCLUDE_PERFORMANCE" = true ] || [ "$STAGE_EXEC" = "performance" ]; then
+    if [ "$BACKGROUND_EXEC" = false ]; then
+        echo "Note: Performance tests take ~90 seconds. Auto-enabling background execution."
+        echo "Use 'tail -f' on the log file to monitor progress."
+        BACKGROUND_EXEC=true
+    fi
+fi
+
 # Function to clean old reports (keep only latest 6)
 clean_old_reports() {
     local current_dir=$(pwd)
@@ -524,7 +533,7 @@ ${BLUE}=== Complete Test Suite ===${NC}"
             TEST_SUITES+=("integration_index_calc_v2:python -m pytest test/integration/test_index_calculation_v2_api.py -v")
         fi
         if ([ -z "$STAGE_EXEC" ] && [ "$INCLUDE_PERFORMANCE" = true ]) || [ "$STAGE_EXEC" = "performance" ]; then
-            TEST_SUITES+=("performance_index_calc_v2:python -m pytest test/performance/test_index_calculation_v2_performance.py -v")
+            TEST_SUITES+=("performance_index_calc_v2:python -m pytest test/performance/test_index_calculation_v2_performance.py -v -s")
         fi
         if ([ -z "$STAGE_EXEC" ] && [ "$INCLUDE_E2E" = true ]) || [ "$STAGE_EXEC" = "e2e" ]; then
             TEST_SUITES+=("e2e_index_calc_v2:python -m pytest test/e2e/test_index_calculation_v2_e2e.py -v")
@@ -555,7 +564,7 @@ ${BLUE}=== Complete Test Suite ===${NC}"
         if [ "$STAGE_EXEC" = "performance" ] || ([ -z "$STAGE_EXEC" ] && [ "$INCLUDE_PERFORMANCE" = true ]); then
             TEST_SUITES+=(
                 "performance_keyword:python -m pytest test/performance/test_keyword_extraction_performance.py -v -s"
-                "performance_index_calc_v2:python -m pytest test/performance/test_index_calculation_v2_performance.py -v"
+                "performance_index_calc_v2:python -m pytest test/performance/test_index_calculation_v2_performance.py -v -s"
             )
         fi
         
