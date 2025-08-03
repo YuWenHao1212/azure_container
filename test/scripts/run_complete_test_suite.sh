@@ -323,7 +323,7 @@ ${BLUE}=== 詳細測試統計 ===${NC}"
     log "* 表示視選項執行"
     
     # Performance test details if available
-    if [ -f "/tmp/performance_keyword_output.log" ] && grep -q "Overall Performance Summary" /tmp/performance_keyword_output.log; then
+    if [ -f "/tmp/performance_keyword_output.log" ] && grep -q "Overall Performance:" /tmp/performance_keyword_output.log; then
         log "
 ${BLUE}關鍵字提取效能測試詳情:${NC}"
         log "------------------------------------------------------------"
@@ -332,7 +332,7 @@ ${BLUE}關鍵字提取效能測試詳情:${NC}"
         local small_avg=$(grep -A10 "Small JD" /tmp/performance_keyword_output.log | grep "Average:" | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "N/A")
         local medium_avg=$(grep -A10 "Medium JD" /tmp/performance_keyword_output.log | grep "Average:" | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "N/A")
         local large_avg=$(grep -A10 "Large JD" /tmp/performance_keyword_output.log | grep "Average:" | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "N/A")
-        local overall_avg=$(grep "Overall Average Response Time:" /tmp/performance_keyword_output.log | grep -oE '[0-9]+\.[0-9]+' || echo "N/A")
+        local overall_avg=$(grep "Overall Performance:" -A2 /tmp/performance_keyword_output.log | grep "Average:" | grep -oE '[0-9]+\.[0-9]+' || echo "N/A")
         
         log "測試案例             | 平均回應時間 | SLA 狀態"
         log "---------------------|--------------|----------"
