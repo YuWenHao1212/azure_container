@@ -73,7 +73,7 @@ class TestGapAnalysisV2Integration:
     def mock_combined_service(self):
         """Create mock combined analysis service."""
         service = AsyncMock()
-        service.analyze_combined = AsyncMock()
+        service.analyze = AsyncMock()
         service.get_stats = Mock()
         return service
 
@@ -88,14 +88,9 @@ class TestGapAnalysisV2Integration:
             return json.load(f)
 
     @pytest.fixture
-    def mock_responses(self):
-        """Load mock responses from fixtures."""
-        fixture_path = os.path.join(
-            os.path.dirname(__file__),
-            '../fixtures/gap_analysis_v2/mock_responses.json'
-        )
-        with open(fixture_path, encoding='utf-8') as f:
-            return json.load(f)
+    def mock_responses(self, test_data):
+        """Load mock responses from test data."""
+        return test_data["mock_responses"]
 
     @pytest.fixture
     def valid_request(self, test_data):
@@ -111,12 +106,12 @@ class TestGapAnalysisV2Integration:
         驗證 POST /api/v1/index-cal-and-gap-analysis 正常流程。
         """
         # Mock successful response
-        mock_combined_service.analyze_combined.return_value = (
+        mock_combined_service.analyze.return_value = (
             mock_responses["successful_response"]
         )
 
-        # Mock the service in the app
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+        # Mock the service at the source module level
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                   return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
@@ -209,11 +204,11 @@ class TestGapAnalysisV2Integration:
         boundary_request = test_data["valid_test_data"]["boundary_test_data"]["exactly_200_chars"]
 
         # Mock successful response
-        mock_combined_service.analyze_combined.return_value = (
+        mock_combined_service.analyze.return_value = (
             mock_responses["successful_response"]
         )
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                   return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
@@ -234,11 +229,11 @@ class TestGapAnalysisV2Integration:
         驗證 keywords 支援陣列和逗號分隔字串。
         """
         # Mock successful response
-        mock_combined_service.analyze_combined.return_value = (
+        mock_combined_service.analyze.return_value = (
             mock_responses["successful_response"]
         )
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                   return_value=mock_combined_service):
             # Test array format
             request_array = {
@@ -309,11 +304,11 @@ class TestGapAnalysisV2Integration:
         驗證回應包含所有必要欄位且格式正確。
         """
         # Mock successful response
-        mock_combined_service.analyze_combined.return_value = (
+        mock_combined_service.analyze.return_value = (
             mock_responses["successful_response"]
         )
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                   return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
@@ -351,7 +346,7 @@ class TestGapAnalysisV2Integration:
         with patch.dict(os.environ, {'USE_V2_IMPLEMENTATION': 'true'}):
             # Mock V2 service
             mock_v2_service = AsyncMock()
-            mock_v2_service.analyze_combined = AsyncMock(return_value={
+            mock_v2_service.analyze = AsyncMock(return_value={
                 "success": True,
                 "data": {"version": "v2"}
             })
@@ -370,7 +365,7 @@ class TestGapAnalysisV2Integration:
 
             # Should use V2 implementation
             assert response.status_code == 200
-            mock_v2_service.analyze_combined.assert_called_once()
+            mock_v2_service.analyze.assert_called_once()
 
     # TEST: API-GAP-009-IT
     def test_partial_failure_handling(
@@ -381,9 +376,9 @@ class TestGapAnalysisV2Integration:
         驗證啟用部分結果時,Gap 失敗仍返回 Index 結果。
         """
         # Mock partial success response
-        mock_combined_service.analyze_combined.return_value = mock_responses["partial_success_response"]
+        mock_combined_service.analyze.return_value = mock_responses["partial_success_response"]
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                   return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
@@ -413,7 +408,7 @@ class TestGapAnalysisV2Integration:
         """
         # Mock timeout error
         mock_service = AsyncMock()
-        mock_service.analyze_combined.side_effect = TimeoutError("Service timeout")
+        mock_service.analyze.side_effect = TimeoutError("Service timeout")
 
         with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
                   return_value=mock_service):
@@ -440,7 +435,7 @@ class TestGapAnalysisV2Integration:
         """
         # Mock rate limit error
         mock_service = AsyncMock()
-        mock_service.analyze_combined.side_effect = AzureOpenAIRateLimitError("Rate limit exceeded")
+        mock_service.analyze.side_effect = AzureOpenAIRateLimitError("Rate limit exceeded")
 
         with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
                   return_value=mock_service):
@@ -475,9 +470,9 @@ class TestGapAnalysisV2Integration:
             "gap_analysis_ms": 1700
         }
 
-        mock_combined_service.analyze_combined.return_value = response_with_timing
+        mock_combined_service.analyze.return_value = response_with_timing
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                   return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
@@ -512,11 +507,11 @@ class TestGapAnalysisV2Integration:
         large_jd = test_data["large_documents"]["5kb_jd"]
 
         # Mock successful response
-        mock_combined_service.analyze_combined.return_value = (
+        mock_combined_service.analyze.return_value = (
             mock_responses["successful_response"]
         )
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                   return_value=mock_combined_service):
             # Test 10KB resume + 5KB JD
             response = test_client.post(
@@ -568,11 +563,11 @@ class TestGapAnalysisV2Integration:
         驗證支援 Header (X-API-Key) 和 Query (?code=) 認證。
         """
         # Mock successful response
-        mock_combined_service.analyze_combined.return_value = (
+        mock_combined_service.analyze.return_value = (
             mock_responses["successful_response"]
         )
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                   return_value=mock_combined_service):
             # Test Header authentication (X-API-Key)
             response1 = test_client.post(

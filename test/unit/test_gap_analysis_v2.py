@@ -196,15 +196,25 @@ class TestGapAnalysisV2Unit:
         mock_client.is_active = False
 
         # Setup context manager behavior
-        async def get_client_context():
-            mock_client.is_active = True
-            yield mock_client
-            mock_client.is_active = False
+        class AsyncContextManager:
+            def __init__(self, client):
+                self.client = client
 
-        mock_resource_pool_manager.get_client.return_value = get_client_context()
+            async def __aenter__(self):
+                self.client.is_active = True
+                return self.client
+
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                self.client.is_active = False
+
+        # Configure the mock to return the context manager directly
+        async def get_client_mock():
+            return AsyncContextManager(mock_client)
+
+        mock_resource_pool_manager.get_client.side_effect = get_client_mock
 
         # Test get_client context manager
-        async with mock_resource_pool_manager.get_client() as client:
+        async with await mock_resource_pool_manager.get_client() as client:
             assert client == mock_client
             assert client.is_active is True
 
