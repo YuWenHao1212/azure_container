@@ -220,8 +220,11 @@ update_progress() {
 extract_test_counts() {
     local log_file=$1
     local passed=$(grep -E "[0-9]+ passed" "$log_file" 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    local xpassed=$(grep -E "[0-9]+ xpassed" "$log_file" 2>/dev/null | tail -1 | grep -oE '[0-9]+ xpassed' | grep -oE '[0-9]+' || echo 0)
     local failed=$(grep -E "[0-9]+ failed" "$log_file" 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
-    echo "$passed/$failed"
+    # Include xpassed in the passed count (tests that were expected to fail but passed)
+    local total_passed=$((passed + xpassed))
+    echo "$total_passed/$failed"
 }
 
 # Function to collect and display test statistics
