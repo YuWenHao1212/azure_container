@@ -383,16 +383,20 @@ class IndexCalculationServiceV2(BaseService):
             Tuple of (resume_embedding, job_embedding)
         """
         if self.enable_parallel_processing:
-            # Use Python 3.11 TaskGroup for better error handling
-            async with asyncio.TaskGroup() as tg:
-                resume_task = tg.create_task(
-                    self._get_or_compute_embedding(resume)
+            # Use asyncio.gather instead of TaskGroup for simpler error handling
+            try:
+                resume_embedding, job_embedding = await asyncio.gather(
+                    self._get_or_compute_embedding(resume),
+                    self._get_or_compute_embedding(job_description),
+                    return_exceptions=False
                 )
-                job_task = tg.create_task(
-                    self._get_or_compute_embedding(job_description)
-                )
-
-            return resume_task.result(), job_task.result()
+                return resume_embedding, job_embedding
+            except Exception as e:
+                # If parallel processing fails, log and fall back to sequential
+                self.logger.warning(f"Parallel embedding computation failed: {e}, falling back to sequential")
+                resume_embedding = await self._get_or_compute_embedding(resume)
+                job_embedding = await self._get_or_compute_embedding(job_description)
+                return resume_embedding, job_embedding
         else:
             # Sequential execution
             resume_embedding = await self._get_or_compute_embedding(resume)
@@ -614,23 +618,13 @@ class IndexCalculationServiceV2(BaseService):
             # Parallel processing phase
             parallel_start = time.time()
 
-            if self.enable_parallel_processing:
-                # Use TaskGroup for parallel execution with better error handling
-                async with asyncio.TaskGroup() as tg:
-                    embedding_task = tg.create_task(
-                        self._compute_embeddings_parallel(resume, job_description)
-                    )
-
-                # Get embedding results
-                resume_embedding, job_embedding = embedding_task.result()
-                # Analyze keyword coverage synchronously (it's fast)
-                keyword_coverage = self._analyze_keyword_coverage(resume, keywords)
-            else:
-                # Sequential execution
-                resume_embedding, job_embedding = await self._compute_embeddings_parallel(
-                    resume, job_description
-                )
-                keyword_coverage = self._analyze_keyword_coverage(resume, keywords)
+            # Compute embeddings (method handles parallel vs sequential internally)
+            resume_embedding, job_embedding = await self._compute_embeddings_parallel(
+                resume, job_description
+            )
+            
+            # Analyze keyword coverage synchronously (it's fast)
+            keyword_coverage = self._analyze_keyword_coverage(resume, keywords)
 
             if include_timing:
                 timing_breakdown["embedding_generation_ms"] = round(

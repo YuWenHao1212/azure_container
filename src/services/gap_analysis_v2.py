@@ -17,35 +17,32 @@ logger = logging.getLogger(__name__)
 def get_prompt(task: str, version: str, language: str = "en") -> str:
     """
     Wrapper function for getting prompts from prompt manager.
-    
+
     Args:
         task: Task identifier (e.g., 'gap_analysis')
-        version: Version string (e.g., '2.0.0')  
+        version: Version string (e.g., '2.0.0')
         language: Language code (e.g., 'en', 'zh-TW')
-        
+
     Returns:
         Prompt string
     """
     # For V2, try to load the prompt configuration
     try:
         # Try to construct filename with language and version
-        if language == "zh-TW":
-            filename = f"v{version}-zh-TW.yaml"
-        else:
-            filename = f"v{version}.yaml"
-            
+        filename = f"v{version}-zh-TW.yaml" if language == "zh-TW" else f"v{version}.yaml"
+
         config = prompt_manager.load_prompt_config_by_filename(task, filename)
-        
+
         # Return the main prompt (assuming 'main' key exists)
         if hasattr(config, 'prompts') and 'main' in config.prompts:
             return config.prompts['main']
         elif hasattr(config, 'prompts') and len(config.prompts) > 0:
             # Return first available prompt
-            return list(config.prompts.values())[0]
+            return next(iter(config.prompts.values()))
         else:
             # Fallback: return a default prompt template
             return "Analyze the gap between resume and job requirements. Provide detailed feedback."
-            
+
     except Exception as e:
         logger.warning(f"Failed to load prompt for {task} v{version} ({language}): {e}")
         # Fallback: return a default prompt template
@@ -73,8 +70,7 @@ class GapAnalysisServiceV2(GapAnalysisService):
         self.v2_stats = {
             "context_enhanced_calls": 0,
             "skill_priority_requests": 0,
-            "avg_context_processing_time": 0,
-            "fallback_to_v1_count": 0
+            "avg_context_processing_time": 0
         }
 
     async def analyze_with_context(
@@ -111,11 +107,38 @@ class GapAnalysisServiceV2(GapAnalysisService):
                 options
             )
 
-            # Execute enhanced analysis
+            # Load LLM config from prompt YAML
+            try:
+                filename = "v2.0.0-zh-TW.yaml" if language == "zh-TW" else "v2.0.0.yaml"
+                config = prompt_manager.load_prompt_config_by_filename("gap_analysis", filename)
+                
+                # Extract LLM config attributes
+                if hasattr(config, 'llm_config'):
+                    llm_config_obj = config.llm_config
+                    temperature = getattr(llm_config_obj, 'temperature', 0.3)
+                    max_tokens = getattr(llm_config_obj, 'max_tokens', 1500)
+                    # Build additional parameters dict
+                    llm_params = {}
+                    for attr in ['seed', 'top_p', 'frequency_penalty', 'presence_penalty']:
+                        if hasattr(llm_config_obj, attr):
+                            llm_params[attr] = getattr(llm_config_obj, attr)
+                else:
+                    temperature = 0.3
+                    max_tokens = 1500
+                    llm_params = {}
+            except Exception as e:
+                logger.warning(f"Failed to load LLM config from prompt YAML: {e}")
+                # Use default values
+                temperature = 0.3
+                max_tokens = 1500
+                llm_params = {}
+
+            # Execute enhanced analysis with all LLM config parameters
             response = await self._call_llm_with_context(
                 enhanced_prompt,
-                temperature=0.3,  # Lower temperature for consistency
-                max_tokens=1500
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **llm_params
             )
 
             # Parse enhanced response
@@ -152,24 +175,10 @@ class GapAnalysisServiceV2(GapAnalysisService):
             return result
 
         except Exception as e:
-            logger.error(f"Enhanced gap analysis failed: {e}")
-
-            # Fallback to standard analysis
-            self.v2_stats["fallback_to_v1_count"] += 1
-            logger.warning("Falling back to V1 gap analysis")
-
-            # Extract keywords from index result for V1 compatibility
-            matched_keywords = index_result.get("keyword_coverage", {}).get("covered_keywords", [])
-            missing_keywords = index_result.get("keyword_coverage", {}).get("missed_keywords", [])
-
-            return await super().analyze_gap(
-                job_description=job_description,
-                resume=resume,
-                job_keywords=matched_keywords + missing_keywords,
-                matched_keywords=matched_keywords,
-                missing_keywords=missing_keywords,
-                language=language
-            )
+            logger.error(f"Enhanced gap analysis V2 failed: {e}")
+            # Re-raise the exception with enhanced error message
+            # Do NOT fallback to V1 - V2 should operate independently
+            raise Exception(f"Gap Analysis V2 failed: {e!s}") from e
 
     def _build_enhanced_prompt(
         self,
@@ -244,7 +253,8 @@ Focus on the identified gaps while acknowledging the existing strengths.
         self,
         prompt: str,
         temperature: float = 0.3,
-        max_tokens: int = 1500
+        max_tokens: int = 1500,
+        **kwargs
     ) -> str:
         """
         Call LLM with enhanced context and optimized parameters.
@@ -253,16 +263,32 @@ Focus on the identified gaps while acknowledging the existing strengths.
             prompt: Enhanced prompt with context
             temperature: Temperature for response consistency
             max_tokens: Maximum tokens for response
+            **kwargs: Additional LLM parameters (seed, top_p, etc.)
 
         Returns:
             LLM response text
         """
-        # Use parent class LLM calling logic but with optimized parameters
-        return await self._analyze_gap_core(
-            prompt,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
+        from src.services.openai_client import get_azure_openai_client
+
+        # Get OpenAI client
+        openai_client = get_azure_openai_client()
+
+        try:
+            # Build messages array properly
+            messages = [{"role": "user", "content": prompt}]
+
+            # Call LLM with V2 optimized parameters - using proper method signature
+            response = await openai_client.chat_completion(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+
+            # Extract response text (following V1 pattern)
+            return response['choices'][0]['message']['content'].strip()
+
+        finally:
+            await openai_client.close()
 
     def _parse_enhanced_response(self, response: str) -> dict[str, Any]:
         """

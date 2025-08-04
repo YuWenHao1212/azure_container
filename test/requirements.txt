@@ -4,3 +4,7 @@ pytest-asyncio>=0.21.0
 pytest-json-report>=1.5.0
 pytest-mock>=3.11.0
 httpx>=0.24.0  # For TestClient
+
+# Additional dependencies for integration and E2E tests
+openai>=1.0.0  # Required for mocking OpenAI clients
+aiohttp>=3.12.0  # Required for async HTTP operations in tests

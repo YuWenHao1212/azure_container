@@ -136,7 +136,7 @@ class TestGapAnalysisV2E2E:
         with (
             patch('src.services.embedding_client.get_azure_embedding_client',
                   return_value=mock_e2e_services["embedding"]),
-            patch('src.services.llm_client.get_azure_llm_client',
+            patch('src.services.openai_client.get_azure_openai_client',
                   return_value=mock_e2e_services["llm"])
         ):
                 # Execute complete workflow
@@ -219,7 +219,7 @@ class TestGapAnalysisV2E2E:
         with (
             patch('src.services.embedding_client.get_azure_embedding_client',
                   return_value=mock_e2e_services["embedding"]),
-            patch('src.services.llm_client.get_azure_llm_client',
+            patch('src.services.openai_client.get_azure_openai_client',
                   return_value=mock_e2e_services["llm"])
         ):
                 response = test_client.post(
@@ -292,7 +292,7 @@ class TestGapAnalysisV2E2E:
         with (
             patch('src.services.embedding_client.get_azure_embedding_client',
                   return_value=mock_embedding),
-            patch('src.services.llm_client.get_azure_llm_client',
+            patch('src.services.openai_client.get_azure_openai_client',
                   return_value=mock_llm),
             patch.dict(os.environ, {'ENABLE_PARTIAL_RESULTS': 'true'})
         ):
@@ -385,7 +385,7 @@ class TestGapAnalysisV2E2E:
         with (
             patch('src.services.embedding_client.get_azure_embedding_client',
                   return_value=mock_e2e_services["embedding"]),
-            patch('src.services.llm_client.get_azure_llm_client',
+            patch('src.services.openai_client.get_azure_openai_client',
                   return_value=mock_e2e_services["llm"])
         ):
                 # Test each scenario

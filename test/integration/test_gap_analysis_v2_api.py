@@ -111,8 +111,7 @@ class TestGapAnalysisV2Integration:
         )
 
         # Mock the service at the source module level
-        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
-                  return_value=mock_combined_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2', return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json={
@@ -208,8 +207,7 @@ class TestGapAnalysisV2Integration:
             mock_responses["successful_response"]
         )
 
-        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
-                  return_value=mock_combined_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2', return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json=boundary_request,
@@ -233,8 +231,7 @@ class TestGapAnalysisV2Integration:
             mock_responses["successful_response"]
         )
 
-        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
-                  return_value=mock_combined_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2', return_value=mock_combined_service):
             # Test array format
             request_array = {
                 "resume": valid_request["resume"],
@@ -308,8 +305,7 @@ class TestGapAnalysisV2Integration:
             mock_responses["successful_response"]
         )
 
-        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
-                  return_value=mock_combined_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2', return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json={
@@ -351,7 +347,7 @@ class TestGapAnalysisV2Integration:
                 "data": {"version": "v2"}
             })
 
-            with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
+            with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
                       return_value=mock_v2_service):
                 response = test_client.post(
                     "/api/v1/index-cal-and-gap-analysis",
@@ -378,8 +374,7 @@ class TestGapAnalysisV2Integration:
         # Mock partial success response
         mock_combined_service.analyze.return_value = mock_responses["partial_success_response"]
 
-        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
-                  return_value=mock_combined_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2', return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json={
@@ -410,8 +405,8 @@ class TestGapAnalysisV2Integration:
         mock_service = AsyncMock()
         mock_service.analyze.side_effect = TimeoutError("Service timeout")
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
-                  return_value=mock_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
+                      return_value=mock_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json={
@@ -437,8 +432,8 @@ class TestGapAnalysisV2Integration:
         mock_service = AsyncMock()
         mock_service.analyze.side_effect = AzureOpenAIRateLimitError("Rate limit exceeded")
 
-        with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
-                  return_value=mock_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
+                      return_value=mock_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json={
@@ -472,8 +467,7 @@ class TestGapAnalysisV2Integration:
 
         mock_combined_service.analyze.return_value = response_with_timing
 
-        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
-                  return_value=mock_combined_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2', return_value=mock_combined_service):
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json={
@@ -511,8 +505,7 @@ class TestGapAnalysisV2Integration:
             mock_responses["successful_response"]
         )
 
-        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
-                  return_value=mock_combined_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2', return_value=mock_combined_service):
             # Test 10KB resume + 5KB JD
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
@@ -567,8 +560,7 @@ class TestGapAnalysisV2Integration:
             mock_responses["successful_response"]
         )
 
-        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2',
-                  return_value=mock_combined_service):
+        with patch('src.services.combined_analysis_v2.CombinedAnalysisServiceV2', return_value=mock_combined_service):
             # Test Header authentication (X-API-Key)
             response1 = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
