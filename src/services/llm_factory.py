@@ -13,7 +13,7 @@ from typing import Literal
 
 from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
-from src.services.openai_client import AzureOpenAIClient, get_azure_openai_client
+from src.services.openai_client import AzureOpenAIClient
 from src.services.openai_client_gpt41 import (
     AzureOpenAIGPT41Client,
     get_gpt41_mini_client,
@@ -172,14 +172,46 @@ def _create_client(model: str) -> LLMClient:
                 f"Failed to create GPT-4.1 mini client: {e}. "
                 "Falling back to GPT-4o-2"
             )
-            # Fallback to GPT-4o-2 with correct deployment name
+            # Fallback to GPT-4o-2 using LLM Factory pattern
+            # Use the correct deployment mapping from DEPLOYMENT_MAP
             deployment_name = DEPLOYMENT_MAP.get("gpt4o-2", "gpt-4.1-japan")
-            return get_azure_openai_client(deployment_name=deployment_name)
+            # Use the proper Azure OpenAI client creation following LLM Factory pattern
+            import os
+
+            from src.services.openai_client import AzureOpenAIClient
+
+            endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+            api_key = os.getenv("AZURE_OPENAI_API_KEY")
+
+            if not endpoint or not api_key:
+                raise ValueError("Missing Azure OpenAI credentials")
+
+            return AzureOpenAIClient(
+                endpoint=endpoint,
+                api_key=api_key,
+                deployment_name=deployment_name
+            )
     else:
-        # Default to GPT-4o-2 with correct deployment name
+        # Default to GPT-4o-2 with correct deployment name using LLM Factory pattern
         deployment_name = DEPLOYMENT_MAP.get(model, "gpt-4.1-japan")
         logger.info(f"Creating {model} client with deployment: {deployment_name}")
-        return get_azure_openai_client(deployment_name=deployment_name)
+
+        # Use proper Azure OpenAI client creation following LLM Factory pattern
+        import os
+
+        from src.services.openai_client import AzureOpenAIClient
+
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+        api_key = os.getenv("AZURE_OPENAI_API_KEY")
+
+        if not endpoint or not api_key:
+            raise ValueError("Missing Azure OpenAI credentials")
+
+        return AzureOpenAIClient(
+            endpoint=endpoint,
+            api_key=api_key,
+            deployment_name=deployment_name
+        )
 
 
 def _track_model_selection(

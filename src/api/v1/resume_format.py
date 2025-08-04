@@ -26,7 +26,7 @@ from src.services.openai_client import (
     AzureOpenAIAuthError,
     AzureOpenAIRateLimitError,
     AzureOpenAIServerError,
-    get_azure_openai_client,
+    # get_azure_openai_client, # Replaced with LLM Factory
 )
 from src.services.resume_format import ResumeFormatService
 
@@ -102,9 +102,8 @@ async def format_resume(
             )
         })
 
-        # Initialize service
-        openai_client = get_azure_openai_client()
-        service = ResumeFormatService(openai_client=openai_client)
+        # Initialize service using LLM Factory
+        service = ResumeFormatService()  # Service will use LLM Factory internally
 
         # Format resume
         result = await service.format_resume(

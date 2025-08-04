@@ -8,10 +8,11 @@ from typing import Any
 
 from src.core.monitoring_service import monitoring_service
 from src.services.exceptions import LLMServiceError
+from src.services.llm_factory import get_llm_client
 from src.services.openai_client import (
     AzureOpenAIClient,
     AzureOpenAIError,
-    get_azure_openai_client,
+    # get_azure_openai_client, # Replaced with LLM Factory
 )
 from src.services.token_tracking_mixin import TokenTrackingMixin
 from src.services.unified_prompt_service import UnifiedPromptService
@@ -24,7 +25,7 @@ class LLMService(TokenTrackingMixin):
 
     def __init__(self, openai_client: AzureOpenAIClient = None):
         self.prompt_service = UnifiedPromptService()
-        self.openai_client = openai_client or get_azure_openai_client()
+        self.openai_client = openai_client or get_llm_client(api_name="llm_service")
 
     async def format_resume(
         self,

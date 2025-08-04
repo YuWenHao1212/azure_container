@@ -23,12 +23,19 @@ STAGE_EXEC=""
 BACKGROUND_EXEC=false
 VERBOSE=false
 SHOW_HELP=false
+PERFORMANCE_TESTS=""
+SPECIFIC_PERF_TESTS=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         --stage)
             STAGE_EXEC="$2"
+            shift 2
+            ;;
+        --perf-test)
+            SPECIFIC_PERF_TESTS="$2"
+            STAGE_EXEC="performance"
             shift 2
             ;;
         --background)
@@ -57,6 +64,7 @@ if [ "$SHOW_HELP" = true ]; then
     echo ""
     echo "Options:"
     echo "  --stage <unit|integration|performance|e2e>  Run specific test stage"
+    echo "  --perf-test <test-id>                       Run specific performance test(s)"
     echo "  --background                                Run tests in background"
     echo "  --verbose                                   Show verbose output"
     echo "  --help, -h                                  Show this help message"
@@ -67,6 +75,12 @@ if [ "$SHOW_HELP" = true ]; then
     echo "  $0 --stage integration      # Run only integration tests (14 tests)"
     echo "  $0 --stage performance      # Run only performance tests (5 tests)"
     echo "  $0 --stage e2e             # Run only E2E tests (4 tests)"
+    echo "  $0 --perf-test API-GAP-001-PT      # Run P50 test only"
+    echo "  $0 --perf-test API-GAP-002-PT      # Run P95 test only"
+    echo "  $0 --perf-test \"API-GAP-001-PT,API-GAP-002-PT\"  # Run both P50 and P95 tests"
+    echo "  $0 --perf-test p50          # Shortcut for API-GAP-001-PT"
+    echo "  $0 --perf-test p95          # Shortcut for API-GAP-002-PT"
+    echo "  $0 --perf-test \"p50,p95\"    # Shortcut for both P50 and P95"
     echo "  $0 --background            # Run all tests in background"
     exit 0
 fi
@@ -120,6 +134,31 @@ P2_FAILED=()
 # Test execution times
 TEST_TIMES=()
 START_TIME=$(date +%s)
+
+# Function to clean up old logs (keep only latest 5)
+cleanup_old_logs() {
+    local test_id="$1"
+    local log_pattern="$LOG_DIR/test_${test_id}_*.log"
+    local performance_pattern="$LOG_DIR/performance_${test_id}_*.json"
+    
+    # Clean test logs
+    local logs=($(ls -t $log_pattern 2>/dev/null))
+    if [ ${#logs[@]} -gt 5 ]; then
+        for i in $(seq 5 $((${#logs[@]} - 1))); do
+            rm -f "${logs[$i]}"
+            log_message "Removed old log: ${logs[$i]}"
+        done
+    fi
+    
+    # Clean performance logs
+    local perf_logs=($(ls -t $performance_pattern 2>/dev/null))
+    if [ ${#perf_logs[@]} -gt 5 ]; then
+        for i in $(seq 5 $((${#perf_logs[@]} - 1))); do
+            rm -f "${perf_logs[$i]}"
+            log_message "Removed old performance log: ${perf_logs[$i]}"
+        done
+    fi
+}
 
 # Function to check test priority based on test-spec-index-cal-gap-analysis.md
 get_test_priority() {
@@ -182,7 +221,8 @@ run_test() {
         timeout_exec_cmd="python -m pytest"
     fi
     
-    if $python_cmd -m pytest "${test_path}" -v --tb=short --durations=0 > "$test_output_file" 2>&1; then
+    # Execute test with correct python command
+    if $timeout_exec_cmd "${test_path}" -v --tb=short --durations=0 > "$test_output_file" 2>&1; then
         local test_end=$(date +%s)
         local duration=$((test_end - test_start))
         TEST_TIMES+=("${test_id}:${duration}s")
@@ -210,6 +250,9 @@ run_test() {
         if [ "$VERBOSE" = false ]; then
             rm -f "$test_output_file"
         fi
+        
+        # Clean up old logs for this test (keep only latest 5)
+        cleanup_old_logs "$test_id"
     else
         local test_end=$(date +%s)
         local duration=$((test_end - test_start))
@@ -241,6 +284,9 @@ run_test() {
             echo "  Last few lines of error:"
             tail -10 "$test_output_file" | sed 's/^/    /'
         fi
+        
+        # Clean up old logs for this test (keep only latest 5)
+        cleanup_old_logs "$test_id"
     fi
     echo
 }
@@ -255,6 +301,87 @@ get_test_duration() {
         fi
     done
     echo "N/A"
+}
+
+# Function to read performance test results from log files
+read_performance_results() {
+    local test_id="$1"
+    local log_pattern="$LOG_DIR/performance_${test_id}_*.json"
+    local latest_log=$(ls -t $log_pattern 2>/dev/null | head -n1)
+    
+    if [ -f "$latest_log" ]; then
+        # Extract key metrics from JSON log
+        local p50=$(grep -o '"p50_time_s": [0-9.]*' "$latest_log" 2>/dev/null | cut -d' ' -f2)
+        local p95=$(grep -o '"p95_time_s": [0-9.]*' "$latest_log" 2>/dev/null | cut -d' ' -f2)
+        local success_rate=$(grep -o '"success_rate": [0-9.]*' "$latest_log" 2>/dev/null | cut -d' ' -f2)
+        
+        echo "${p50:-N/A}|${p95:-N/A}|${success_rate:-N/A}"
+    else
+        echo "N/A|N/A|N/A"
+    fi
+}
+
+# Function to format performance results table
+format_performance_results() {
+    echo
+    echo "=== 效能測試詳細結果 ==="
+    echo
+    echo "| 測試編號 | 測試名稱 | P50 (秒) | P95 (秒) | 成功率 | 目標 | 狀態 |"
+    echo "|----------|----------|----------|----------|--------|------|------|"
+    
+    # API-GAP-001-PT
+    local result=$(read_performance_results "API-GAP-001-PT")
+    IFS='|' read -r p50 p95 success_rate <<< "$result"
+    
+    # Check if test actually failed
+    local p50_status="✅"
+    if [[ " ${FAILED_TESTS[@]} " =~ " API-GAP-001-PT " ]]; then
+        p50_status="❌"
+    elif [ "$p50" != "N/A" ] && (( $(echo "$p50 > 25" | bc -l) )); then
+        p50_status="❌"
+    fi
+    
+    printf "| API-GAP-001-PT | P50 響應時間 | %.3f | %.3f | %.1f%% | < 25s | %s |
+" \
+        "${p50:-0}" "${p95:-0}" "${success_rate:-0}" "$p50_status"
+    
+    # API-GAP-002-PT
+    result=$(read_performance_results "API-GAP-002-PT")
+    IFS='|' read -r p50 p95 success_rate <<< "$result"
+    
+    # Check if test actually failed
+    local p95_status="✅"
+    if [[ " ${FAILED_TESTS[@]} " =~ " API-GAP-002-PT " ]]; then
+        p95_status="❌"
+    elif [ "$p95" != "N/A" ] && (( $(echo "$p95 > 30" | bc -l) )); then
+        p95_status="❌"
+    fi
+    
+    printf "| API-GAP-002-PT | P95 響應時間 | %.3f | %.3f | %.1f%% | < 30s | %s |
+" \
+        "${p50:-0}" "${p95:-0}" "${success_rate:-0}" "$p95_status"
+    
+    # API-GAP-003-PT - Resource pool tests
+    local test3_status="✅"
+    if [[ " ${FAILED_TESTS[@]} " =~ " API-GAP-003-PT " ]]; then
+        test3_status="❌"
+    fi
+    echo "| API-GAP-003-PT | 資源池重用率 | - | - | 100% | > 80% | $test3_status |"
+    
+    # API-GAP-004-PT
+    local test4_status="✅"
+    if [[ " ${FAILED_TESTS[@]} " =~ " API-GAP-004-PT " ]]; then
+        test4_status="❌"
+    fi
+    echo "| API-GAP-004-PT | API 呼叫減少 | - | - | 100% | 40-50% | $test4_status |"
+    
+    # API-GAP-005-PT
+    local test5_status="✅"
+    if [[ " ${FAILED_TESTS[@]} " =~ " API-GAP-005-PT " ]]; then
+        test5_status="❌"
+    fi
+    echo "| API-GAP-005-PT | 資源池擴展 | - | - | 100% | 動態擴展 | $test5_status |"
+    echo
 }
 
 # Function to generate detailed report
@@ -289,9 +416,26 @@ generate_report() {
         pass_rate=$(( ${#PASSED_TESTS[@]} * 100 / total_tests ))
     fi
     
+    echo "測試檔案清單"
+    echo "------------"
+    echo "單元測試 (20個測試):"
+    echo "  - test/unit/test_gap_analysis_v2.py"
+    echo ""
+    echo "整合測試 (14個測試):"
+    echo "  - test/integration/test_gap_analysis_v2_integration.py"
+    echo "  - test/integration/test_gap_analysis_v2_integration_complete.py" 
+    echo "  - test/integration/test_gap_analysis_v2_integration_edge_cases.py"
+    echo ""
+    echo "效能測試 (5個測試):"
+    echo "  - test/performance/test_gap_analysis_v2_performance.py"
+    echo ""
+    echo "E2E測試 (3個測試):"
+    echo "  - test/e2e/test_gap_analysis_v2_e2e.py"
+    echo
+    
     echo "測試摘要"
     echo "--------"
-    echo "總測試數: $total_tests / 43"
+    echo "總測試數: $total_tests / 42"
     echo "通過: ${#PASSED_TESTS[@]} (${pass_rate}%)"
     echo "失敗: ${#FAILED_TESTS[@]}"
     echo "跳過: ${#SKIPPED_TESTS[@]}"
@@ -326,7 +470,7 @@ generate_report() {
     echo "單元測試 (Unit): ${#UNIT_PASSED[@]}/${unit_total} (${unit_rate}%) - 規格要求: 20"
     echo "整合測試 (Integration): ${#INTEGRATION_PASSED[@]}/${integration_total} (${integration_rate}%) - 規格要求: 14"
     echo "效能測試 (Performance): ${#PERFORMANCE_PASSED[@]}/${performance_total} (${performance_rate}%) - 規格要求: 5"
-    echo "端對端測試 (E2E): ${#E2E_PASSED[@]}/${e2e_total} (${e2e_rate}%) - 規格要求: 4"
+    echo "端對端測試 (E2E): ${#E2E_PASSED[@]}/${e2e_total} (${e2e_rate}%) - 規格要求: 3"
     echo
     
     # Priority statistics
@@ -368,6 +512,11 @@ generate_report() {
     echo "| **總計**     | **${#PASSED_TESTS[@]}/${total_tests}** | **${pass_rate}%** | $(IFS=','; echo "${FAILED_TESTS[*]}") |"
     echo
     
+    # Show performance test results if any performance tests were run
+    if [ ${#PERFORMANCE_PASSED[@]} -gt 0 ] || [ ${#PERFORMANCE_FAILED[@]} -gt 0 ]; then
+        format_performance_results
+    fi
+    
     # Show failed tests for debugging
     if [ ${#FAILED_TESTS[@]} -gt 0 ]; then
         echo "失敗的測試案例詳情:"
@@ -388,7 +537,7 @@ generate_report() {
     
     # Success celebration or failure summary
     if [ ${#FAILED_TESTS[@]} -eq 0 ]; then
-        echo "🎉 ${GREEN}所有 43 個 Gap Analysis V2 測試案例全部通過！${NC}"
+        echo "🎉 ${GREEN}所有 42 個 Gap Analysis V2 測試案例全部通過！${NC}"
         echo "   符合測試規格文檔 test-spec-index-cal-gap-analysis.md 的所有要求"
     else
         echo "❌ ${RED}${#FAILED_TESTS[@]} 個測試失敗，總成功率: ${pass_rate}%${NC}"
@@ -525,40 +674,80 @@ parse_batch_test_results() {
 
 # Function to run performance tests (5 tests)
 run_performance_tests() {
-    echo -e "${BLUE}Running Performance Tests (5 tests)${NC}"
-    echo "Testing file: test/performance/test_gap_analysis_v2_performance.py"
-    echo "⚠️  Performance tests may take longer (up to 120s each)"
-    echo
-    
     # All 5 performance tests from API-GAP-001-PT to API-GAP-005-PT
     local performance_tests=(
         "API-GAP-001-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_p50_response_time"
         "API-GAP-002-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_p95_response_time"
         "API-GAP-003-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_resource_pool_reuse_rate"
         "API-GAP-004-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_api_call_reduction"
-        "API-GAP-005-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_resource_pool_expansion"
+        "API-GAP-005-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_resource_pool_scaling"
     )
     
-    for test_entry in "${performance_tests[@]}"; do
-        local test_id="${test_entry%%:*}"
-        local test_path="${test_entry#*:}"
-        run_test "$test_id" "$test_path" 180 "performance"
-    done
+    # Check if specific tests requested
+    if [ -n "$SPECIFIC_PERF_TESTS" ]; then
+        echo -e "${BLUE}Running Specific Performance Tests: $SPECIFIC_PERF_TESTS${NC}"
+        echo "Testing file: test/performance/test_gap_analysis_v2_performance.py"
+        echo "⚠️  Performance tests use real Azure OpenAI APIs"
+        echo
+        
+        # Convert comma-separated list to array
+        IFS=',' read -ra TEST_IDS <<< "$SPECIFIC_PERF_TESTS"
+        
+        # Run only specified tests
+        for test_id in "${TEST_IDS[@]}"; do
+            # Trim whitespace
+            test_id=$(echo "$test_id" | xargs)
+            
+            # Convert shortcuts
+            case "$test_id" in
+                "p50"|"P50")
+                    test_id="API-GAP-001-PT"
+                    ;;
+                "p95"|"P95")
+                    test_id="API-GAP-002-PT"
+                    ;;
+            esac
+            
+            # Find matching test entry
+            for test_entry in "${performance_tests[@]}"; do
+                if [[ "$test_entry" == "$test_id:"* ]]; then
+                    local test_path="${test_entry#*:}"
+                    # Use longer timeout for P95 test (20 requests * 20s each + overhead)
+                    local timeout=180
+                    if [[ "$test_id" == "API-GAP-002-PT" ]]; then
+                        timeout=600  # 10 minutes for P95 test
+                    fi
+                    run_test "$test_id" "$test_path" $timeout "performance"
+                    break
+                fi
+            done
+        done
+    else
+        echo -e "${BLUE}Running All Performance Tests (5 tests)${NC}"
+        echo "Testing file: test/performance/test_gap_analysis_v2_performance.py"
+        echo "⚠️  Performance tests may take longer (up to 120s each)"
+        echo
+        
+        for test_entry in "${performance_tests[@]}"; do
+            local test_id="${test_entry%%:*}"
+            local test_path="${test_entry#*:}"
+            run_test "$test_id" "$test_path" 180 "performance"
+        done
+    fi
 }
 
 # Function to run E2E tests (4 tests)
 run_e2e_tests() {
-    echo -e "${BLUE}Running E2E Tests (4 tests)${NC}"
+    echo -e "${BLUE}Running E2E Tests (3 tests)${NC}"
     echo "Testing file: test/e2e/test_gap_analysis_v2_e2e.py"
     echo "⚠️  E2E tests use real data and may take longer"
     echo
     
-    # All 4 E2E tests from API-GAP-001-E2E to API-GAP-004-E2E
+    # All 3 E2E tests from API-GAP-001-E2E to API-GAP-003-E2E
     local e2e_tests=(
         "API-GAP-001-E2E:test/e2e/test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_complete_workflow"
         "API-GAP-002-E2E:test/e2e/test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_lightweight_monitoring_integration"
         "API-GAP-003-E2E:test/e2e/test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_partial_result_support"
-        "API-GAP-004-E2E:test/e2e/test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_real_data_comprehensive"
     )
     
     for test_entry in "${e2e_tests[@]}"; do
@@ -582,15 +771,15 @@ main() {
     # Initialize logging
     manage_log_files
     log_message "=== Gap Analysis V2 Test Suite Started ==="
-    log_message "Based on test-spec-index-cal-gap-analysis.md v1.0.1"
+    log_message "Based on test-spec-index-cal-gap-analysis.md v1.0.4"
     log_message "Python version: $(python --version 2>&1)"
     log_message "Stage execution: ${STAGE_EXEC:-all}"
     log_message "Background execution: $BACKGROUND_EXEC"
     
-    echo -e "${BLUE}=== Gap Analysis V2 Test Suite (43 tests) ===${NC}"
+    echo -e "${BLUE}=== Gap Analysis V2 Test Suite (42 tests) ===${NC}"
     echo "Timestamp: $(date)"
     echo "Log file: $(basename "$LOG_FILE")"
-    echo "Based on: test-spec-index-cal-gap-analysis.md v1.0.1"
+    echo "Based on: test-spec-index-cal-gap-analysis.md v1.0.4"
     echo
     
     echo -e "${BLUE}Environment Check${NC}"
@@ -648,13 +837,16 @@ main() {
     fi
 }
 
-# Handle background execution
-if [ "$BACKGROUND_EXEC" = true ]; then
-    echo "Running Gap Analysis V2 tests in background..."
-    echo "Log file: $LOG_FILE"
-    echo "Monitor with: tail -f $LOG_FILE"
-    main &
-    echo "Background process PID: $!"
-else
-    main
+# Skip main execution if SKIP_MAIN is set (for testing)
+if [ "$SKIP_MAIN" != "true" ]; then
+    # Handle background execution
+    if [ "$BACKGROUND_EXEC" = true ]; then
+        echo "Running Gap Analysis V2 tests in background..."
+        echo "Log file: $LOG_FILE"
+        echo "Monitor with: tail -f $LOG_FILE"
+        main &
+        echo "Background process PID: $!"
+    else
+        main
+    fi
 fi

@@ -30,15 +30,13 @@ from src.services.language_detection import (
     LanguageDetectionService,
     LanguageValidator,
 )
+from src.services.llm_factory import get_llm_client
 from src.services.openai_client import (
     AzureOpenAIClient,
     AzureOpenAIError,
-    get_azure_openai_client,
+    # get_azure_openai_client, # Replaced with LLM Factory
 )
-from src.services.openai_client_gpt41 import (
-    AzureOpenAIGPT41Client,
-    get_gpt41_mini_client,
-)
+from src.services.openai_client_gpt41 import AzureOpenAIGPT41Client
 from src.services.standardization import MultilingualStandardizer
 
 
@@ -70,22 +68,12 @@ class KeywordExtractionService(BaseService):
         """Initialize the bilingual service with all dependencies."""
         super().__init__()
 
-        # Core services - use GPT-4.1 mini if enabled and no client provided
+        # Core services - use LLM Factory for dynamic model selection
         if openai_client is None:
-            if use_gpt41_mini:
-                try:
-                    self.openai_client = get_gpt41_mini_client()
-                    self.logger.info(
-                        "Using GPT-4.1 mini Japan East for keyword extraction"
-                    )
-                except Exception as e:
-                    self.logger.warning(
-                        f"Failed to initialize GPT-4.1 mini client: {e}. "
-                        f"Falling back to GPT-4o-2"
-                    )
-                    self.openai_client = get_azure_openai_client()
-            else:
-                self.openai_client = get_azure_openai_client()
+            # Use LLM Factory to get appropriate client based on configuration
+            # This will use gpt41-mini by default for keyword extraction
+            self.openai_client = get_llm_client(api_name="keywords")
+            self.logger.info("Using LLM Factory for keyword extraction client")
         else:
             self.openai_client = openai_client
 

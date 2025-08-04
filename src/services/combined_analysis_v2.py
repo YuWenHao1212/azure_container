@@ -6,6 +6,7 @@ Key component of the V2 refactoring with resource pooling and parallel processin
 """
 import asyncio
 import logging
+import os
 import time
 from typing import Any, Optional
 
@@ -171,11 +172,20 @@ class CombinedAnalysisServiceV2(BaseService):
 
         # Phase 1: Generate embeddings using resource pool
         phase1_start = time.time()
-        async with self.resource_pool.get_client() as client:
+
+        # Check if resource pool is enabled (for E2E tests)
+        if os.getenv('RESOURCE_POOL_ENABLED', 'true').lower() == 'false':
+            # Direct embedding generation without resource pool
             await self._generate_embeddings_parallel(
-                client, resume, job_description
+                None, resume, job_description
             )
-            self.stats["resource_pool_hits"] += 1
+        else:
+            # Use resource pool for production
+            async with self.resource_pool.get_client() as client:
+                await self._generate_embeddings_parallel(
+                    client, resume, job_description
+                )
+                self.stats["resource_pool_hits"] += 1
 
         phase_timings["embedding_generation"] = time.time() - phase1_start
 
@@ -286,20 +296,22 @@ class CombinedAnalysisServiceV2(BaseService):
 
     async def _create_embedding(self, client: Any, text: str) -> list[float]:
         """
-        Create embedding using the provided client.
-
+        Create embedding using the provided text.
+        
         Args:
-            client: OpenAI client from resource pool
+            client: OpenAI client from resource pool (not used for embeddings)
             text: Text to embed
 
         Returns:
             Embedding vector
         """
-        response = await client.embeddings.create(
-            input=text,
-            model="text-embedding-3-large"
-        )
-        return response.data[0].embedding
+        # For embeddings, we use the existing embedding service directly
+        # since embeddings are handled by a specialized service, not LLM Factory
+        from src.services.embedding_client import get_azure_embedding_client
+
+        async with get_azure_embedding_client() as embedding_client:
+            embeddings = await embedding_client.create_embeddings([text])
+            return embeddings[0]
 
     def _clean_text_for_embedding(self, text: str) -> str:
         """
@@ -415,7 +427,11 @@ class CombinedAnalysisServiceV2(BaseService):
             Dict containing service statistics and performance metrics
         """
         # Get component stats
-        resource_pool_stats = self.resource_pool.get_stats()
+        resource_pool_stats = (
+            self.resource_pool.get_stats()
+            if os.getenv('RESOURCE_POOL_ENABLED', 'true').lower() != 'false'
+            else {"pool_stats": {}, "efficiency": {}, "health": {}}
+        )
         retry_stats = self.retry_strategy.get_stats() if self.retry_strategy else {}
 
         # Calculate success rates
@@ -466,35 +482,35 @@ class CombinedAnalysisServiceV2(BaseService):
             ValueError: If validation fails
         """
         required_fields = ['resume', 'job_description', 'keywords']
-        
+
         for field in required_fields:
             if field not in data:
                 raise ValueError(f"Missing required field: {field}")
-            
+
             if not data[field]:
                 raise ValueError(f"Field '{field}' cannot be empty")
-        
+
         # Validate text lengths
         if len(data['resume']) < 200:
             raise ValueError("Resume must be at least 200 characters")
-            
+
         if len(data['job_description']) < 200:
             raise ValueError("Job description must be at least 200 characters")
-        
+
         # Validate keywords
         if isinstance(data['keywords'], str):
             data['keywords'] = [k.strip() for k in data['keywords'].split(',') if k.strip()]
-        
+
         if not isinstance(data['keywords'], list) or not data['keywords']:
             raise ValueError("Keywords must be a non-empty list or comma-separated string")
-        
+
         # Validate language if provided
         if 'language' in data:
             if data['language'] not in ['en', 'zh-TW']:
                 data['language'] = 'en'  # Default to English
         else:
             data['language'] = 'en'
-        
+
         return data
 
     async def process(self, data: dict[str, Any]) -> dict[str, Any]:

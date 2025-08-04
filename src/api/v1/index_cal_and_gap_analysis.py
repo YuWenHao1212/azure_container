@@ -2,7 +2,6 @@
 Combined Index Calculation and Gap Analysis API Endpoint.
 Handles both similarity calculation and gap analysis in a single request.
 """
-import asyncio
 import logging
 import time
 from typing import Any, ClassVar
@@ -473,7 +472,7 @@ async def calculate_index_and_analyze_gap(
             ).model_dump()
         ) from e
 
-    except (TimeoutError, asyncio.TimeoutError) as e:
+    except TimeoutError as e:
         # Handle both TimeoutError and asyncio.TimeoutError
         processing_time = time.time() - start_time
         logger.error(f"Request timeout after {processing_time:.2f}s: {e}")

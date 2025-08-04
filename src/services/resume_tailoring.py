@@ -29,7 +29,7 @@ from ..services.index_calculation import (
     IndexCalculationService,
     analyze_keyword_coverage,
 )
-from ..services.openai_client import get_azure_openai_client
+from ..services.llm_factory import get_llm_client
 from ..services.resume_sections import SectionProcessor
 from ..services.standardization import (
     EnglishStandardizer,
@@ -45,7 +45,7 @@ class ResumeTailoringService:
 
     def __init__(self):
         self.settings = get_settings()
-        self.llm_client = get_azure_openai_client()
+        self.llm_client = get_llm_client(api_name="resume_tailor")
         self.monitoring = monitoring_service
         self.prompt_service = UnifiedPromptService(task_path="resume_tailoring")
 

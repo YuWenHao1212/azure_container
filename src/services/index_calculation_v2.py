@@ -622,7 +622,7 @@ class IndexCalculationServiceV2(BaseService):
             resume_embedding, job_embedding = await self._compute_embeddings_parallel(
                 resume, job_description
             )
-            
+
             # Analyze keyword coverage synchronously (it's fast)
             keyword_coverage = self._analyze_keyword_coverage(resume, keywords)
 
