@@ -115,3 +115,36 @@ def create_error_response(
         warning=WarningInfo(),
         timestamp=datetime.utcnow().isoformat()
     )
+
+
+class ErrorCodes:
+    """Centralized error code definitions for API validation."""
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    TEXT_TOO_SHORT = "TEXT_TOO_SHORT"
+    INVALID_LANGUAGE = "INVALID_LANGUAGE"
+    TIMEOUT_ERROR = "TIMEOUT_ERROR"
+    RATE_LIMIT_ERROR = "RATE_LIMIT_ERROR"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
+def create_validation_error_response(field: str, message: str) -> UnifiedResponse:
+    """Create validation error response with appropriate error code."""
+    error_code = (
+        ErrorCodes.TEXT_TOO_SHORT if "200" in message or "length" in message.lower()
+        else ErrorCodes.VALIDATION_ERROR
+    )
+    if "language" in message.lower():
+        error_code = ErrorCodes.INVALID_LANGUAGE
+
+    return UnifiedResponse(
+        success=False,
+        data={},
+        error=ErrorDetail(
+            has_error=True,
+            code=error_code,
+            message=f"Validation failed for field '{field}'",
+            details=message
+        ),
+        warning=WarningInfo(),
+        timestamp=datetime.utcnow().isoformat()
+    )

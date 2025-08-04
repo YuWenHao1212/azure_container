@@ -20,8 +20,8 @@
     ],
     "boundary_test_data": {
       "exactly_200_chars": {
-        "resume": "Senior Software Engineer with 10 years of experience in full-stack development. Expert in Python, JavaScript, and cloud technologies. Strong leadership and communication skills. Proven track record..",
-        "job_description": "Looking for Senior Developer with Python and JavaScript expertise. Must have experience with cloud platforms, databases, and modern frameworks. Team collaboration and problem solving skills required.",
+        "resume": "Senior Software Engineer with 10 years of experience in full-stack development. Expert in Python, JavaScript, and cloud technologies. Strong leadership and communication skills. Proven track record!!!",
+        "job_description": "Looking for Senior Developer with Python and JavaScript expertise. Must have experience with cloud platforms, databases, and modern frameworks. Team collaboration and problem solving skills required!!",
         "keywords": ["Python", "JavaScript", "Cloud"]
       }
     },

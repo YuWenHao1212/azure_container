@@ -188,3 +188,144 @@ def stable_mock_factory():
             return AsyncMock()
 
     return _create_mock
+
+@pytest.fixture(autouse=True, scope="function")
+def prevent_external_calls():
+    """
+    Prevent all external HTTP/HTTPS calls during integration tests.
+    
+    This fixture ensures that no test accidentally makes real network calls
+    to external services like Azure OpenAI, even if mocks fail.
+    """
+    with (
+        # Block all HTTP libraries at the lowest level
+        patch('httpx.AsyncClient.post', side_effect=RuntimeError("External HTTP calls blocked in tests")),
+        patch('httpx.AsyncClient.get', side_effect=RuntimeError("External HTTP calls blocked in tests")),
+        patch('aiohttp.ClientSession.post', side_effect=RuntimeError("External HTTP calls blocked in tests")),
+        patch('aiohttp.ClientSession.get', side_effect=RuntimeError("External HTTP calls blocked in tests")),
+        patch('requests.post', side_effect=RuntimeError("External HTTP calls blocked in tests")),
+        patch('requests.get', side_effect=RuntimeError("External HTTP calls blocked in tests")),
+        
+        # Block urllib3 and socket level calls
+        patch('urllib3.poolmanager.PoolManager.urlopen', side_effect=RuntimeError("External HTTP calls blocked in tests")),
+        patch('socket.create_connection', side_effect=RuntimeError("External socket connections blocked in tests")),
+        
+        # Block OpenAI SDK direct calls
+        patch('openai.AsyncAzureOpenAI', side_effect=RuntimeError("Direct OpenAI client creation blocked in tests")),
+        patch('openai.AzureOpenAI', side_effect=RuntimeError("Direct OpenAI client creation blocked in tests"))
+    ):
+        yield
+
+
+@pytest.fixture
+def comprehensive_mock_services():
+    """
+    Comprehensive mock services that cover all possible service calls.
+    
+    This fixture provides fully configured mock services that return
+    realistic test data for all Azure OpenAI operations.
+    """
+    # Mock embedding service - IndexCalculationServiceV2 expects create_embeddings to return list of embeddings
+    embedding_mock = AsyncMock()
+    
+    # Configure create_embeddings as an AsyncMock that returns proper format
+    embedding_mock.create_embeddings = AsyncMock(return_value=[
+        [0.1 + i * 0.01] * 1536 for i in range(2)  # Generate 2 embeddings (resume + JD)
+    ])
+    embedding_mock.close = AsyncMock()
+    
+    # Mock LLM service with realistic gap analysis response
+    llm_mock = AsyncMock()
+    llm_mock.chat_completion = AsyncMock(return_value={
+        "choices": [{
+            "message": {
+                "content": json.dumps({
+                    "CoreStrengths": "<ol><li>Strong Python programming skills</li><li>Experience with web frameworks</li></ol>",
+                    "KeyGaps": "<ol><li>Limited cloud experience</li><li>Missing DevOps skills</li></ol>", 
+                    "QuickImprovements": "<ol><li>Learn Docker basics</li><li>Get AWS certification</li></ol>",
+                    "OverallAssessment": "<p>Good technical foundation but needs cloud and DevOps skills</p>",
+                    "SkillSearchQueries": ["AWS", "Docker", "Kubernetes", "CI/CD"]
+                })
+            }
+        }],
+        "usage": {
+            "prompt_tokens": 150,
+            "completion_tokens": 75,
+            "total_tokens": 225
+        }
+    })
+    llm_mock.close = AsyncMock()
+    
+    # Mock keyword extraction service
+    keyword_mock = AsyncMock()
+    keyword_mock.validate_input = AsyncMock(return_value={
+        "job_description": "test job description with sufficient length to pass validation requirements for testing purposes",
+        "max_keywords": 15
+    })
+    keyword_mock.process = AsyncMock(return_value={
+        "keywords": ["Python", "FastAPI", "Docker", "AWS", "Git", "REST API", "SQL", "Linux"],
+        "keyword_count": 8,
+        "confidence_score": 0.87,
+        "extraction_method": "llm_based",
+        "processing_time_ms": 280
+    })
+    keyword_mock.close = AsyncMock()
+    
+    # Mock resource pool manager with proper async context manager
+    pool_mock = Mock()
+    
+    # Create a proper async context manager for get_client
+    class AsyncContextManagerMock:
+        def __init__(self, return_value):
+            self.return_value = return_value
+            
+        async def __aenter__(self):
+            return self.return_value
+            
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            return None
+    
+    # Configure get_client to return an async context manager
+    pool_mock.get_client = Mock(return_value=AsyncContextManagerMock(llm_mock))
+    pool_mock.get_stats = Mock(return_value={
+        "clients_created": 2,
+        "clients_reused": 8,
+        "current_pool_size": 3,
+        "pool_hits": 8,
+        "pool_misses": 2
+    })
+    
+    return {
+        "embedding": embedding_mock,
+        "llm": llm_mock,
+        "keyword": keyword_mock,
+        "resource_pool": pool_mock
+    }
+
+
+@pytest.fixture(autouse=True)
+def mock_all_external_services(comprehensive_mock_services):
+    """
+    Automatically mock all external services for integration tests.
+    
+    This fixture is applied to every test in the integration directory
+    and ensures complete isolation from external dependencies.
+    
+    We rely on the global mocks from the root conftest.py for the core service patches,
+    and add integration-specific mocks here.
+    """
+    services = comprehensive_mock_services
+    
+    with (
+        # Only patch services that definitely exist at module level
+        patch('src.services.resource_pool_manager.ResourcePoolManager', return_value=services["resource_pool"]),
+        
+        # Low-level client creation prevention - these are the most important
+        patch('openai.AsyncAzureOpenAI', side_effect=RuntimeError("Direct OpenAI client instantiation blocked")),
+        patch('openai.AzureOpenAI', side_effect=RuntimeError("Direct OpenAI client instantiation blocked"))
+    ):
+        yield services
+
+
+import json
+from unittest.mock import Mock, patch

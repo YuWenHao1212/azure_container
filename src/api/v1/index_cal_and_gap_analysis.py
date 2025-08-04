@@ -2,18 +2,22 @@
 Combined Index Calculation and Gap Analysis API Endpoint.
 Handles both similarity calculation and gap analysis in a single request.
 """
+import asyncio
 import logging
 import time
+from typing import Any, ClassVar
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError, validator
 
 from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
 from src.models.response import (
+    ErrorCodes,
     UnifiedResponse,
     create_error_response,
     create_success_response,
+    create_validation_error_response,
 )
 from src.services.gap_analysis import GapAnalysisService
 from src.services.index_calculation import IndexCalculationService
@@ -21,11 +25,81 @@ from src.services.index_calculation import IndexCalculationService
 
 # Request/Response Models
 class IndexCalAndGapAnalysisRequest(BaseModel):
-    """Request model for combined index calculation and gap analysis."""
-    resume: str = Field(..., description="Resume content (HTML or plain text)")
-    job_description: str = Field(..., description="JD (HTML or plain text)")
-    keywords: list[str] | str = Field(..., description="Keywords list or CSV string")
-    language: str = Field(default="en", description="Output language (en or zh-TW)")
+    """Request model for combined index calculation and gap analysis with comprehensive validation."""
+    resume: str = Field(
+        ...,
+        min_length=200,
+        description="Resume content (HTML or plain text), minimum 200 characters"
+    )
+    job_description: str = Field(
+        ...,
+        min_length=200,
+        description="Job description (HTML or plain text), minimum 200 characters"
+    )
+    keywords: list[str] | str = Field(
+        ...,
+        description="Keywords list or CSV string"
+    )
+    language: str = Field(
+        default="en",
+        description="Output language (en or zh-TW)"
+    )
+
+    @validator('language')
+    def validate_language(cls, v):
+        """Validate language parameter against whitelist."""
+        valid_languages = {'en', 'zh-tw', 'zh-TW'}
+        if v.lower() not in {lang.lower() for lang in valid_languages}:
+            raise ValueError(f"Unsupported language: {v}. Supported: en, zh-TW")
+        # Normalize case
+        return 'zh-TW' if v.lower() == 'zh-tw' else v
+
+    @validator('resume')
+    def validate_resume_content(cls, v):
+        """Additional resume content validation."""
+        if not v.strip():
+            raise ValueError("Resume content cannot be empty")
+        return v.strip()
+
+    @validator('job_description')
+    def validate_jd_content(cls, v):
+        """Additional job description content validation."""
+        if not v.strip():
+            raise ValueError("Job description content cannot be empty")
+        return v.strip()
+
+    @validator('keywords')
+    def validate_keywords(cls, v):
+        """Ensure keywords are not empty."""
+        if isinstance(v, str):
+            keywords_list = [k.strip() for k in v.split(",") if k.strip()]
+        else:
+            keywords_list = [k.strip() for k in v if k.strip()]
+
+        if not keywords_list:
+            raise ValueError("Keywords cannot be empty")
+        return keywords_list
+
+    class Config:
+        # Custom error messages for validation
+        schema_extra: ClassVar[dict[str, Any]] = {
+            "example": {
+                "resume": (
+                    "Senior Software Engineer with 8+ years experience in Python, FastAPI, React, "
+                    "and cloud technologies. Proven track record in building scalable web applications "
+                    "and leading development teams. Expert in microservices architecture, Docker, "
+                    "Kubernetes, and CI/CD pipelines."
+                ),
+                "job_description": (
+                    "Looking for Senior Full Stack Developer with 5+ years experience. "
+                    "Must have expertise in Python, FastAPI, React, Docker, Kubernetes, AWS. "
+                    "Experience with microservices architecture and database design required. "
+                    "Strong problem-solving and team collaboration skills essential."
+                ),
+                "keywords": ["Python", "FastAPI", "React", "Docker", "Kubernetes", "AWS"],
+                "language": "en"
+            }
+        }
 
 
 class SkillQuery(BaseModel):
@@ -316,7 +390,7 @@ async def calculate_index_and_analyze_gap(
     settings=Depends(get_settings)
 ) -> UnifiedResponse:
     """
-    Calculate similarity index and perform gap analysis.
+    Calculate similarity index and perform gap analysis with enhanced error handling.
 
     Args:
         request: Combined calculation and analysis request data
@@ -374,7 +448,90 @@ async def calculate_index_and_analyze_gap(
 
         return result
 
+    except ValidationError as e:
+        # Handle Pydantic validation errors
+        error_details = []
+        for error in e.errors():
+            field = error['loc'][-1] if error['loc'] else 'unknown'
+            message = error['msg']
+            error_details.append(f"{field}: {message}")
+
+        processing_time = time.time() - start_time
+        logger.warning(f"Validation error after {processing_time:.2f}s: {'; '.join(error_details)}")
+
+        monitoring_service.track_event("APIValidationError", {
+            "error_fields": [error['loc'][-1] if error['loc'] else 'unknown' for error in e.errors()],
+            "processing_time_ms": round(processing_time * 1000, 2),
+            "error_count": len(e.errors())
+        })
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=create_validation_error_response(
+                field="request",
+                message="; ".join(error_details)
+            ).model_dump()
+        ) from e
+
+    except (TimeoutError, asyncio.TimeoutError) as e:
+        # Handle both TimeoutError and asyncio.TimeoutError
+        processing_time = time.time() - start_time
+        logger.error(f"Request timeout after {processing_time:.2f}s: {e}")
+
+        monitoring_service.track_event("APITimeoutError", {
+            "processing_time_ms": round(processing_time * 1000, 2),
+            "error_type": "timeout"
+        })
+
+        raise HTTPException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail=create_error_response(
+                code=ErrorCodes.TIMEOUT_ERROR,
+                message="Request timed out",
+                details="The request took too long to process. Please try again."
+            ).model_dump()
+        ) from e
+
     except Exception as e:
+        # Check for timeout errors in error message (when asyncio.TimeoutError is wrapped)
+        error_message = str(e).lower()
+        if "timeout" in error_message or "timed out" in error_message:
+            processing_time = time.time() - start_time
+            logger.error(f"Request timeout after {processing_time:.2f}s: {e}")
+
+            monitoring_service.track_event("APITimeoutError", {
+                "processing_time_ms": round(processing_time * 1000, 2),
+                "error_type": "timeout"
+            })
+
+            raise HTTPException(
+                status_code=status.HTTP_408_REQUEST_TIMEOUT,
+                detail=create_error_response(
+                    code=ErrorCodes.TIMEOUT_ERROR,
+                    message="Request timed out",
+                    details="The request took too long to process. Please try again."
+                ).model_dump()
+            ) from e
+
+        # Handle rate limit errors specifically
+        if hasattr(e, 'status_code') and e.status_code == 429:
+            processing_time = time.time() - start_time
+            logger.warning(f"Rate limit exceeded after {processing_time:.2f}s: {e}")
+
+            monitoring_service.track_event("APIRateLimitError", {
+                "processing_time_ms": round(processing_time * 1000, 2),
+                "error_type": "rate_limit"
+            })
+
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=create_error_response(
+                    code=ErrorCodes.RATE_LIMIT_ERROR,
+                    message="Rate limit exceeded",
+                    details="Too many requests. Please wait and try again."
+                ).model_dump()
+            ) from e
+
         # Enhanced error handling with implementation version info
         implementation_version = "unknown"
         try:
@@ -403,7 +560,7 @@ async def calculate_index_and_analyze_gap(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=create_error_response(
-                    code="VALIDATION_ERROR",
+                    code=ErrorCodes.VALIDATION_ERROR,
                     message="Invalid request data",
                     details=str(e)
                 ).model_dump()
@@ -412,7 +569,7 @@ async def calculate_index_and_analyze_gap(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=create_error_response(
-                    code="INTERNAL_ERROR",
+                    code=ErrorCodes.INTERNAL_ERROR,
                     message="An unexpected error occurred",
                     details="Please try again later"
                 ).model_dump()
@@ -473,16 +630,16 @@ async def index_cal_and_gap_analysis_endpoint(
 ) -> UnifiedResponse:
     """
     Calculate similarity index and perform gap analysis.
-    
+
     This endpoint combines index calculation and gap analysis into a single request,
     supporting both V1 (sequential) and V2 (parallel) implementations based on
     feature flags.
-    
+
     Args:
         request: Combined calculation and analysis request data
         req: FastAPI request object
         settings: Application settings
-        
+
     Returns:
         UnifiedResponse with calculation and analysis results
     """
