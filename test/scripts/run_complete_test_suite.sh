@@ -255,10 +255,21 @@ ${BLUE}=== 詳細測試統計 ===${NC}"
     local kw_unit2_failed=$(echo $kw_unit2_counts | cut -d'/' -f2)
     local kw_unit_passed=$((kw_unit1_passed + kw_unit2_passed))
     local kw_unit_failed=$((kw_unit1_failed + kw_unit2_failed))
-    # Fix: keyword extraction language integration tests should be counted here
-    local kw_int_counts=$(extract_test_counts /tmp/integration_keyword_language_output.log)
-    local kw_int_passed=$(echo $kw_int_counts | cut -d'/' -f1)
-    local kw_int_failed=$(echo $kw_int_counts | cut -d'/' -f2)
+    
+    # Integration tests for keyword extraction
+    # 1. Language-specific integration tests
+    local kw_int1_counts=$(extract_test_counts /tmp/integration_keyword_language_output.log)
+    local kw_int1_passed=$(echo $kw_int1_counts | cut -d'/' -f1)
+    local kw_int1_failed=$(echo $kw_int1_counts | cut -d'/' -f2)
+    
+    # 2. Azure OpenAI integration tests (also for keyword extraction)
+    local kw_int2_counts=$(extract_test_counts /tmp/integration_azure_openai_output.log)
+    local kw_int2_passed=$(echo $kw_int2_counts | cut -d'/' -f1)
+    local kw_int2_failed=$(echo $kw_int2_counts | cut -d'/' -f2)
+    
+    # Total integration tests
+    local kw_int_passed=$((kw_int1_passed + kw_int2_passed))
+    local kw_int_failed=$((kw_int1_failed + kw_int2_failed))
     
     # Performance test counts for keyword extraction
     local kw_perf_counts="0/0"
