@@ -713,7 +713,7 @@ class TestKeywordExtractionLanguageIntegration:
             "job_description": "Nous recherchons un développeur Python senior avec plus de 5 ans d'expérience " +
                              "dans le développement d'applications web évolutives utilisant FastAPI et Django. " +
                              "Une solide connaissance de Docker, Kubernetes et des services cloud AWS est requise. " +
-                             "Le candidat idéal doit avoir d'excellentes compétences en résolution de problèmes.",  # French  # noqa: E501
+                             "Le candidat idéal doit avoir d'excellentes compétences en résolution de problèmes.",  # French
             "max_keywords": 15
         }
 

@@ -4,8 +4,7 @@ Provides memory usage statistics, leak detection, and resource management.
 """
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Dict
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -40,7 +39,7 @@ class GarbageCollectionResult(BaseModel):
     """Garbage collection result model."""
     duration_ms: float = Field(description="GC duration in milliseconds")
     objects_collected: int = Field(description="Total objects collected")
-    collections_by_generation: Dict[str, int] = Field(description="Collections by GC generation")
+    collections_by_generation: dict[str, int] = Field(description="Collections by GC generation")
     memory_before_mb: float = Field(description="Memory before GC (MB)")
     memory_after_mb: float = Field(description="Memory after GC (MB)")
     memory_freed_mb: float = Field(description="Memory freed by GC (MB)")
@@ -83,7 +82,7 @@ async def get_memory_stats() -> UnifiedResponse:
                 vms_mb=stats.memory_metrics.vms_mb,
                 percent=stats.memory_metrics.percent,
                 available_mb=stats.memory_metrics.available_mb,
-                timestamp=datetime.fromtimestamp(stats.memory_metrics.timestamp, tz=timezone.utc).isoformat()
+                timestamp=datetime.fromtimestamp(stats.memory_metrics.timestamp, tz=UTC).isoformat()
             )
         else:
             # Fallback to basic memory stats
@@ -97,7 +96,7 @@ async def get_memory_stats() -> UnifiedResponse:
                 vms_mb=memory_info.vms / 1024 / 1024,
                 percent=process.memory_percent(),
                 available_mb=system_memory.available / 1024 / 1024,
-                timestamp=datetime.now(timezone.utc).isoformat()
+                timestamp=datetime.now(UTC).isoformat()
             )
 
         resource_stats = ResourceStats(

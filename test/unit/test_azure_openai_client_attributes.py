@@ -37,7 +37,7 @@ class TestAzureOpenAIClientAttributes:
         assert isinstance(client.retry_delays, list), "retry_delays should be a list"
         assert client.max_retries > 0, "max_retries should be positive"
         assert len(client.retry_delays) > 0, "retry_delays should not be empty"
-        assert all(isinstance(delay, (int, float)) for delay in client.retry_delays), \
+        assert all(isinstance(delay, int | float) for delay in client.retry_delays), \
             "All retry delays should be numeric"
 
     def test_azure_openai_client_retry_configuration_values(self):

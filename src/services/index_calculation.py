@@ -5,7 +5,6 @@ Following FHS architecture principles.
 import math
 import re
 import time
-from typing import Optional
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -17,7 +16,7 @@ from src.services.embedding_client import get_azure_embedding_client
 from src.services.text_processing import clean_html_text
 
 
-def sigmoid_transform(x: float, x0: Optional[float] = None, k: Optional[float] = None) -> float:
+def sigmoid_transform(x: float, x0: float | None = None, k: float | None = None) -> float:
     """
     Apply sigmoid transformation to similarity score.
 

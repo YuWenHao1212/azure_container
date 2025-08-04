@@ -356,7 +356,7 @@ class TestIndexCalculationV2Integration:
 
         # Test timeout
         mock_embedding_client = AsyncMock()
-        mock_embedding_client.create_embeddings.side_effect = asyncio.TimeoutError()
+        mock_embedding_client.create_embeddings.side_effect = TimeoutError()
         mock_embedding_client.close = AsyncMock()
 
         with patch('src.services.embedding_client.get_azure_embedding_client',
@@ -402,8 +402,8 @@ class TestIndexCalculationV2Integration:
                             response = test_client.post(
                                 "/api/v1/index-calculation",
                                 json={
-                                    "resume": f"Python developer with extensive experience in web development, cloud computing, and software engineering {index}",  # noqa: E501
-                                    "job_description": f"Looking for experienced developer with strong technical skills and problem-solving abilities {index}",  # noqa: E501
+                                    "resume": f"Python developer with extensive experience in web development, cloud computing, and software engineering {index}",
+                                    "job_description": f"Looking for experienced developer with strong technical skills and problem-solving abilities {index}",
                                     "keywords": ["Python", f"Skill{index}"]
                                 }
                             )

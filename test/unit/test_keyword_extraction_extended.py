@@ -42,7 +42,7 @@ class TestKeywordExtractionLanguageUnit:
         mock_response.choices = [Mock(message=Mock(content='{"keywords": ["Python", "Developer"]}'))]
         client.chat.completions.create = AsyncMock(return_value=mock_response)
         # Mock complete_text for keyword extraction
-        client.complete_text = AsyncMock(return_value='{"keywords": ["Python", "Developer", "Experience", "Software", "Engineering"]}')  # noqa: E501
+        client.complete_text = AsyncMock(return_value='{"keywords": ["Python", "Developer", "Experience", "Software", "Engineering"]}')
         return client
 
     @pytest.fixture
@@ -75,7 +75,7 @@ class TestKeywordExtractionLanguageUnit:
         """Create keyword extraction service with mocked dependencies."""
         with (
             patch('src.services.llm_factory.get_llm_client', return_value=mock_llm_client),
-            patch('src.services.language_detection.simple_language_detector.SimplifiedLanguageDetector') as MockDetector  # noqa: N806
+            patch('src.services.language_detection.simple_language_detector.SimplifiedLanguageDetector') as MockDetector
         ):
                 MockDetector.return_value = mock_detection_service
                 service = KeywordExtractionServiceV2(
@@ -572,7 +572,7 @@ class TestKeywordExtractionLanguageUnit:
             )
 
             # Mock the LLM response
-            keyword_service.openai_client.complete_text.return_value = '{"keywords": ["Python", "Senior Developer", "FastAPI"]}'  # noqa: E501
+            keyword_service.openai_client.complete_text.return_value = '{"keywords": ["Python", "Senior Developer", "FastAPI"]}'
 
             result = await keyword_service.process({
                 "job_description": job_description,

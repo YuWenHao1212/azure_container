@@ -5,7 +5,7 @@ All services should inherit from this base class.
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 
 class BaseService(ABC):
@@ -31,7 +31,7 @@ class BaseService(ABC):
         """Log info message with optional context."""
         self.logger.info(message, extra=kwargs)
 
-    def _log_error(self, message: str, error: Optional[Exception] = None, **kwargs):
+    def _log_error(self, message: str, error: Exception | None = None, **kwargs):
         """Log error message with optional exception."""
         if error:
             self.logger.error(f"{message}: {error!s}", exc_info=True, extra=kwargs)

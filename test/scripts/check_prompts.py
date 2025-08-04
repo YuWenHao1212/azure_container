@@ -11,7 +11,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, ClassVar
 
 import yaml
 
@@ -43,7 +43,7 @@ class PromptValidator:
     """Validates prompt YAML files for correctness and consistency"""
 
     # Required fields for each prompt type
-    REQUIRED_FIELDS = {
+    REQUIRED_FIELDS: ClassVar[dict[str, list[str]]] = {
         'root': ['version', 'metadata', 'prompts'],
         'metadata': ['author', 'created_at', 'description', 'status'],
         'prompts': ['system', 'user'],
@@ -51,18 +51,18 @@ class PromptValidator:
     }
 
     # Valid status values
-    VALID_STATUSES = ['active', 'deprecated', 'testing', 'inactive']
+    VALID_STATUSES: ClassVar[list[str]] = ['active', 'deprecated', 'testing', 'inactive']
 
     # Version pattern: v{major}.{minor}.{patch}
     VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+$')
 
     # Language codes
-    LANGUAGE_CODES = ['en', 'zh-TW']
+    LANGUAGE_CODES: ClassVar[list[str]] = ['en', 'zh-TW']
 
     def __init__(self):
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
-        self.info: List[str] = []
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
+        self.info: list[str] = []
         self.validated_files: int = 0
         self.failed_files: int = 0
 
@@ -80,7 +80,7 @@ class PromptValidator:
         logger.info(f"Found {len(yaml_files)} YAML files to validate")
 
         # Group files by type
-        files_by_type: Dict[str, List[Path]] = {}
+        files_by_type: dict[str, list[Path]] = {}
         for file_path in yaml_files:
             prompt_type = file_path.parent.name
             if prompt_type not in files_by_type:
@@ -105,9 +105,9 @@ class PromptValidator:
 
         return all_valid
 
-    def _check_duplicate_versions(self, files: List[Path], prompt_type: str) -> Dict[str, List[Path]]:
+    def _check_duplicate_versions(self, files: list[Path], prompt_type: str) -> dict[str, list[Path]]:
         """Check for duplicate versions within a prompt type"""
-        versions_map: Dict[str, List[Path]] = {}
+        versions_map: dict[str, list[Path]] = {}
 
         for file_path in files:
             try:
@@ -288,7 +288,7 @@ class PromptValidator:
         for param in numeric_params:
             if param in llm_config:
                 value = llm_config[param]
-                if not isinstance(value, (int, float)):
+                if not isinstance(value, int | float):
                     self.errors.append(f"{file_path}: llm_config.{param} must be numeric, got {type(value).__name__}")
                     valid = False
                 elif param == 'temperature' and not (0 <= value <= 2):
@@ -303,7 +303,7 @@ class PromptValidator:
 
         return valid
 
-    def _validate_language_variant(self, file_path: Path, data: Dict) -> bool:
+    def _validate_language_variant(self, file_path: Path, data: dict) -> bool:
         """Validate language variant consistency"""
         filename = file_path.name
 
@@ -322,7 +322,7 @@ class PromptValidator:
                     chinese_chars = re.findall(r'[\u4e00-\u9fff]', system_prompt + user_prompt)
                     if not chinese_chars:
                         self.warnings.append(
-                            f"{file_path.relative_to(PROJECT_ROOT)}: File marked as zh-TW but contains no Chinese characters"  # noqa: E501
+                            f"{file_path.relative_to(PROJECT_ROOT)}: File marked as zh-TW but contains no Chinese characters"
                         )
                 elif file_lang == 'en':
                     # Check for unexpected Chinese characters in English prompts
@@ -350,7 +350,7 @@ class PromptValidator:
         # Check numeric parameters
         numeric_params = ['round1_seed', 'round2_seed', 'min_intersection', 'max_keywords_per_round']
         for param in numeric_params:
-            if param in config and not isinstance(config[param], (int, float)):
+            if param in config and not isinstance(config[param], int | float):
                 self.errors.append(f"{file_path}: multi_round_config.{param} must be numeric")
                 valid = False
 

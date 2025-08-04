@@ -5,7 +5,7 @@ Handles resume similarity and keyword coverage analysis functionality.
 import logging
 import os
 import time
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -220,7 +220,7 @@ async def index_calculation_endpoint(
     summary="Get Index Calculation Service Statistics",
     description="Retrieve service statistics including cache performance and calculation metrics"
 )
-async def get_index_calculation_stats() -> Dict[str, Any]:
+async def get_index_calculation_stats() -> dict[str, Any]:
     """
     Get comprehensive Index Calculation V2 service statistics.
 
@@ -258,7 +258,7 @@ async def get_index_calculation_stats() -> Dict[str, Any]:
     summary="Get Cache Information",
     description="Retrieve detailed cache information and performance metrics"
 )
-async def get_cache_info() -> Dict[str, Any]:
+async def get_cache_info() -> dict[str, Any]:
     """
     Get detailed cache information for Index Calculation V2 service.
 
@@ -296,7 +296,7 @@ async def get_cache_info() -> Dict[str, Any]:
     summary="Clear Service Cache",
     description="Clear all cached embeddings and similarity calculations"
 )
-async def clear_cache() -> Dict[str, str]:
+async def clear_cache() -> dict[str, str]:
     """
     Clear all cached data in Index Calculation V2 service.
 

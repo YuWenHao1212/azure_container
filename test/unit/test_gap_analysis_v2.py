@@ -484,7 +484,7 @@ class TestGapAnalysisV2Unit:
             attempts.append(attempt_time)
 
             if len(attempts) < 3:
-                raise asyncio.TimeoutError("Service timeout")
+                raise TimeoutError("Service timeout")
 
             return {"success": True}
 
@@ -496,7 +496,7 @@ class TestGapAnalysisV2Unit:
             try:
                 result = await service_with_timeout()
                 break
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if i < max_attempts - 1:
                     delay = base_delay * (2 ** i)  # Exponential backoff
                     await asyncio.sleep(delay)

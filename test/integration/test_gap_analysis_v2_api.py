@@ -413,7 +413,7 @@ class TestGapAnalysisV2Integration:
         """
         # Mock timeout error
         mock_service = AsyncMock()
-        mock_service.analyze_combined.side_effect = asyncio.TimeoutError("Service timeout")
+        mock_service.analyze_combined.side_effect = TimeoutError("Service timeout")
 
         with patch('src.api.v1.endpoints.gap_analysis.get_combined_analysis_service',
                   return_value=mock_service):

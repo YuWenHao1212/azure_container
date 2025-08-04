@@ -8,10 +8,10 @@ to identify potential causes for Medium JD performance anomalies.
 import json
 import re
 import statistics
-from typing import Any, Dict, List
+from typing import Any
 
 
-def analyze_text_characteristics(text: str) -> Dict[str, Any]:
+def analyze_text_characteristics(text: str) -> dict[str, Any]:
     """Analyze various characteristics of text that might affect processing time."""
     return {
         "char_count": len(text),
@@ -22,12 +22,12 @@ def analyze_text_characteristics(text: str) -> Dict[str, Any]:
         "bullet_points": text.count('-') + text.count('•') + text.count('*'),
         "special_chars": len(re.findall(r'[^\w\s]', text)),
         "uppercase_words": len(re.findall(r'\b[A-Z]{2,}\b', text)),
-        "technical_terms": len(re.findall(r'\b(?:API|SQL|AWS|Docker|Kubernetes|CI/CD|Git|REST|JSON|XML|HTTP|HTTPS|NoSQL|PostgreSQL|MongoDB|Redis|FastAPI|Django|Flask|React|TypeScript|JavaScript|Python|Java|Golang|Rust|GraphQL|RabbitMQ|Kafka|EC2|S3|Lambda|RDS)\b', text, re.IGNORECASE)),  # noqa: E501
+        "technical_terms": len(re.findall(r'\b(?:API|SQL|AWS|Docker|Kubernetes|CI/CD|Git|REST|JSON|XML|HTTP|HTTPS|NoSQL|PostgreSQL|MongoDB|Redis|FastAPI|Django|Flask|React|TypeScript|JavaScript|Python|Java|Golang|Rust|GraphQL|RabbitMQ|Kafka|EC2|S3|Lambda|RDS)\b', text, re.IGNORECASE)),
         "complexity_score": None  # Will calculate based on other metrics
     }
 
 
-def calculate_complexity_score(characteristics: Dict[str, Any]) -> float:
+def calculate_complexity_score(characteristics: dict[str, Any]) -> float:
     """Calculate a complexity score based on text characteristics."""
     score = 0
 
@@ -47,12 +47,12 @@ def calculate_complexity_score(characteristics: Dict[str, Any]) -> float:
     return round(score, 2)
 
 
-def get_test_cases() -> List[Dict[str, Any]]:
+def get_test_cases() -> list[dict[str, Any]]:
     """Get the same test cases used in performance tests."""
     return [
         {
             "name": "Small JD (200 chars)",
-            "job_description": "We are looking for a Senior Python Developer with 5+ years of experience in FastAPI and Django. Must have strong knowledge of microservices architecture, Docker, Kubernetes, and AWS cloud services. Excellent problem-solving skills required."  # noqa: E501
+            "job_description": "We are looking for a Senior Python Developer with 5+ years of experience in FastAPI and Django. Must have strong knowledge of microservices architecture, Docker, Kubernetes, and AWS cloud services. Excellent problem-solving skills required."
         },
         {
             "name": "Medium JD (500 chars)",
@@ -189,12 +189,12 @@ def analyze_all_test_cases():
     issues_found = []
 
     # Check for structural complexity
-    if medium_chars['bullet_points'] > small_result['characteristics']['bullet_points'] + large_result['characteristics']['bullet_points']:  # noqa: E501
+    if medium_chars['bullet_points'] > small_result['characteristics']['bullet_points'] + large_result['characteristics']['bullet_points']:
         issues_found.append(f"❌ Medium JD has unusually high bullet points: {medium_chars['bullet_points']}")
 
     # Check for line breaks and formatting
     if medium_chars['line_count'] > medium_chars['char_count'] / 50:  # Threshold for line density
-        issues_found.append(f"❌ Medium JD has high line density: {medium_chars['line_count']} lines for {medium_chars['char_count']} chars")  # noqa: E501
+        issues_found.append(f"❌ Medium JD has high line density: {medium_chars['line_count']} lines for {medium_chars['char_count']} chars")
 
     # Check for special characters
     special_ratio = medium_chars['special_chars'] / medium_chars['char_count']
@@ -203,8 +203,8 @@ def analyze_all_test_cases():
 
     # Check complexity vs size mismatch
     complexity_per_char = medium_chars['complexity_score'] / medium_chars['char_count']
-    small_complexity_per_char = small_result['characteristics']['complexity_score'] / small_result['characteristics']['char_count']  # noqa: E501
-    large_complexity_per_char = large_result['characteristics']['complexity_score'] / large_result['characteristics']['char_count']  # noqa: E501
+    small_complexity_per_char = small_result['characteristics']['complexity_score'] / small_result['characteristics']['char_count']
+    large_complexity_per_char = large_result['characteristics']['complexity_score'] / large_result['characteristics']['char_count']
 
     if complexity_per_char > max(small_complexity_per_char, large_complexity_per_char) * 1.5:
         issues_found.append(f"❌ Medium JD has disproportionally high complexity density: {complexity_per_char:.4f}")

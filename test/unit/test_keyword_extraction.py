@@ -176,7 +176,7 @@ class TestKeywordExtraction:
                                                                mock_llm_client):
         """TEST: API-KW-102-UT - 驗證錯誤處理（描述過短）"""
         request_data = {
-            "job_description": "This job description is intentionally too short to meet the minimum 200 character requirement.",  # noqa: E501
+            "job_description": "This job description is intentionally too short to meet the minimum 200 character requirement.",
             "max_keywords": 15
         }
 
@@ -249,7 +249,7 @@ class TestKeywordExtraction:
         """TEST: API-KW-105-UT - 逾時錯誤處理"""
         # Mock service to raise timeout
         mock_keyword_service.validate_input.return_value = valid_request_data
-        mock_keyword_service.process.side_effect = asyncio.TimeoutError()
+        mock_keyword_service.process.side_effect = TimeoutError()
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
                   return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',

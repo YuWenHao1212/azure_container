@@ -5,12 +5,12 @@ This tool analyzes how different text structures affect tokenization.
 """
 
 import json
-from typing import Any, Dict
+from typing import Any
 
 import tiktoken
 
 
-def analyze_tokenization(text: str, model_name: str = "gpt-4") -> Dict[str, Any]:
+def analyze_tokenization(text: str, model_name: str = "gpt-4") -> dict[str, Any]:
     """Analyze tokenization characteristics of text."""
     try:
         encoding = tiktoken.encoding_for_model(model_name)
@@ -69,7 +69,7 @@ def compare_formatting_variants():
 
         "Numbers instead": original_medium.replace('- ', '1. '),
 
-        "Minimal formatting": """We are seeking an experienced Full Stack Developer to join our growing team. The ideal candidate will have 5+ years of experience with Python, FastAPI, and Django, strong proficiency in React, TypeScript, and modern JavaScript, experience with microservices architecture and RESTful APIs, hands-on experience with Docker, Kubernetes, and CI/CD pipelines, familiarity with AWS or Azure cloud services, knowledge of PostgreSQL, MongoDB, and Redis, experience with Agile methodologies and version control (Git), and excellent communication and problem-solving skills."""  # noqa: E501
+        "Minimal formatting": """We are seeking an experienced Full Stack Developer to join our growing team. The ideal candidate will have 5+ years of experience with Python, FastAPI, and Django, strong proficiency in React, TypeScript, and modern JavaScript, experience with microservices architecture and RESTful APIs, hands-on experience with Docker, Kubernetes, and CI/CD pipelines, familiarity with AWS or Azure cloud services, knowledge of PostgreSQL, MongoDB, and Redis, experience with Agile methodologies and version control (Git), and excellent communication and problem-solving skills."""
     }
 
     print("=" * 80)
@@ -170,7 +170,7 @@ def compare_formatting_variants():
                 'original_complexity': original_complexity,
                 'plain_complexity': plain_complexity,
                 'minimal_complexity': minimal_complexity,
-                'formatting_overhead_percent': ((original_complexity - plain_complexity) / original_complexity) * 100 if original_complexity > 0 else 0  # noqa: E501
+                'formatting_overhead_percent': ((original_complexity - plain_complexity) / original_complexity) * 100 if original_complexity > 0 else 0
             }
         }, f, indent=2)
 
@@ -185,7 +185,7 @@ def analyze_all_test_cases():
     test_cases = [
         {
             "name": "Small JD",
-            "job_description": "We are looking for a Senior Python Developer with 5+ years of experience in FastAPI and Django. Must have strong knowledge of microservices architecture, Docker, Kubernetes, and AWS cloud services. Excellent problem-solving skills required."  # noqa: E501
+            "job_description": "We are looking for a Senior Python Developer with 5+ years of experience in FastAPI and Django. Must have strong knowledge of microservices architecture, Docker, Kubernetes, and AWS cloud services. Excellent problem-solving skills required."
         },
         {
             "name": "Medium JD",

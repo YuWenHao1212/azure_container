@@ -3,7 +3,7 @@ Custom exceptions for bilingual keyword extraction service.
 Provides specialized error handling for language detection and extraction.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 
 class ServiceError(Exception):
@@ -14,7 +14,7 @@ class ServiceError(Exception):
 class BilingualServiceError(Exception):
     """Base exception for bilingual service errors."""
 
-    def __init__(self, message: str, error_code: Optional[str] = None, details: Optional[dict[str, Any]] = None):
+    def __init__(self, message: str, error_code: str | None = None, details: dict[str, Any] | None = None):
         super().__init__(message)
         self.message = message
         self.error_code = error_code or "BILINGUAL_SERVICE_ERROR"
@@ -40,7 +40,7 @@ class UnsupportedLanguageError(BilingualServiceError):
     def __init__(self,
                  detected_language: str,
                  supported_languages: list[str],
-                 confidence: Optional[float] = None,
+                 confidence: float | None = None,
                  user_specified: bool = False):
         """
         Initialize unsupported language error.
@@ -93,8 +93,8 @@ class LanguageDetectionError(BilingualServiceError):
     """
 
     def __init__(self,
-                 text_length: Optional[int] = None,
-                 reason: Optional[str] = None,
+                 text_length: int | None = None,
+                 reason: str | None = None,
                  fallback_language: str = "en"):
         """
         Initialize language detection error.
@@ -193,8 +193,8 @@ class PromptNotAvailableError(BilingualServiceError):
 
     def __init__(self,
                  language: str,
-                 version: Optional[str] = None,
-                 available_languages: Optional[list[str]] = None):
+                 version: str | None = None,
+                 available_languages: list[str] | None = None):
         """
         Initialize prompt not available error.
 
@@ -239,8 +239,8 @@ class StandardizationError(BilingualServiceError):
 
     def __init__(self,
                  language: str,
-                 reason: Optional[str] = None,
-                 keywords_count: Optional[int] = None):
+                 reason: str | None = None,
+                 keywords_count: int | None = None):
         """
         Initialize standardization error.
 
@@ -286,7 +286,7 @@ class BilingualValidationError(BilingualServiceError):
     def __init__(self,
                  validation_type: str,
                  errors: list[str],
-                 suggestions: Optional[list[str]] = None):
+                 suggestions: list[str] | None = None):
         """
         Initialize bilingual validation error.
 

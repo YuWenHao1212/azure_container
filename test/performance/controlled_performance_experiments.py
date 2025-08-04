@@ -10,7 +10,7 @@ import os
 import statistics
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 
@@ -23,12 +23,12 @@ class ControlledPerformanceExperiments:
         self.endpoint = f"{base_url}/api/v1/extract-jd-keywords"
         self.api_key = os.getenv("CONTAINER_APP_API_KEY")
 
-    def get_original_test_cases(self) -> List[Dict[str, Any]]:
+    def get_original_test_cases(self) -> list[dict[str, Any]]:
         """Get original test cases from the performance test."""
         return [
             {
                 "name": "Small JD",
-                "job_description": "We are looking for a Senior Python Developer with 5+ years of experience in FastAPI and Django. Must have strong knowledge of microservices architecture, Docker, Kubernetes, and AWS cloud services. Excellent problem-solving skills required."  # noqa: E501
+                "job_description": "We are looking for a Senior Python Developer with 5+ years of experience in FastAPI and Django. Must have strong knowledge of microservices architecture, Docker, Kubernetes, and AWS cloud services. Excellent problem-solving skills required."
             },
             {
                 "name": "Medium JD",
@@ -76,7 +76,7 @@ Nice to have:
             }
         ]
 
-    def make_request(self, job_description: str, request_id: Optional[str] = None) -> Dict[str, Any]:
+    def make_request(self, job_description: str, request_id: str | None = None) -> dict[str, Any]:
         """Make a single API request with precise timing."""
         payload = {
             "job_description": job_description,
@@ -128,7 +128,7 @@ Nice to have:
                 "end_time": end_time
             }
 
-    def experiment_1_order_effects(self) -> Dict[str, Any]:
+    def experiment_1_order_effects(self) -> dict[str, Any]:
         """Experiment 1: Test if request order affects performance."""
         print("\n" + "="*80)
         print("EXPERIMENT 1: ORDER EFFECTS")
@@ -211,7 +211,7 @@ Nice to have:
             "summary": by_case
         }
 
-    def experiment_2_content_formatting(self) -> Dict[str, Any]:
+    def experiment_2_content_formatting(self) -> dict[str, Any]:
         """Experiment 2: Test if text formatting affects performance."""
         print("\n" + "="*80)
         print("EXPERIMENT 2: CONTENT FORMATTING EFFECTS")
@@ -278,7 +278,7 @@ Nice to have:
             "results": results
         }
 
-    def experiment_3_isolated_requests(self) -> Dict[str, Any]:
+    def experiment_3_isolated_requests(self) -> dict[str, Any]:
         """Experiment 3: Test each case in complete isolation."""
         print("\n" + "="*80)
         print("EXPERIMENT 3: ISOLATED REQUESTS")
@@ -339,7 +339,7 @@ Nice to have:
             "results": results
         }
 
-    def experiment_4_statistical_power(self) -> Dict[str, Any]:
+    def experiment_4_statistical_power(self) -> dict[str, Any]:
         """Experiment 4: High-sample statistical analysis."""
         print("\n" + "="*80)
         print("EXPERIMENT 4: HIGH-SAMPLE STATISTICAL ANALYSIS")
@@ -410,7 +410,7 @@ Nice to have:
             "results": results
         }
 
-    def run_all_experiments(self) -> Dict[str, Any]:
+    def run_all_experiments(self) -> dict[str, Any]:
         """Run all controlled experiments."""
         print("🧪 CONTROLLED PERFORMANCE EXPERIMENTS")
         print("🎯 Goal: Identify root cause of Medium JD performance anomaly")
@@ -465,7 +465,7 @@ Nice to have:
 
         return all_results
 
-    def analyze_all_results(self, all_results: Dict[str, Any]):
+    def analyze_all_results(self, all_results: dict[str, Any]):
         """Analyze all experiment results and provide conclusions."""
         print("\n" + "="*80)
         print("COMPREHENSIVE ANALYSIS & CONCLUSIONS")

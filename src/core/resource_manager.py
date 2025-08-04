@@ -9,9 +9,10 @@ import logging
 import os
 import threading
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any
 from weakref import WeakSet
 
 import psutil
@@ -35,10 +36,10 @@ class ResourceStats:
     active_connections: int = 0
     cached_objects: int = 0
     active_tasks: int = 0
-    memory_metrics: Optional[MemoryMetrics] = None
+    memory_metrics: MemoryMetrics | None = None
     uptime_seconds: float = 0
     last_gc_time: float = 0
-    gc_collections: Dict[int, int] = field(default_factory=dict)
+    gc_collections: dict[int, int] = field(default_factory=dict)
 
 
 class ResourceManager:
@@ -68,7 +69,7 @@ class ResourceManager:
         # Resource tracking
         self._active_connections: WeakSet = WeakSet()
         self._active_tasks: WeakSet = WeakSet()
-        self._cached_objects: Dict[str, Any] = {}
+        self._cached_objects: dict[str, Any] = {}
         self._startup_time = time.time()
 
         # Thread safety
@@ -76,7 +77,7 @@ class ResourceManager:
         self._shutdown_event = asyncio.Event()
 
         # Monitoring task
-        self._monitor_task: Optional[asyncio.Task] = None
+        self._monitor_task: asyncio.Task | None = None
 
         # Memory thresholds (MB)
         self.memory_warning_threshold = int(os.getenv("MEMORY_WARNING_THRESHOLD", "1500"))  # 1.5GB
@@ -133,7 +134,7 @@ class ResourceManager:
 
             self._cached_objects[key] = value
 
-    def get_cache_object(self, key: str) -> Optional[Any]:
+    def get_cache_object(self, key: str) -> Any | None:
         """Get cache object."""
         with self._lock:
             return self._cached_objects.get(key)
@@ -180,7 +181,7 @@ class ResourceManager:
                 gc_collections=gc_stats
             )
 
-    async def force_garbage_collection(self) -> Dict[str, Any]:
+    async def force_garbage_collection(self) -> dict[str, Any]:
         """Force garbage collection and return results."""
         start_time = time.time()
 
@@ -359,6 +360,6 @@ def get_resource_stats() -> ResourceStats:
     return resource_manager.get_stats()
 
 
-async def force_gc() -> Dict[str, Any]:
+async def force_gc() -> dict[str, Any]:
     """Force garbage collection."""
     return await resource_manager.force_garbage_collection()

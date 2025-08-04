@@ -26,7 +26,7 @@ def parse_test_log(log_content):
         })
 
     # Extract summary
-    summary_pattern = r'=+\s*(\d+)\s+passed(?:,\s*(\d+)\s+failed)?(?:,\s*(\d+)\s+skipped)?(?:,\s*(\d+)\s+warnings)?\s+in\s+([\d.]+)s'  # noqa: E501
+    summary_pattern = r'=+\s*(\d+)\s+passed(?:,\s*(\d+)\s+failed)?(?:,\s*(\d+)\s+skipped)?(?:,\s*(\d+)\s+warnings)?\s+in\s+([\d.]+)s'
     summary_match = re.search(summary_pattern, log_content)
 
     summary = {

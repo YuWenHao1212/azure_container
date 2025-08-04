@@ -15,7 +15,7 @@ import math
 import re
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -83,8 +83,8 @@ class IndexCalculationServiceV2(BaseService):
         self.enable_parallel_processing = enable_parallel_processing
 
         # Cache storage with LRU eviction
-        self._cache: Dict[str, CacheEntry] = {}
-        self._cache_access_order: List[str] = []  # For LRU tracking
+        self._cache: dict[str, CacheEntry] = {}
+        self._cache_access_order: list[str] = []  # For LRU tracking
 
         # Service statistics
         self.calculation_stats = {
@@ -115,7 +115,7 @@ class IndexCalculationServiceV2(BaseService):
             f"cache_ttl={cache_ttl_minutes}m"
         )
 
-    async def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate_input(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Validate input data for index calculation.
 
@@ -181,7 +181,7 @@ class IndexCalculationServiceV2(BaseService):
 
         return data
 
-    async def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Process index calculation with validated data.
 
@@ -230,7 +230,7 @@ class IndexCalculationServiceV2(BaseService):
         normalized = re.sub(r'\s+', ' ', cleaned.strip().lower())
         return normalized
 
-    def _get_cached_result(self, cache_key: str) -> Optional[Any]:
+    def _get_cached_result(self, cache_key: str) -> Any | None:
         """
         Get cached result if available and not expired.
 
@@ -321,7 +321,7 @@ class IndexCalculationServiceV2(BaseService):
         if expired_keys:
             self.logger.debug(f"Cleaned up {len(expired_keys)} expired cache entries")
 
-    async def _get_or_compute_embedding(self, text: str) -> List[float]:
+    async def _get_or_compute_embedding(self, text: str) -> list[float]:
         """
         Get embedding from cache or compute if not cached.
 
@@ -371,7 +371,7 @@ class IndexCalculationServiceV2(BaseService):
         self,
         resume: str,
         job_description: str
-    ) -> Tuple[List[float], List[float]]:
+    ) -> tuple[list[float], list[float]]:
         """
         Compute embeddings for resume and job description in parallel.
 
@@ -401,9 +401,9 @@ class IndexCalculationServiceV2(BaseService):
 
     def _calculate_similarity(
         self,
-        resume_embedding: List[float],
-        job_embedding: List[float]
-    ) -> Tuple[int, int]:
+        resume_embedding: list[float],
+        job_embedding: list[float]
+    ) -> tuple[int, int]:
         """
         Calculate cosine similarity and apply sigmoid transformation.
 
@@ -459,8 +459,8 @@ class IndexCalculationServiceV2(BaseService):
     def _analyze_keyword_coverage(
         self,
         resume_text: str,
-        keywords: Union[List[str], str]
-    ) -> Dict[str, Any]:
+        keywords: Union[list[str], str]
+    ) -> dict[str, Any]:
         """
         Analyze keyword coverage in resume text.
 
@@ -549,9 +549,9 @@ class IndexCalculationServiceV2(BaseService):
         self,
         resume: str,
         job_description: str,
-        keywords: Union[List[str], str],
+        keywords: Union[list[str], str],
         include_timing: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Calculate complete index including similarity and keyword coverage.
 
@@ -729,7 +729,7 @@ class IndexCalculationServiceV2(BaseService):
             self.calculation_stats["total_keyword_coverage"] / total_calcs, 1
         )
 
-    def get_service_stats(self) -> Dict[str, Any]:
+    def get_service_stats(self) -> dict[str, Any]:
         """
         Get comprehensive service statistics.
 
@@ -780,7 +780,7 @@ class IndexCalculationServiceV2(BaseService):
         self._cache_stats["size"] = 0
         self.logger.info(f"Cleared cache of {cache_size} entries")
 
-    def get_cache_info(self) -> Dict[str, Any]:
+    def get_cache_info(self) -> dict[str, Any]:
         """Get detailed cache information."""
         current_time = datetime.utcnow()
         active_entries = 0
@@ -807,7 +807,7 @@ class IndexCalculationServiceV2(BaseService):
 
 
 # Global service instance (following the pattern used in other services)
-_index_calculation_service_v2: Optional[IndexCalculationServiceV2] = None
+_index_calculation_service_v2: IndexCalculationServiceV2 | None = None
 
 
 def get_index_calculation_service_v2() -> IndexCalculationServiceV2:

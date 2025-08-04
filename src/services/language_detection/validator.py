@@ -4,7 +4,7 @@ Provides validation utilities for language detection and processing.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from ..exceptions import (
     LanguageDetectionError,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class LanguageValidationResult:
     """Result of language validation."""
 
-    def __init__(self, is_valid: bool, language: str = "", errors: Optional[list[str]] = None, confidence: float = 0.0):
+    def __init__(self, is_valid: bool, language: str = "", errors: list[str] | None = None, confidence: float = 0.0):
         self.is_valid = is_valid
         self.language = language
         self.errors = errors or []
@@ -129,7 +129,7 @@ class LanguageValidator:
         return LanguageValidationResult(is_valid=True)
 
     async def validate_with_detection(
-        self, text: str, expected_language: Optional[str] = None
+        self, text: str, expected_language: str | None = None
     ) -> LanguageValidationResult:
         """
         Validate text with actual language detection.

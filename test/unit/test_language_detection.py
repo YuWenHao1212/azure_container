@@ -344,8 +344,8 @@ class TestLanguageDetectionService:
 
         # Construct text with exactly 20% Traditional Chinese chars of counted chars
         # Need more Chinese chars. Target: 60 Chinese, 240 English = 300 total, 20% Chinese
-        chinese_part = "我們正在尋找資深軟體工程師需要具備五年以上Python開發經驗必須熟悉微服務架構設計模式以及RESTful API開發技術並且具備良好團隊合作溝通能力和專業技術知識背景"  # noqa: E501
-        english_part = "Senior Backend Developer position requires extensive experience with Python FastAPI Django Flask microservices architecture design patterns Docker containerization Kubernetes orchestration AWS Azure cloud services automation GraphQL REST APIs PostgreSQL MongoDB Redis distributed"  # noqa: E501
+        chinese_part = "我們正在尋找資深軟體工程師需要具備五年以上Python開發經驗必須熟悉微服務架構設計模式以及RESTful API開發技術並且具備良好團隊合作溝通能力和專業技術知識背景"
+        english_part = "Senior Backend Developer position requires extensive experience with Python FastAPI Django Flask microservices architecture design patterns Docker containerization Kubernetes orchestration AWS Azure cloud services automation GraphQL REST APIs PostgreSQL MongoDB Redis distributed"
 
         total_text = chinese_part + " " + english_part
 
@@ -410,7 +410,7 @@ class TestLanguageDetectionService:
         """TEST: API-KW-231-UT - 服務清理測試"""
         # Test that detector can be reused multiple times
         text1 = "First test with English content for language detection service testing."
-        text2 = "第二次測試使用繁體中文內容來驗證語言檢測服務的可重複使用性和資源管理能力。我們需要確保服務能夠正確處理多次檢測請求, 並且保持一致的檢測結果。"  # noqa: E501
+        text2 = "第二次測試使用繁體中文內容來驗證語言檢測服務的可重複使用性和資源管理能力。我們需要確保服務能夠正確處理多次檢測請求, 並且保持一致的檢測結果。"
 
         result1 = await detector.detect_language(text1)
         result2 = await detector.detect_language(text2)

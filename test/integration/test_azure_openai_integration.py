@@ -45,7 +45,7 @@ from src.services.openai_client import (
 )
 
 
-@pytest.mark.xfail(reason="TEST-001: Known 10% intermittent failure rate due to mock configuration issues. See docs/issues/TEST-001-intermittent-azure-openai-complete-report.md", strict=False)  # noqa: E501
+@pytest.mark.xfail(reason="TEST-001: Known 10% intermittent failure rate due to mock configuration issues. See docs/issues/TEST-001-intermittent-azure-openai-complete-report.md", strict=False)
 class TestAzureOpenAIIntegration:
     """Integration tests for Azure OpenAI service integration."""
 
@@ -169,13 +169,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 503
         data = response.json()
@@ -198,13 +198,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 503
         data = response.json()
@@ -227,13 +227,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 503
         data = response.json()
@@ -257,13 +257,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 503
         data = response.json()
@@ -286,13 +286,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 503
         data = response.json()
@@ -315,13 +315,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 503
         data = response.json()
@@ -330,7 +330,7 @@ class TestAzureOpenAIIntegration:
         assert "Azure OpenAI" in data["error"]["message"]
 
         # === Timeout Error Handling ===
-        mock_keyword_service.process.side_effect = asyncio.TimeoutError("Request timeout")
+        mock_keyword_service.process.side_effect = TimeoutError("Request timeout")
 
         with (
 
@@ -344,13 +344,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 500
         data = response.json()
@@ -373,13 +373,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 500
         data = response.json()
@@ -411,7 +411,7 @@ class TestAzureOpenAIIntegration:
             with (
 
 
-                patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),  # noqa: E501
+                patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
 
 
                 patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
@@ -426,7 +426,7 @@ class TestAzureOpenAIIntegration:
 
                     ):
                             with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                                response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                                response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
             assert response.status_code == 200
             data = response.json()
@@ -448,13 +448,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'deployment': 'invalid-deployment', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'deployment': 'invalid-deployment', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 500
         data = response.json()
@@ -539,13 +539,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response1 = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response1 = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response1.status_code == 503
 
@@ -572,13 +572,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response2 = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response2 = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response2.status_code == 200
         data = response2.json()
@@ -612,13 +612,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 200
         data = response.json()
@@ -648,13 +648,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', mock_monitoring)
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 200
         data = response.json()
@@ -699,7 +699,7 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
@@ -727,13 +727,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 500
         data = response.json()
@@ -765,13 +765,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 200
         data = response.json()
@@ -807,13 +807,13 @@ class TestAzureOpenAIIntegration:
         ):
                 with (
 
-                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),  # noqa: E501
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
 
                     patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
 
                 ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
-                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)  # noqa: E501
+                            response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
         assert response.status_code == 200
         data = response.json()

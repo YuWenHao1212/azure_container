@@ -4,7 +4,7 @@ All API responses must use these models to ensure consistency.
 Following Bubble.io compatibility requirements - no Optional types.
 """
 from datetime import datetime
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -100,7 +100,7 @@ def create_error_response(
     code: str,
     message: str,
     details: str = "",
-    data: Optional[dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 ) -> UnifiedResponse:
     """Create an error response with given error information."""
     return UnifiedResponse(

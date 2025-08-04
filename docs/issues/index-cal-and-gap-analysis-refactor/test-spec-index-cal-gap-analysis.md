@@ -18,6 +18,15 @@
 - **單元測試 + 整合測試**: 必須在 20 秒內完成
 - **效能測試 + 端對端測試**: 必須在 90 秒內完成
 
+### 程式碼品質要求 🚨
+- **所有測試程式碼必須通過 Ruff 檢查**
+  - 執行 `ruff check test/ --line-length=120` 必須顯示 "All checks passed!"
+  - 不得有任何 Ruff 錯誤或警告
+  - 遵循專案的 `pyproject.toml` 中定義的 Ruff 規則
+- **撰寫測試前請先確認 Ruff 配置**
+  - 確認 `pyproject.toml` 中的 `[tool.ruff.lint.per-file-ignores]` 設定
+  - 測試檔案允許的例外：S101 (assert), RUF001/RUF002 (中文全形符號), S105 (測試密鑰)
+
 ## 1. 測試案例編號系統
 
 ### 1.1 編號格式
@@ -598,6 +607,83 @@ pytest tests/unit/test_gap_analysis_unit.py::test_API_GAP_001_UT -v
 - 執行時間
 - 失敗測試的詳細資訊
 - 效能測試的統計數據
+
+## 6. 測試開發最佳實踐
+
+### 6.1 程式碼品質標準 (Ruff)
+
+#### 強制要求
+1. **測試前檢查**: 撰寫測試程式碼前，先執行 `ruff check test/`
+2. **提交前檢查**: 提交程式碼前，必須執行並通過：
+   ```bash
+   ruff check test/ --line-length=120
+   # 必須顯示 "All checks passed!"
+   ```
+3. **自動修復**: 使用 `ruff check test/ --fix` 自動修復可修復的問題
+
+#### Ruff 配置說明
+```toml
+# pyproject.toml 中的測試相關設定
+[tool.ruff.lint.per-file-ignores]
+"test/**/*.py" = [
+    "E501",    # 行長度（已在全域設定為 120）
+    "F401",    # 未使用的 import（測試中可能需要）
+    "SIM117",  # 多重 with 語句（Python 3.11 支援）
+    "S101",    # assert 使用（測試必需）
+    "RUF001",  # 全形符號（中文測試資料）
+    "RUF002",  # 全形符號在 docstring（中文說明）
+    "S105"     # 硬編碼密鑰（測試環境可接受）
+]
+```
+
+### 6.2 測試撰寫規範
+
+#### 程式碼風格
+1. **Import 排序**: 使用 isort 規則，Ruff 會自動處理
+2. **型別註解**: 使用 Python 3.10+ 語法（`X | None` 而非 `Optional[X]`）
+3. **未使用變數**: 使用 `_` 表示故意不使用的變數
+4. **類別屬性**: 可變類別屬性需加上 `ClassVar` 註解
+
+#### 測試結構
+1. **測試函數命名**: `test_<功能>_<場景>_<預期結果>`
+2. **測試類別**: 按功能模組組織測試類別
+3. **Fixture 使用**: 善用 pytest fixtures 避免重複程式碼
+4. **測試隔離**: 每個測試必須獨立，不依賴其他測試
+
+### 6.3 開發流程
+
+1. **撰寫測試前**
+   ```bash
+   # 確認 Ruff 設定
+   cat pyproject.toml | grep -A 10 "tool.ruff"
+   
+   # 檢查現有程式碼品質
+   ruff check test/
+   ```
+
+2. **撰寫測試時**
+   - 遵循 AAA 模式（Arrange, Act, Assert）
+   - 使用有意義的測試資料
+   - 加入適當的錯誤訊息
+
+3. **完成測試後**
+   ```bash
+   # 執行 Ruff 檢查
+   ruff check test/<your_test_file>.py --line-length=120
+   
+   # 自動修復問題
+   ruff check test/<your_test_file>.py --fix
+   
+   # 執行測試
+   pytest test/<your_test_file>.py -v
+   ```
+
+4. **提交前檢查清單**
+   - [ ] 所有測試通過
+   - [ ] Ruff 檢查無錯誤
+   - [ ] 測試覆蓋率符合要求
+   - [ ] 測試執行時間符合限制
+   - [ ] 測試資料符合最小長度要求
 
 ---
 

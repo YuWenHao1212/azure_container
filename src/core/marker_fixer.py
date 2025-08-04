@@ -3,7 +3,7 @@ Marker Fixer - Ensures optimization markers are only applied to specific keyword
 """
 
 import re
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from bs4 import BeautifulSoup, NavigableString
 
@@ -112,8 +112,8 @@ class MarkerFixer:
 
         return result
 
-    def fix_and_enhance_markers(self, html: str, keywords: Optional[list[str]] = None,
-                               original_keywords: Optional[list[str]] = None) -> str:
+    def fix_and_enhance_markers(self, html: str, keywords: list[str] | None = None,
+                               original_keywords: list[str] | None = None) -> str:
         """Complete fix and enhancement of markers with keyword marking.
 
         Args:

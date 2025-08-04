@@ -148,7 +148,7 @@ class TestIndexCalculationV2Performance:
 
                             # Calculate statistics for this case
                             p50 = statistics.median(case_times)
-                            p95 = statistics.quantiles(case_times, n=20)[18] if len(case_times) >= 20 else max(case_times)  # noqa: E501
+                            p95 = statistics.quantiles(case_times, n=20)[18] if len(case_times) >= 20 else max(case_times)
 
                             print(f"\n{test_case['name']} - P50: {p50:.0f}ms, P95: {p95:.0f}ms")
 
@@ -180,8 +180,8 @@ class TestIndexCalculationV2Performance:
         queries = []
         for i in range(5):
             queries.append({
-                "resume": f"Python developer with {i+3} years experience in FastAPI, Django, Flask, and cloud technologies. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
-                "job_description": f"Looking for Python developer level {i+1} with extensive experience in web development frameworks and cloud computing. Must have strong skills in building enterprise-level applications, API design, and modern DevOps practices. Knowledge of containerization, orchestration, and cloud-native development is essential.",  # noqa: E501
+                "resume": f"Python developer with {i+3} years experience in FastAPI, Django, Flask, and cloud technologies. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
+                "job_description": f"Looking for Python developer level {i+1} with extensive experience in web development frameworks and cloud computing. Must have strong skills in building enterprise-level applications, API design, and modern DevOps practices. Knowledge of containerization, orchestration, and cloud-native development is essential.",
                 "keywords": ["Python", "FastAPI", f"Skill{i}"]
             })
 
@@ -216,8 +216,8 @@ class TestIndexCalculationV2Performance:
                                 # New query (cache miss)
                                 idx = random.randint(100, 200)  # noqa: S311
                                 query = {
-                                    "resume": f"New developer {idx} with extensive experience in software development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
-                                    "job_description": f"New position {idx} looking for experienced software developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
+                                    "resume": f"New developer {idx} with extensive experience in software development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
+                                    "job_description": f"New position {idx} looking for experienced software developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
                                     "keywords": [f"Skill{idx}"]
                                 }
                                 is_cache_hit = False
@@ -281,8 +281,8 @@ class TestIndexCalculationV2Performance:
                                 response = test_client.post(
                                     "/api/v1/index-calculation",
                                     json={
-                                        "resume": f"Developer {request_id} with extensive Python experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
-                                        "job_description": f"Position {request_id} looking for experienced Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
+                                        "resume": f"Developer {request_id} with extensive Python experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
+                                        "job_description": f"Position {request_id} looking for experienced Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
                                         "keywords": ["Python", f"Skill{request_id % 10}"]
                                     }
                                 )
@@ -395,8 +395,8 @@ class TestIndexCalculationV2Performance:
                             response = test_client.post(
                                 "/api/v1/index-calculation",
                                 json={
-                                    "resume": f"{content} - Version {i} with additional experience in modern development practices and cloud technologies",  # noqa: E501
-                                    "job_description": f"Job {i} looking for experienced developer with strong technical skills and expertise in modern frameworks. Must have knowledge of cloud computing, containerization, and enterprise application development practices.",  # noqa: E501
+                                    "resume": f"{content} - Version {i} with additional experience in modern development practices and cloud technologies",
+                                    "job_description": f"Job {i} looking for experienced developer with strong technical skills and expertise in modern frameworks. Must have knowledge of cloud computing, containerization, and enterprise application development practices.",
                                     "keywords": [f"Skill{j}" for j in range(i % 5 + 1)]
                                 }
                             )
@@ -465,8 +465,8 @@ class TestIndexCalculationV2Performance:
                                 response = test_client.post(
                                     "/api/v1/index-calculation",
                                     json={
-                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",  # noqa: E501
-                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",  # noqa: E501
+                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
+                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
                                         "keywords": [f"Keyword{i}"]
                                     }
                                 )
@@ -479,8 +479,8 @@ class TestIndexCalculationV2Performance:
                                 response = test_client.post(
                                     "/api/v1/index-calculation",
                                     json={
-                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",  # noqa: E501
-                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",  # noqa: E501
+                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
+                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
                                         "keywords": [f"Keyword{i}"]
                                     }
                                 )
@@ -496,8 +496,8 @@ class TestIndexCalculationV2Performance:
                                 response = test_client.post(
                                     "/api/v1/index-calculation",
                                     json={
-                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",  # noqa: E501
-                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",  # noqa: E501
+                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
+                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
                                         "keywords": [f"Keyword{i}"]
                                     }
                                 )
@@ -512,8 +512,8 @@ class TestIndexCalculationV2Performance:
                                 response = test_client.post(
                                     "/api/v1/index-calculation",
                                     json={
-                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",  # noqa: E501
-                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",  # noqa: E501
+                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
+                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
                                         "keywords": [f"Keyword{i}"]
                                     }
                                 )

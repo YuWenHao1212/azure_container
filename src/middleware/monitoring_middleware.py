@@ -7,7 +7,7 @@ import logging
 import time
 import uuid
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -59,7 +59,7 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                         "message": "Access denied",
                         "details": "Your request has been blocked for security reasons"
                     },
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(UTC).isoformat()
                 }
             )
 

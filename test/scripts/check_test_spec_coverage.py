@@ -15,7 +15,7 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 
 class TestSpecCoverageChecker:
@@ -28,7 +28,7 @@ class TestSpecCoverageChecker:
         self.test_id_pattern = re.compile(r'API-[A-Z]+-\d{3}-[A-Z]{2}')
         self.test_marker_pattern = re.compile(r'"""TEST:\s*(API-[A-Z]+-\d{3}-[A-Z]{2})')
 
-    def parse_test_spec(self) -> Dict[str, Dict]:
+    def parse_test_spec(self) -> dict[str, dict]:
         """解析 TEST_SPEC.md 文件，提取所有測試案例定義"""
         test_cases = {}
 
@@ -59,7 +59,7 @@ class TestSpecCoverageChecker:
 
         return test_cases
 
-    def scan_test_files(self) -> Dict[str, List[str]]:
+    def scan_test_files(self) -> dict[str, list[str]]:
         """掃描所有測試文件，找出已標記的測試案例"""
         marked_tests = defaultdict(list)
 
@@ -76,7 +76,7 @@ class TestSpecCoverageChecker:
 
         return marked_tests
 
-    def generate_coverage_report(self) -> Dict:
+    def generate_coverage_report(self) -> dict:
         """生成覆蓋率報告"""
         # 解析 TEST_SPEC
         all_test_cases = self.parse_test_spec()
@@ -126,7 +126,7 @@ class TestSpecCoverageChecker:
 
         return report
 
-    def generate_markdown_report(self, report: Dict) -> str:
+    def generate_markdown_report(self, report: dict) -> str:
         """生成 Markdown 格式的報告"""
         md_lines = []
 
@@ -174,7 +174,7 @@ class TestSpecCoverageChecker:
 
         return "\n".join(md_lines)
 
-    def run(self, output_dir: Optional[str] = None):
+    def run(self, output_dir: str | None = None):
         """執行覆蓋率檢查並生成報告"""
         # 生成報告
         report = self.generate_coverage_report()
@@ -221,7 +221,7 @@ def main():
     checker = TestSpecCoverageChecker(project_root)
     report = checker.run(output_dir)
 
-    # 如果覆蓋率低於閾值，返回非零退出碼
+    # 如果覆蓋率低於閾值，返回非零退出碼  # noqa: RUF003
     threshold = 80  # 80% 覆蓋率閾值
     if report['summary']['coverage_percentage'] < threshold:
         print(f"\n⚠️ 警告: 覆蓋率 ({report['summary']['coverage_percentage']}%) 低於閾值 ({threshold}%)")

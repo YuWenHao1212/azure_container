@@ -270,8 +270,8 @@ class TestIndexCalculationV2E2E:
                     response1 = test_client.post(
                         "/api/v1/index-calculation",
                         json={
-                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
-                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
+                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
+                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
                             "keywords": ["Python"]
                         }
                     )
@@ -286,8 +286,8 @@ class TestIndexCalculationV2E2E:
                     response2 = test_client.post(
                         "/api/v1/index-calculation",
                         json={
-                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
-                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
+                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
+                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
                             "keywords": ["Python"]
                         }
                     )
@@ -300,8 +300,8 @@ class TestIndexCalculationV2E2E:
                     response3 = test_client.post(
                         "/api/v1/index-calculation",
                         json={
-                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",  # noqa: E501
-                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
+                            "resume": "Python developer with extensive experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
+                            "job_description": "Need Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
                             "keywords": ["Python"]
                         }
                     )
@@ -332,8 +332,8 @@ class TestIndexCalculationV2E2E:
                 response4 = test_client.post(
                     "/api/v1/index-calculation",
                     json={
-                        "resume": "Java developer with extensive experience in enterprise application development, web services, and cloud computing. Strong background in building scalable Java applications, RESTful APIs, and microservices architecture. Proficient in Spring Framework, Docker, Kubernetes, and CI/CD pipelines.",  # noqa: E501
-                        "job_description": "Need Java developer with strong technical skills and problem-solving abilities. Must have expertise in enterprise Java development, cloud technologies, and modern application architecture. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
+                        "resume": "Java developer with extensive experience in enterprise application development, web services, and cloud computing. Strong background in building scalable Java applications, RESTful APIs, and microservices architecture. Proficient in Spring Framework, Docker, Kubernetes, and CI/CD pipelines.",
+                        "job_description": "Need Java developer with strong technical skills and problem-solving abilities. Must have expertise in enterprise Java development, cloud technologies, and modern application architecture. Knowledge of containerization, orchestration, and DevOps practices is essential.",
                         "keywords": ["Java"]
                     }
                 )
@@ -346,8 +346,8 @@ class TestIndexCalculationV2E2E:
                 response5 = test_client.post(
                     "/api/v1/index-calculation",
                     json={
-                        "resume": "Java developer with extensive experience in enterprise application development, web services, and cloud computing. Strong background in building scalable Java applications, RESTful APIs, and microservices architecture. Proficient in Spring Framework, Docker, Kubernetes, and CI/CD pipelines.",  # noqa: E501
-                        "job_description": "Need Java developer with strong technical skills and problem-solving abilities. Must have expertise in enterprise Java development, cloud technologies, and modern application architecture. Knowledge of containerization, orchestration, and DevOps practices is essential.",  # noqa: E501
+                        "resume": "Java developer with extensive experience in enterprise application development, web services, and cloud computing. Strong background in building scalable Java applications, RESTful APIs, and microservices architecture. Proficient in Spring Framework, Docker, Kubernetes, and CI/CD pipelines.",
+                        "job_description": "Need Java developer with strong technical skills and problem-solving abilities. Must have expertise in enterprise Java development, cloud technologies, and modern application architecture. Knowledge of containerization, orchestration, and DevOps practices is essential.",
                         "keywords": ["Java"]
                     }
                 )
@@ -439,8 +439,8 @@ class TestIndexCalculationV2E2E:
                         response2 = test_client.post(
                             "/api/v1/index-calculation",
                             json={
-                                "resume": "Test resume with extensive experience in software development, web technologies, and modern programming frameworks. Strong background in building scalable applications, RESTful APIs, and microservices architecture. Proficient in various programming languages and cloud technologies.",  # noqa: E501
-                                "job_description": "Test JD looking for experienced developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization and DevOps practices is essential.",  # noqa: E501
+                                "resume": "Test resume with extensive experience in software development, web technologies, and modern programming frameworks. Strong background in building scalable applications, RESTful APIs, and microservices architecture. Proficient in various programming languages and cloud technologies.",
+                                "job_description": "Test JD looking for experienced developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization and DevOps practices is essential.",
                                 "keywords": ["Test"]
                             }
                         )

@@ -9,7 +9,7 @@ Implements the hybrid approach with multiple selection strategies:
 4. Default value
 """
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 def get_llm_client(
     model: LLMModel = None,
-    api_name: Optional[str] = None
+    api_name: str | None = None
 ) -> LLMClient:
     """
     Get LLM client with dynamic model selection (Basic version).
