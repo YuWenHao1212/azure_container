@@ -49,6 +49,10 @@ def mock_monitoring_service():
 @pytest.fixture(autouse=True)
 def mock_openai_clients():
     """Automatically mock all Azure OpenAI clients for all tests."""
+    # Skip mocking for E2E tests
+    if os.environ.get('PYTEST_CURRENT_TEST_TYPE') == 'e2e':
+        yield
+        return
     # Mock all possible OpenAI client imports and services
     with (
         # Core OpenAI clients 
