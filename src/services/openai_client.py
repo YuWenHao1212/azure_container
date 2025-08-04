@@ -67,6 +67,13 @@ class AzureOpenAIClient:
             }
         )
 
+        # Register with resource manager
+        try:
+            from src.core.resource_manager import resource_manager
+            resource_manager.register_connection(self.client)
+        except ImportError:
+            pass  # Resource manager not available
+
         # 配置日誌
         self.logger = logger
         self.logger.info(f"Initialized AzureOpenAI client for deployment: {self.deployment_id}")  # 指數退避: 1s, 2s, 4s
