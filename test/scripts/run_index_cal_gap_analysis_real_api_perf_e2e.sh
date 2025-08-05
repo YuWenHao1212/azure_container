@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 # Setup logging - will be set with absolute path in main()
 LOG_DIR=""
 LOG_FILE=""
+TIMESTAMP=""
 
 # Test tracking arrays
 PASSED_TESTS=()
@@ -652,7 +653,9 @@ main() {
     # Setup logging with absolute path
     LOG_DIR="$PROJECT_ROOT/test/logs"
     mkdir -p "$LOG_DIR"
-    LOG_FILE="$LOG_DIR/real_api_perf_e2e_$(date +%Y%m%d_%H%M%S).log"
+    # Generate timestamp once for consistent naming
+    TIMESTAMP=$(date +%Y%m%d_%H%M)
+    LOG_FILE="$LOG_DIR/test_suite_real_api_perf_e2e_${TIMESTAMP}.log"
     
     # Initialize logging
     log_message "=== Real API Test Suite Started ==="
@@ -741,7 +744,7 @@ main() {
 
 # Function to create consolidated performance JSON
 create_consolidated_performance_json() {
-    local consolidated_file="$LOG_DIR/performance_summary_$(date +%Y%m%d_%H%M%S).json"
+    local consolidated_file="$LOG_DIR/test_suite_real_api_perf_e2e_${TIMESTAMP}_summary.json"
     
     echo '{' > "$consolidated_file"
     echo '  "test_suite": "Index Cal and Gap Analysis V2 Performance",' >> "$consolidated_file"

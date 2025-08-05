@@ -16,7 +16,9 @@ NC='\033[0m' # No Color
 # Setup logging
 LOG_DIR="test/logs"
 mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/unit_integration_$(date +%Y%m%d_%H%M%S).log"
+# Generate timestamp once for consistent naming
+TIMESTAMP=$(date +%Y%m%d_%H%M)
+LOG_FILE="$LOG_DIR/test_suite_unit_integration_${TIMESTAMP}.log"
 
 # Command line options
 STAGE_EXEC=""
@@ -66,11 +68,15 @@ fi
 
 # Function to manage log files (keep only latest 6)
 manage_log_files() {
-    local log_files=($(ls -t "$LOG_DIR"/unit_integration_*.log 2>/dev/null || true))
+    # Clean up old main logs
+    local log_files=($(ls -t "$LOG_DIR"/test_suite_unit_integration_*.log 2>/dev/null | grep -v "_batch" || true))
     if [ ${#log_files[@]} -gt 6 ]; then
         for ((i=6; i<${#log_files[@]}; i++)); do
             rm -f "${log_files[i]}"
-            echo "Removed old log: ${log_files[i]}" >> "$LOG_FILE"
+            # Also remove corresponding batch log if exists
+            local batch_log="${log_files[i]%.log}_batch.log"
+            [ -f "$batch_log" ] && rm -f "$batch_log"
+            echo "Removed old logs: ${log_files[i]}" >> "$LOG_FILE"
         done
     fi
 }
@@ -305,7 +311,7 @@ run_integration_tests() {
     
     # Run integration tests as a batch for efficiency
     local test_start=$(date +%s)
-    local test_output_file="${LOG_DIR}/integration_tests_batch_$(date +%Y%m%d_%H%M%S).log"
+    local test_output_file="${LOG_DIR}/test_suite_unit_integration_${TIMESTAMP}_batch.log"
     
     echo -e "${BLUE}Running all integration tests in batch...${NC}"
     
