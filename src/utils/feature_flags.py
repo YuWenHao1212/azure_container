@@ -31,7 +31,7 @@ class FeatureFlags:
     MAX_RETRY_DELAY_SECONDS = int(os.getenv("MAX_RETRY_DELAY_SECONDS", "20"))
 
     # Partial results support
-    ENABLE_PARTIAL_RESULTS = os.getenv("ENABLE_PARTIAL_RESULTS", "true").lower() == "true"
+    ENABLE_PARTIAL_RESULTS = os.getenv("ENABLE_PARTIAL_RESULTS", "false").lower() == "true"
 
     @classmethod
     def should_use_v2(cls, user_id: Optional[str] = None) -> bool:

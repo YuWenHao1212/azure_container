@@ -25,6 +25,13 @@ class AdaptiveRetryStrategy:
         """Initialize adaptive retry strategy with error-specific configurations."""
         # Error type specific retry configurations
         self.retry_configs = {
+            "validation": {
+                "max_attempts": 1,      # No retry for validation errors
+                "base_delay": 0,
+                "max_delay": 0,
+                "backoff": "linear",
+                "jitter": False
+            },
             "empty_fields": {
                 "max_attempts": 2,
                 "base_delay": 1.0,
@@ -33,25 +40,25 @@ class AdaptiveRetryStrategy:
                 "jitter": True
             },
             "timeout": {
-                "max_attempts": 3,
-                "base_delay": 0.5,
-                "max_delay": 5.0,
-                "backoff": "exponential",
-                "jitter": True
+                "max_attempts": 2,      # Initial + 1 retry for timeout errors
+                "base_delay": 0.5,      # 0.5s delay as per requirement
+                "max_delay": 0.5,       # Fixed delay
+                "backoff": "linear",    # No backoff needed for single retry
+                "jitter": False         # No jitter for quick retry
             },
             "rate_limit": {
                 "max_attempts": 3,
-                "base_delay": 5.0,
-                "max_delay": 30.0,
+                "base_delay": 3.0,      # 3s → 6s → 12s as per requirement
+                "max_delay": 20.0,      # Max 20s wait time limit
                 "backoff": "exponential",
                 "jitter": False
             },
             "general": {
-                "max_attempts": 3,
-                "base_delay": 1.0,
-                "max_delay": 10.0,
-                "backoff": "exponential",
-                "jitter": True
+                "max_attempts": 2,      # 2 retries for general errors
+                "base_delay": 1.0,      # 1s delay
+                "max_delay": 1.0,       # Linear backoff with 1s
+                "backoff": "linear",    # Linear backoff as per requirement
+                "jitter": False         # No jitter for predictable behavior
             }
         }
 
@@ -65,7 +72,8 @@ class AdaptiveRetryStrategy:
         self,
         func: Callable,
         error_classifier: Optional[Callable] = None,
-        on_retry: Optional[Callable] = None
+        on_retry: Optional[Callable] = None,
+        get_retry_after: Optional[Callable] = None
     ) -> Any:
         """
         Execute function with adaptive retry logic.
@@ -74,6 +82,7 @@ class AdaptiveRetryStrategy:
             func: Async function to execute
             error_classifier: Function to classify errors (returns error type string)
             on_retry: Optional callback function called on each retry
+            get_retry_after: Optional function to extract retry-after value from error
 
         Returns:
             Result of successful function execution
@@ -120,6 +129,18 @@ class AdaptiveRetryStrategy:
 
                 # Calculate delay for this retry
                 delay = self._calculate_delay(config, attempt)
+                
+                # Check for Retry-After header (for rate limit errors)
+                if error_type == "rate_limit" and get_retry_after:
+                    try:
+                        retry_after = get_retry_after(e)
+                        if retry_after and retry_after > 0:
+                            # Use Retry-After value but cap at max_delay
+                            delay = min(float(retry_after), config["max_delay"])
+                            logger.info(f"Using Retry-After header value: {delay}s (capped at {config['max_delay']}s)")
+                    except Exception:
+                        # Fallback to calculated delay
+                        pass
 
                 # Update retry statistics
                 self.retry_stats[error_type]["attempts"] += 1
@@ -185,6 +206,12 @@ class AdaptiveRetryStrategy:
         Returns:
             Error type string
         """
+        # Check error type first
+        if isinstance(error, ValueError):
+            return "validation"
+        elif isinstance(error, asyncio.TimeoutError):
+            return "timeout"
+            
         error_msg = str(error).lower()
 
         # Check for specific error patterns

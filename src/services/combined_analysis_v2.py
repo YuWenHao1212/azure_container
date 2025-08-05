@@ -198,7 +198,8 @@ class CombinedAnalysisServiceV2(BaseService):
                     job_description=job_description,
                     keywords=keywords
                 ),
-                error_classifier=self._classify_index_error
+                error_classifier=self._classify_index_error,
+                get_retry_after=self._get_retry_after_from_error
             )
         else:
             # Direct call without retry
@@ -221,7 +222,8 @@ class CombinedAnalysisServiceV2(BaseService):
                     language=language,
                     options=analysis_options
                 ),
-                error_classifier=self._classify_gap_error
+                error_classifier=self._classify_gap_error,
+                get_retry_after=self._get_retry_after_from_error
             )
         else:
             gap_result = await self.gap_service.analyze_with_context(
@@ -329,9 +331,15 @@ class CombinedAnalysisServiceV2(BaseService):
 
     def _classify_index_error(self, error: Exception) -> str:
         """Classify index calculation errors for adaptive retry."""
+        # Check error type first
+        if isinstance(error, ValueError):
+            return "validation"
+        elif isinstance(error, asyncio.TimeoutError):
+            return "timeout"
+        
         error_msg = str(error).lower()
-
-        if "embedding" in error_msg or "timeout" in error_msg:
+        
+        if "embedding" in error_msg or "timeout" in error_msg or "timed out" in error_msg:
             return "timeout"
         elif "rate" in error_msg and "limit" in error_msg:
             return "rate_limit"
@@ -342,16 +350,50 @@ class CombinedAnalysisServiceV2(BaseService):
 
     def _classify_gap_error(self, error: Exception) -> str:
         """Classify gap analysis errors for adaptive retry."""
+        # Check error type first
+        if isinstance(error, ValueError):
+            return "validation"
+        elif isinstance(error, asyncio.TimeoutError):
+            return "timeout"
+            
         error_msg = str(error).lower()
 
         if "empty" in error_msg or "missing" in error_msg:
             return "empty_fields"
-        elif "timeout" in error_msg:
+        elif "timeout" in error_msg or "timed out" in error_msg:
             return "timeout"
         elif "rate" in error_msg and "limit" in error_msg:
             return "rate_limit"
         else:
             return "general"
+
+    def _get_retry_after_from_error(self, error: Exception) -> Optional[int]:
+        """
+        Extract Retry-After value from error (Azure OpenAI rate limit errors).
+        
+        Args:
+            error: Exception that may contain retry-after information
+            
+        Returns:
+            Retry-after value in seconds, or None if not found
+        """
+        # Check if error has response attribute (from OpenAI SDK)
+        if hasattr(error, 'response') and hasattr(error.response, 'headers'):
+            retry_after = error.response.headers.get('Retry-After')
+            if retry_after:
+                try:
+                    return int(retry_after)
+                except ValueError:
+                    logger.warning(f"Invalid Retry-After header value: {retry_after}")
+        
+        # Check error message for retry-after information
+        error_msg = str(error)
+        import re
+        match = re.search(r'retry[- ]after[:\s]+(\d+)', error_msg, re.IGNORECASE)
+        if match:
+            return int(match.group(1))
+            
+        return None
 
     async def _handle_partial_failure(
         self,

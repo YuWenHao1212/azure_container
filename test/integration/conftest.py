@@ -320,6 +320,12 @@ def mock_all_external_services(comprehensive_mock_services):
         # Only patch services that definitely exist at module level
         patch('src.services.resource_pool_manager.ResourcePoolManager', return_value=services["resource_pool"]),
         
+        # Mock the embedding client to return our mock
+        patch('src.services.embedding_client.get_azure_embedding_client', return_value=services["embedding"]),
+        
+        # Also mock the class directly in case it's imported directly
+        patch('src.services.embedding_client.AzureEmbeddingClient', return_value=services["embedding"]),
+        
         # Low-level client creation prevention - these are the most important
         patch('openai.AsyncAzureOpenAI', side_effect=RuntimeError("Direct OpenAI client instantiation blocked")),
         patch('openai.AzureOpenAI', side_effect=RuntimeError("Direct OpenAI client instantiation blocked"))

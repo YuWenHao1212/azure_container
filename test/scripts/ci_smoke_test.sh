@@ -17,6 +17,7 @@ API_KEY="${CONTAINER_APP_API_KEY}"
 # Performance SLAs
 KEYWORD_SLA=4000  # ms
 INDEX_CALC_SLA=2000  # ms
+INDEX_CAL_GAP_ANALYSIS_SLA=20000  # ms (20 seconds for combined analysis)
 
 echo -e "${BLUE}=== CI/CD Smoke Test ===${NC}"
 echo "API URL: $API_URL"
@@ -95,6 +96,18 @@ test_endpoint \
         "keywords": ["Python", "FastAPI", "PostgreSQL", "Docker", "Azure", "API", "microservices", "async programming"]
     }' \
     $INDEX_CALC_SLA
+
+# Test 3: Index Cal and Gap Analysis (新的統一端點 - P50 效能測試)
+test_endpoint \
+    "Index Cal and Gap Analysis V2" \
+    "/api/v1/index-cal-and-gap-analysis" \
+    '{
+        "resume": "Professional Summary: Experienced software engineer with 5 years of expertise in Python development and API design. Strong background in FastAPI, Django, and cloud technologies. Proven track record of building scalable microservices and RESTful APIs. Skills: Python, FastAPI, Django, PostgreSQL, MongoDB, Docker, Kubernetes, AWS, Azure, Git, CI/CD, Agile methodologies. Experience: Senior Python Developer at Tech Corp (2020-Present): Led development of microservices architecture using FastAPI. Implemented async programming patterns for high-performance APIs. Deployed applications on Azure cloud platform.",
+        "job_description": "We are seeking a Python developer with FastAPI experience to build our next-generation API platform. Requirements: 3+ years Python experience, FastAPI framework knowledge, PostgreSQL database skills, Docker containerization, Azure cloud deployment experience.",
+        "keywords": ["Python", "FastAPI", "PostgreSQL", "Docker", "Azure", "API", "microservices", "async programming"],
+        "language": "en"
+    }' \
+    $INDEX_CAL_GAP_ANALYSIS_SLA
 
 # Summary
 echo -e "${BLUE}=== Test Summary ===${NC}"
