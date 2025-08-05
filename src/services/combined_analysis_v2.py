@@ -299,7 +299,7 @@ class CombinedAnalysisServiceV2(BaseService):
     async def _create_embedding(self, client: Any, text: str) -> list[float]:
         """
         Create embedding using the provided text.
-        
+
         Args:
             client: OpenAI client from resource pool (not used for embeddings)
             text: Text to embed
@@ -336,9 +336,9 @@ class CombinedAnalysisServiceV2(BaseService):
             return "validation"
         elif isinstance(error, asyncio.TimeoutError):
             return "timeout"
-        
+
         error_msg = str(error).lower()
-        
+
         if "embedding" in error_msg or "timeout" in error_msg or "timed out" in error_msg:
             return "timeout"
         elif "rate" in error_msg and "limit" in error_msg:
@@ -355,7 +355,7 @@ class CombinedAnalysisServiceV2(BaseService):
             return "validation"
         elif isinstance(error, asyncio.TimeoutError):
             return "timeout"
-            
+
         error_msg = str(error).lower()
 
         if "empty" in error_msg or "missing" in error_msg:
@@ -370,10 +370,10 @@ class CombinedAnalysisServiceV2(BaseService):
     def _get_retry_after_from_error(self, error: Exception) -> Optional[int]:
         """
         Extract Retry-After value from error (Azure OpenAI rate limit errors).
-        
+
         Args:
             error: Exception that may contain retry-after information
-            
+
         Returns:
             Retry-after value in seconds, or None if not found
         """
@@ -385,14 +385,14 @@ class CombinedAnalysisServiceV2(BaseService):
                     return int(retry_after)
                 except ValueError:
                     logger.warning(f"Invalid Retry-After header value: {retry_after}")
-        
+
         # Check error message for retry-after information
         error_msg = str(error)
         import re
         match = re.search(r'retry[- ]after[:\s]+(\d+)', error_msg, re.IGNORECASE)
         if match:
             return int(match.group(1))
-            
+
         return None
 
     async def _handle_partial_failure(
@@ -513,13 +513,13 @@ class CombinedAnalysisServiceV2(BaseService):
     async def validate_input(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Validate input data for combined analysis.
-        
+
         Args:
             data: Input data dictionary
-            
+
         Returns:
             Validated data dictionary
-            
+
         Raises:
             ValueError: If validation fails
         """
@@ -558,10 +558,10 @@ class CombinedAnalysisServiceV2(BaseService):
     async def process(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Process the main business logic for combined analysis.
-        
+
         Args:
             data: Validated input data
-            
+
         Returns:
             Analysis results dictionary
         """

@@ -184,7 +184,7 @@ def _create_client(model: str) -> LLMClient:
             api_key = os.getenv("AZURE_OPENAI_API_KEY")
 
             if not endpoint or not api_key:
-                raise ValueError("Missing Azure OpenAI credentials")
+                raise ValueError("Missing Azure OpenAI credentials") from None
 
             return AzureOpenAIClient(
                 endpoint=endpoint,

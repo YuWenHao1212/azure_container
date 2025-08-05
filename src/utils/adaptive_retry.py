@@ -129,7 +129,7 @@ class AdaptiveRetryStrategy:
 
                 # Calculate delay for this retry
                 delay = self._calculate_delay(config, attempt)
-                
+
                 # Check for Retry-After header (for rate limit errors)
                 if error_type == "rate_limit" and get_retry_after:
                     try:
@@ -140,7 +140,7 @@ class AdaptiveRetryStrategy:
                             logger.info(f"Using Retry-After header value: {delay}s (capped at {config['max_delay']}s)")
                     except Exception:
                         # Fallback to calculated delay
-                        pass
+                        logger.debug("Failed to get retry-after value, using calculated delay")
 
                 # Update retry statistics
                 self.retry_stats[error_type]["attempts"] += 1
@@ -211,7 +211,7 @@ class AdaptiveRetryStrategy:
             return "validation"
         elif isinstance(error, asyncio.TimeoutError):
             return "timeout"
-            
+
         error_msg = str(error).lower()
 
         # Check for specific error patterns

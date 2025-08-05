@@ -389,7 +389,7 @@ Focus on the identified gaps while acknowledging the existing strengths.
             gaps_list = base_result.get("gaps", [])
             improvements_list = base_result.get("improvements", [])
             assessment = base_result.get("assessment", "")
-            
+
             # Convert lists to HTML ordered lists
             def list_to_html_ol(items):
                 if not items or not isinstance(items, list):
