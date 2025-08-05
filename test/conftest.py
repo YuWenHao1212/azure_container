@@ -63,6 +63,9 @@ def mock_openai_clients():
         # Service-level mocks
         patch('src.services.keyword_extraction.get_keyword_extraction_service') as mock_keyword_service,
         
+        # LLM Factory for Gap Analysis V2
+        patch('src.services.llm_factory.get_llm_client') as mock_llm_factory,
+        
         # Resource pool manager
         patch('src.services.resource_pool_manager.ResourcePoolManager') as mock_resource_pool,
         
@@ -120,6 +123,19 @@ def mock_openai_clients():
         })
         mock_keyword_instance.close = AsyncMock()
         mock_keyword_service.return_value = mock_keyword_instance
+        
+        # Configure LLM Factory mock for Gap Analysis V2
+        mock_llm_client = AsyncMock()
+        mock_llm_client.chat_completion = AsyncMock(return_value={
+            "choices": [{
+                "message": {
+                    "content": '{"CoreStrengths": "<ol><li>Strong technical skills</li></ol>", "KeyGaps": "<ol><li>Limited cloud experience</li></ol>", "QuickImprovements": "<ol><li>Get AWS certification</li></ol>", "OverallAssessment": "<p>Good technical foundation with room for cloud skills improvement.</p>", "SkillSearchQueries": ["AWS", "Cloud Computing"]}'
+                }
+            }],
+            "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150}
+        })
+        mock_llm_client.close = AsyncMock()
+        mock_llm_factory.return_value = mock_llm_client
         
         # Configure resource pool manager mock
         mock_pool_instance = Mock()
