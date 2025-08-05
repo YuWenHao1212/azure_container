@@ -58,9 +58,9 @@ if [ "$SHOW_HELP" = true ]; then
     echo "  --help, -h                  Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                         # Run all 34 tests (20 unit + 14 integration)"
+    echo "  $0                         # Run all 37 tests (20 unit + 17 integration)"
     echo "  $0 --stage unit           # Run only unit tests (20 tests)"
-    echo "  $0 --stage integration    # Run only integration tests (14 tests)"
+    echo "  $0 --stage integration    # Run only integration tests (17 tests)"
     echo ""
     echo "Note: These tests use mocks and do not require Azure OpenAI API access."
     exit 0
@@ -106,7 +106,7 @@ log_environment_info() {
     log_message "Test Files:"
     log_message "  - Unit Tests: test/unit/test_gap_analysis_v2.py"
     log_message "  - Integration Tests: test/integration/test_gap_analysis_v2_integration_complete.py"
-    log_message "Total Tests: 34 (20 Unit + 14 Integration)"
+    log_message "Total Tests: 37 (20 Unit + 17 Integration)"
     log_message "Mock Services: Enabled (No real API calls)"
     log_message "================================"
 }
@@ -302,9 +302,9 @@ run_unit_tests() {
     done
 }
 
-# Function to run integration tests (14 tests)
+# Function to run integration tests (17 tests)
 run_integration_tests() {
-    echo -e "${BLUE}Running Integration Tests (14 tests)${NC}"
+    echo -e "${BLUE}Running Integration Tests (17 tests)${NC}"
     echo "Testing file: test/integration/test_gap_analysis_v2_integration_complete.py"
     echo "Note: Using mocked services (no real API calls)"
     echo
@@ -401,7 +401,7 @@ generate_report() {
     echo "==============================================="
     echo "執行日期: $(date '+%Y-%m-%d %H:%M:%S')"
     echo "測試規格: test-spec-index-cal-gap-analysis.md v1.0.1"
-    echo "測試總數: 34 個測試案例 (20 Unit + 14 Integration)"
+    echo "測試總數: 37 個測試案例 (20 Unit + 17 Integration)"
     echo "執行環境: $(python --version 2>&1 | cut -d' ' -f2)"
     echo "總執行時間: ${total_duration}s"
     echo "日誌檔案: $(basename "$LOG_FILE")"
@@ -427,7 +427,7 @@ generate_report() {
     echo "單元測試 (20個測試):"
     echo "  - test/unit/test_gap_analysis_v2.py"
     echo ""
-    echo "整合測試 (14個測試):"
+    echo "整合測試 (17個測試):"
     echo "  - test/integration/test_gap_analysis_v2_integration.py"
     echo "  - test/integration/test_gap_analysis_v2_integration_complete.py" 
     echo "  - test/integration/test_gap_analysis_v2_integration_edge_cases.py"
@@ -435,7 +435,7 @@ generate_report() {
     
     echo "測試摘要"
     echo "--------"
-    echo "總測試數: $total_tests / 34"
+    echo "總測試數: $total_tests / 37"
     echo "通過: ${#PASSED_TESTS[@]} (${pass_rate}%)"
     echo "失敗: ${#FAILED_TESTS[@]}"
     echo "跳過: ${#SKIPPED_TESTS[@]}"
@@ -458,7 +458,7 @@ generate_report() {
     fi
     
     echo "單元測試 (Unit): ${#UNIT_PASSED[@]}/${unit_total} (${unit_rate}%) - 規格要求: 20"
-    echo "整合測試 (Integration): ${#INTEGRATION_PASSED[@]}/${integration_total} (${integration_rate}%) - 規格要求: 14"
+    echo "整合測試 (Integration): ${#INTEGRATION_PASSED[@]}/${integration_total} (${integration_rate}%) - 規格要求: 17"
     echo
     
     # Priority statistics
@@ -517,7 +517,7 @@ generate_report() {
     
     # Success celebration or failure summary
     if [ ${#FAILED_TESTS[@]} -eq 0 ]; then
-        echo "🎉 ${GREEN}所有 34 個 Unit & Integration 測試全部通過！${NC}"
+        echo "🎉 ${GREEN}所有 37 個 Unit & Integration 測試全部通過！${NC}"
         echo "   所有測試都使用 mock services，無需 Azure OpenAI API"
     else
         echo "❌ ${RED}${#FAILED_TESTS[@]} 個測試失敗，總成功率: ${pass_rate}%${NC}"

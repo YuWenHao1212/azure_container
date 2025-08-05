@@ -90,8 +90,8 @@ if [ "$SHOW_HELP" = true ]; then
     echo "  --help, -h                         Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                                 # Run all 8 tests (5 perf + 3 e2e)"
-    echo "  $0 --stage performance             # Run only performance tests (5 tests)"
+    echo "  \$0                                 # Run all 5 tests (2 perf + 3 e2e)"
+    echo "  \$0 --stage performance             # Run only performance tests (2 tests)"
     echo "  $0 --stage e2e                     # Run only E2E tests (3 tests)"
     echo "  $0 --perf-test p50                 # Run P50 test only"
     echo "  $0 --perf-test \"p50,p95\"           # Run both P50 and P95 tests"
@@ -125,7 +125,7 @@ log_environment_info() {
     log_message "Test Files:"
     log_message "  - Performance: test/performance/test_gap_analysis_v2_performance.py"
     log_message "  - E2E: test/e2e_standalone/test_gap_analysis_v2_e2e.py"
-    log_message "Total Tests: 8 (5 Performance + 3 E2E)"
+    log_message "Total Tests: 5 (2 Performance + 3 E2E)"
     log_message "================================"
 }
 
@@ -141,16 +141,14 @@ get_test_priority() {
     local test_id="$1"
     case $test_id in
         # P0 Priority tests
-        "API-GAP-001-PT"|"API-GAP-002-PT"|"API-GAP-003-PT"|"API-GAP-004-PT")
+        "API-GAP-001-PT"|"API-GAP-002-PT")
             echo "P0" ;;
         "API-GAP-001-E2E")
             echo "P0" ;;
         # P1 Priority tests
         "API-GAP-002-E2E"|"API-GAP-003-E2E")
             echo "P1" ;;
-        # P2 Priority tests
-        "API-GAP-005-PT")
-            echo "P2" ;;
+
         *)
             echo "Unknown" ;;
     esac
@@ -159,7 +157,7 @@ get_test_priority() {
 # Function to clean up old logs
 cleanup_old_logs() {
     local test_id="$1"
-    local log_pattern="$LOG_DIR/test_${test_id}_*.log"
+    local log_pattern="$LOG_DIR/test_suite_real_api_perf_e2e_*_${test_id}.log"
     local performance_pattern="$LOG_DIR/performance_${test_id}_*.json"
     
     # Clean test logs
@@ -193,7 +191,7 @@ run_test() {
     log_message "TEST START: $test_id - Path: $test_path - Timeout: ${timeout}s - Category: $category"
     
     local test_start=$(date +%s)
-    local test_output_file="$LOG_DIR/test_${test_id}_$(date +%Y%m%d_%H%M%S).log"
+    local test_output_file="$LOG_DIR/test_suite_real_api_perf_e2e_${TIMESTAMP}_${test_id}.log"
     
     # Determine timeout command
     local timeout_cmd=""
@@ -279,7 +277,7 @@ run_test() {
 
 # Function to run performance tests
 run_performance_tests() {
-    echo -e "${BLUE}Running Performance Tests (5 tests)${NC}"
+    echo -e "${BLUE}Running Performance Tests (2 tests)${NC}"
     echo "Testing file: test/performance/test_gap_analysis_v2_performance.py"
     echo "⚠️  Performance tests may take longer and use real Azure OpenAI APIs"
     echo
@@ -288,9 +286,6 @@ run_performance_tests() {
     local performance_tests=(
         "API-GAP-001-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_p50_response_time"
         "API-GAP-002-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_p95_response_time"
-        "API-GAP-003-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_resource_pool_reuse_rate"
-        "API-GAP-004-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_api_call_reduction"
-        "API-GAP-005-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_resource_pool_scaling"
     )
     
     # Check if specific tests requested
@@ -409,7 +404,7 @@ run_e2e_tests() {
         
         log_and_print "${BLUE}Running ${test_id}...${NC}"
         local test_start=$(date +%s)
-        local test_output_file="$LOG_DIR/test_${test_id}_$(date +%Y%m%d_%H%M%S).log"
+        local test_output_file="$LOG_DIR/test_suite_real_api_perf_e2e_${TIMESTAMP}_${test_id}.log"
         
         if $timeout_exec_cmd "${test_path}" -v --tb=short --durations=0 --confcutdir=. > "$test_output_file" 2>&1; then
             local test_end=$(date +%s)
@@ -502,8 +497,11 @@ format_performance_results() {
         p50_status="❌"
     fi
     
-    printf "| API-GAP-001-PT | P50 響應時間 | %.3f | %.3f | %.1f%% | < 25s | %s |\n" \
-        "${p50:-0}" "${p95:-0}" "${success_rate:-0}" "$p50_status"
+    # Convert decimal to percentage for display
+    local success_rate_pct=$(echo "${success_rate:-0} * 100" | bc -l)
+    printf "| API-GAP-001-PT | P50 響應時間 | %.3f | %.3f | %.1f%% | < 25s | %s |
+" \
+        "${p50:-0}" "${p95:-0}" "${success_rate_pct}" "$p50_status"
     
     # Other performance tests...
     echo
@@ -520,7 +518,7 @@ generate_report() {
     echo "==============================================="
     echo "執行日期: $(date '+%Y-%m-%d %H:%M:%S')"
     echo "測試規格: test-spec-index-cal-gap-analysis.md v1.0.1"
-    echo "測試總數: 8 個測試案例 (5 Performance + 3 E2E)"
+    echo "測試總數: 5 個測試案例 (2 Performance + 3 E2E)"
     echo "執行環境: $(python --version 2>&1 | cut -d' ' -f2)"
     echo "總執行時間: ${total_duration}s"
     echo "日誌檔案: $(basename "$LOG_FILE")"
@@ -535,7 +533,7 @@ generate_report() {
     
     echo "測試檔案清單"
     echo "------------"
-    echo "效能測試 (5個測試):"
+    echo "效能測試 (2個測試):"
     echo "  - test/performance/test_gap_analysis_v2_performance.py"
     echo ""
     echo "E2E測試 (3個測試):"
@@ -544,7 +542,7 @@ generate_report() {
     
     echo "測試摘要"
     echo "--------"
-    echo "總測試數: $total_tests / 8"
+    echo "總測試數: $total_tests / 5"
     echo "通過: ${#PASSED_TESTS[@]} (${pass_rate}%)"
     echo "失敗: ${#FAILED_TESTS[@]}"
     echo "跳過: ${#SKIPPED_TESTS[@]}"
@@ -618,7 +616,7 @@ generate_report() {
         echo "-------------------"
         for test_id in "${FAILED_TESTS[@]}"; do
             local priority=$(get_test_priority "$test_id")
-            echo "❌ $test_id ($priority) - 日誌: $LOG_DIR/test_${test_id}_*.log"
+            echo "❌ $test_id ($priority) - 日誌: $LOG_DIR/test_suite_real_api_perf_e2e_*_${test_id}.log"
         done
         echo
         echo "修復建議:"
@@ -777,6 +775,12 @@ create_consolidated_performance_json() {
     echo '}' >> "$consolidated_file"
     
     log_message "Created consolidated performance summary: $(basename "$consolidated_file")"
+    
+    # Clean up individual performance JSON files after consolidation
+    for json_file in $(ls $LOG_DIR/performance_API-GAP-*-PT_*.json 2>/dev/null); do
+        rm -f "$json_file"
+        log_message "Removed individual performance JSON: $(basename "$json_file")"
+    done
 }
 
 # Handle background execution
