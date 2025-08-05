@@ -1,15 +1,16 @@
 # Index Calculation and Gap Analysis API 測試規格文檔
 
 ## 文檔資訊
-- **版本**: 1.0.4
+- **版本**: 1.0.5
 - **建立日期**: 2025-08-03
-- **最後更新**: 2025-08-04
+- **最後更新**: 2025-08-05
 - **維護者**: 測試團隊
-- **測試總數**: 42 個（原 50 個，移除 7 個基礎設施相關測試，再移除 1 個重複的 E2E 測試）
+- **測試總數**: 42 個（20 單元測試 + 17 整合測試 + 2 效能測試 + 3 E2E 測試）
 - **更新說明**: 
   - v1.0.2: 新增效能測試快速執行指南
   - v1.0.3: 更新效能測試實作（平行執行、P95 20個樣本）
   - v1.0.4: 移除 API-GAP-004-E2E（與 001 功能重複）
+  - v1.0.5: 效能測試重新分類 - 移除 3 個偽效能測試，移至整合測試 (PT: 5→2, IT: 14→17)
 
 ## 重要測試約束 ⚠️
 
@@ -44,9 +45,14 @@ API-GAP-[序號]-[類型]
 | 序號範圍 | 測試類型 | 數量 | 說明 |
 |----------|----------|------|------|
 | 001-020 | 單元測試(UT) | 20 | 服務層單元測試 |
-| 001-014 | 整合測試(IT) | 14 | API 端點整合測試 |
-| 001-005 | 效能測試(PT) | 5 | 效能和負載測試 |
+| 001-017 | 整合測試(IT) | 17 | API 端點整合測試 |
+| 001-002 | 效能測試(PT) | 2 | 真實 Azure 服務效能測試 |
 | 001-003 | 端對端測試(E2E) | 3 | 完整流程測試 |
+
+**重要變更說明**:
+- **效能測試重新分類**: API-GAP-003/004/005-PT 已移至整合測試 (API-GAP-015/017/016-IT)
+- **分類原因**: 這些測試驗證 Python 應用層行為（資源池、快取），而非 Azure 服務效能
+- **實際執行**: 效能測試現在只執行 2 個真實的 Azure OpenAI 效能測試
 
 ## 2. 測試案例總覽
 
@@ -441,7 +447,7 @@ API-GAP-[序號]-[類型]
   - Mock 服務需要準確追蹤調用計數
 - **原始編號**: 原為 API-GAP-004-PT
 
-### 2.3 效能測試 (5個，實際執行2個)
+### 2.3 效能測試 (2個，實際執行2個)
 
 #### API-GAP-001-PT: P50 響應時間測試
 - **名稱**: 中位數響應時間 < 20 秒驗證
@@ -593,69 +599,90 @@ for i in range(600):
 ### 4.1 前置條件
 - 環境變數配置正確（.env 檔案）
 - API 服務運行在 port 8000
-- Azure OpenAI 服務可用
+- Azure OpenAI 服務可用（效能測試和 E2E 測試需要）
 
-### 4.2 測試指令
+### 4.2 測試腳本總覽
 
-#### 基本測試執行
+本專案提供兩個主要測試腳本：
+
+1. **Mock 測試腳本** (`run_index_cal_gap_analysis_unit_integration.sh`)
+   - 執行 **單元測試 + 整合測試** (37 個測試: 20 UT + 17 IT)
+   - 使用 **Mock 服務**，不需要 Azure OpenAI API
+   - 執行時間：< 20 秒
+   - 適合開發過程中的快速驗證
+
+2. **真實 API 測試腳本** (`run_index_cal_gap_analysis_real_api_perf_e2e.sh`)
+   - 執行 **效能測試 + E2E 測試** (5 個測試: 2 PT + 3 E2E)
+   - 使用 **真實 Azure OpenAI API**，會產生費用
+   - 執行時間：< 90 秒
+   - 適合完整驗證和效能測試
+
+### 4.3 Mock 測試執行（推薦用於開發）
+
+#### 基本用法
 ```bash
-# 執行所有 Gap Analysis 測試
-pytest tests/test_gap_analysis/ -v
+# 執行所有 37 個 Mock 測試（20 UT + 17 IT）
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh
 
-# 執行特定類型測試
-pytest tests/unit/test_gap_analysis_unit.py -v
-pytest tests/integration/test_gap_analysis_integration.py -v
-pytest tests/performance/test_gap_analysis_performance.py -v
-pytest tests/e2e/test_gap_analysis_e2e.py -v
+# 只執行單元測試 (20 個)
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --stage unit
 
-# 執行特定測試案例
-pytest tests/unit/test_gap_analysis_unit.py::test_API_GAP_001_UT -v
+# 只執行整合測試 (17 個)
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --stage integration
+
+# 詳細輸出模式
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --verbose
 ```
 
-#### 使用測試腳本執行（推薦）
-```bash
-# 執行所有 42 個測試
-./test/scripts/run_gap_analysis_v2_tests.sh
+#### Mock 測試優勢
+- ✅ **無需 API 費用**：完全使用 Mock 服務
+- ✅ **執行快速**：所有測試在 20 秒內完成
+- ✅ **穩定結果**：不受網路或 API 限制影響
+- ✅ **開發友好**：適合 TDD 和快速迭代
 
-# 執行特定階段的測試
-./test/scripts/run_gap_analysis_v2_tests.sh --stage unit         # 20 個單元測試
-./test/scripts/run_gap_analysis_v2_tests.sh --stage integration  # 14 個整合測試
-./test/scripts/run_gap_analysis_v2_tests.sh --stage performance  # 5 個效能測試
-./test/scripts/run_gap_analysis_v2_tests.sh --stage e2e         # 3 個 E2E 測試
+### 4.4 真實 API 測試執行（用於完整驗證）
+
+#### 基本用法
+```bash
+# 執行所有 5 個真實 API 測試（2 PT + 3 E2E）
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh
+
+# 只執行效能測試 (2 個)
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --stage performance
+
+# 只執行 E2E 測試 (3 個)
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --stage e2e
+
+# 背景執行（長時間測試）
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --background
 ```
 
 #### 效能測試快速執行
 
-##### 執行單一效能測試
+##### 執行特定效能測試
 ```bash
 # P50 測試 (中位數響應時間)
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test p50
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test API-GAP-001-PT
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test p50
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test API-GAP-001-PT
 
-# P95 測試 (95百分位響應時間)
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test p95
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test API-GAP-002-PT
-```
+# P95 測試 (95百分位響應時間) 
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test p95
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test API-GAP-002-PT
 
-##### 同時執行 P50 和 P95
-```bash
-# 使用快捷方式
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test "p50,p95"
-
-# 使用完整測試 ID
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test "API-GAP-001-PT,API-GAP-002-PT"
+# 同時執行 P50 和 P95
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test "p50,p95"
 ```
 
 ##### 進階選項
 ```bash
 # 詳細輸出模式
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test "p50,p95" --verbose
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test "p50,p95" --verbose
 
-# 背景執行
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test "p50,p95" --background
+# 背景執行（推薦用於效能測試）
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test "p50,p95" --background
 
 # 查看背景執行狀態
-tail -f test/logs/gap_analysis_v2_*.log
+tail -f test/logs/test_suite_real_api_perf_e2e_*.log
 ```
 
 #### 效能測試注意事項
@@ -678,42 +705,43 @@ tail -f test/logs/gap_analysis_v2_*.log
    - API-GAP-004-PT: API 呼叫減少驗證（生產環境 40-50% 減少）
    - API-GAP-005-PT: 資源池擴展功能驗證
 
-### 4.3 測試腳本進階用法
+### 4.5 測試腳本進階用法
 
-#### 組合測試執行
+#### Mock 測試腳本進階用法
 ```bash
-# 執行單元測試和整合測試
-./test/scripts/run_gap_analysis_v2_tests.sh --stage "unit,integration"
+# 執行單元測試和整合測試（預設行為）
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh
 
-# 執行所有非效能測試
-./test/scripts/run_gap_analysis_v2_tests.sh --stage "unit,integration,e2e"
+# 詳細輸出模式
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --verbose
 
-# 執行特定效能測試組合
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test "p50,p95,API-GAP-003-PT"
+# 查看幫助資訊
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --help
 ```
 
-#### 除錯模式
+#### 真實 API 測試腳本進階用法
 ```bash
-# 詳細輸出模式（顯示測試執行細節）
-./test/scripts/run_gap_analysis_v2_tests.sh --verbose
+# 執行效能測試和 E2E 測試（預設行為）
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh
 
-# 失敗時停止（遇到第一個失敗就停止）
-./test/scripts/run_gap_analysis_v2_tests.sh --stop-on-failure
+# 背景執行所有測試
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --background
 
-# 顯示測試輸出（包含 print 語句）
-./test/scripts/run_gap_analysis_v2_tests.sh --show-output
+# 查看幫助資訊
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --help
 ```
 
-#### 背景執行與監控
+#### 除錯與監控
 ```bash
-# 背景執行完整測試套件
-./test/scripts/run_gap_analysis_v2_tests.sh --background
+# Mock 測試詳細輸出
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --verbose
 
-# 背景執行特定階段
-./test/scripts/run_gap_analysis_v2_tests.sh --stage performance --background
+# 真實 API 測試詳細輸出
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --verbose
 
-# 即時監控測試進度
-tail -f test/logs/gap_analysis_v2_*.log
+# 背景執行並監控
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --background
+tail -f test/logs/test_suite_real_api_perf_e2e_*.log
 
 # 查看最新測試結果
 ls -lt test/logs/*.log | head -10
@@ -724,55 +752,64 @@ ls -lt test/logs/*.log | head -10
 # 查看最新的效能測試結果
 cat test/logs/performance_API-GAP-001-PT_*.json | jq '.'
 
-# 比較不同時間的測試結果
-diff test/logs/performance_API-GAP-001-PT_20250804_*.json
+# 查看整合測試結果
+ls -la test/logs/test_suite_unit_integration_*.log
+
+# 查看真實 API 測試結果  
+ls -la test/logs/test_suite_real_api_perf_e2e_*.log
 
 # 統計測試執行時間趨勢
 grep "p50_time_s" test/logs/performance_API-GAP-001-PT_*.json
 ```
 
-### 4.4 效能測試最佳實踐
+### 4.6 測試執行最佳實踐
 
-#### 執行順序建議
+#### 推薦執行順序
 ```bash
-# 1. 先執行 P50 測試（收集基礎數據）
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test p50
+# 1. 開發階段：快速驗證（Mock 測試）
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh
 
-# 2. 立即執行 P95 測試（可重用 P50 數據）
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test p95
+# 2. 提交前：完整驗證（真實 API 測試）
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh
 
-# 3. 執行資源池測試（功能驗證）
-./test/scripts/run_gap_analysis_v2_tests.sh --perf-test "API-GAP-003-PT,API-GAP-004-PT,API-GAP-005-PT"
+# 3. 效能評估：只執行效能測試
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --stage performance
 ```
 
-#### 效能測試優化技巧
-1. **平行執行優勢**：
-   - P50 測試：5 個請求平行執行，從 100+ 秒降至 20-30 秒
-   - P95 測試：20 個請求平行執行，從 400+ 秒降至 80-90 秒
+#### 測試執行優化技巧
+1. **Mock 測試優勢**：
+   - 37 個測試在 20 秒內完成
+   - 無 API 費用和網路延遲
+   - 適合頻繁執行和 CI/CD
 
-2. **數據重用策略**：
-   - 連續執行 P50 和 P95 測試時，P95 會自動重用 P50 的數據
-   - 如果 P50 已有 5 個樣本，P95 只需額外收集 15 個
+2. **真實 API 測試注意事項**：
+   - P50 測試：5 個請求平行執行，約 20-30 秒
+   - P95 測試：20 个請求平行執行，約 80-90 秒
+   - 使用真實 Azure OpenAI API，會產生費用
 
-3. **資源池測試簡化**：
-   - API-GAP-003/004/005 已簡化為功能驗證
-   - 不執行大量請求，專注於驗證功能正常運作
+3. **資源池功能測試**：
+   - API-GAP-015/016/017-IT 已移至整合測試
+   - 使用 Mock 服務，快速驗證功能正確性
+   - 不再需要大量真實 API 調用
 
 #### 常見問題排除
 ```bash
-# 測試超時問題
-# 增加 pytest timeout（預設 120 秒）
-pytest test/performance/test_gap_analysis_v2_performance.py --timeout=300
+# Mock 測試失敗
+./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --verbose
+
+# 真實 API 測試超時
+# 檢查網路連接和 API 配額
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --verbose
 
 # API 速率限制問題
 # 減少併發數或增加請求間隔
 export MAX_WORKERS=3  # 預設為 5
 
-# 查看詳細錯誤
-pytest test/performance/test_gap_analysis_v2_performance.py -xvs --tb=short
+# 查看測試日誌
+tail -100 test/logs/test_suite_*.log
 ```
 
-### 4.5 測試標記
+### 4.7 測試標記
 ```python
 @pytest.mark.gap_analysis  # 所有 Gap Analysis 測試
 @pytest.mark.unit          # 單元測試

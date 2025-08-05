@@ -398,7 +398,7 @@ class TestGapAnalysisV2IntegrationComplete:
         # Mock partial failure scenario - embedding succeeds, LLM fails
         with (
             patch('src.services.embedding_client.get_azure_embedding_client') as mock_embedding,
-            patch('src.services.openai_client.get_azure_openai_client') as mock_llm,
+            patch('src.services.llm_factory.get_llm_client') as mock_llm,
             patch.dict(os.environ, {'ENABLE_PARTIAL_RESULTS': 'true'})
         ):
             # Configure successful embedding
