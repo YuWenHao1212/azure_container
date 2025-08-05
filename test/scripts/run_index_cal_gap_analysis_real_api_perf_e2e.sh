@@ -104,6 +104,21 @@ log_message() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
 
+# Function to log environment info
+log_environment_info() {
+    log_message "=== ENVIRONMENT INFORMATION ==="
+    log_message "Python Version: $(python --version 2>&1)"
+    log_message "Working Directory: $(pwd)"
+    log_message "Script Version: Real API Test Runner v1.0"
+    log_message "Test Specification: test-spec-index-cal-gap-analysis.md v1.0.1"
+    log_message "API Endpoint: ${AZURE_OPENAI_ENDPOINT:-Not Set}"
+    log_message "Test Files:"
+    log_message "  - Performance: test/performance/test_gap_analysis_v2_performance.py"
+    log_message "  - E2E: test/e2e_standalone/test_gap_analysis_v2_e2e.py"
+    log_message "Total Tests: 8 (5 Performance + 3 E2E)"
+    log_message "================================"
+}
+
 # Function to log and print
 log_and_print() {
     local message="$1"
@@ -633,6 +648,7 @@ main() {
     # Initialize logging
     log_message "=== Real API Test Suite Started ==="
     log_message "Testing Performance and E2E with real Azure OpenAI APIs"
+    log_environment_info
     
     echo -e "${BLUE}=== Real API Test Suite (Performance + E2E) ===${NC}"
     echo "Timestamp: $(date)"
@@ -685,6 +701,19 @@ main() {
     # Generate report
     generate_report
     
+    # Log test summary before completion
+    log_message "=== TEST SUMMARY ==="
+    log_message "Total Tests Run: $((${#PASSED_TESTS[@]} + ${#FAILED_TESTS[@]}))"
+    log_message "Passed: ${#PASSED_TESTS[@]} - ${PASSED_TESTS[*]}"
+    log_message "Failed: ${#FAILED_TESTS[@]} - ${FAILED_TESTS[*]}"
+    log_message "Performance Tests: ${#PERFORMANCE_PASSED[@]} passed, ${#PERFORMANCE_FAILED[@]} failed"
+    log_message "E2E Tests: ${#E2E_PASSED[@]} passed, ${#E2E_FAILED[@]} failed"
+    
+    # Create consolidated performance JSON if performance tests were run
+    if [ ${#PERFORMANCE_PASSED[@]} -gt 0 ] || [ ${#PERFORMANCE_FAILED[@]} -gt 0 ]; then
+        create_consolidated_performance_json
+    fi
+    
     log_message "=== Test Suite Completed ==="
     
     # Final result
@@ -695,6 +724,43 @@ main() {
         log_and_print "${RED}❌ ${#FAILED_TESTS[@]} tests failed. Check logs for details.${NC}"
         exit 1
     fi
+}
+
+# Function to create consolidated performance JSON
+create_consolidated_performance_json() {
+    local consolidated_file="$LOG_DIR/performance_summary_$(date +%Y%m%d_%H%M%S).json"
+    
+    echo '{' > "$consolidated_file"
+    echo '  "test_suite": "Index Cal and Gap Analysis V2 Performance",' >> "$consolidated_file"
+    echo '  "timestamp": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'",' >> "$consolidated_file"
+    echo '  "environment": {' >> "$consolidated_file"
+    echo '    "python_version": "'$(python --version 2>&1 | cut -d' ' -f2)'",' >> "$consolidated_file"
+    echo '    "api_endpoint": "'${AZURE_OPENAI_ENDPOINT:-Not Set}'"' >> "$consolidated_file"
+    echo '  },' >> "$consolidated_file"
+    echo '  "summary": {' >> "$consolidated_file"
+    echo '    "total_tests": '$(ls -1 $LOG_DIR/performance_API-GAP-*-PT_*.json 2>/dev/null | wc -l | xargs)',' >> "$consolidated_file"
+    echo '    "passed": '${#PERFORMANCE_PASSED[@]}',' >> "$consolidated_file"
+    echo '    "failed": '${#PERFORMANCE_FAILED[@]} >> "$consolidated_file"
+    echo '  },' >> "$consolidated_file"
+    echo '  "tests": [' >> "$consolidated_file"
+    
+    # Add individual test results
+    local first=true
+    for json_file in $(ls -t $LOG_DIR/performance_API-GAP-*-PT_*.json 2>/dev/null | head -5); do
+        if [ "$first" = true ]; then
+            first=false
+        else
+            echo ',' >> "$consolidated_file"
+        fi
+        # Include the full JSON content of each test
+        cat "$json_file" >> "$consolidated_file"
+    done
+    
+    echo '' >> "$consolidated_file"
+    echo '  ]' >> "$consolidated_file"
+    echo '}' >> "$consolidated_file"
+    
+    log_message "Created consolidated performance summary: $(basename "$consolidated_file")"
 }
 
 # Handle background execution

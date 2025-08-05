@@ -80,6 +80,22 @@ log_message() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
 }
 
+# Function to log environment info
+log_environment_info() {
+    log_message "=== ENVIRONMENT INFORMATION ==="
+    log_message "Python Version: $(python --version 2>&1)"
+    log_message "Working Directory: $(pwd)"
+    log_message "Script Version: Unit & Integration Test Runner v1.0"
+    log_message "Test Specification: test-spec-index-cal-gap-analysis.md v1.0.1"
+    log_message "Virtual Environment: ${VIRTUAL_ENV:-Not Active}"
+    log_message "Test Files:"
+    log_message "  - Unit Tests: test/unit/test_gap_analysis_v2.py"
+    log_message "  - Integration Tests: test/integration/test_gap_analysis_v2_integration_complete.py"
+    log_message "Total Tests: 34 (20 Unit + 14 Integration)"
+    log_message "Mock Services: Enabled (No real API calls)"
+    log_message "================================"
+}
+
 # Function to log and print
 log_and_print() {
     local message="$1"
@@ -185,6 +201,9 @@ run_test() {
             "P2") P2_PASSED+=("${test_id}") ;;
         esac
         
+        # Log key test info to main log
+        log_message "TEST DETAILS: $test_id completed successfully"
+        
         # Clean up successful test log if not verbose
         if [ "$VERBOSE" = false ]; then
             rm -f "$test_output_file"
@@ -211,6 +230,14 @@ run_test() {
             "P1") P1_FAILED+=("${test_id}") ;;
             "P2") P2_FAILED+=("${test_id}") ;;
         esac
+        
+        # Log error info to main log
+        log_message "TEST ERROR: $test_id failed - see $test_output_file for details"
+        # Extract and log the actual error message
+        local error_msg=$(grep -E "(FAILED|ERROR|AssertionError)" "$test_output_file" | head -3)
+        if [ -n "$error_msg" ]; then
+            log_message "Error summary: $error_msg"
+        fi
         
         # Show brief error info
         echo "  Error details saved to: $(basename "$test_output_file")"
@@ -502,6 +529,7 @@ main() {
     log_message "Based on test-spec-index-cal-gap-analysis.md v1.0.1"
     log_message "Python version: $(python --version 2>&1)"
     log_message "Stage execution: ${STAGE_EXEC:-all}"
+    log_environment_info
     
     echo -e "${BLUE}=== Unit & Integration Test Suite (34 tests) ===${NC}"
     echo "Timestamp: $(date)"
@@ -544,6 +572,30 @@ main() {
     
     # Generate detailed report
     generate_report
+    
+    # Log detailed test summary
+    log_message "=== DETAILED TEST SUMMARY ==="
+    log_message "Total Tests Executed: $((${#PASSED_TESTS[@]} + ${#FAILED_TESTS[@]}))"
+    log_message "Unit Tests - Passed: ${#UNIT_PASSED[@]}, Failed: ${#UNIT_FAILED[@]}"
+    log_message "Integration Tests - Passed: ${#INTEGRATION_PASSED[@]}, Failed: ${#INTEGRATION_FAILED[@]}"
+    log_message "P0 Priority - Passed: ${#P0_PASSED[@]}, Failed: ${#P0_FAILED[@]}"
+    log_message "P1 Priority - Passed: ${#P1_PASSED[@]}, Failed: ${#P1_FAILED[@]}"
+    log_message "P2 Priority - Passed: ${#P2_PASSED[@]}, Failed: ${#P2_FAILED[@]}"
+    
+    if [ ${#FAILED_TESTS[@]} -gt 0 ]; then
+        log_message "=== FAILED TESTS DETAILS ==="
+        for test_id in "${FAILED_TESTS[@]}"; do
+            log_message "FAILED: $test_id"
+            # Log last few lines of error from individual test logs
+            local error_log=$(ls -t "$LOG_DIR"/test_${test_id}_*.log 2>/dev/null | head -1)
+            if [ -f "$error_log" ]; then
+                log_message "Error snippet from $test_id:"
+                tail -5 "$error_log" | while IFS= read -r line; do
+                    log_message "  $line"
+                done
+            fi
+        done
+    fi
     
     log_message "=== Test Suite Completed ==="
     
