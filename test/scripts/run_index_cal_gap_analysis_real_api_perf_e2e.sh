@@ -657,7 +657,6 @@ main() {
     # Initialize logging
     log_message "=== Real API Test Suite Started ==="
     log_message "Testing Performance and E2E with real Azure OpenAI APIs"
-    log_environment_info
     
     echo -e "${BLUE}=== Real API Test Suite (Performance + E2E) ===${NC}"
     echo "Timestamp: $(date)"
@@ -673,13 +672,18 @@ main() {
         exit 1
     fi
     
-    # Check API keys
+    # Load environment variables
     source .env
+    
+    # Check API keys
     if [ -z "$AZURE_OPENAI_API_KEY" ]; then
         echo -e "  ${RED}❌ Error: AZURE_OPENAI_API_KEY not set in .env${NC}"
         log_message "ERROR: AZURE_OPENAI_API_KEY not set"
         exit 1
     fi
+    
+    # Log environment info after loading .env and validating
+    log_environment_info
     
     echo -e "  Environment: ${GREEN}✓ .env file found${NC}"
     echo -e "  API Key: ${GREEN}✓ Azure OpenAI key configured${NC}"
