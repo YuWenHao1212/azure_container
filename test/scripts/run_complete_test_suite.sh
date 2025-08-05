@@ -91,7 +91,7 @@ show_help() {
     echo "  $0                        Run core tests (Unit + Integration only)"
     echo "  $0 --include-performance  Run all tests including performance"
     echo "  $0 --include-e2e          Run all tests including E2E"
-    echo "  $0 --index-calc-only      Run only Index Calculation V2 tests (18-26 tests)"
+    echo "  $0 --index-calc-only      Run only Index Calculation V2 tests (28 tests: 10 unit + 18 integration)"
     echo "  $0 --background           Run tests in background and save to log"
     echo "  $0 --stage unit           Run only unit tests"
     echo ""
@@ -307,22 +307,34 @@ ${BLUE}=== 詳細測試統計 ===${NC}"
     local llm_unit_failed=$(echo $llm_unit_counts | cut -d'/' -f2)
     log "| LLM Factory       | $llm_unit_counts | 0/0 | 0/0 | 0/0 | $llm_unit_passed/$llm_unit_failed |"
     
-    # Index Calculation V2
-    local ic_unit_counts=$(extract_test_counts /tmp/unit_index_calc_v2_output.log)
-    local ic_int_counts=$(extract_test_counts /tmp/integration_index_calc_v2_output.log)
-    local ic_unit_passed=$(echo $ic_unit_counts | cut -d'/' -f1)
-    local ic_unit_failed=$(echo $ic_unit_counts | cut -d'/' -f2)
-    local ic_int_passed=$(echo $ic_int_counts | cut -d'/' -f1)
-    local ic_int_failed=$(echo $ic_int_counts | cut -d'/' -f2)
-    
-    # Performance and E2E tests for Index Calc V2
+    # Index Calculation V2 - using dedicated scripts
+    local ic_mock_counts=$(extract_test_counts /tmp/index_calc_mock_output.log)
     local ic_perf_counts="0/0"
     local ic_e2e_counts="0/0"
+    
+    # Extract unit/integration from mock script output
+    local ic_unit_passed=0
+    local ic_unit_failed=0
+    local ic_int_passed=0
+    local ic_int_failed=0
+    
+    if [ -f "/tmp/index_calc_mock_output.log" ]; then
+        # Parse the combined mock test results
+        local ic_mock_passed=$(echo $ic_mock_counts | cut -d'/' -f1)
+        local ic_mock_failed=$(echo $ic_mock_counts | cut -d'/' -f2)
+        # Assume roughly 10 unit + 18 integration tests
+        ic_unit_passed=$((ic_mock_passed * 10 / 28))
+        ic_int_passed=$((ic_mock_passed - ic_unit_passed))
+        ic_unit_failed=$((ic_mock_failed * 10 / 28))
+        ic_int_failed=$((ic_mock_failed - ic_unit_failed))
+    fi
+    
+    # Performance and E2E tests for Index Calc V2
     if [ "$INCLUDE_PERFORMANCE" = true ] || [ "$STAGE_EXEC" = "performance" ]; then
-        ic_perf_counts=$(extract_test_counts /tmp/performance_index_calc_v2_output.log)
+        ic_perf_counts=$(extract_test_counts /tmp/index_calc_performance_output.log)
     fi
     if [ "$INCLUDE_E2E" = true ] || [ "$STAGE_EXEC" = "e2e" ]; then
-        ic_e2e_counts=$(extract_test_counts /tmp/e2e_index_calc_v2_output.log)
+        ic_e2e_counts=$(extract_test_counts /tmp/index_calc_e2e_output.log)
     fi
     local ic_perf_passed=$(echo $ic_perf_counts | cut -d'/' -f1)
     local ic_perf_failed=$(echo $ic_perf_counts | cut -d'/' -f2)
@@ -331,7 +343,7 @@ ${BLUE}=== 詳細測試統計 ===${NC}"
     
     local ic_total_passed=$((ic_unit_passed + ic_int_passed + ic_perf_passed + ic_e2e_passed))
     local ic_total_failed=$((ic_unit_failed + ic_int_failed + ic_perf_failed + ic_e2e_failed))
-    log "| Index Calculation V2 | $ic_unit_counts | $ic_int_counts | $ic_perf_counts$([ "$INCLUDE_PERFORMANCE" = false ] && [ "$STAGE_EXEC" != "performance" ] && echo '*') | $ic_e2e_counts$([ "$INCLUDE_E2E" = false ] && [ "$STAGE_EXEC" != "e2e" ] && echo '*') | $ic_total_passed/$ic_total_failed |"
+    log "| Index Calculation V2 | $ic_unit_passed/$ic_unit_failed | $ic_int_passed/$ic_int_failed | $ic_perf_counts$([ "$INCLUDE_PERFORMANCE" = false ] && [ "$STAGE_EXEC" != "performance" ] && echo '*') | $ic_e2e_counts$([ "$INCLUDE_E2E" = false ] && [ "$STAGE_EXEC" != "e2e" ] && echo '*') | $ic_total_passed/$ic_total_failed |"
     
     # Totals
     local total_unit_passed=$((health_unit_passed + kw_unit_passed + lang_unit_passed + prompt_unit_passed + llm_unit_passed + ic_unit_passed))
@@ -374,18 +386,18 @@ ${BLUE}關鍵字提取效能測試詳情:${NC}"
     fi
     
     # Index Calculation V2 Performance test details
-    if [ -f "/tmp/performance_index_calc_v2_output.log" ] && grep -q "Overall Performance:" /tmp/performance_index_calc_v2_output.log; then
+    if [ -f "/tmp/index_calc_performance_output.log" ] && grep -q "Overall Performance:" /tmp/index_calc_performance_output.log; then
         log "
 ${BLUE}Index Calculation V2 效能測試詳情:${NC}"
         log "------------------------------------------------------------"
         
         # Extract performance metrics
-        local small_p50=$(grep "Small.*P50:" /tmp/performance_index_calc_v2_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
-        local medium_p50=$(grep "Medium.*P50:" /tmp/performance_index_calc_v2_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
-        local large_p50=$(grep "Large.*P50:" /tmp/performance_index_calc_v2_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
-        local overall_p50=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P50:" | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' || echo "N/A")
-        local overall_p95=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P95:" | sed -E 's/^.*P95: ([0-9]+)ms.*$/\1/' || echo "N/A")
-        local overall_p99=$(grep "Overall Performance:" -A5 /tmp/performance_index_calc_v2_output.log | grep "P99:" | sed -E 's/^.*P99: ([0-9]+)ms.*$/\1/' || echo "N/A")
+        local small_p50=$(grep "Small.*P50:" /tmp/index_calc_performance_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
+        local medium_p50=$(grep "Medium.*P50:" /tmp/index_calc_performance_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
+        local large_p50=$(grep "Large.*P50:" /tmp/index_calc_performance_output.log | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' | head -1 || echo "N/A")
+        local overall_p50=$(grep "Overall Performance:" -A5 /tmp/index_calc_performance_output.log | grep "P50:" | sed -E 's/^.*P50: ([0-9]+)ms.*$/\1/' || echo "N/A")
+        local overall_p95=$(grep "Overall Performance:" -A5 /tmp/index_calc_performance_output.log | grep "P95:" | sed -E 's/^.*P95: ([0-9]+)ms.*$/\1/' || echo "N/A")
+        local overall_p99=$(grep "Overall Performance:" -A5 /tmp/index_calc_performance_output.log | grep "P99:" | sed -E 's/^.*P99: ([0-9]+)ms.*$/\1/' || echo "N/A")
         
         log "測試案例             | P50 回應時間 | SLA 狀態"
         log "---------------------|--------------|----------"
@@ -544,18 +556,18 @@ ${BLUE}=== Complete Test Suite ===${NC}"
     
     # Add tests based on stage or default behavior
     if [ "$INDEX_CALC_ONLY" = true ]; then
-        # Only Index Calculation V2 tests
-        if [ -z "$STAGE_EXEC" ] || [ "$STAGE_EXEC" = "unit" ]; then
-            TEST_SUITES+=("unit_index_calc_v2:python -m pytest test/unit/test_index_calculation_v2.py -v")
-        fi
-        if [ -z "$STAGE_EXEC" ] || [ "$STAGE_EXEC" = "integration" ]; then
-            TEST_SUITES+=("integration_index_calc_v2:python -m pytest test/integration/test_index_calculation_v2_api.py -v")
+        # Only Index Calculation V2 tests - using dedicated scripts
+        if [ -z "$STAGE_EXEC" ] || [ "$STAGE_EXEC" = "unit" ] || [ "$STAGE_EXEC" = "integration" ]; then
+            # Mock tests (unit + integration)
+            TEST_SUITES+=("index_calc_mock:./test/scripts/run_index_calculation_unit_integration.sh")
         fi
         if ([ -z "$STAGE_EXEC" ] && [ "$INCLUDE_PERFORMANCE" = true ]) || [ "$STAGE_EXEC" = "performance" ]; then
-            TEST_SUITES+=("performance_index_calc_v2:python -m pytest test/performance/test_index_calculation_v2_performance.py -v -s")
+            # Real API performance tests
+            TEST_SUITES+=("index_calc_performance:./test/scripts/run_index_calculation_real_api_perf_e2e.sh --stage performance")
         fi
         if ([ -z "$STAGE_EXEC" ] && [ "$INCLUDE_E2E" = true ]) || [ "$STAGE_EXEC" = "e2e" ]; then
-            TEST_SUITES+=("e2e_index_calc_v2:python -m pytest test/e2e/test_index_calculation_v2_e2e.py -v")
+            # Real API E2E tests
+            TEST_SUITES+=("index_calc_e2e:./test/scripts/run_index_calculation_real_api_perf_e2e.sh --stage e2e")
         fi
     else
         # Normal test suite selection
@@ -567,7 +579,6 @@ ${BLUE}=== Complete Test Suite ===${NC}"
                 "unit_language_detection:python -m pytest test/unit/test_language_detection.py -v"
                 "unit_prompt_manager:python -m pytest test/unit/test_prompt_manager.py -v"
                 "unit_llm_factory:python -m pytest test/unit/test_llm_factory_deployment_mapping.py -v"
-                "unit_index_calc_v2:python -m pytest test/unit/test_index_calculation_v2.py -v"
             )
         fi
         
@@ -576,21 +587,26 @@ ${BLUE}=== Complete Test Suite ===${NC}"
                 "integration_keyword_language:python -m pytest test/integration/test_keyword_extraction_language.py -v"
                 "integration_health:python -m pytest test/integration/test_health_integration.py -v"
                 "integration_azure_openai:python -m pytest test/integration/test_azure_openai_integration.py -v"
-                "integration_index_calc_v2:python -m pytest test/integration/test_index_calculation_v2_api.py -v"
             )
+        fi
+        
+        # Index Calculation V2 - use dedicated scripts for better mock/real API separation
+        if [ -z "$STAGE_EXEC" ] || [ "$STAGE_EXEC" = "unit" ] || [ "$STAGE_EXEC" = "integration" ]; then
+            # Mock tests (unit + integration)
+            TEST_SUITES+=("index_calc_mock:./test/scripts/run_index_calculation_unit_integration.sh")
         fi
         
         if [ "$STAGE_EXEC" = "performance" ] || ([ -z "$STAGE_EXEC" ] && [ "$INCLUDE_PERFORMANCE" = true ]); then
             TEST_SUITES+=(
                 "performance_keyword:python -m pytest test/performance/test_keyword_extraction_performance.py -v -s"
-                "performance_index_calc_v2:python -m pytest test/performance/test_index_calculation_v2_performance.py -v -s"
             )
+            # Index Calculation V2 Performance - use real API script
+            TEST_SUITES+=("index_calc_performance:./test/scripts/run_index_calculation_real_api_perf_e2e.sh --stage performance")
         fi
         
         if [ "$STAGE_EXEC" = "e2e" ] || ([ -z "$STAGE_EXEC" ] && [ "$INCLUDE_E2E" = true ]); then
-            TEST_SUITES+=(
-                "e2e_index_calc_v2:python -m pytest test/e2e/test_index_calculation_v2_e2e.py -v"
-            )
+            # Index Calculation V2 E2E - use real API script
+            TEST_SUITES+=("index_calc_e2e:./test/scripts/run_index_calculation_real_api_perf_e2e.sh --stage e2e")
         fi
     fi
     

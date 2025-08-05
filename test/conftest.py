@@ -71,10 +71,7 @@ def mock_openai_clients():
         
         # HTTP clients that might bypass mocks
         patch('httpx.AsyncClient') as mock_httpx,
-        patch('aiohttp.ClientSession') as mock_aiohttp,
-        
-        # Azure SDK clients
-        patch('openai.AsyncAzureOpenAI') as mock_azure_openai_direct
+        patch('aiohttp.ClientSession') as mock_aiohttp
     ):
         # Configure OpenAI client mock
         mock_openai_instance = AsyncMock()
@@ -160,18 +157,6 @@ def mock_openai_clients():
         mock_aiohttp_instance.close = Mock()
         mock_aiohttp.return_value = mock_aiohttp_instance
         
-        # Configure direct Azure OpenAI client mock
-        mock_azure_openai_direct_instance = Mock()
-        mock_azure_openai_direct_instance.chat = Mock()
-        mock_azure_openai_direct_instance.chat.completions = Mock()
-        mock_azure_openai_direct_instance.chat.completions.create = Mock(return_value=Mock(
-            choices=[Mock(message=Mock(content='{"test": "response"}'))],
-            usage=Mock(prompt_tokens=100, completion_tokens=50, total_tokens=150)
-        ))
-        mock_azure_openai_direct_instance.embeddings = Mock()
-        mock_azure_openai_direct_instance.embeddings.create = Mock(return_value=Mock(
-            data=[Mock(embedding=[0.1] * 1536)]
-        ))
-        mock_azure_openai_direct.return_value = mock_azure_openai_direct_instance
+        # Azure OpenAI direct mock removed to avoid importing openai module
         
         yield

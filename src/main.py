@@ -426,7 +426,7 @@ def create_app() -> FastAPI:
         error_response = create_validation_error_response(exc)
 
         return JSONResponse(
-            status_code=400,  # Changed from 422 to 400 to match API contract
+            status_code=422,  # Use 422 for validation errors (Unprocessable Entity)
             content={
                 "success": False,
                 "data": {},

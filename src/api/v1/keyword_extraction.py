@@ -92,6 +92,40 @@ router = APIRouter()
                 }
             }
         },
+        408: {
+            "description": "Request timeout",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "data": {},
+                        "error": {
+                            "code": "TIMEOUT_ERROR",
+                            "message": "Request processing timeout",
+                            "details": "The request took too long to process"
+                        },
+                        "timestamp": "2025-07-01T13:09:40.123Z"
+                    }
+                }
+            }
+        },
+        429: {
+            "description": "Too many requests",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "data": {},
+                        "error": {
+                            "code": "RATE_LIMIT_ERROR",
+                            "message": "Rate limit exceeded",
+                            "details": "Please try again later"
+                        },
+                        "timestamp": "2025-07-01T13:09:40.123Z"
+                    }
+                }
+            }
+        },
         500: {
             "description": "Internal server error",
             "content": {
@@ -172,6 +206,8 @@ async def extract_jd_keywords(
 
     **Error Codes**:
     - 400: VALIDATION_ERROR - Invalid input parameters
+    - 408: TIMEOUT_ERROR - Request processing timeout
+    - 429: RATE_LIMIT_ERROR - Rate limit exceeded
     - 500: INTERNAL_SERVER_ERROR - Unexpected processing error
     - 503: SERVICE_UNAVAILABLE - Azure OpenAI service issues
     """
@@ -383,9 +419,34 @@ async def extract_jd_keywords(
             detail=error_response.dict()
         ) from None
 
-    except (
-        AzureOpenAIRateLimitError, AzureOpenAIAuthError, AzureOpenAIServerError
-    ) as e:
+    except AzureOpenAIRateLimitError as e:
+        # Rate limit errors (429 Too Many Requests)
+        error_msg = f"Rate limit exceeded: {e!s}"
+        logger.error(error_msg)
+
+        # Store API failure
+        await failure_storage.store_failure(
+            category="rate_limit_error",
+            job_description=request.job_description,
+            failure_reason=error_msg,
+            additional_info={
+                "error_type": type(e).__name__
+            }
+        )
+
+        error_response = create_error_response(
+            code="RATE_LIMIT_ERROR",
+            message="請求速率超過限制",
+            details="請稍後再試或降低請求頻率",
+            data=KeywordExtractionData().dict()
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=error_response.dict()
+        ) from None
+
+    except (AzureOpenAIAuthError, AzureOpenAIServerError) as e:
         # Azure OpenAI service errors (503 Service Unavailable)
         error_msg = f"Azure OpenAI service error: {e!s}"
         logger.error(error_msg)
@@ -430,7 +491,7 @@ async def extract_jd_keywords(
         ) from None
 
     except TimeoutError:
-        # Request timeout (500 Internal Server Error)
+        # Request timeout (408 Request Timeout)
         logger.error("Request timeout during keyword extraction")
 
         error_response = create_error_response(
@@ -441,7 +502,7 @@ async def extract_jd_keywords(
         )
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
             detail=error_response.dict()
         ) from None
 

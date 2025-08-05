@@ -17,7 +17,6 @@ from src.models.response import (
     create_error_response,
     create_success_response,
 )
-from src.services.exceptions import ServiceError
 
 
 # Request/Response Models
@@ -141,10 +140,11 @@ async def calculate_index(
 
         return create_success_response(data=final_result)
 
-    except ServiceError as e:
-        logger.error(f"Service error in index calculation V2: {e}")
+    except TimeoutError as e:
+        # Timeout errors (408 Request Timeout)
+        logger.error(f"Timeout error in index calculation V2: {e}")
         monitoring_service.track_event(
-            "IndexCalculationV2ServiceError",
+            "IndexCalculationV2TimeoutError",
             {
                 "error_message": str(e),
                 "processing_time_ms": round((time.time() - start_time) * 1000, 2),
@@ -152,11 +152,11 @@ async def calculate_index(
             }
         )
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
             detail=create_error_response(
-                code="SERVICE_ERROR",
-                message="Service temporarily unavailable",
-                details=str(e)
+                code="TIMEOUT_ERROR",
+                message="Request processing timeout",
+                details="The request took too long to process"
             ).model_dump()
         ) from e
 
@@ -171,7 +171,7 @@ async def calculate_index(
             }
         )
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=create_error_response(
                 code="VALIDATION_ERROR",
                 message="Invalid request data",
@@ -180,6 +180,69 @@ async def calculate_index(
         ) from e
 
     except Exception as e:
+        # Import specific exception types
+        from src.services.exceptions import ExternalServiceError, RateLimitError, ServiceError
+
+        # Check for specific error types
+        if isinstance(e, RateLimitError) or "rate limit" in str(e).lower():
+            # Rate limit errors (429 Too Many Requests)
+            logger.error(f"Rate limit error in index calculation V2: {e}")
+            monitoring_service.track_event(
+                "IndexCalculationV2RateLimitError",
+                {
+                    "error_message": str(e),
+                    "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                    "service_version": "v2"
+                }
+            )
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=create_error_response(
+                    code="RATE_LIMIT_ERROR",
+                    message="Rate limit exceeded",
+                    details="Please try again later"
+                ).model_dump()
+            ) from e
+
+        elif isinstance(e, ExternalServiceError):
+            # External service errors (502 Bad Gateway)
+            logger.error(f"External service error in index calculation V2: {e}")
+            monitoring_service.track_event(
+                "IndexCalculationV2ExternalServiceError",
+                {
+                    "error_message": str(e),
+                    "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                    "service_version": "v2"
+                }
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=create_error_response(
+                    code="EXTERNAL_SERVICE_ERROR",
+                    message="External service error",
+                    details=str(e)
+                ).model_dump()
+            ) from e
+
+        elif isinstance(e, ServiceError):
+            # General service errors (503 Service Unavailable)
+            logger.error(f"Service error in index calculation V2: {e}")
+            monitoring_service.track_event(
+                "IndexCalculationV2ServiceError",
+                {
+                    "error_message": str(e),
+                    "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                    "service_version": "v2"
+                }
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=create_error_response(
+                    code="SERVICE_ERROR",
+                    message="Service temporarily unavailable",
+                    details=str(e)
+                ).model_dump()
+            ) from e
         logger.error(f"Unexpected error in index calculation V2: {e}", exc_info=True)
         monitoring_service.track_event(
             "IndexCalculationV2UnexpectedError",

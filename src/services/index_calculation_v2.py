@@ -67,7 +67,7 @@ class IndexCalculationServiceV2(BaseService):
         embedding_client=None,
         enable_cache: bool = True,
         cache_ttl_minutes: int = 60,
-        cache_max_size: int = 1000,
+        cache_max_size: int = None,
         enable_parallel_processing: bool = True
     ):
         """Initialize the V2 service with enhanced features."""
@@ -76,10 +76,15 @@ class IndexCalculationServiceV2(BaseService):
         # Dependencies
         self.embedding_client = embedding_client or get_azure_embedding_client()
 
-        # Configuration
+        # Configuration with environment variable support
         self.enable_cache = enable_cache
         self.cache_ttl_minutes = cache_ttl_minutes
-        self.cache_max_size = cache_max_size
+        # Read cache_max_size from environment variable if not provided
+        if cache_max_size is None:
+            import os
+            self.cache_max_size = int(os.environ.get('INDEX_CALC_CACHE_MAX_SIZE', '1000'))
+        else:
+            self.cache_max_size = cache_max_size
         self.enable_parallel_processing = enable_parallel_processing
 
         # Cache storage with LRU eviction
@@ -111,6 +116,7 @@ class IndexCalculationServiceV2(BaseService):
         self.logger.info(
             f"Initialized IndexCalculationServiceV2 - "
             f"cache_enabled={enable_cache}, "
+            f"cache_max_size={self.cache_max_size}, "
             f"parallel_processing={enable_parallel_processing}, "
             f"cache_ttl={cache_ttl_minutes}m"
         )
@@ -348,13 +354,16 @@ class IndexCalculationServiceV2(BaseService):
             embedding = embeddings[0]
         except AzureOpenAIRateLimitError as e:
             # Handle rate limit errors
-            raise ServiceError("Azure OpenAI rate limit exceeded") from e
+            from src.services.exceptions import RateLimitError
+            raise RateLimitError("Azure OpenAI rate limit exceeded") from e
         except AzureOpenAIAuthError as e:
             # Handle authentication errors
-            raise ServiceError("Azure OpenAI authentication failed") from e
+            from src.services.exceptions import ExternalServiceError
+            raise ExternalServiceError("Azure OpenAI authentication failed") from e
         except AzureOpenAIServerError as e:
             # Handle server errors
-            raise ServiceError("Azure OpenAI server error") from e
+            from src.services.exceptions import ExternalServiceError
+            raise ExternalServiceError("Azure OpenAI server error") from e
         except AzureOpenAIError as e:
             # Handle other Azure OpenAI errors
             raise ServiceError(f"Azure OpenAI service error: {e}") from e
@@ -392,7 +401,14 @@ class IndexCalculationServiceV2(BaseService):
                 )
                 return resume_embedding, job_embedding
             except Exception as e:
-                # If parallel processing fails, log and fall back to sequential
+                # For specific errors that should not fallback, re-raise immediately
+                from src.services.exceptions import RateLimitError, ExternalServiceError
+                from src.services.openai_client import AzureOpenAIRateLimitError, AzureOpenAIAuthError
+                if isinstance(e, (RateLimitError, ExternalServiceError, AzureOpenAIRateLimitError, AzureOpenAIAuthError)):
+                    # Don't fallback for rate limit or external service errors
+                    raise
+                
+                # For other errors, log and fall back to sequential
                 self.logger.warning(f"Parallel embedding computation failed: {e}, falling back to sequential")
                 resume_embedding = await self._get_or_compute_embedding(resume)
                 job_embedding = await self._get_or_compute_embedding(job_description)
@@ -571,6 +587,9 @@ class IndexCalculationServiceV2(BaseService):
         start_time = time.time()
         timing_breakdown = {}
 
+        # Track cache hits for this specific request
+        initial_cache_hits = self._cache_stats["hits"]
+
         try:
             # Track timing for validation
             validation_start = time.time()
@@ -657,8 +676,9 @@ class IndexCalculationServiceV2(BaseService):
                 keyword_coverage["coverage_percentage"]
             )
 
-            # Check if this was a cache hit (at least one embedding was cached)
-            cache_hit = self._cache_stats["hits"] > 0
+            # Check if this request had cache hits (compare before/after)
+            current_cache_hits = self._cache_stats["hits"]
+            cache_hit = current_cache_hits > initial_cache_hits
 
             # Track metrics
             monitoring_service.track_event(
@@ -695,6 +715,15 @@ class IndexCalculationServiceV2(BaseService):
             self.logger.error(f"Validation error in index calculation: {e}")
             raise
         except Exception as e:
+            # Check if it's a specific error type that should be propagated
+            from src.services.exceptions import RateLimitError, ExternalServiceError
+            if isinstance(e, (RateLimitError, ExternalServiceError, TimeoutError)):
+                # Re-raise specific errors directly
+                self.calculation_stats["error_count"] += 1
+                self.logger.error(f"Index calculation failed with {type(e).__name__}: {e}")
+                raise
+            
+            # For other exceptions, wrap in ServiceError
             self.calculation_stats["error_count"] += 1
             self.logger.error(f"Index calculation failed: {e}")
             raise ServiceError(f"Index calculation failed: {e}") from e
@@ -815,3 +844,8 @@ def get_index_calculation_service_v2() -> IndexCalculationServiceV2:
     if _index_calculation_service_v2 is None:
         _index_calculation_service_v2 = IndexCalculationServiceV2()
     return _index_calculation_service_v2
+
+def reset_index_calculation_service_v2():
+    """Reset the global IndexCalculationServiceV2 instance for testing."""
+    global _index_calculation_service_v2
+    _index_calculation_service_v2 = None

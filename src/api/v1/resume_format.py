@@ -178,7 +178,7 @@ async def format_resume(
         ) from e
 
     except AzureOpenAIRateLimitError as e:
-        # Handle rate limit errors (503)
+        # Handle rate limit errors (429)
         logger.error(f"[{request_id}] OpenAI rate limit error: {e!s}")
 
         monitoring_service.track_event("ResumeFormatRateLimit", {
@@ -187,7 +187,7 @@ async def format_resume(
         })
 
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=create_error_response(
                 code="RATE_LIMIT_ERROR",
                 message="Service unavailable. Please try again later.",

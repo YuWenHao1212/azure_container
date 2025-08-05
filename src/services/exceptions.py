@@ -367,6 +367,16 @@ class LLMServiceError(ServiceError):
     pass
 
 
+class RateLimitError(ServiceError):
+    """Exception raised when rate limit is exceeded."""
+    pass
+
+
+class ExternalServiceError(ServiceError):
+    """Exception raised when external service (e.g., Azure OpenAI) fails."""
+    pass
+
+
 class ValidationError(ServiceError):
     """Exception raised when input validation fails."""
     pass

@@ -1,53 +1,64 @@
 #!/usr/bin/env python
 """
-獨立執行 E2E 測試的腳本
-繞過根目錄的 conftest.py 和全局 mock
+Standalone E2E Test Runner for Index Calculation V2.
+
+This script runs E2E tests in isolation from global mocks, using real Azure APIs.
+Based on the successful pattern from Gap Analysis V2 implementation.
 """
+
 import subprocess
 import sys
 import os
 from pathlib import Path
 
 def main():
-    """執行獨立的 E2E 測試"""
-    # 取得當前腳本目錄
+    """Run E2E tests in standalone mode."""
     script_dir = Path(__file__).parent
     project_root = script_dir.parent.parent
     
-    # 設置環境變數
+    # Set up environment
     env = os.environ.copy()
-    
-    # 設置 PYTHONPATH，只包含 src 目錄
     env['PYTHONPATH'] = str(project_root / 'src')
-    
-    # 設置測試標記
     env['RUNNING_STANDALONE_E2E'] = 'true'
+    env['USE_V2_IMPLEMENTATION'] = 'true'
     
-    # 建構 pytest 命令
-    cmd = [
-        sys.executable, '-m', 'pytest',
-        'test_gap_analysis_v2_e2e.py',
-        '-v',  # 詳細輸出
-        '-s',  # 顯示 print 輸出
-        '--tb=short',  # 簡短的錯誤追蹤
-        '--confcutdir=.',  # 限制 conftest.py 搜索範圍到當前目錄
-        '--no-cov',  # 禁用覆蓋率
-        '-p', 'no:warnings'  # 減少警告輸出
+    # Check for required API keys
+    required_keys = [
+        'AZURE_OPENAI_API_KEY',
+        'AZURE_OPENAI_ENDPOINT',
+        'EMBEDDING_API_KEY',
+        'EMBEDDING_ENDPOINT'
     ]
     
-    # 添加任何額外的命令行參數
+    missing_keys = [key for key in required_keys if not env.get(key)]
+    if missing_keys:
+        print(f"❌ Missing required API keys: {', '.join(missing_keys)}")
+        print("Please set these environment variables or add them to your .env file")
+        sys.exit(1)
+    
+    # Build pytest command
+    cmd = [
+        sys.executable, '-m', 'pytest',
+        'test_index_calculation_v2_e2e.py',
+        '-v', '-s',
+        '--tb=short',
+        '--confcutdir=.',  # Limit conftest.py search to current directory
+        '--no-cov',
+        '-p', 'no:warnings'
+    ]
+    
+    # Add any additional arguments passed to this script
     cmd.extend(sys.argv[1:])
     
-    print("🚀 Running E2E Tests in Standalone Mode")
+    print("🚀 Running Index Calculation V2 E2E Tests in Standalone Mode")
     print(f"Working directory: {script_dir}")
     print(f"Command: {' '.join(cmd)}")
-    print("-" * 60)
+    print()
     
-    # 執行測試
+    # Run the tests
     result = subprocess.run(cmd, env=env, cwd=str(script_dir))
-    
-    # 返回測試結果
     sys.exit(result.returncode)
+
 
 if __name__ == '__main__':
     main()

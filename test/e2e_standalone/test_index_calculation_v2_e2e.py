@@ -1,9 +1,10 @@
 """
-End-to-End tests for Index Calculation V2.
+Standalone End-to-End tests for Index Calculation V2.
 
+These tests run with real Azure APIs, isolated from global mocks.
 Tests:
-- API-IC-301-E2E: 完整工作流程測試
-- API-IC-302-E2E: 錯誤恢復測試
+- API-IC-301-E2E: 完整工作流程測試 (使用真實 API)
+- API-IC-302-E2E: 錯誤處理測試 (模擬錯誤情況)
 - API-IC-303-E2E: 監控和日誌整合測試
 """
 
@@ -16,62 +17,32 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.main import create_app
-from src.services.openai_client import (
-    AzureOpenAIRateLimitError,
-    AzureOpenAIServerError,
-)
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
-
-# Load real environment variables for E2E testing
-if not os.getenv('AZURE_OPENAI_API_KEY'):
-    # Load from .env file for local testing
-    import dotenv
-    dotenv.load_dotenv()
-
-# Verify required environment variables
-required_env_vars = [
-    'AZURE_OPENAI_API_KEY',
-    'AZURE_OPENAI_ENDPOINT',
-    'EMBEDDING_API_KEY',
-    'EMBEDDING_ENDPOINT'
-]
-
-for var in required_env_vars:
-    if not os.getenv(var):
-        pytest.skip(f"E2E test requires {var} environment variable")
-
-# Configure for E2E testing with real APIs
-os.environ['INDEX_CALC_CACHE_ENABLED'] = 'true'
-os.environ['MONITORING_ENABLED'] = 'true'
-os.environ['LIGHTWEIGHT_MONITORING'] = 'true'
 
 
 class TestIndexCalculationV2E2E:
     """End-to-End tests for Index Calculation V2."""
 
     @pytest.fixture
-    def test_client(self):
-        """Create test client with real API configuration for E2E testing."""
-        # Configure for E2E testing with real APIs
-        os.environ['MONITORING_ENABLED'] = 'false'
-        os.environ['LIGHTWEIGHT_MONITORING'] = 'true'
-        os.environ['ERROR_CAPTURE_ENABLED'] = 'false'
-        os.environ['INDEX_CALC_CACHE_ENABLED'] = 'true'
-        os.environ['INDEX_CALC_CACHE_TTL_MINUTES'] = '60'
-        os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = '1000'
+    def test_client(self, api_key_headers, skip_if_no_api_keys):
+        """Create test client for E2E tests with real APIs."""
+        # Ensure API keys are available
+        skip_if_no_api_keys
         
         # Set API key for authentication
-        os.environ['CONTAINER_APP_API_KEY'] = 'e2e-test-key'
+        api_key = os.environ.get('CONTAINER_APP_API_KEY', 'test-api-key')
+        os.environ['CONTAINER_APP_API_KEY'] = api_key
         
+        # Create app without mocking
         app = create_app()
         client = TestClient(app)
-        # Add API key header for authentication
-        client.headers = {"X-API-Key": "e2e-test-key"}
+        
+        # Set headers for authentication
+        client.headers.update(api_key_headers)
+        
         return client
-
-    # Removed mock_embedding_client fixture - using real Azure API
 
     @pytest.fixture
     def test_data(self):
@@ -83,8 +54,6 @@ class TestIndexCalculationV2E2E:
         with open(fixture_path, encoding='utf-8') as f:
             return json.load(f)
 
-    # Removed mock_monitoring_service fixture - using real monitoring service
-
     # TEST: API-IC-301-E2E
     def test_complete_workflow(
         self, test_client, test_data
@@ -94,70 +63,69 @@ class TestIndexCalculationV2E2E:
         驗證從輸入到輸出的完整流程。
         """
         # Use real test data
-        # Medium resume
         real_resume = test_data["standard_resumes"][1]["content"]
-        real_jd = test_data["job_descriptions"][1]["content"]  # Medium JD
+        real_jd = test_data["job_descriptions"][1]["content"]
         real_keywords = test_data["job_descriptions"][1]["keywords"]
 
-        # Test with real Azure OpenAI API - no mocks for E2E testing
-                        # Step 1: Make the API request
-                        start_time = time.time()
-                        response = test_client.post(
-                            "/api/v1/index-calculation",
-                            json={
-                                "resume": real_resume,
-                                "job_description": real_jd,
-                                "keywords": real_keywords
-                            }
-                        )
-                        processing_time = time.time() - start_time
+        # Step 1: Make the API request with real Azure APIs
+        start_time = time.time()
+        response = test_client.post(
+            "/api/v1/index-calculation",
+            json={
+                "resume": real_resume,
+                "job_description": real_jd,
+                "keywords": real_keywords
+            }
+        )
+        processing_time = time.time() - start_time
 
-                        # Step 2: Verify response structure and content
-                        assert response.status_code == 200
-                        data = response.json()
+        # Step 2: Verify response structure and content
+        assert response.status_code == 200
+        data = response.json()
 
-                        # Verify success response
-                        assert data["success"] is True
-                        assert "data" in data
-                        # In V1, error field exists even on success with
-                        # has_error=False
-                        if "error" in data:
-                            assert data["error"]["has_error"] is False
+        # Verify success response
+        assert data["success"] is True
+        assert "data" in data
+        # has_error=False
+        if "error" in data:
+            assert data["error"]["has_error"] is False
 
-                        # Verify data structure completeness
-                        result = data["data"]
-                        assert "raw_similarity_percentage" in result
-                        assert "similarity_percentage" in result
-                        assert "keyword_coverage" in result
+        # Verify data structure completeness
+        result = data["data"]
+        assert "raw_similarity_percentage" in result
+        assert "similarity_percentage" in result
+        assert "keyword_coverage" in result
 
-                        # Verify similarity scores
-                        assert isinstance(
-                            result["raw_similarity_percentage"], int)
-                        assert isinstance(result["similarity_percentage"], int)
-                        assert 0 <= result["raw_similarity_percentage"] <= 100
-                        assert 0 <= result["similarity_percentage"] <= 100
+        # Verify similarity scores
+        assert isinstance(result["raw_similarity_percentage"], int)
+        assert isinstance(result["similarity_percentage"], int)
+        assert 0 <= result["raw_similarity_percentage"] <= 100
+        assert 0 <= result["similarity_percentage"] <= 100
 
-                        # Verify keyword coverage
-                        coverage = result["keyword_coverage"]
-                        assert coverage["total_keywords"] == len(real_keywords)
-                        assert isinstance(coverage["covered_count"], int)
-                        assert isinstance(coverage["coverage_percentage"], int)
-                        assert isinstance(coverage["covered_keywords"], list)
-                        assert isinstance(coverage["missed_keywords"], list)
-                        assert len(
-                            coverage["covered_keywords"]) + len(
-                            coverage["missed_keywords"]) == coverage["total_keywords"]
+        # Verify keyword coverage
+        coverage = result["keyword_coverage"]
+        assert coverage["total_keywords"] == len(real_keywords)
+        assert isinstance(coverage["covered_count"], int)
+        assert isinstance(coverage["coverage_percentage"], int)
+        assert isinstance(coverage["covered_keywords"], list)
+        assert isinstance(coverage["missed_keywords"], list)
+        assert len(coverage["covered_keywords"]) + len(coverage["missed_keywords"]) == coverage["total_keywords"]
 
-                        # Verify reasonable values
-                        assert coverage["coverage_percentage"] >= 0
-                        assert coverage["coverage_percentage"] <= 100
+        # Verify reasonable values
+        assert coverage["coverage_percentage"] >= 0
+        assert coverage["coverage_percentage"] <= 100
 
-                        # Step 3: Verify processing was successful (real API test)
-                        # Note: In E2E testing with real APIs, we focus on response correctness
-                        # rather than internal monitoring calls
+                        # Step 3: Verify monitoring was called
+                        assert mock_monitoring_service.track_event.called
+                        event_names = [e["name"]
+                                       for e in mock_monitoring_service.events]
+                        assert "IndexCalculationV2Completed" in event_names
+                        # Note: V2 only tracks IndexCalculationV2Completed event
+        # Remove assertion for IndexCalculationDebug as it's not implemented in
+        # V2
 
-                        # Step 4: Verify performance with real Azure API
-                        assert processing_time < 15.0  # Should complete within 15 seconds (real API latency)
+                        # Step 4: Verify performance
+                        assert processing_time < 5.0  # Should complete within 5 seconds
 
                         # Step 5: Test with different formats (HTML)
                         # HTML resume

@@ -20,7 +20,7 @@ import sys
 import time
 import tracemalloc
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from unittest.mock import AsyncMock, Mock, patch
+# Remove mock imports for real API testing
 
 import pytest
 from fastapi.testclient import TestClient
@@ -28,13 +28,23 @@ from fastapi.testclient import TestClient
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 
-# Mock environment variables before imports
-os.environ['TESTING'] = 'true'
-os.environ['AZURE_OPENAI_ENDPOINT'] = 'https://test.openai.azure.com'
-os.environ['AZURE_OPENAI_API_KEY'] = 'test-key'
-os.environ['EMBEDDING_ENDPOINT'] = 'https://test.embedding.com'
-os.environ['EMBEDDING_API_KEY'] = 'test-key'
-os.environ['JWT_SECRET_KEY'] = 'test-secret'
+# Load real environment variables for performance testing
+if not os.getenv('AZURE_OPENAI_API_KEY'):
+    # Load from .env file for local testing
+    import dotenv
+    dotenv.load_dotenv()
+
+# Verify required environment variables
+required_env_vars = [
+    'AZURE_OPENAI_API_KEY',
+    'AZURE_OPENAI_ENDPOINT',
+    'EMBEDDING_API_KEY',
+    'EMBEDDING_ENDPOINT'
+]
+
+for var in required_env_vars:
+    if not os.getenv(var):
+        pytest.skip(f"Performance test requires {var} environment variable")
 
 from src.main import create_app
 
@@ -44,36 +54,26 @@ class TestIndexCalculationV2Performance:
 
     @pytest.fixture
     def test_client(self):
-        """Create test client with mocked dependencies."""
-        with (
-            patch('src.core.config.get_settings'),
-            patch('src.main.monitoring_service', Mock()),
-            patch.dict(os.environ, {
-                'MONITORING_ENABLED': 'false',
-                'LIGHTWEIGHT_MONITORING': 'false',
-                'ERROR_CAPTURE_ENABLED': 'false',
-                'CONTAINER_APP_API_KEY': '',
-                'INDEX_CALC_CACHE_ENABLED': 'true',
-                'INDEX_CALC_CACHE_TTL_MINUTES': '60',
-                'INDEX_CALC_CACHE_MAX_SIZE': '1000'
-            })
-        ):
-            app = create_app()
-            return TestClient(app)
-
-    @pytest.fixture
-    def mock_embedding_client(self):
-        """Create mock embedding client with realistic delay."""
-        client = AsyncMock()
-
-        async def mock_create_embeddings(texts):
-            # Simulate API latency (50-100ms)
-            await asyncio.sleep(0.075)
-            return [[0.1] * 1536 for _ in texts]
-
-        client.create_embeddings = mock_create_embeddings
-        client.close = AsyncMock()
+        """Create test client with real API configuration."""
+        # Configure for performance testing with real APIs
+        import os
+        os.environ['MONITORING_ENABLED'] = 'false'
+        os.environ['LIGHTWEIGHT_MONITORING'] = 'true'
+        os.environ['ERROR_CAPTURE_ENABLED'] = 'false'
+        os.environ['INDEX_CALC_CACHE_ENABLED'] = 'true'
+        os.environ['INDEX_CALC_CACHE_TTL_MINUTES'] = '60'
+        os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = '1000'
+        
+        # Set API key for authentication
+        os.environ['CONTAINER_APP_API_KEY'] = 'perf-test-key'
+        
+        app = create_app()
+        client = TestClient(app)
+        # Add API key header for authentication
+        client.headers = {"X-API-Key": "perf-test-key"}
         return client
+
+    # Removed mock_embedding_client fixture - using real Azure API
 
     @pytest.fixture
     def test_data(self):
@@ -88,7 +88,7 @@ class TestIndexCalculationV2Performance:
     # TEST: API-IC-201-PT
     @pytest.mark.timeout(30)
     def test_response_time_benchmark(
-        self, test_client, mock_embedding_client, test_data
+        self, test_client, test_data
     ):
         """TEST: API-IC-201-PT - 響應時間基準測試(30秒).
 
@@ -118,39 +118,34 @@ class TestIndexCalculationV2Performance:
             }
         ]
 
-        # Run 100 requests total (statistical sampling)
+        # Run 100 requests total (statistical sampling) - using real Azure API
         iterations_per_case = 34  # ~100 total requests
 
-        with patch('src.services.index_calculation.get_azure_embedding_client',
-                  return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client',
-                      return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
-                        for test_case in test_cases:
-                            case_times = []
+        # Test with real Azure OpenAI API - no mocks for performance testing
+        for test_case in test_cases:
+            case_times = []
 
-                            for _ in range(iterations_per_case):
-                                start_time = time.time()
-                                response = test_client.post(
-                                    "/api/v1/index-calculation",
-                                    json={
-                                        "resume": test_case["resume"],
-                                        "job_description": test_case["jd"],
-                                        "keywords": test_case["keywords"]
-                                    }
-                                )
-                                elapsed = (time.time() - start_time) * 1000  # Convert to ms
+            for _ in range(iterations_per_case):
+                start_time = time.time()
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json={
+                        "resume": test_case["resume"],
+                        "job_description": test_case["jd"],
+                        "keywords": test_case["keywords"]
+                    }
+                )
+                elapsed = (time.time() - start_time) * 1000  # Convert to ms
 
-                                assert response.status_code == 200
-                                case_times.append(elapsed)
-                                response_times.append(elapsed)
+                assert response.status_code == 200
+                case_times.append(elapsed)
+                response_times.append(elapsed)
 
-                            # Calculate statistics for this case
-                            p50 = statistics.median(case_times)
-                            p95 = statistics.quantiles(case_times, n=20)[18] if len(case_times) >= 20 else max(case_times)
+            # Calculate statistics for this case
+            p50 = statistics.median(case_times)
+            p95 = statistics.quantiles(case_times, n=20)[18] if len(case_times) >= 20 else max(case_times)
 
-                            print(f"\n{test_case['name']} - P50: {p50:.0f}ms, P95: {p95:.0f}ms")
+            print(f"\n{test_case['name']} - P50: {p50:.0f}ms, P95: {p95:.0f}ms")
 
         # Overall statistics
         p50 = statistics.median(response_times)
@@ -162,15 +157,15 @@ class TestIndexCalculationV2Performance:
         print(f"P95: {p95:.0f}ms")
         print(f"P99: {p99:.0f}ms")
 
-        # Verify performance targets
-        assert p50 < 1000, f"P50 ({p50:.0f}ms) exceeds target (1000ms)"
-        assert p95 < 2000, f"P95 ({p95:.0f}ms) exceeds target (2000ms)"
-        assert p99 < 3000, f"P99 ({p99:.0f}ms) exceeds target (3000ms)"
+        # Verify performance targets - adjusted for real API latency
+        assert p50 < 5000, f"P50 ({p50:.0f}ms) exceeds target (5000ms)"
+        assert p95 < 10000, f"P95 ({p95:.0f}ms) exceeds target (10000ms)"  
+        assert p99 < 15000, f"P99 ({p99:.0f}ms) exceeds target (15000ms)"
 
     # TEST: API-IC-202-PT
     @pytest.mark.timeout(30)
     def test_cache_performance(
-        self, test_client, mock_embedding_client, test_data
+        self, test_client, test_data
     ):
         """TEST: API-IC-202-PT - 快取效能測試(30秒).
 
@@ -188,53 +183,48 @@ class TestIndexCalculationV2Performance:
         cache_hit_times = []
         cache_miss_times = []
 
-        with patch('src.services.index_calculation.get_azure_embedding_client',
-                  return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client',
-                      return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
-                        # Warmup phase - populate cache
-                        for query in queries:
-                            for _ in range(4):  # Repeat each query 4 times
-                                response = test_client.post(
-                                    "/api/v1/index-calculation",
-                                    json=query
-                                )
-                                assert response.status_code == 200
+        # Test with real Azure OpenAI API - cache performance measurement
+        # Warmup phase - populate cache
+        for query in queries:
+            for _ in range(4):  # Repeat each query 4 times
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json=query
+                )
+                assert response.status_code == 200
 
-                        # Test phase - 50 mixed queries
-                        import random
-                        random.seed(42)  # Deterministic for reproducibility
+        # Test phase - 50 mixed queries
+        import random
+        random.seed(42)  # Deterministic for reproducibility
 
-                        for _ in range(50):
-                            # 70% chance of cache hit (existing query)
-                            if random.random() < 0.7:  # noqa: S311
-                                query = random.choice(queries)  # noqa: S311
-                                is_cache_hit = True
-                            else:
-                                # New query (cache miss)
-                                idx = random.randint(100, 200)  # noqa: S311
-                                query = {
-                                    "resume": f"New developer {idx} with extensive experience in software development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
-                                    "job_description": f"New position {idx} looking for experienced software developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
-                                    "keywords": [f"Skill{idx}"]
-                                }
-                                is_cache_hit = False
+        for _ in range(50):
+            # 70% chance of cache hit (existing query)
+            if random.random() < 0.7:  # noqa: S311
+                query = random.choice(queries)  # noqa: S311
+                is_cache_hit = True
+            else:
+                # New query (cache miss)
+                idx = random.randint(100, 200)  # noqa: S311
+                query = {
+                    "resume": f"New developer {idx} with extensive experience in software development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
+                    "job_description": f"New position {idx} looking for experienced software developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
+                    "keywords": [f"Skill{idx}"]
+                }
+                is_cache_hit = False
 
-                            start_time = time.time()
-                            response = test_client.post(
-                                "/api/v1/index-calculation",
-                                json=query
-                            )
-                            elapsed = (time.time() - start_time) * 1000
+            start_time = time.time()
+            response = test_client.post(
+                "/api/v1/index-calculation",
+                json=query
+            )
+            elapsed = (time.time() - start_time) * 1000
 
-                            assert response.status_code == 200
+            assert response.status_code == 200
 
-                            if is_cache_hit:
-                                cache_hit_times.append(elapsed)
-                            else:
-                                cache_miss_times.append(elapsed)
+            if is_cache_hit:
+                cache_hit_times.append(elapsed)
+            else:
+                cache_miss_times.append(elapsed)
 
         # Calculate statistics
         if cache_hit_times:
@@ -256,9 +246,9 @@ class TestIndexCalculationV2Performance:
         assert hit_rate > 0.6, f"Cache hit rate ({hit_rate:.1%}) below target (60%)"
 
     # TEST: API-IC-203-PT
-    @pytest.mark.timeout(120)
+    @pytest.mark.timeout(60)
     def test_high_concurrency_load(
-        self, test_client, mock_embedding_client, test_data
+        self, test_client, test_data
     ):
         """TEST: API-IC-203-PT - 高並發負載測試(60秒).
 
@@ -269,29 +259,23 @@ class TestIndexCalculationV2Performance:
         response_times = []
 
         def make_request(request_id):
-            """Make a single request."""
+            """Make a single request with real Azure API."""
             try:
-                with patch('src.services.index_calculation.get_azure_embedding_client',
-                          return_value=mock_embedding_client):
-                    with patch('src.services.index_calculation_v2.get_azure_embedding_client',
-                              return_value=mock_embedding_client):
-                        with patch('src.services.index_calculation.monitoring_service', Mock()):
-                            with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
-                                start_time = time.time()
-                                response = test_client.post(
-                                    "/api/v1/index-calculation",
-                                    json={
-                                        "resume": f"Developer {request_id} with extensive Python experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
-                                        "job_description": f"Position {request_id} looking for experienced Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
-                                        "keywords": ["Python", f"Skill{request_id % 10}"]
-                                    }
-                                )
-                                elapsed = (time.time() - start_time) * 1000
+                start_time = time.time()
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json={
+                        "resume": f"Developer {request_id} with extensive Python experience in web development, cloud computing, and modern programming frameworks. Strong background in building scalable web applications, RESTful APIs, and microservices architecture. Proficient in Docker, Kubernetes, AWS, and CI/CD pipelines. Experience with database design, optimization, and distributed systems.",
+                        "job_description": f"Position {request_id} looking for experienced Python developer with strong technical skills and problem-solving abilities. Must have expertise in modern development frameworks, cloud technologies, and enterprise-level application development. Knowledge of containerization, orchestration, and DevOps practices is essential.",
+                        "keywords": ["Python", f"Skill{request_id % 10}"]
+                    }
+                )
+                elapsed = (time.time() - start_time) * 1000
 
-                                if response.status_code == 200:
-                                    return True, elapsed
-                                else:
-                                    return False, elapsed
+                if response.status_code == 200:
+                    return True, elapsed
+                else:
+                    return False, elapsed
             except Exception as e:
                 print(f"Request {request_id} failed: {e!s}")
                 return False, 0
@@ -361,7 +345,7 @@ class TestIndexCalculationV2Performance:
     # TEST: API-IC-204-PT
     @pytest.mark.timeout(30)
     def test_memory_efficiency(
-        self, test_client, mock_embedding_client, test_data
+        self, test_client, test_data
     ):
         """TEST: API-IC-204-PT - 記憶體使用效率測試(30秒).
 
@@ -377,38 +361,33 @@ class TestIndexCalculationV2Performance:
         # Phase 1: Process 200 unique requests
         print("\nProcessing 200 unique requests...")
 
-        with patch('src.services.index_calculation.get_azure_embedding_client',
-                  return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client',
-                      return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
-                        for i in range(200):
-                            # Use different content sizes
-                            if i % 3 == 0:
-                                content = test_data["standard_resumes"][0]["content"]  # Small
-                            elif i % 3 == 1:
-                                content = test_data["standard_resumes"][1]["content"]  # Medium
-                            else:
-                                content = test_data["standard_resumes"][2]["content"]  # Large
+        # Test memory efficiency with real Azure API
+        for i in range(200):
+            # Use different content sizes
+            if i % 3 == 0:
+                content = test_data["standard_resumes"][0]["content"]  # Small
+            elif i % 3 == 1:
+                content = test_data["standard_resumes"][1]["content"]  # Medium
+            else:
+                content = test_data["standard_resumes"][2]["content"]  # Large
 
-                            response = test_client.post(
-                                "/api/v1/index-calculation",
-                                json={
-                                    "resume": f"{content} - Version {i} with additional experience in modern development practices and cloud technologies",
-                                    "job_description": f"Job {i} looking for experienced developer with strong technical skills and expertise in modern frameworks. Must have knowledge of cloud computing, containerization, and enterprise application development practices.",
-                                    "keywords": [f"Skill{j}" for j in range(i % 5 + 1)]
-                                }
-                            )
-                            assert response.status_code == 200
+            response = test_client.post(
+                "/api/v1/index-calculation",
+                json={
+                    "resume": f"{content} - Version {i} with additional experience in modern development practices and cloud technologies",
+                    "job_description": f"Job {i} looking for experienced developer with strong technical skills and expertise in modern frameworks. Must have knowledge of cloud computing, containerization, and enterprise application development practices.",
+                    "keywords": [f"Skill{j}" for j in range(i % 5 + 1)]
+                }
+            )
+            assert response.status_code == 200
 
-                            # Sample memory every 50 requests
-                            if i % 50 == 0 and i > 0:
-                                current_snapshot = tracemalloc.take_snapshot()
-                                stats = current_snapshot.compare_to(baseline_snapshot, 'lineno')
+            # Sample memory every 50 requests
+            if i % 50 == 0 and i > 0:
+                current_snapshot = tracemalloc.take_snapshot()
+                stats = current_snapshot.compare_to(baseline_snapshot, 'lineno')
 
-                                current_memory = sum(stat.size for stat in stats) / 1024 / 1024  # MB
-                                print(f"After {i} requests: {current_memory:.1f} MB")
+                current_memory = sum(stat.size for stat in stats) / 1024 / 1024  # MB
+                print(f"After {i} requests: {current_memory:.1f} MB")
 
         # Get peak memory before GC
         peak_snapshot = tracemalloc.take_snapshot()
@@ -436,89 +415,86 @@ class TestIndexCalculationV2Performance:
 
         # Verify memory efficiency
         assert peak_memory < 2048, f"Peak memory ({peak_memory:.1f} MB) exceeds limit (2048 MB)"
-        assert recovered >= 0.0, f"Memory recovery ({recovered:.1%}) is negative - indicates memory leak"
+        assert recovered >= 0.5, f"Memory recovery ({recovered:.1%}) below target (50%)"
 
     # TEST: API-IC-205-PT
     @pytest.mark.timeout(30)
     def test_cache_size_limits(
-        self, test_client, mock_embedding_client
+        self, test_client
     ):
         """TEST: API-IC-205-PT - 快取大小限制測試(30秒).
 
         驗證快取大小限制和 LRU 淘汰效率。
         """
-        # Mock settings with small cache for testing
-        with patch.dict(os.environ, {
-            'INDEX_CALC_CACHE_MAX_SIZE': '100'  # Small cache for testing
-        }):
-            eviction_times = []
+        # Test cache size limits with real Azure API
+        # Set small cache for testing
+        import os
+        original_cache_size = os.environ.get('INDEX_CALC_CACHE_MAX_SIZE')
+        os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = '100'  # Small cache for testing
+        
+        eviction_times = []
 
-            with patch('src.services.index_calculation.get_azure_embedding_client',
-                      return_value=mock_embedding_client):
-                with patch('src.services.index_calculation_v2.get_azure_embedding_client',
-                          return_value=mock_embedding_client):
-                    with patch('src.services.index_calculation.monitoring_service', Mock()):
-                        with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
-                            # Phase 1: Fill cache to capacity
-                            print("\nFilling cache to capacity (100 items)...")
-                            for i in range(100):
-                                response = test_client.post(
-                                    "/api/v1/index-calculation",
-                                    json={
-                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
-                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
-                                        "keywords": [f"Keyword{i}"]
-                                    }
-                                )
-                                assert response.status_code == 200
+        try:
+            # Phase 1: Fill cache to capacity
+            print("\nFilling cache to capacity (100 items)...")
+            for i in range(100):
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json={
+                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
+                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
+                        "keywords": [f"Keyword{i}"]
+                    }
+                )
+                assert response.status_code == 200
 
-                            # Phase 2: Add 100 more items (trigger evictions)
-                            print("Adding 100 more items (triggering LRU eviction)...")
-                            for i in range(100, 200):
-                                start_time = time.time()
-                                response = test_client.post(
-                                    "/api/v1/index-calculation",
-                                    json={
-                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
-                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
-                                        "keywords": [f"Keyword{i}"]
-                                    }
-                                )
-                                eviction_time = (time.time() - start_time) * 1000
-                                eviction_times.append(eviction_time)
-                                assert response.status_code == 200
+            # Phase 2: Add 100 more items (trigger evictions)
+            print("Adding 100 more items (triggering LRU eviction)...")
+            for i in range(100, 200):
+                start_time = time.time()
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json={
+                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
+                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
+                        "keywords": [f"Keyword{i}"]
+                    }
+                )
+                eviction_time = (time.time() - start_time) * 1000
+                eviction_times.append(eviction_time)
+                assert response.status_code == 200
 
-                            # Phase 3: Verify LRU behavior
-                            print("Verifying LRU behavior...")
-                            # Try to access early items (should be evicted)
-                            early_found = 0
-                            for i in range(10):
-                                response = test_client.post(
-                                    "/api/v1/index-calculation",
-                                    json={
-                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
-                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
-                                        "keywords": [f"Keyword{i}"]
-                                    }
-                                )
-                                # In V2 with cache, we would check cache_hit field
-                                # For now, just verify request succeeds
-                                if response.status_code == 200:
-                                    early_found += 1
+            # Phase 3: Verify LRU behavior
+            print("Verifying LRU behavior...")
+            # Try to access early items (should be evicted)
+            early_found = 0
+            for i in range(10):
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json={
+                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
+                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
+                        "keywords": [f"Keyword{i}"]
+                    }
+                )
+                # In V2 with cache, we would check cache_hit field
+                # For now, just verify request succeeds
+                if response.status_code == 200:
+                    early_found += 1
 
-                            # Try to access recent items (should be in cache)
-                            recent_found = 0
-                            for i in range(190, 200):
-                                response = test_client.post(
-                                    "/api/v1/index-calculation",
-                                    json={
-                                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
-                                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
-                                        "keywords": [f"Keyword{i}"]
-                                    }
-                                )
-                                if response.status_code == 200:
-                                    recent_found += 1
+            # Try to access recent items (should be in cache)
+            recent_found = 0
+            for i in range(190, 200):
+                response = test_client.post(
+                    "/api/v1/index-calculation",
+                    json={
+                        "resume": f"Resume {i} - This is a sample resume with extensive experience in software development and programming",
+                        "job_description": f"Job {i} - Looking for an experienced software developer with strong technical skills",
+                        "keywords": [f"Keyword{i}"]
+                    }
+                )
+                if response.status_code == 200:
+                    recent_found += 1
 
             # Calculate eviction performance
             avg_eviction_time = statistics.mean(eviction_times)
@@ -531,8 +507,15 @@ class TestIndexCalculationV2Performance:
             print(f"Recent items found: {recent_found}/10")
 
             # Verify eviction performance
-            assert p95_eviction_time < 200, f"Eviction P95 ({p95_eviction_time:.1f}ms) exceeds target (200ms)"
+            assert p95_eviction_time < 10, f"Eviction P95 ({p95_eviction_time:.1f}ms) exceeds target (10ms)"
             # Note: Actual LRU behavior verification requires V2 cache implementation
+
+        finally:
+            # Restore original cache size
+            if original_cache_size:
+                os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = original_cache_size
+            else:
+                os.environ.pop('INDEX_CALC_CACHE_MAX_SIZE', None)
 
 
 if __name__ == "__main__":

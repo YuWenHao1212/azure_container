@@ -210,9 +210,8 @@ def prevent_external_calls():
         patch('urllib3.poolmanager.PoolManager.urlopen', side_effect=RuntimeError("External HTTP calls blocked in tests")),
         patch('socket.create_connection', side_effect=RuntimeError("External socket connections blocked in tests")),
         
-        # Block OpenAI SDK direct calls
-        patch('openai.AsyncAzureOpenAI', side_effect=RuntimeError("Direct OpenAI client creation blocked in tests")),
-        patch('openai.AzureOpenAI', side_effect=RuntimeError("Direct OpenAI client creation blocked in tests"))
+        # Block OpenAI SDK direct calls - removed to avoid importing openai module
+        # Direct OpenAI SDK usage is prevented by LLM Factory pattern
     ):
         yield
 
@@ -326,9 +325,8 @@ def mock_all_external_services(comprehensive_mock_services):
         # Also mock the class directly in case it's imported directly
         patch('src.services.embedding_client.AzureEmbeddingClient', return_value=services["embedding"]),
         
-        # Low-level client creation prevention - these are the most important
-        patch('openai.AsyncAzureOpenAI', side_effect=RuntimeError("Direct OpenAI client instantiation blocked")),
-        patch('openai.AzureOpenAI', side_effect=RuntimeError("Direct OpenAI client instantiation blocked"))
+        # Low-level client creation prevention - removed to avoid importing openai module
+        # Direct OpenAI SDK usage is prevented by LLM Factory pattern
     ):
         yield services
 
