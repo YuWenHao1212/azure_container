@@ -88,6 +88,15 @@ log_environment_info() {
     log_message "Script Version: Unit & Integration Test Runner v1.0"
     log_message "Test Specification: test-spec-index-cal-gap-analysis.md v1.0.1"
     log_message "Virtual Environment: ${VIRTUAL_ENV:-Not Active}"
+    
+    # LLM Configuration (from environment)
+    log_message "LLM Configuration (Mocked):"
+    log_message "  - Keywords Extraction: ${LLM_MODEL_KEYWORDS:-gpt41-mini} @ ${GPT41_MINI_JAPANEAST_ENDPOINT:-Mocked}"
+    log_message "  - Gap Analysis: ${LLM_MODEL_GAP_ANALYSIS:-gpt4o-2} @ ${AZURE_OPENAI_ENDPOINT:-Mocked}"
+    log_message "  - Index Calculation: ${LLM_MODEL_INDEX_CAL:-gpt4o-2} @ ${AZURE_OPENAI_ENDPOINT:-Mocked}"
+    log_message "  - GPT-4.1 Deployment: ${AZURE_OPENAI_GPT4_DEPLOYMENT:-Mocked}"
+    log_message "  - GPT-4.1 Mini Deployment: ${GPT41_MINI_JAPANEAST_DEPLOYMENT:-Mocked}"
+    
     log_message "Test Files:"
     log_message "  - Unit Tests: test/unit/test_gap_analysis_v2.py"
     log_message "  - Integration Tests: test/integration/test_gap_analysis_v2_integration_complete.py"

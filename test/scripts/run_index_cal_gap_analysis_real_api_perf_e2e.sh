@@ -112,6 +112,15 @@ log_environment_info() {
     log_message "Script Version: Real API Test Runner v1.0"
     log_message "Test Specification: test-spec-index-cal-gap-analysis.md v1.0.1"
     log_message "API Endpoint: ${AZURE_OPENAI_ENDPOINT:-Not Set}"
+    
+    # LLM Configuration
+    log_message "LLM Configuration:"
+    log_message "  - Keywords Extraction: ${LLM_MODEL_KEYWORDS:-gpt41-mini} @ ${GPT41_MINI_JAPANEAST_ENDPOINT:-Not Set}"
+    log_message "  - Gap Analysis: ${LLM_MODEL_GAP_ANALYSIS:-gpt4o-2} @ ${AZURE_OPENAI_ENDPOINT:-Not Set}"
+    log_message "  - Index Calculation: ${LLM_MODEL_INDEX_CAL:-gpt4o-2} @ ${AZURE_OPENAI_ENDPOINT:-Not Set}"
+    log_message "  - GPT-4.1 Deployment: ${AZURE_OPENAI_GPT4_DEPLOYMENT:-Not Set}"
+    log_message "  - GPT-4.1 Mini Deployment: ${GPT41_MINI_JAPANEAST_DEPLOYMENT:-Not Set}"
+    
     log_message "Test Files:"
     log_message "  - Performance: test/performance/test_gap_analysis_v2_performance.py"
     log_message "  - E2E: test/e2e_standalone/test_gap_analysis_v2_e2e.py"
