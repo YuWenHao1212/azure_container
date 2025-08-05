@@ -67,7 +67,7 @@ class IndexCalculationServiceV2(BaseService):
         embedding_client=None,
         enable_cache: bool = True,
         cache_ttl_minutes: int = 60,
-        cache_max_size: int = None,
+        cache_max_size: int | None = None,
         enable_parallel_processing: bool = True
     ):
         """Initialize the V2 service with enhanced features."""
@@ -402,12 +402,14 @@ class IndexCalculationServiceV2(BaseService):
                 return resume_embedding, job_embedding
             except Exception as e:
                 # For specific errors that should not fallback, re-raise immediately
-                from src.services.exceptions import RateLimitError, ExternalServiceError
-                from src.services.openai_client import AzureOpenAIRateLimitError, AzureOpenAIAuthError
-                if isinstance(e, (RateLimitError, ExternalServiceError, AzureOpenAIRateLimitError, AzureOpenAIAuthError)):
+                from src.services.exceptions import ExternalServiceError, RateLimitError
+                from src.services.openai_client import AzureOpenAIAuthError, AzureOpenAIRateLimitError
+                if isinstance(e, (
+                    RateLimitError | ExternalServiceError | AzureOpenAIRateLimitError | AzureOpenAIAuthError
+                )):
                     # Don't fallback for rate limit or external service errors
                     raise
-                
+
                 # For other errors, log and fall back to sequential
                 self.logger.warning(f"Parallel embedding computation failed: {e}, falling back to sequential")
                 resume_embedding = await self._get_or_compute_embedding(resume)
@@ -716,13 +718,13 @@ class IndexCalculationServiceV2(BaseService):
             raise
         except Exception as e:
             # Check if it's a specific error type that should be propagated
-            from src.services.exceptions import RateLimitError, ExternalServiceError
-            if isinstance(e, (RateLimitError, ExternalServiceError, TimeoutError)):
+            from src.services.exceptions import ExternalServiceError, RateLimitError
+            if isinstance(e, RateLimitError | ExternalServiceError | TimeoutError):
                 # Re-raise specific errors directly
                 self.calculation_stats["error_count"] += 1
                 self.logger.error(f"Index calculation failed with {type(e).__name__}: {e}")
                 raise
-            
+
             # For other exceptions, wrap in ServiceError
             self.calculation_stats["error_count"] += 1
             self.logger.error(f"Index calculation failed: {e}")

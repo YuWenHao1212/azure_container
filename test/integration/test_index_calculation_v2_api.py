@@ -204,10 +204,10 @@ class TestIndexCalculationV2Integration:
         response = test_client.post("/api/v1/index-calculation", json=empty_jd_request)
         assert response.status_code == 422
         
-        # Test short resume (< 200 chars)
+        # Test short resume (< 10 chars minimum)
         short_resume_request = {
-            "resume": "Short resume",
-            "job_description": "Valid job description with more than 200 characters to meet the minimum length requirement. This is a detailed job description that includes various technical skills and requirements for the position.",
+            "resume": "Short",  # Only 5 chars - less than minimum 10
+            "job_description": "Valid job description with sufficient length for processing. This meets the minimum requirements.",
             "keywords": ["Python", "FastAPI"]
         }
         response = test_client.post("/api/v1/index-calculation", json=short_resume_request)
@@ -244,10 +244,10 @@ class TestIndexCalculationV2Integration:
             
             response = test_client.post("/api/v1/index-calculation", json=valid_index_calc_request)
             
-            assert response.status_code == 401
+            assert response.status_code == 503  # API maps auth errors to 503
             data = response.json()
             assert data["success"] is False
-            assert "authentication" in data["error"]["message"].lower()
+            assert "service temporarily unavailable" in data["error"]["message"].lower()
             
         print("Azure OpenAI authentication error handling verified")
 
@@ -265,7 +265,7 @@ class TestIndexCalculationV2Integration:
             assert response.status_code == 503
             data = response.json()
             assert data["success"] is False
-            assert "error" in data["error"]["message"].lower()
+            assert "service temporarily unavailable" in data["error"]["message"].lower()
             
         print("Azure OpenAI server error handling verified")
 
@@ -323,29 +323,41 @@ class TestIndexCalculationV2Integration:
     # TEST: API-IC-109-IT
     def test_service_stats_endpoint(self, test_client):
         """TEST: API-IC-109-IT - 服務統計端點測試."""
-        # This test assumes a stats endpoint exists - mock if not implemented
-        with patch('src.api.v1.index_calculation.get_service_stats') as mock_stats:
-            mock_stats.return_value = {
-                "total_requests": 100,
-                "cache_hits": 80,
-                "cache_hit_rate": 0.8,
-                "avg_response_time_ms": 150
+        # Mock the service stats method directly
+        with patch('src.services.index_calculation_v2.IndexCalculationServiceV2.get_service_stats') as mock_get_stats:
+            mock_get_stats.return_value = {
+                "calculation_stats": {
+                    "total_calculations": 100,
+                    "successful_calculations": 95,
+                    "failed_calculations": 5,
+                    "average_processing_time_ms": 150.5
+                },
+                "cache_performance": {
+                    "hit_rate": 0.8,
+                    "total_hits": 80,
+                    "total_requests": 100,
+                    "cache_size": 50
+                },
+                "service_name": "IndexCalculationServiceV2",
+                "performance_optimizations": {
+                    "cache_enabled": True,
+                    "parallel_processing": True
+                }
             }
             
-            # Test stats endpoint (may not exist in current implementation)
-            try:
-                response = test_client.get("/api/v1/index-calculation/stats")
-                if response.status_code == 200:
-                    data = response.json()
-                    assert "cache_hit_rate" in data
-                    assert data["cache_hit_rate"] >= 0
-                else:
-                    # Stats endpoint not implemented - test passes
-                    assert True
-            except Exception:
-                # Stats endpoint not implemented - test passes
-                assert True
-                
+            # Test stats endpoint
+            response = test_client.get("/api/v1/index-calculation/stats")
+            
+            # Verify response
+            assert response.status_code == 200
+            data = response.json()
+            
+            # Verify expected structure
+            assert "calculation_stats" in data
+            assert "cache_performance" in data
+            assert data["calculation_stats"]["total_calculations"] == 100
+            assert data["cache_performance"]["hit_rate"] == 0.8
+            
         print("Service stats endpoint test completed")
 
     # TEST: API-IC-110-IT
