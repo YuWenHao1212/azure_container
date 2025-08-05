@@ -41,7 +41,7 @@ jobs:
     - name: Run Ruff check
       run: |
         pip install ruff
-        ruff check src/ --line-length=120 --fix
+        ruff check src/ --line-length=120
         
     - name: Create .env file for tests
       run: |

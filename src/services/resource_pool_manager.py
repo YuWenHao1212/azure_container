@@ -10,8 +10,6 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
-from openai import AsyncOpenAI
-
 from src.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -46,7 +44,7 @@ class ResourcePoolManager:
 
         # Client pool management
         self.available_clients: asyncio.Queue = asyncio.Queue()
-        self.active_clients: list[AsyncOpenAI] = []
+        self.active_clients: list[Any] = []  # Will hold AsyncOpenAI instances
         self.total_created = 0
 
         # Synchronization and state
@@ -87,13 +85,20 @@ class ResourcePoolManager:
                 f"in {init_time_ms:.2f}ms"
             )
 
-    async def _create_client(self) -> AsyncOpenAI:
+    async def _create_client(self) -> Any:
         """
         Create a new OpenAI client with optimized configuration.
 
         Returns:
             Configured AsyncOpenAI client
         """
+        # Lazy import to avoid module not found errors in test environments
+        try:
+            from openai import AsyncOpenAI
+        except ImportError as e:
+            logger.error("OpenAI SDK not installed. Please install it with: pip install openai")
+            raise ImportError("OpenAI SDK is required for ResourcePoolManager") from e
+
         # Use environment-specific configuration
         if hasattr(self.settings, 'gpt41_mini_japaneast_endpoint'):
             # GPT-4.1 Mini configuration for keyword extraction
