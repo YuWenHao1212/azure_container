@@ -220,8 +220,11 @@ update_progress() {
 extract_test_counts() {
     local log_file=$1
     local passed=$(grep -E "[0-9]+ passed" "$log_file" 2>/dev/null | tail -1 | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+' || echo 0)
+    local xpassed=$(grep -E "[0-9]+ xpassed" "$log_file" 2>/dev/null | tail -1 | grep -oE '[0-9]+ xpassed' | grep -oE '[0-9]+' || echo 0)
     local failed=$(grep -E "[0-9]+ failed" "$log_file" 2>/dev/null | tail -1 | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+' || echo 0)
-    echo "$passed/$failed"
+    # Include xpassed in the passed count (tests that were expected to fail but passed)
+    local total_passed=$((passed + xpassed))
+    echo "$total_passed/$failed"
 }
 
 # Function to collect and display test statistics
@@ -252,9 +255,21 @@ ${BLUE}=== 詳細測試統計 ===${NC}"
     local kw_unit2_failed=$(echo $kw_unit2_counts | cut -d'/' -f2)
     local kw_unit_passed=$((kw_unit1_passed + kw_unit2_passed))
     local kw_unit_failed=$((kw_unit1_failed + kw_unit2_failed))
-    local kw_int_counts=$(extract_test_counts /tmp/integration_azure_openai_output.log)
-    local kw_int_passed=$(echo $kw_int_counts | cut -d'/' -f1)
-    local kw_int_failed=$(echo $kw_int_counts | cut -d'/' -f2)
+    
+    # Integration tests for keyword extraction
+    # 1. Language-specific integration tests
+    local kw_int1_counts=$(extract_test_counts /tmp/integration_keyword_language_output.log)
+    local kw_int1_passed=$(echo $kw_int1_counts | cut -d'/' -f1)
+    local kw_int1_failed=$(echo $kw_int1_counts | cut -d'/' -f2)
+    
+    # 2. Azure OpenAI integration tests (also for keyword extraction)
+    local kw_int2_counts=$(extract_test_counts /tmp/integration_azure_openai_output.log)
+    local kw_int2_passed=$(echo $kw_int2_counts | cut -d'/' -f1)
+    local kw_int2_failed=$(echo $kw_int2_counts | cut -d'/' -f2)
+    
+    # Total integration tests
+    local kw_int_passed=$((kw_int1_passed + kw_int2_passed))
+    local kw_int_failed=$((kw_int1_failed + kw_int2_failed))
     
     # Performance test counts for keyword extraction
     local kw_perf_counts="0/0"
@@ -270,11 +285,12 @@ ${BLUE}=== 詳細測試統計 ===${NC}"
     
     # Language Detection
     local lang_unit_counts=$(extract_test_counts /tmp/unit_language_detection_output.log)
-    local lang_int_counts=$(extract_test_counts /tmp/integration_keyword_language_output.log)
+    # Fix: language detection doesn't have integration tests currently
+    local lang_int_counts="0/0"
     local lang_unit_passed=$(echo $lang_unit_counts | cut -d'/' -f1)
     local lang_unit_failed=$(echo $lang_unit_counts | cut -d'/' -f2)
-    local lang_int_passed=$(echo $lang_int_counts | cut -d'/' -f1)
-    local lang_int_failed=$(echo $lang_int_counts | cut -d'/' -f2)
+    local lang_int_passed=0
+    local lang_int_failed=0
     local lang_total_passed=$((lang_unit_passed + lang_int_passed))
     local lang_total_failed=$((lang_unit_failed + lang_int_failed))
     log "| 語言檢測          | $lang_unit_counts | $lang_int_counts | 0/0 | 0/0 | $lang_total_passed/$lang_total_failed |"

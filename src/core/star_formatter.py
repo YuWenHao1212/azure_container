@@ -3,7 +3,7 @@ STAR/PAR formatter for converting experience descriptions.
 """
 
 import re
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 
 class STARFormatter:
@@ -99,7 +99,7 @@ class STARFormatter:
         """Get appropriate action verbs for experience level"""
         return self.ACTION_VERBS.get(experience_level, self.ACTION_VERBS["junior"])
 
-    def enhance_bullet_point(self, text: str, keywords: Optional[list[str]] = None) -> str:
+    def enhance_bullet_point(self, text: str, keywords: list[str] | None = None) -> str:
         """
         Enhance a bullet point with better structure.
         This provides guidance for the LLM.

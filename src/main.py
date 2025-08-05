@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.api.v1 import router as v1_router
-from src.core.config import settings
+from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
 from src.middleware.error_capture_middleware import ErrorCaptureMiddleware
 from src.middleware.lightweight_monitoring import (
@@ -25,6 +25,9 @@ from src.middleware.monitoring_middleware import MonitoringMiddleware
 # Load environment variables from .env file
 load_dotenv()
 
+# Initialize settings
+settings = get_settings()
+
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, settings.log_level),
@@ -34,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
-    """Create and configure FastAPI application."""
+    """Create and configure FastAPI application with lifecycle management."""
 
     app = FastAPI(
         title=settings.app_name,
@@ -423,7 +426,7 @@ def create_app() -> FastAPI:
         error_response = create_validation_error_response(exc)
 
         return JSONResponse(
-            status_code=422,
+            status_code=400,  # Changed from 422 to 400 to match API contract
             content={
                 "success": False,
                 "data": {},
@@ -498,6 +501,57 @@ def create_app() -> FastAPI:
         )
 
     logger.info(f"{settings.app_name} initialized successfully")
+    # Add lifecycle event handlers
+    @app.on_event("startup")
+    async def startup_event():
+        """Application startup event handler."""
+        logger.info("Starting Azure Container API application")
+
+        # Initialize resource manager
+        try:
+            from src.core.resource_manager import start_resource_manager
+            await start_resource_manager()
+            logger.info("Resource manager started successfully")
+        except ImportError:
+            logger.warning("Resource manager not available")
+        except Exception as e:
+            logger.error(f"Failed to start resource manager: {e}")
+
+        # Log startup information
+        import psutil
+        try:
+            process = psutil.Process()
+            memory_info = process.memory_info()
+            startup_memory = memory_info.rss / 1024 / 1024
+            logger.info(f"Application started with {startup_memory:.1f}MB memory footprint")
+        except Exception as e:
+            logger.warning(f"Could not get startup memory info: {e}")
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        """Application shutdown event handler."""
+        logger.info("Shutting down Azure Container API application")
+
+        # Cleanup resource manager
+        try:
+            from src.core.resource_manager import shutdown_resource_manager
+            await shutdown_resource_manager()
+            logger.info("Resource manager shutdown completed")
+        except ImportError:
+            logger.warning("Resource manager not available for shutdown")
+        except Exception as e:
+            logger.error(f"Error during resource manager shutdown: {e}")
+
+        # Final memory report
+        import psutil
+        try:
+            process = psutil.Process()
+            memory_info = process.memory_info()
+            final_memory = memory_info.rss / 1024 / 1024
+            logger.info(f"Application shutdown with {final_memory:.1f}MB final memory usage")
+        except Exception as e:
+            logger.warning(f"Could not get final memory info: {e}")
+
     return app
 
 

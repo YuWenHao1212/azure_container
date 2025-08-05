@@ -17,7 +17,7 @@ import time
 import tracemalloc
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import psutil
 import pytest
@@ -34,10 +34,10 @@ class PerformanceResult:
 
     def __init__(self, detector_name: str):
         self.detector_name = detector_name
-        self.response_times: List[float] = []
-        self.memory_usage: List[float] = []
-        self.errors: List[str] = []
-        self.throughput_results: List[Dict[str, Any]] = []
+        self.response_times: list[float] = []
+        self.memory_usage: list[float] = []
+        self.errors: list[str] = []
+        self.throughput_results: list[dict[str, Any]] = []
 
     def add_response_time(self, time_ms: float) -> None:
         """Add a response time measurement."""
@@ -51,7 +51,7 @@ class PerformanceResult:
         """Add an error message."""
         self.errors.append(error)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Calculate performance statistics."""
         if not self.response_times:
             return {"error": "No successful measurements"}
@@ -89,7 +89,7 @@ class TestLanguageDetectionPerformance:
         return SimplifiedLanguageDetector()
 
     @pytest.fixture
-    def test_texts(self) -> Dict[str, str]:
+    def test_texts(self) -> dict[str, str]:
         """Test texts of different lengths."""
         return {
             "short_english": "Python developer with FastAPI experience. Must have Docker skills.",
@@ -183,7 +183,7 @@ Nice to Have:
 
     async def _measure_single_detection(
         self, detector, text: str, text_name: str
-    ) -> Tuple[float, str]:
+    ) -> tuple[float, str]:
         """Measure single detection time and return result."""
         start_time = time.perf_counter()
         try:
@@ -299,7 +299,7 @@ Nice to Have:
         test_text = test_texts["medium_english"]
         test_duration = 10  # seconds
 
-        async def measure_throughput(detector, detector_name: str) -> Dict[str, Any]:
+        async def measure_throughput(detector, detector_name: str) -> dict[str, Any]:
             """Measure throughput for a detector."""
             print(f"Testing {detector_name} throughput...")
 
@@ -383,7 +383,7 @@ Nice to Have:
         thread_counts = [5, 10, 20]
         requests_per_thread = 10
 
-        def worker_function(detector, detector_name: str, thread_id: int) -> Dict[str, Any]:
+        def worker_function(detector, detector_name: str, thread_id: int) -> dict[str, Any]:
             """Worker function for thread testing."""
             results = []
             errors = []
@@ -513,7 +513,7 @@ Nice to Have:
         print(f"{'=' * 80}")
         print("Monitoring memory usage and checking for leaks\n")
 
-        def measure_memory_usage(detector, detector_name: str, test_text: str) -> Dict[str, Any]:
+        def measure_memory_usage(detector, detector_name: str, test_text: str) -> dict[str, Any]:
             """Measure memory usage for a detector."""
 
             # Get initial memory usage
@@ -662,7 +662,7 @@ Nice to Have:
                             await rule_based_detector.detect_language(text)
                             end_time = time.perf_counter()
                             group_results["RuleBasedLanguageDetector"].append((end_time - start_time) * 1000)
-                        except Exception:
+                        except Exception:  # noqa: S112
                             # Skip failed detections in performance test
                             continue
 
@@ -672,7 +672,7 @@ Nice to Have:
                             await simplified_detector.detect_language(text)
                             end_time = time.perf_counter()
                             group_results["SimplifiedLanguageDetector"].append((end_time - start_time) * 1000)
-                        except Exception:
+                        except Exception:  # noqa: S112
                             # Skip failed detections in performance test
                             continue
 
@@ -815,7 +815,7 @@ if __name__ == "__main__":
     elif args.pytest:
         # Run with pytest
         import subprocess
-        subprocess.run([
+        subprocess.run([  # noqa: S607
             "python", "-m", "pytest",
             "test/performance/test_language_detection_performance.py",
             "-v", "-s"

@@ -17,10 +17,11 @@ from src.models.resume_format import (
 )
 from src.services.exceptions import LLMServiceError, ProcessingError
 from src.services.html_validator import HTMLValidator
+from src.services.llm_factory import get_llm_client
 from src.services.openai_client import (
     AzureOpenAIClient,
     AzureOpenAIRateLimitError,
-    get_azure_openai_client,
+    # get_azure_openai_client, # Replaced with LLM Factory
 )
 from src.services.resume_text_processor import ResumeTextProcessor
 from src.services.token_tracking_mixin import TokenTrackingMixin
@@ -34,7 +35,7 @@ class ResumeFormatService(TokenTrackingMixin):
 
     def __init__(self, openai_client: AzureOpenAIClient = None):
         super().__init__()  # Initialize TokenTrackingMixin
-        self.openai_client = openai_client or get_azure_openai_client()
+        self.openai_client = openai_client or get_llm_client(api_name="resume_format")
         self.prompt_service = UnifiedPromptService(task_path="resume_format")
         self.text_processor = ResumeTextProcessor()
         self.html_validator = HTMLValidator()

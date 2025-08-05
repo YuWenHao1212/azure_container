@@ -1,14 +1,17 @@
 """Temporary server with mocked LLM responses for performance testing."""
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Set testing environment
 os.environ['TESTING'] = 'true'
 os.environ['MONITORING_ENABLED'] = 'false'
 
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
+
 import uvicorn
+
 from src.main import app
 
 # Mock the LLM clients
@@ -37,4 +40,4 @@ async_mock_client.chat.completions.create = AsyncMock(return_value=mock_response
 with patch('src.services.openai_client.get_azure_openai_client', return_value=async_mock_client):
     with patch('src.services.openai_client_gpt41.get_gpt41_mini_client', return_value=async_mock_client):
         # Start the server
-        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="error")
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="error")  # noqa: S104

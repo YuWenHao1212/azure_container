@@ -5,14 +5,13 @@ Supports both local file logging and Azure stdout logging based on environment v
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Optional
 
 
 class MonitoringLoggerSetup:
     """Setup monitoring logger with dual output support."""
 
     _initialized = False
-    _logger: Optional[logging.Logger] = None
+    _logger: logging.Logger | None = None
 
     @classmethod
     def setup_business_logger(cls) -> logging.Logger:

@@ -157,10 +157,23 @@ class TestAzureOpenAIIntegration:
         # === Authentication Error Handling ===
         mock_keyword_service.process.side_effect = AzureOpenAIAuthError("Invalid API key")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -173,10 +186,23 @@ class TestAzureOpenAIIntegration:
         # === Permission Denied Error ===
         mock_keyword_service.process.side_effect = AzureOpenAIAuthError("Permission denied: Insufficient quota")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -189,10 +215,23 @@ class TestAzureOpenAIIntegration:
         # === Rate Limit Error Handling ===
         mock_keyword_service.process.side_effect = AzureOpenAIRateLimitError("Rate limit exceeded")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -206,10 +245,23 @@ class TestAzureOpenAIIntegration:
         rate_limit_error = AzureOpenAIRateLimitError("Rate limit exceeded: Retry-After: 60s")
         mock_keyword_service.process.side_effect = rate_limit_error
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -222,10 +274,23 @@ class TestAzureOpenAIIntegration:
         # === Server Error Handling ===
         mock_keyword_service.process.side_effect = AzureOpenAIServerError("Internal server error (500)")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -238,10 +303,23 @@ class TestAzureOpenAIIntegration:
         # === Service Unavailable Error ===
         mock_keyword_service.process.side_effect = AzureOpenAIServerError("Service unavailable (503)")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -252,12 +330,25 @@ class TestAzureOpenAIIntegration:
         assert "Azure OpenAI" in data["error"]["message"]
 
         # === Timeout Error Handling ===
-        mock_keyword_service.process.side_effect = asyncio.TimeoutError("Request timeout")
+        mock_keyword_service.process.side_effect = TimeoutError("Request timeout")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -270,10 +361,23 @@ class TestAzureOpenAIIntegration:
         # === Network Error Handling ===
         mock_keyword_service.process.side_effect = httpx.ConnectError("Connection failed")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -304,10 +408,23 @@ class TestAzureOpenAIIntegration:
             mock_keyword_service.process.side_effect = None
             mock_keyword_service.process.return_value = expected_result
 
-            with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-                with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                    with patch('src.services.llm_factory.get_llm_info', return_value=model_config):
-                        with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+            with (
+
+
+                patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+                patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+            ):
+                    with (
+
+                        patch('src.services.llm_factory.get_llm_info', return_value=model_config),
+
+                        patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                    ):
                             with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                                 response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -319,10 +436,23 @@ class TestAzureOpenAIIntegration:
         # === Invalid Deployment Configuration ===
         mock_keyword_service.process.side_effect = AzureOpenAIError("Deployment not found: invalid-deployment")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'deployment': 'invalid-deployment', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'deployment': 'invalid-deployment', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -349,17 +479,17 @@ class TestAzureOpenAIIntegration:
 
         def make_request():
             with (
-                patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', 
+                patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
                       return_value=mock_keyword_service),
                 patch('src.services.llm_factory.get_llm_client_smart', return_value=mock_azure_openai_client),
                 patch('src.services.llm_factory.get_llm_client', return_value=mock_azure_openai_client),
-                patch('src.services.llm_factory.get_llm_info', 
+                patch('src.services.llm_factory.get_llm_info',
                       return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
                 patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
                 patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
             ):
                 return test_client.post(
-                    "/api/v1/extract-jd-keywords", 
+                    "/api/v1/extract-jd-keywords",
                     json=valid_job_description_request
                 )
 
@@ -397,10 +527,23 @@ class TestAzureOpenAIIntegration:
         # First request fails
         mock_keyword_service.process.side_effect = AzureOpenAIServerError("Temporary server error")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response1 = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -417,10 +560,23 @@ class TestAzureOpenAIIntegration:
         mock_keyword_service.process.side_effect = None
         mock_keyword_service.process.return_value = expected_result
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response2 = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -444,10 +600,23 @@ class TestAzureOpenAIIntegration:
 
         mock_keyword_service.process.return_value = expected_result
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -467,10 +636,23 @@ class TestAzureOpenAIIntegration:
         mock_monitoring.track_event = Mock()
         mock_monitoring.track_metric = Mock()
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', mock_monitoring):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', mock_monitoring)
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -505,10 +687,23 @@ class TestAzureOpenAIIntegration:
         mock_keyword_service.validate_input.return_value = large_request
         mock_keyword_service.process.return_value = expected_result
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=large_request)
 
@@ -520,10 +715,23 @@ class TestAzureOpenAIIntegration:
         # === Malformed Response Handling ===
         mock_keyword_service.process.side_effect = ProcessingError("Malformed response from Azure OpenAI")
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -545,10 +753,23 @@ class TestAzureOpenAIIntegration:
         mock_keyword_service.process.side_effect = None
         mock_keyword_service.process.return_value = expected_result
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 
@@ -574,10 +795,23 @@ class TestAzureOpenAIIntegration:
 
         mock_keyword_service.process.return_value = expected_result
 
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service):
-            with patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock()):
-                with patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}):
-                    with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+        with (
+
+
+            patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2', return_value=mock_keyword_service),
+
+
+            patch('src.services.llm_factory.get_llm_client_smart', return_value=AsyncMock())
+
+
+        ):
+                with (
+
+                    patch('src.services.llm_factory.get_llm_info', return_value={'model': 'gpt-4.1-mini', 'region': 'japaneast'}),
+
+                    patch('src.api.v1.keyword_extraction.monitoring_service', Mock())
+
+                ):
                         with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                             response = test_client.post("/api/v1/extract-jd-keywords", json=valid_job_description_request)
 

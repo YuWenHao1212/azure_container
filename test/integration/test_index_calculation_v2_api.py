@@ -20,7 +20,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from unittest.mock import AsyncMock, Mock, patch
 
-import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -39,10 +38,8 @@ os.environ['INDEX_CALC_CACHE_TTL_MINUTES'] = '60'
 os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = '1000'
 
 from src.main import create_app
-from src.services.exceptions import ProcessingError
 from src.services.openai_client import (
     AzureOpenAIAuthError,
-    AzureOpenAIError,
     AzureOpenAIRateLimitError,
     AzureOpenAIServerError,
 )
@@ -95,10 +92,10 @@ class TestIndexCalculationV2Integration:
     def test_data(self):
         """Load test data from fixtures."""
         fixture_path = os.path.join(
-            os.path.dirname(__file__), 
+            os.path.dirname(__file__),
             '../fixtures/index_calculation/test_data.json'
         )
-        with open(fixture_path, 'r', encoding='utf-8') as f:
+        with open(fixture_path, encoding='utf-8') as f:
             return json.load(f)
 
     # TEST: API-IC-101-IT
@@ -106,7 +103,7 @@ class TestIndexCalculationV2Integration:
         self, test_client, mock_embedding_client, valid_index_calc_request
     ):
         """TEST: API-IC-101-IT - API端點基本功能測試.
-        
+
         驗證 POST /api/v1/index-calculation 端點正常運作。
         """
         # Mock successful embeddings
@@ -116,12 +113,17 @@ class TestIndexCalculationV2Integration:
         ]
 
         # Mock for both V1 and V2 services
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.index_calculation.get_azure_embedding_client',
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                       return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                with (
+
+                    patch('src.services.index_calculation.monitoring_service', Mock()),
+
+                    patch('src.services.index_calculation_v2.monitoring_service', Mock())
+
+                ):
                         response = test_client.post(
                             "/api/v1/index-calculation",
                             json=valid_index_calc_request
@@ -130,18 +132,18 @@ class TestIndexCalculationV2Integration:
         # Verify response
         assert response.status_code == 200
         data = response.json()
-        
+
         # Check required fields
         assert "success" in data
         assert data["success"] is True
         assert "data" in data
-        
+
         # Check data structure
         result = data["data"]
         assert "raw_similarity_percentage" in result
         assert "similarity_percentage" in result
         assert "keyword_coverage" in result
-        
+
         # Check keyword coverage structure
         coverage = result["keyword_coverage"]
         assert "total_keywords" in coverage
@@ -149,7 +151,7 @@ class TestIndexCalculationV2Integration:
         assert "coverage_percentage" in coverage
         assert "covered_keywords" in coverage
         assert "missed_keywords" in coverage
-        
+
         # Verify types
         assert isinstance(result["raw_similarity_percentage"], int)
         assert isinstance(result["similarity_percentage"], int)
@@ -161,7 +163,7 @@ class TestIndexCalculationV2Integration:
         self, test_client, mock_embedding_client, valid_index_calc_request
     ):
         """TEST: API-IC-102-IT - 快取行為整合測試.
-        
+
         驗證快取在 API 層級的正確行為。
         Note: V2 implementation will include cache functionality.
         """
@@ -172,42 +174,47 @@ class TestIndexCalculationV2Integration:
         ]
 
         # Mock for both V1 and V2 services
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.index_calculation.get_azure_embedding_client',
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                       return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                with (
+
+                    patch('src.services.index_calculation.monitoring_service', Mock()),
+
+                    patch('src.services.index_calculation_v2.monitoring_service', Mock())
+
+                ):
                         # First request - cache miss
                         start_time1 = time.time()
                         response1 = test_client.post(
                             "/api/v1/index-calculation",
                             json=valid_index_calc_request
                         )
-                        time1 = time.time() - start_time1
+                        time.time() - start_time1
 
                         assert response1.status_code == 200
                         data1 = response1.json()
-                        
+
                         # For V2, check cache_hit field when implemented
                         # assert data1["data"].get("cache_hit") is False
-                        
+
                         # Second request - should be cache hit (much faster)
                         start_time2 = time.time()
                         response2 = test_client.post(
                             "/api/v1/index-calculation",
                             json=valid_index_calc_request
                         )
-                        time2 = time.time() - start_time2
+                        time.time() - start_time2
 
                         assert response2.status_code == 200
                         data2 = response2.json()
-                        
+
                         # Results should be identical
                         assert data1["data"]["raw_similarity_percentage"] == data2["data"]["raw_similarity_percentage"]
                         assert data1["data"]["similarity_percentage"] == data2["data"]["similarity_percentage"]
                         assert data1["data"]["keyword_coverage"] == data2["data"]["keyword_coverage"]
-                        
+
                         # For V2, check cache_hit field when implemented
                         # assert data2["data"].get("cache_hit") is True
                         # assert time2 < time1 * 0.1  # Cache hit should be much faster
@@ -215,7 +222,7 @@ class TestIndexCalculationV2Integration:
     # TEST: API-IC-103-IT
     def test_input_validation(self, test_client):
         """TEST: API-IC-103-IT - 輸入驗證測試.
-        
+
         驗證各種無效輸入的錯誤處理。
         """
         # Test empty resume
@@ -230,7 +237,7 @@ class TestIndexCalculationV2Integration:
         assert response.status_code == 400
         assert response.json()["success"] is False
         assert "error" in response.json()
-        
+
         # Test missing fields
         response = test_client.post(
             "/api/v1/index-calculation",
@@ -240,14 +247,14 @@ class TestIndexCalculationV2Integration:
             }
         )
         assert response.status_code == 422  # FastAPI validation error
-        
+
         # Test invalid JSON
         response = test_client.post(
             "/api/v1/index-calculation",
             data="invalid json"
         )
         assert response.status_code == 422
-        
+
         # Test extremely short text (< 100 characters total)
         response = test_client.post(
             "/api/v1/index-calculation",
@@ -259,7 +266,7 @@ class TestIndexCalculationV2Integration:
         )
         assert response.status_code == 400
         assert "too short" in response.json()["error"]["details"].lower()
-        
+
         # Test extremely long text (> 500KB)
         large_text = "x" * 600000
         response = test_client.post(
@@ -278,13 +285,13 @@ class TestIndexCalculationV2Integration:
         self, test_client, valid_index_calc_request
     ):
         """TEST: API-IC-104-IT - Azure OpenAI服務失敗測試.
-        
+
         驗證 embedding 服務失敗時的錯誤處理。
         """
         # Reset the service singleton to ensure clean state
         import src.services.index_calculation_v2
         src.services.index_calculation_v2._index_calculation_service_v2 = None
-        
+
         # Test rate limit error
         mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = AzureOpenAIRateLimitError(
@@ -292,7 +299,7 @@ class TestIndexCalculationV2Integration:
         )
         mock_embedding_client.close = AsyncMock()
 
-        with patch('src.services.embedding_client.get_azure_embedding_client', 
+        with patch('src.services.embedding_client.get_azure_embedding_client',
                   return_value=mock_embedding_client):
             response = test_client.post(
                 "/api/v1/index-calculation",
@@ -303,10 +310,10 @@ class TestIndexCalculationV2Integration:
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "SERVICE_ERROR"
-        
+
         # Reset singleton for next test
         src.services.index_calculation_v2._index_calculation_service_v2 = None
-        
+
         # Test authentication error
         mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = AzureOpenAIAuthError(
@@ -314,7 +321,7 @@ class TestIndexCalculationV2Integration:
         )
         mock_embedding_client.close = AsyncMock()
 
-        with patch('src.services.embedding_client.get_azure_embedding_client', 
+        with patch('src.services.embedding_client.get_azure_embedding_client',
                   return_value=mock_embedding_client):
             response = test_client.post(
                 "/api/v1/index-calculation",
@@ -323,10 +330,10 @@ class TestIndexCalculationV2Integration:
 
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SERVICE_ERROR"
-        
+
         # Reset singleton for next test
         src.services.index_calculation_v2._index_calculation_service_v2 = None
-        
+
         # Test server error
         mock_embedding_client = AsyncMock()
         mock_embedding_client.create_embeddings.side_effect = AzureOpenAIServerError(
@@ -334,7 +341,7 @@ class TestIndexCalculationV2Integration:
         )
         mock_embedding_client.close = AsyncMock()
 
-        with patch('src.services.embedding_client.get_azure_embedding_client', 
+        with patch('src.services.embedding_client.get_azure_embedding_client',
                   return_value=mock_embedding_client):
             response = test_client.post(
                 "/api/v1/index-calculation",
@@ -343,16 +350,16 @@ class TestIndexCalculationV2Integration:
 
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SERVICE_ERROR"
-        
+
         # Reset singleton for next test
         src.services.index_calculation_v2._index_calculation_service_v2 = None
-        
+
         # Test timeout
         mock_embedding_client = AsyncMock()
-        mock_embedding_client.create_embeddings.side_effect = asyncio.TimeoutError()
+        mock_embedding_client.create_embeddings.side_effect = TimeoutError()
         mock_embedding_client.close = AsyncMock()
 
-        with patch('src.services.embedding_client.get_azure_embedding_client', 
+        with patch('src.services.embedding_client.get_azure_embedding_client',
                   return_value=mock_embedding_client):
             response = test_client.post(
                 "/api/v1/index-calculation",
@@ -361,7 +368,7 @@ class TestIndexCalculationV2Integration:
 
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SERVICE_ERROR"
-        
+
         # Final cleanup
         src.services.index_calculation_v2._index_calculation_service_v2 = None
 
@@ -370,7 +377,7 @@ class TestIndexCalculationV2Integration:
         self, test_client, mock_embedding_client, test_data
     ):
         """TEST: API-IC-105-IT - 並發請求處理測試.
-        
+
         驗證高並發請求下的系統穩定性。
         """
         # Mock embeddings to return quickly
@@ -381,12 +388,17 @@ class TestIndexCalculationV2Integration:
 
         def make_request(index):
             """Make a single request with unique content."""
-            with patch('src.services.index_calculation.get_azure_embedding_client', 
+            with patch('src.services.index_calculation.get_azure_embedding_client',
                       return_value=mock_embedding_client):
-                with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+                with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                           return_value=mock_embedding_client):
-                    with patch('src.services.index_calculation.monitoring_service', Mock()):
-                        with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                    with (
+
+                        patch('src.services.index_calculation.monitoring_service', Mock()),
+
+                        patch('src.services.index_calculation_v2.monitoring_service', Mock())
+
+                    ):
                             response = test_client.post(
                                 "/api/v1/index-calculation",
                                 json={
@@ -400,10 +412,10 @@ class TestIndexCalculationV2Integration:
         # Execute 10 concurrent requests
         successful_requests = 0
         failed_requests = 0
-        
+
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(make_request, i) for i in range(10)]
-            
+
             for future in as_completed(futures):
                 try:
                     response = future.result()
@@ -423,13 +435,13 @@ class TestIndexCalculationV2Integration:
         self, test_client, mock_embedding_client, test_data
     ):
         """TEST: API-IC-106-IT - 大文檔處理測試.
-        
+
         驗證大文檔的處理能力和效能。
         """
         # Use large resume from test data
         large_resume = test_data["standard_resumes"][2]["content"]  # 10KB resume
         large_jd = test_data["job_descriptions"][2]["content"]  # 5KB job description
-        
+
         # Mock embeddings
         mock_embedding_client.create_embeddings.return_value = [
             [0.1] * 1536,
@@ -437,12 +449,17 @@ class TestIndexCalculationV2Integration:
         ]
 
         # Mock for both V1 and V2 services
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.index_calculation.get_azure_embedding_client',
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                       return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                with (
+
+                    patch('src.services.index_calculation.monitoring_service', Mock()),
+
+                    patch('src.services.index_calculation_v2.monitoring_service', Mock())
+
+                ):
                         start_time = time.time()
                         response = test_client.post(
                             "/api/v1/index-calculation",
@@ -457,20 +474,25 @@ class TestIndexCalculationV2Integration:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        
+
         # Should process within reasonable time (< 5 seconds for test)
         assert processing_time < 5.0
-        
+
         # Test maximum size (30KB)
         very_large_resume = large_resume * 3  # ~30KB
-        
+
         # Mock for both V1 and V2 services
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.index_calculation.get_azure_embedding_client',
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                       return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                with (
+
+                    patch('src.services.index_calculation.monitoring_service', Mock()),
+
+                    patch('src.services.index_calculation_v2.monitoring_service', Mock())
+
+                ):
                         response = test_client.post(
                             "/api/v1/index-calculation",
                             json={
@@ -485,13 +507,13 @@ class TestIndexCalculationV2Integration:
     # TEST: API-IC-107-IT
     def test_service_stats_endpoint(self, test_client):
         """TEST: API-IC-107-IT - 服務統計端點測試.
-        
+
         驗證 GET /api/v1/index-calculation/stats 端點。
         Note: This endpoint will be implemented in V2.
         """
         # For V2 implementation
         response = test_client.get("/api/v1/index-calculation/stats")
-        
+
         # Expected to return 404 until implemented
         # When implemented, should return:
         # assert response.status_code == 200
@@ -500,7 +522,7 @@ class TestIndexCalculationV2Integration:
         # assert "cache_hit_rate" in data
         # assert "average_processing_time_ms" in data
         # assert "error_rate" in data
-        
+
         # For now, just verify the endpoint doesn't crash the app
         assert response.status_code in [200, 404]
 
@@ -509,13 +531,13 @@ class TestIndexCalculationV2Integration:
         self, test_client, mock_embedding_client, test_data
     ):
         """TEST: API-IC-108-IT - 跨語言內容測試.
-        
+
         驗證中英文混合內容的處理。
         """
         # Get Chinese and mixed language content from test data
         chinese_resume = test_data["standard_resumes"][4]["content"]
         mixed_jd = test_data["job_descriptions"][4]["content"]
-        
+
         # Mock embeddings
         mock_embedding_client.create_embeddings.return_value = [
             [0.1] * 1536,
@@ -523,12 +545,17 @@ class TestIndexCalculationV2Integration:
         ]
 
         # Mock for both V1 and V2 services
-        with patch('src.services.index_calculation.get_azure_embedding_client', 
+        with patch('src.services.index_calculation.get_azure_embedding_client',
                   return_value=mock_embedding_client):
-            with patch('src.services.index_calculation_v2.get_azure_embedding_client', 
+            with patch('src.services.index_calculation_v2.get_azure_embedding_client',
                       return_value=mock_embedding_client):
-                with patch('src.services.index_calculation.monitoring_service', Mock()):
-                    with patch('src.services.index_calculation_v2.monitoring_service', Mock()):
+                with (
+
+                    patch('src.services.index_calculation.monitoring_service', Mock()),
+
+                    patch('src.services.index_calculation_v2.monitoring_service', Mock())
+
+                ):
                         # Test Chinese resume with English JD
                         response1 = test_client.post(
                             "/api/v1/index-calculation",
@@ -542,7 +569,7 @@ class TestIndexCalculationV2Integration:
                         assert response1.status_code == 200
                         data1 = response1.json()
                         assert data1["success"] is True
-                        
+
                         # Test mixed language content
                         response2 = test_client.post(
                             "/api/v1/index-calculation",
@@ -556,7 +583,7 @@ class TestIndexCalculationV2Integration:
                         assert response2.status_code == 200
                         data2 = response2.json()
                         assert data2["success"] is True
-                        
+
                         # Verify keyword matching works with mixed languages
                         coverage = data2["data"]["keyword_coverage"]
                         assert coverage["total_keywords"] == 4

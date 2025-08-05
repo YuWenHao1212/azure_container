@@ -4,7 +4,7 @@ All API responses must use these models to ensure consistency.
 Following Bubble.io compatibility requirements - no Optional types.
 """
 from datetime import datetime
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -100,7 +100,7 @@ def create_error_response(
     code: str,
     message: str,
     details: str = "",
-    data: Optional[dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 ) -> UnifiedResponse:
     """Create an error response with given error information."""
     return UnifiedResponse(
@@ -111,6 +111,39 @@ def create_error_response(
             code=code,
             message=message,
             details=details
+        ),
+        warning=WarningInfo(),
+        timestamp=datetime.utcnow().isoformat()
+    )
+
+
+class ErrorCodes:
+    """Centralized error code definitions for API validation."""
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    TEXT_TOO_SHORT = "TEXT_TOO_SHORT"
+    INVALID_LANGUAGE = "INVALID_LANGUAGE"
+    TIMEOUT_ERROR = "TIMEOUT_ERROR"
+    RATE_LIMIT_ERROR = "RATE_LIMIT_ERROR"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
+def create_validation_error_response(field: str, message: str) -> UnifiedResponse:
+    """Create validation error response with appropriate error code."""
+    error_code = (
+        ErrorCodes.TEXT_TOO_SHORT if "200" in message or "length" in message.lower()
+        else ErrorCodes.VALIDATION_ERROR
+    )
+    if "language" in message.lower():
+        error_code = ErrorCodes.INVALID_LANGUAGE
+
+    return UnifiedResponse(
+        success=False,
+        data={},
+        error=ErrorDetail(
+            has_error=True,
+            code=error_code,
+            message=f"Validation failed for field '{field}'",
+            details=message
         ),
         warning=WarningInfo(),
         timestamp=datetime.utcnow().isoformat()

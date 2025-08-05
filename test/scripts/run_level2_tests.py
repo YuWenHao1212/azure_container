@@ -7,11 +7,11 @@ logging results to test/logs/level2_unit_YYYYMMDD_HHMMSS.log
 """
 
 import os
-import sys
 import subprocess
+import sys
 from datetime import datetime
-from log_manager import get_log_dir, prepare_log_dir, get_log_path
-import json
+
+from log_manager import get_log_dir, get_log_path, prepare_log_dir
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,20 +22,20 @@ def run_tests():
     # Setup log directory and clean old logs
     log_dir = get_log_dir()
     prepare_log_dir(log_dir, "level2_unit_*.log", keep_count=6)
-    
+
     # Get log file path
     log_file = str(get_log_path("level2_unit"))
-    
-    print(f"Running Level 2 unit tests...")
+
+    print("Running Level 2 unit tests...")
     print(f"Log file: {log_file}")
     print("-" * 80)
-    
+
     # Test files to run
     test_files = [
         "test/unit/test_health.py",
         "test/unit/test_keyword_extraction.py"
     ]
-    
+
     # Run pytest with detailed output
     cmd = [
         "pytest",
@@ -46,7 +46,7 @@ def run_tests():
         "-p", "no:warnings",  # Disable warnings
         *test_files
     ]
-    
+
     # Open log file for writing
     with open(log_file, "w") as log:
         # Write header
@@ -58,51 +58,51 @@ def run_tests():
         log.write(f"- Working directory: {os.getcwd()}\n\n")
         log.write("Test Execution:\n")
         log.write("-" * 80 + "\n\n")
-        
+
         # Run tests and capture output
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # noqa: S603
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
             cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         )
-        
+
         # Stream output to both console and log file
         for line in process.stdout:
             print(line, end="")
             log.write(line)
-        
+
         # Wait for process to complete
         return_code = process.wait()
-        
+
         # Write summary
         log.write("\n" + "=" * 80 + "\n")
         log.write("Test Summary:\n")
         log.write(f"- Exit code: {return_code}\n")
         log.write(f"- Status: {'PASSED' if return_code == 0 else 'FAILED'}\n")
-        
+
         # Note: JSON report disabled for now (requires pytest-json-report plugin)
         log.write("- Test results saved to log file\n")
-        
+
         log.write(f"\nCompleted at: {datetime.now().isoformat()}\n")
-    
+
     print("-" * 80)
     print(f"Tests completed. Exit code: {return_code}")
     print(f"Full results logged to: {log_file}")
-    
+
     # Also create a summary file for quick reference
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     summary_file = str(get_log_path(f"level2_unit_{timestamp}_summary", ".txt"))
     with open(summary_file, "w") as sf:
-        sf.write(f"Level 2 Unit Test Summary\n")
+        sf.write("Level 2 Unit Test Summary\n")
         sf.write(f"Timestamp: {timestamp}\n")
         sf.write(f"Status: {'PASSED' if return_code == 0 else 'FAILED'}\n")
         sf.write(f"Exit code: {return_code}\n")
         sf.write(f"Log file: {log_file}\n")
-        
+
         # JSON report disabled for now
-    
+
     return return_code
 
 

@@ -3,7 +3,7 @@ Utility functions for formatting errors with detailed types.
 Supports validation errors, HTTP errors, and general exceptions.
 """
 import traceback
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -112,7 +112,7 @@ ERROR_TYPE_DESCRIPTIONS = {
 }
 
 
-def get_error_type_description(error_type: str, default: Optional[str] = None) -> str:
+def get_error_type_description(error_type: str, default: str | None = None) -> str:
     """
     Get a user-friendly description for an error type.
 
@@ -251,7 +251,7 @@ def classify_exception(exc: Exception) -> dict[str, Any]:
 def create_error_response(
     error_code: str,
     message: str,
-    exc: Optional[Exception] = None,
+    exc: Exception | None = None,
     status_code: int = 500,
     include_details: bool = True
 ) -> dict[str, Any]:
@@ -298,7 +298,7 @@ def create_error_response(
     return response
 
 
-def get_safe_preview(data: Any, max_length: Optional[int] = None) -> str:
+def get_safe_preview(data: Any, max_length: int | None = None) -> str:
     """
     Get a safe preview of data for logging.
 
@@ -321,7 +321,7 @@ def get_safe_preview(data: Any, max_length: Optional[int] = None) -> str:
         return "[Unable to preview]"
 
 
-def get_stack_trace_preview(exc: Exception, max_frames: Optional[int] = None) -> list[str]:
+def get_stack_trace_preview(exc: Exception, max_frames: int | None = None) -> list[str]:
     """
     Get a preview of the stack trace.
 
@@ -394,7 +394,7 @@ def should_log_detail(error_code: int, detail_type: str) -> bool:
     return error_code == 429 and detail_type == "rate_limit"
 
 
-def get_error_context(error_code: int, request: Any, exc: Optional[Exception] = None) -> dict[str, Any]:
+def get_error_context(error_code: int, request: Any, exc: Exception | None = None) -> dict[str, Any]:
     """
     Get enriched error context based on error type.
 

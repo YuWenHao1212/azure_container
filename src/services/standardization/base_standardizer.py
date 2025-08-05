@@ -6,7 +6,6 @@ Provides common functionality for all language-specific standardizers.
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +16,8 @@ class StandardizationResult:
     def __init__(self,
                  original_keywords: list[str],
                  standardized_keywords: list[str],
-                 mappings: Optional[list[dict[str, str]]] = None,
-                 excluded_keywords: Optional[list[str]] = None):
+                 mappings: list[dict[str, str]] | None = None,
+                 excluded_keywords: list[str] | None = None):
         self.original_keywords = original_keywords
         self.standardized_keywords = standardized_keywords
         self.mappings = mappings or []

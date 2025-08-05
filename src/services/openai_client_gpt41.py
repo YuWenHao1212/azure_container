@@ -38,6 +38,13 @@ class AzureOpenAIGPT41Client:
             }
         )
 
+        # Register with resource manager
+        try:
+            from src.core.resource_manager import resource_manager
+            resource_manager.register_connection(self.client)
+        except ImportError:
+            pass  # Resource manager not available
+
         # 設置日誌
         self.logger = logging.getLogger(self.__class__.__name__)
 

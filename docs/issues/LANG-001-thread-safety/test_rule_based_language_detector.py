@@ -79,7 +79,7 @@ class TestRuleBasedLanguageDetector:
                                       RESTful APIs, PostgreSQL database management, and Redis caching systems.
                                       Strong skills in CI/CD pipelines and automated testing are essential.
                                       需要良好的團隊合作能力 and excellent communication skills. Bachelor's degree
-                                      in Computer Science or related field is required. Join our innovative team!""",  # 428 chars
+                                      in Computer Science or related field is required. Join our innovative team!""",  # 428 chars  # noqa: E501
 
             'simplified_chinese': """我们正在寻找一位资深的Python开发工程师，需要具备FastAPI框架经验，
                                     熟悉Docker容器技术和Azure云端服务。理想的候选人应该对微服务架构有深入理解，

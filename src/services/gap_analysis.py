@@ -11,7 +11,8 @@ from typing import Any
 
 from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
-from src.services.openai_client import get_azure_openai_client
+
+# Removed unused import - now using LLM Factory for dynamic model selection
 from src.services.text_processing import clean_llm_output, convert_markdown_to_html
 from src.services.token_tracking_mixin import TokenTrackingMixin
 from src.services.unified_prompt_service import UnifiedPromptService
@@ -507,8 +508,9 @@ class GapAnalysisService(TokenTrackingMixin):
         system_prompt = prompt_config.get_system_prompt()
         user_prompt = prompt_config.format_user_prompt(**prompt_data)
 
-        # Get OpenAI client
-        openai_client = get_azure_openai_client()
+        # Get OpenAI client using LLM factory for dynamic model selection
+        from src.services.llm_factory import get_llm_client
+        openai_client = get_llm_client(api_name="gap_analysis")
 
         try:
             # Call LLM

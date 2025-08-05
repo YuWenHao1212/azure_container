@@ -187,7 +187,7 @@ class TestHealthCheckIntegration:
         # === Test Network Timeout Resilience ===
         with patch('src.services.openai_client.get_azure_openai_client') as mock_get_client:
             mock_client = AsyncMock()
-            mock_client.chat_completion.side_effect = asyncio.TimeoutError("Network timeout")
+            mock_client.chat_completion.side_effect = TimeoutError("Network timeout")
             mock_get_client.return_value = mock_client
 
             response = test_client.get("/health")

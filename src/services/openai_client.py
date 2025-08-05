@@ -67,10 +67,17 @@ class AzureOpenAIClient:
             }
         )
 
+        # Register with resource manager
+        try:
+            from src.core.resource_manager import resource_manager
+            resource_manager.register_connection(self.client)
+        except ImportError:
+            pass  # Resource manager not available
+
         # 配置日誌
         self.logger = logger
         self.logger.info(f"Initialized AzureOpenAI client for deployment: {self.deployment_id}")  # 指數退避: 1s, 2s, 4s
-        
+
         # 初始化重試配置 - 修復缺失的屬性
         self.max_retries = 3
         self.retry_delays = [1, 2, 4]  # 指數退避: 1s, 2s, 4s  # 指數退避: 1s, 2s, 4s

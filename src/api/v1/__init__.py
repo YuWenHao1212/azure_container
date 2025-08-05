@@ -11,6 +11,7 @@ from .index_calculation import router as index_calculation_router
 
 # Import endpoint routers
 from .keyword_extraction import router as keyword_router
+from .memory_monitoring import router as memory_router
 from .prompts import router as prompts_router
 from .resume_format import router as format_router
 from .resume_tailoring import router as tailoring_router
@@ -37,6 +38,9 @@ router.include_router(tailoring_router, tags=["Resume Tailoring"])
 
 # Include find course router
 router.include_router(find_course_router, prefix="/courses", tags=["Course Search"])
+
+# Include memory monitoring router (non-production only)
+router.include_router(memory_router, tags=["Memory Monitoring"])
 
 # V1 API root endpoint
 @router.get("/")

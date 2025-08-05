@@ -88,9 +88,17 @@ jobs:
       run: |
         # 確保測試腳本有執行權限
         chmod +x test/scripts/run_complete_test_suite_ci.sh
-        # 執行測試並捕獲輸出，同時保留退出碼
+        chmod +x test/scripts/run_index_cal_gap_analysis_unit_integration.sh
+        
+        # 執行原有測試套件
+        echo "=== Running complete test suite ==="
         set -o pipefail
         ./test/scripts/run_complete_test_suite_ci.sh | tee test_output.log
+        
+        # 執行 Index-Cal-Gap-Analysis V2 測試套件 (47 個測試)
+        echo ""
+        echo "=== Running Index-Cal-Gap-Analysis V2 tests ==="
+        ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh | tee -a test_output.log
         
     - name: Upload test results
       if: always()
@@ -307,9 +315,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🎯 Deployment Validation" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Health check passed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Smoke tests passed (2 critical endpoints)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Smoke tests passed (3 critical endpoints)" >> $GITHUB_STEP_SUMMARY
           echo "  - Keyword Extraction: < 4000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
           echo "  - Index Calculation V2: < 2000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
+          echo "  - Index Cal & Gap Analysis V2: < 20000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
         else
           echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

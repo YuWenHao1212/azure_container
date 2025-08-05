@@ -3,7 +3,7 @@ Cache performance monitoring and cost tracking.
 Monitors cache hit rates and calculates cost savings.
 """
 from collections import deque
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, ClassVar
 
 from src.core.monitoring_service import monitoring_service
@@ -50,7 +50,7 @@ class CacheMetrics:
         # Hourly tracking
         self.hourly_stats = deque(maxlen=24)  # Last 24 hours
         self.current_hour_stats = {
-            "hour": datetime.now(timezone.utc).hour,
+            "hour": datetime.now(UTC).hour,
             "requests": 0,
             "hits": 0,
             "misses": 0,
@@ -126,11 +126,11 @@ class CacheMetrics:
         if cache_key not in self.cache_key_stats:
             self.cache_key_stats[cache_key] = {
                 "hits": 0,
-                "first_hit": datetime.now(timezone.utc),
+                "first_hit": datetime.now(UTC),
                 "last_hit": None
             }
         self.cache_key_stats[cache_key]["hits"] += 1
-        self.cache_key_stats[cache_key]["last_hit"] = datetime.now(timezone.utc)
+        self.cache_key_stats[cache_key]["last_hit"] = datetime.now(UTC)
 
         # Calculate cost saved
         input_tokens = actual_tokens.get("input", self.AVG_INPUT_TOKENS) if actual_tokens else self.AVG_INPUT_TOKENS
@@ -168,7 +168,7 @@ class CacheMetrics:
 
     def _check_hour_rollover(self):
         """Check if the hour has changed and archive stats."""
-        current_hour = datetime.now(timezone.utc).hour
+        current_hour = datetime.now(UTC).hour
 
         if current_hour != self.current_hour_stats["hour"]:
             # Archive current hour stats
@@ -332,7 +332,7 @@ class CacheMetrics:
                 "first_hit": stats["first_hit"].isoformat(),
                 "last_hit": stats["last_hit"].isoformat() if stats["last_hit"] else None,
                 "age_hours": (
-                    datetime.now(timezone.utc) - stats["first_hit"]
+                    datetime.now(UTC) - stats["first_hit"]
                 ).total_seconds() / 3600
             }
             for key, stats in sorted_keys
