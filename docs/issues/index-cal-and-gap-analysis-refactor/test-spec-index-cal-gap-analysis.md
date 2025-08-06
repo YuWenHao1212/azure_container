@@ -1,11 +1,11 @@
 # Index Calculation and Gap Analysis API 測試規格文檔
 
 ## 文檔資訊
-- **版本**: 1.0.7
+- **版本**: 1.0.9
 - **建立日期**: 2025-08-03
 - **最後更新**: 2025-08-05
 - **維護者**: 測試團隊
-- **測試總數**: 52 個（20 單元測試 + 27 整合測試 + 2 效能測試 + 3 E2E 測試）
+- **測試總數**: 50 個（20 單元測試 + 27 整合測試 + 1 效能測試 + 2 E2E 測試）
 - **更新說明**: 
   - v1.0.2: 新增效能測試快速執行指南
   - v1.0.3: 更新效能測試實作（平行執行、P95 20個樣本）
@@ -13,6 +13,8 @@
   - v1.0.5: 效能測試重新分類 - 移除 3 個偽效能測試，移至整合測試 (PT: 5→2, IT: 14→17)
   - v1.0.6: 效能測試重新分類 - 移動 3 個測試至整合測試
   - v1.0.7: 新增錯誤處理測試案例 - 新增 10 個整合測試 (IT: 17→27)
+  - v1.0.8: 合併效能測試 - 合併 API-GAP-001-PT 和 API-GAP-002-PT，同時計算 P50/P95 (PT: 2→1)
+  - v1.0.9: 移除部分成功測試 - 刪除 API-GAP-003-E2E，與產品策略「完全失敗」一致 (E2E: 3→2)
 
 ## 重要測試約束 ⚠️
 
@@ -48,13 +50,13 @@ API-GAP-[序號]-[類型]
 |----------|----------|------|------|
 | 001-020 | 單元測試(UT) | 20 | 服務層單元測試 |
 | 001-027 | 整合測試(IT) | 27 | API 端點整合測試（含錯誤處理） |
-| 001-002 | 效能測試(PT) | 2 | 真實 Azure 服務效能測試 |
-| 001-003 | 端對端測試(E2E) | 3 | 完整流程測試 |
+| 001 | 效能測試(PT) | 1 | 真實 Azure 服務效能測試 (P50/P95) |
+| 001-002 | 端對端測試(E2E) | 2 | 完整流程測試 |
 
 **重要變更說明**:
 - **效能測試重新分類**: API-GAP-003/004/005-PT 已移至整合測試 (API-GAP-015/017/016-IT)
 - **分類原因**: 這些測試驗證 Python 應用層行為（資源池、快取），而非 Azure 服務效能
-- **實際執行**: 效能測試現在只執行 2 個真實的 Azure OpenAI 效能測試
+- **實際執行**: 效能測試現在只執行 1 個真實的 Azure OpenAI 效能測試 (同時計算 P50/P95)
 
 ## 2. 測試案例總覽
 
@@ -64,9 +66,8 @@ API-GAP-[序號]-[類型]
 - **名稱**: 統一分析服務初始化驗證
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證服務正確初始化，依賴注入正確
-- **前置條件**: 環境變數配置正確
+- **測試內容**: 測試服務實例創建、配置參數載入、依賴注入
 - **測試資料**: 
   ```yaml
   input:
@@ -76,153 +77,252 @@ API-GAP-[序號]-[類型]
     service_initialized: true
     dependencies_injected: true
   ```
+- **判斷標準**: 
+  - 服務成功初始化
+  - 配置正確載入
+  - 依賴服務可用
 
 #### API-GAP-002-UT: ResourcePoolManager 初始化測試
 - **名稱**: 資源池管理器初始化和預建立
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證資源池預建立最小數量客戶端
+- **測試內容**: 初始化 ResourcePoolManager、呼叫 initialize()、驗證預建立客戶端
 - **測試步驟**:
   1. 初始化 ResourcePoolManager(min_size=2, max_size=10)
   2. 呼叫 initialize()
   3. 驗證池中有 2 個預建立的客戶端
+- **判斷標準**: 
+  - 資源池正確初始化
+  - 池中有正確數量的預建立客戶端
+  - 客戶端狀態正常
 
 #### API-GAP-003-UT: 資源池獲取客戶端測試
 - **名稱**: 從資源池獲取和歸還客戶端
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證客戶端正確獲取和歸還
+- **測試內容**: 使用 get_client() context manager、驗證客戶端有效性、確認歸還機制
 - **測試步驟**:
   1. 使用 get_client() context manager
   2. 驗證獲得有效客戶端
   3. 退出 context 後驗證客戶端歸還
+- **判斷標準**: 
+  - 成功獲取有效客戶端
+  - 客戶端可正常使用
+  - 退出後客戶端正確歸還池中
 
 #### API-GAP-004-UT: 資源池達到上限測試
 - **名稱**: 資源池達到最大容量時的行為
 - **優先級**: P1
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證達到 max_size 時等待可用客戶端
+- **測試內容**: 填滿資源池、嘗試獲取額外客戶端、驗證等待行為
+- **判斷標準**: 
+  - 資源池達到上限時阻塞
+  - 客戶端釋放後可繼續獲取
+  - 無資源洩漏
 
 #### API-GAP-005-UT: 並行執行 Phase 1 測試
 - **名稱**: Phase 1 並行 embedding 生成
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 resume 和 JD embedding 並行生成
+- **測試內容**: 測試 TaskGroup 並行執行 resume 和 JD embedding 生成
 - **測試資料**:
   ```yaml
   input:
     resume: "<h3>Senior Software Engineer</h3><p>10+ years of experience in full-stack development, specializing in <strong>Python</strong>, <strong>FastAPI</strong>, and microservices architecture.</p><ul><li>Led multiple teams in delivering scalable enterprise solutions</li><li>Expertise in cloud technologies (AWS, Azure)</li><li>Containerization (Docker, Kubernetes)</li><li>DevOps practices</li></ul><p>Strong background in system design and performance optimization.</p>" # 400+ chars HTML
     job_description: "We are seeking a Senior Python Developer with 8+ years of experience to join our growing team. The ideal candidate will have strong expertise in FastAPI, microservices, and cloud platforms. Required skills include Python, FastAPI, Docker, Kubernetes, AWS/Azure, CI/CD, and database design. Experience with React and frontend technologies is a plus." # 350+ chars
   ```
+- **判斷標準**: 
+  - 兩個 embedding 任務並行執行
+  - 執行時間小於串行執行
+  - 結果正確返回
 
 #### API-GAP-006-UT: 並行執行 Phase 2 測試
 - **名稱**: Phase 2 Index 計算和 Gap 前置準備並行
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 Index 計算與 Gap context 準備並行執行
+- **測試內容**: 測試 Index 計算和 Gap Analysis 前置準備的並行處理
+- **判斷標準**: 
+  - 兩個任務並行執行
+  - 正確傳遞依賴數據
+  - 無競爭條件
 
 #### API-GAP-007-UT: 並行執行 Phase 3 測試
 - **名稱**: Phase 3 Gap Analysis 使用 Index 結果
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 Gap Analysis 正確接收和使用 Index 結果
+- **測試內容**: 測試 Gap Analysis 接收 Index 結果並正確處理
+- **判斷標準**: 
+  - 正確接收 matched_keywords
+  - 正確接收 missing_keywords
+  - Gap Analysis 結果包含關鍵字資訊
 
 #### API-GAP-008-UT: AdaptiveRetryStrategy 初始化測試
 - **名稱**: 自適應重試策略配置驗證
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證不同錯誤類型的重試配置正確
+- **測試內容**: 測試各種錯誤類型的重試策略配置
+- **測試方法**:
+  1. 初始化 AdaptiveRetryStrategy
+  2. 檢查各錯誤類型的配置值
+  3. 驗證策略物件正確創建
+- **判斷標準**: 
+  - empty_fields: 最多 2 次重試，線性退避，1 秒延遲
+  - timeout: 最多 1 次重試，指數退避，0.5 秒基礎延遲
+  - rate_limit: 最多 3 次重試，指數退避，5 秒基礎延遲，最大 20 秒
+  - validation: 不重試（0 次）
+  - general: 最多 2 次重試，線性退避，1 秒延遲
 
 #### API-GAP-009-UT: 空欄位錯誤重試測試
 - **名稱**: empty_fields 錯誤類型重試行為
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證空欄位錯誤使用線性退避，最多 2 次重試
+- **測試目標**: 驗證 Gap Analysis 回應中空欄位錯誤的重試行為
+- **測試內容**: 模擬 Gap Analysis 回應中 CoreStrengths、KeyGaps 等必要欄位為空的情況，驗證重試邏輯
+- **測試方法**:
+  1. 模擬 Gap Analysis 服務返回空欄位響應
+  2. 觸發 "Empty fields detected" 錯誤
+  3. 驗證重試配置和行為
+- **判斷標準**: 
+  - 最多重試 2 次
+  - 使用線性退避策略 (0.1秒基礎延遲)
+  - 重試成功後返回正確結果
 
 #### API-GAP-010-UT: 超時錯誤重試測試
 - **名稱**: timeout 錯誤類型重試行為
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證超時錯誤使用指數退避，基礎延遲 0.5 秒
+- **測試內容**: 模擬超時錯誤，驗證重試策略
+- **判斷標準**: 
+  - 最多重試 1 次
+  - 使用指數退避策略
+  - 基礎延遲 0.5 秒
 
 #### API-GAP-011-UT: 速率限制錯誤重試測試
 - **名稱**: rate_limit 錯誤類型重試行為
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證速率限制錯誤使用指數退避，基礎延遲 5 秒
+- **測試內容**: 模擬速率限制錯誤，驗證重試行為
+- **判斷標準**: 
+  - 最多重試 3 次
+  - 使用指數退避策略
+  - 基礎延遲 5 秒，最大 20 秒
 
-#### API-GAP-012-UT: 部分結果處理測試
-- **名稱**: Gap Analysis 失敗時返回 Index 結果
+#### API-GAP-012-UT: Gap Analysis 失敗處理測試
+- **名稱**: Gap Analysis 失敗時整個 API 失敗
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證啟用部分結果時，Gap 失敗仍返回 Index 結果
+- **測試目標**: 驗證 Gap Analysis 失敗時整個 API 應該失敗，而不是返回部分結果
+- **測試內容**: 模擬 Gap Analysis 服務失敗，驗證 API 正確拋出錯誤
+- **設計理由**: 根據產品需求，Gap Analysis 是核心功能，失敗時應該讓整個 API 失敗，確保用戶得到完整且有意義的結果
+- **判斷標準**: 
+  - Gap Analysis 失敗時拋出相應錯誤
+  - 不返回部分結果 (disable partial results)
+  - **錯誤規格明確定義**：
+    - HTTP 狀態碼：502 (Bad Gateway - 外部服務錯誤)
+    - Error Code："EXTERNAL_SERVICE_ERROR" 
+    - Error Message："Gap Analysis service is temporarily unavailable"
+    - **與 API-GAP-013-UT 差異**：
+      - API-GAP-012-UT：只有 Gap Analysis 失敗 → 502 錯誤
+      - API-GAP-013-UT：Index + Gap 都失敗 → BaseExceptionGroup + 500 錯誤
 
 #### API-GAP-013-UT: 完全失敗處理測試
 - **名稱**: Index 和 Gap 都失敗的處理
 - **優先級**: P1
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證兩個服務都失敗時正確拋出錯誤
+- **測試內容**: 模擬 Index 和 Gap Analysis 都失敗
+- **判斷標準**: 
+  - 拋出 BaseExceptionGroup 類型錯誤 (Python 3.11+ 的異常組)
+  - 錯誤組包含兩個子錯誤：Index 計算錯誤和 Gap Analysis 錯誤
+  - 錯誤訊息明確標示兩個服務的失敗原因
+  - HTTP 狀態碼為 500 (內部伺服器錯誤)
+  - 無部分結果返回
 
 #### API-GAP-014-UT: 服務依賴驗證測試
 - **名稱**: Gap Analysis 接收 Index 結果依賴
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 matched_keywords 和 missing_keywords 正確傳遞
+- **測試內容**: 驗證 Index 結果正確傳遞給 Gap Analysis
+- **判斷標準**: 
+  - matched_keywords 正確傳遞
+  - missing_keywords 正確傳遞
+  - Gap Analysis 使用這些資訊
 
 #### API-GAP-015-UT: 關鍵字覆蓋計算測試
 - **名稱**: 關鍵字匹配結果傳遞給 Gap Analysis
 - **優先級**: P0
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 covered_keywords 和 missed_keywords 正確計算和傳遞
+- **測試內容**: 測試關鍵字覆蓋率計算邏輯
+- **判斷標準**: 
+  - 覆蓋率計算準確
+  - 關鍵字分類正確
+  - 大小寫不敏感匹配
 
 #### API-GAP-016-UT: 錯誤分類器測試
 - **名稱**: 錯誤類型分類邏輯驗證
 - **優先級**: P1
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 _classify_gap_error 正確識別錯誤類型
+- **測試內容**: 測試各種錯誤類型的分類邏輯
+- **判斷標準**: 
+  - 正確識別各種錯誤類型
+  - 返回對應的錯誤分類
+  - 未知錯誤歸類為 general
 
 #### API-GAP-017-UT: 統計追蹤測試
 - **名稱**: 服務統計資訊追蹤
 - **優先級**: P2
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 total_requests、partial_successes 等統計正確更新
+- **測試內容**: 測試服務統計資訊的收集和更新
+- **判斷標準**: 
+  - 請求計數正確增加
+  - 成功/失敗統計準確
+  - 處理時間記錄正確
 
 #### API-GAP-018-UT: HTML 文本處理差異測試
 - **名稱**: Embedding 和 LLM 的差異化文本處理
 - **優先級**: P1
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 Embedding 使用清理文本，LLM 保留 HTML 結構
+- **測試內容**: 測試 HTML 內容的差異化處理
+- **判斷標準**: 
+  - Embedding 接收純文字
+  - LLM 接收完整 HTML
+  - 處理結果符合預期
 
 #### API-GAP-019-UT: TaskGroup 異常處理測試
 - **名稱**: Python 3.11 TaskGroup ExceptionGroup 處理
 - **優先級**: P1
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證並行任務失敗時的異常聚合處理
+- **測試內容**: 測試 TaskGroup 中多個任務失敗的處理
+- **判斷標準**: 
+  - ExceptionGroup 正確聚合錯誤
+  - 可存取所有子異常
+  - 錯誤訊息清晰
 
 #### API-GAP-020-UT: 服務清理測試
 - **名稱**: 異常時的資源清理驗證
 - **優先級**: P1
 - **類型**: 單元測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證錯誤發生時資源池客戶端正確歸還
+- **測試內容**: 測試異常情況下的資源清理
+- **判斷標準**: 
+  - 客戶端正確歸還資源池
+  - 無資源洩漏
+  - 資源池狀態正常
 
 ### 2.2 整合測試 (17個)
 
@@ -230,8 +330,8 @@ API-GAP-[序號]-[類型]
 - **名稱**: POST /api/v1/index-cal-and-gap-analysis 正常流程
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 API 端點正常運作，回應格式正確
+- **測試內容**: 使用有效輸入測試完整的 API 流程
 - **測試資料**:
   ```yaml
   request:
@@ -242,38 +342,35 @@ API-GAP-[序號]-[類型]
   expected:
     status: 200
     success: true
-    data:
-      raw_similarity_percentage: number
-      similarity_percentage: number
-      keyword_coverage: object
-      gap_analysis: object
   ```
+- **判斷標準**: 
+  - 返回 200 狀態碼
+  - **必要欄位**完整包含：
+    - `success`: boolean (true)
+    - `data.index_calculation`: object (匹配指數結果)
+    - `data.gap_analysis`: object (差距分析結果)
+    - `data.processing_time_ms`: number (處理時間)
+    - `timestamp`: string (ISO格式時間戳)
+  - 計算結果合理 (匹配指數 0-100，差距分析包含 CoreStrengths 和 KeyGaps)
 
 #### API-GAP-002-IT: JD 長度驗證測試
 - **名稱**: Job Description < 200 字元錯誤處理
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證 JD 少於 200 字元時返回 400 錯誤
-- **測試資料**:
-  ```yaml
-  request:
-    resume: "<section><h2>Senior Software Engineer</h2><p>Extensive experience in <em>full-stack development</em>, cloud architecture, and team leadership.</p><h3>Skills</h3><ul><li>Multiple programming languages</li><li>Modern frameworks</li><li>Cloud architecture</li></ul><p>Strong problem-solving skills and proven track record of delivering quality software solutions.</p></section>" # 350+ chars HTML
-    job_description: "Looking for Python developer" # 只有 29 字元
-    keywords: ["Python"]
-  expected:
-    status: 400
-    error:
-      code: "TEXT_TOO_SHORT"
-      message: "Job description must be at least 200 characters"
-  ```
+- **測試目標**: 驗證 JD 少於 200 字元時返回 422 錯誤 (Pydantic 驗證錯誤)
+- **測試內容**: 測試短 Job Description 的錯誤處理
+- **錯誤代碼說明**: 使用 422 因為這是 Pydantic 模型驗證失敗，請求格式正確但內容不符合驗證規則
+- **判斷標準**: 
+  - 返回 422 錯誤碼 (Unprocessable Entity)
+  - 錯誤訊息明確指出 "Job description must be at least 200 characters"
+  - 錯誤代碼為 VALIDATION_ERROR (統一驗證錯誤碼)
 
 #### API-GAP-003-IT: Resume 長度驗證測試
 - **名稱**: Resume < 200 字元錯誤處理
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證 Resume 少於 200 字元時返回 400 錯誤
+- **測試目標**: 驗證 Resume 少於 200 字元時返回 422 錯誤 (Pydantic 驗證錯誤)
+- **測試內容**: 測試短 Resume 的錯誤處理
 - **測試資料**:
   ```yaml
   request:
@@ -281,18 +378,23 @@ API-GAP-[序號]-[類型]
     job_description: "We are seeking an experienced Senior Software Engineer to join our dynamic team. The ideal candidate will have 5+ years of experience in software development, strong programming skills in Python and JavaScript, and expertise in cloud technologies. Must be proficient in modern development practices." # 300+ chars
     keywords: ["Python", "JavaScript"]
   expected:
-    status: 400
+    status: 422
     error:
-      code: "TEXT_TOO_SHORT"
+      code: "VALIDATION_ERROR"
       message: "Resume must be at least 200 characters"
   ```
+- **錯誤代碼說明**: 使用 422 因為這是 Pydantic 模型驗證失敗，明確標示為 Resume 長度不足
+- **判斷標準**: 
+  - 返回 422 錯誤碼 (Unprocessable Entity)
+  - 錯誤訊息明確指出 "Resume must be at least 200 characters"
+  - 錯誤代碼為 VALIDATION_ERROR，詳細說明為 Resume 長度不足
 
 #### API-GAP-004-IT: 邊界長度測試
 - **名稱**: JD 和 Resume 正好 200 字元測試
 - **優先級**: P1
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證正好 200 字元時正常處理
+- **測試內容**: 測試邊界長度的處理
 - **測試資料**:
   ```yaml
   request:
@@ -303,98 +405,137 @@ API-GAP-[序號]-[類型]
     status: 200
     success: true
   ```
+- **判斷標準**: 
+  - 返回 200 狀態碼
+  - 成功處理請求
+  - 返回完整結果
 
 #### API-GAP-005-IT: 關鍵字參數驗證測試
 - **名稱**: keywords 參數格式驗證
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 keywords 支援陣列和逗號分隔字串
+- **測試內容**: 測試不同關鍵字格式的處理
 - **測試步驟**:
   1. 測試陣列格式：["Python", "Docker", "AWS"]
   2. 測試逗號分隔："Python,Docker,AWS"
   3. 驗證兩種格式產生相同結果
+- **判斷標準**: 
+  - 陣列格式正常處理
+  - 字串格式正常處理
+  - 兩種格式結果一致
 
 #### API-GAP-006-IT: 語言參數驗證測試
 - **名稱**: language 參數驗證（只測試參數傳遞）
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證只接受 "en" 和 "zh-TW"，其他值返回錯誤
+- **測試內容**: 測試無效語言參數的處理
 - **測試資料**:
   ```yaml
   invalid_languages: ["fr", "ja", "ko", "es", "de"]
   expected:
-    status: 400
+    status: 422
     error:
-      code: "INVALID_LANGUAGE"
+      code: "VALIDATION_ERROR"
+      message: "Unsupported language: {language}. Supported: en, zh-TW"
   ```
+- **判斷標準**: 
+  - 無效語言返回 422 (Pydantic 模型驗證使用 422 狀態碼) 
+  - 錯誤代碼為 INVALID_LANGUAGE 
+  - 錯誤訊息清晰
 
 #### API-GAP-007-IT: Bubble.io 回應格式驗證
 - **名稱**: 回應格式符合 Bubble.io 固定 schema
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證回應包含所有必要欄位且格式正確
-- **驗證項目**:
-  - success: boolean
-  - data: object (包含所有必要子欄位)
-  - error: object (code, message, details)
-  - timestamp: ISO 8601 格式
+- **測試內容**: 驗證 API 回應符合固定 schema
+- **判斷標準**: 
+  - success 欄位存在且為 boolean
+  - data 欄位包含所有必要子欄位
+  - timestamp 為 ISO 8601 格式
 
 #### API-GAP-008-IT: Feature Flag 測試
 - **名稱**: USE_V2_IMPLEMENTATION Feature Flag 驗證
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 Feature Flag 控制 V2 實作啟用
+- **測試內容**: 測試 Feature Flag 對服務行為的影響
 - **測試步驟**:
   1. 設定 USE_V2_IMPLEMENTATION=true
   2. 發送請求
   3. 驗證使用 V2 服務（透過回應時間或監控事件）
+- **判斷標準**: 
+  - V2 服務正確啟用
+  - 回應包含 V2 特定欄位
+  - 監控事件記錄 V2 使用
 
-#### API-GAP-009-IT: 部分失敗處理測試
-- **名稱**: Gap Analysis 失敗時的部分結果返回
+#### API-GAP-009-IT: 完整失敗處理測試 
+- **名稱**: Gap Analysis 失敗時的完整失敗策略
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證啟用部分結果時，Gap 失敗仍返回 Index 結果
-- **測試方法**: Mock Gap Analysis 服務失敗
+- **測試目標**: 驗證任一服務失敗時，整個 API 請求失敗
+- **測試內容**: Mock Gap Analysis 失敗，驗證完整失敗處理
+- **判斷標準**: 
+  - API 回應狀態碼 502 (External Service Error)
+  - 不返回部分結果 
+  - 錯誤訊息明確指出失敗原因
 
 #### API-GAP-010-IT: 服務超時處理測試
 - **名稱**: 外部服務超時的錯誤處理
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 Azure OpenAI 超時時的重試和錯誤處理
+- **測試內容**: Mock 服務超時，驗證重試機制
+- **判斷標準**: 
+  - 重試 1 次後成功或失敗
+  - 超時錯誤返回 504
+  - 錯誤訊息清晰
 
 #### API-GAP-011-IT: 速率限制錯誤處理測試
 - **名稱**: Azure OpenAI 速率限制處理
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證遇到速率限制時的重試策略
+- **測試內容**: Mock 速率限制錯誤，驗證重試行為
+- **判斷標準**: 
+  - 返回 429 錯誤碼
+  - 重試使用指數退避
+  - 包含 Retry-After 資訊
 
 #### API-GAP-012-IT: 處理時間元數據測試
 - **名稱**: 回應包含處理時間分解
 - **優先級**: P1
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 V2 回應包含 processing_time_ms 和 service_timings
+- **測試內容**: 驗證回應包含詳細的時間分析
+- **判斷標準**: 
+  - processing_time_ms 存在且合理
+  - service_timings 包含各階段時間
+  - 時間加總正確
 
 #### API-GAP-013-IT: 大文檔處理測試
 - **名稱**: 處理大型 JD 和 Resume
 - **優先級**: P1
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證處理 10KB、20KB、30KB 文檔的能力
+- **測試內容**: 使用不同大小的文檔測試處理能力
+- **判斷標準**: 
+  - 成功處理不超時
+  - 記憶體使用合理
+  - 處理時間符合預期
 
 #### API-GAP-014-IT: 認證機制測試
-- **名稱**: API Key 認證驗證
+- **名穨**: API Key 認證驗證
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證支援 Header (X-API-Key) 和 Query (?code=) 認證
+- **測試內容**: 測試不同認證方式
+- **判斷標準**: 
+  - Header 認證成功
+  - Query 參數認證成功
+  - 無效 key 返回 401
 
 #### API-GAP-015-IT: 資源池重用率測試
 - **名稱**: 資源池客戶端重用率 > 80%
@@ -453,182 +594,131 @@ API-GAP-[序號]-[類型]
 - **名稱**: Azure OpenAI 限流錯誤重試行為驗證
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證遇到 429 錯誤時使用指數退避策略
-- **測試方法**:
-  1. Mock LLM 服務返回 429 錯誤
-  2. 驗證重試 3 次，延遲時間為 3s → 6s → 12s
-  3. 確認最長等待時間不超過 20 秒
-  4. 驗證第 4 次失敗後拋出錯誤
-- **預期結果**:
-  - 重試延遲符合指數退避模式
-  - 總等待時間 ≤ 20 秒
-  - 重試統計正確記錄
+- **測試內容**: Mock 429 錯誤，驗證重試行為和延遲時間
+- **判斷標準**: 
+  - 重試使用指數退避 (3s, 6s, 12s)
+  - 最大延遲不超過 20 秒
+  - 第 4 次失敗後拋出錯誤
 
 #### API-GAP-019-IT: Retry-After Header 處理測試
 - **名稱**: Azure OpenAI Retry-After 標頭優先使用驗證
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證系統優先使用 Retry-After header 但限制在 20 秒內
-- **測試方法**:
-  1. Mock 429 錯誤回應包含 Retry-After: 30
-  2. 驗證系統使用 20 秒（而非 30 秒）作為重試延遲
-  3. 檢查日誌顯示 "capped at 20s"
-- **注意事項**:
-  - Azure OpenAI 通常在 Retry-After 中提供秒數
-  - 必須防止惡意或錯誤的過長等待時間
+- **測試內容**: Mock Retry-After header，驗證上限處理
+- **判斷標準**: 
+  - Retry-After > 20s 時使用 20s
+  - Retry-After < 20s 時使用實際值
+  - 日誌顯示 "capped at 20s"
 
 #### API-GAP-020-IT: 超時錯誤快速重試測試
 - **名稱**: 請求超時錯誤的快速重試行為
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證超時錯誤只重試 1 次，延遲 0.5 秒
-- **測試方法**:
-  1. Mock 服務第一次調用拋出 asyncio.TimeoutError
-  2. 驗證重試 1 次，延遲約 0.5 秒
-  3. 第二次調用成功後返回結果
-- **測試資料**:
-  - 使用標準測試資料（> 200 字元）
-  - 驗證錯誤分類器正確識別 TimeoutError
+- **測試內容**: Mock TimeoutError，驗證快速重試
+- **判斷標準**: 
+  - 只重試 1 次
+  - 延遲時間約 0.5 秒
+  - 第二次成功後正常返回
 
 #### API-GAP-021-IT: 一般錯誤重試測試
 - **名稱**: 一般服務錯誤的線性退避重試
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證一般錯誤重試 2 次，線性退避 1 秒
-- **測試方法**:
-  1. Mock 服務拋出一般 Exception
-  2. 驗證系統重試 2 次（初始 + 1 次重試）
-  3. 確認延遲時間為 1 秒
-  4. 第 2 次失敗後拋出原始錯誤
-- **錯誤類型**:
-  - 非特定類型的 Exception
-  - 錯誤訊息不含特殊關鍵字
+- **測試內容**: Mock 一般 Exception，驗證重試行為
+- **判斷標準**: 
+  - 重試 2 次（初始 + 1 次重試）
+  - 線性退避 1 秒
+  - 第 2 次失敗後拋出錯誤
 
 #### API-GAP-022-IT: 驗證錯誤無重試測試
 - **名稱**: 輸入驗證錯誤不觸發重試機制
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 ValueError（400 錯誤）立即失敗，不重試
-- **測試方法**:
-  1. Mock 服務拋出 ValueError
-  2. 驗證系統不重試，立即返回錯誤
-  3. 確認只有 1 次服務調用
-- **重要性**:
-  - 避免無意義的重試浪費資源
-  - 驗證錯誤應立即反饋給用戶
+- **測試內容**: Mock ValueError，驗證不重試
+- **判斷標準**: 
+  - 不重試，立即返回錯誤
+  - 只有 1 次服務調用
+  - 返回 400 錯誤碼
 
 #### API-GAP-023-IT: 無部分結果測試
 - **名稱**: 任何失敗都返回完全失敗（無部分結果）
 - **優先級**: P0
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證 Gap Analysis 失敗時不返回 Index 結果
-- **測試方法**:
-  1. Mock Index 計算成功
-  2. Mock Gap Analysis 失敗
-  3. 驗證整個請求失敗，無部分資料返回
-  4. 確認 ENABLE_PARTIAL_RESULTS=false 生效
-- **業務邏輯**:
-  - 部分結果可能誤導用戶
-  - 確保資料完整性
+- **測試內容**: Mock Gap Analysis 失敗，驗證無部分結果
+- **判斷標準**: 
+  - 整個請求失敗
+  - 無部分資料返回
+  - 錯誤訊息完整
 
 #### API-GAP-024-IT: Retry-After 上限測試
 - **名稱**: Retry-After 值超過 20 秒時的處理
 - **優先級**: P1
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證系統將過長的 Retry-After 限制在 20 秒
-- **測試場景**:
-  1. Retry-After: 60 → 使用 20 秒
-  2. Retry-After: 15 → 使用 15 秒
-  3. Retry-After: -1 → 使用預設指數退避
-- **用戶體驗考量**:
-  - 避免用戶等待過久
-  - 平衡 API 限流要求與用戶體驗
+- **測試內容**: 測試不同 Retry-After 值的處理
+- **判斷標準**: 
+  - 60s → 使用 20s
+  - 15s → 使用 15s
+  - -1 → 使用預設策略
 
 #### API-GAP-025-IT: 錯誤分類器準確性測試
 - **名稱**: 錯誤類型分類邏輯的完整驗證
 - **優先級**: P1
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證各種錯誤被正確分類
-- **測試案例**:
-  - asyncio.TimeoutError → "timeout"
+- **測試內容**: 測試各種錯誤類型的分類
+- **判斷標準**: 
+  - TimeoutError → "timeout"
   - ValueError → "validation"
-  - "rate limit exceeded" → "rate_limit"
-  - "field is empty" → "empty_fields"
-  - "unknown error" → "general"
-- **重要性**:
-  - 錯誤分類決定重試策略
-  - 影響系統可靠性
+  - "rate limit" → "rate_limit"
 
 #### API-GAP-026-IT: 重試統計追蹤測試
 - **名稱**: AdaptiveRetryStrategy 統計資訊正確性
 - **優先級**: P2
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證重試統計正確記錄和計算
-- **驗證項目**:
-  - retry_stats 各錯誤類型計數
-  - 成功率計算正確
-  - get_stats() 返回完整資訊
-- **用途**:
-  - 監控系統健康狀態
-  - 優化重試策略
+- **測試內容**: 驗證統計資訊的收集和計算
+- **判斷標準**: 
+  - retry_stats 計數正確
+  - 成功率計算準確
+  - get_stats() 返回完整
 
 #### API-GAP-027-IT: 指數退避計算正確性測試
 - **名稱**: 指數退避延遲時間計算驗證
 - **優先級**: P2
 - **類型**: 整合測試
-- **需求編號**: REQ-004
 - **測試目標**: 驗證指數退避公式正確實作
-- **測試資料**:
-  - Rate limit: 3 * (2^0) = 3s
-  - Rate limit: 3 * (2^1) = 6s
-  - Rate limit: 3 * (2^2) = 12s
-  - Rate limit: 3 * (2^3) = 24s → 限制為 20s
-- **數學驗證**:
-  - base_delay * (2 ** attempt)
-  - min(calculated_delay, max_delay)
+- **測試內容**: 驗證指數退避計算邏輯
+- **判斷標準**: 
+  - 3 * (2^n) 公式正確
+  - 最大延遲 20 秒限制
+  - 計算結果準確
 
-### 2.3 效能測試 (2個，實際執行2個)
+### 2.3 效能測試 (1個，合併後)
 
-#### API-GAP-001-PT: P50 響應時間測試
-- **名稱**: 中位數響應時間 < 20 秒驗證
+#### API-GAP-001-PT: 響應時間效能測試 (P50/P95)
+- **名稱**: 驗證 P50 和 P95 響應時間符合 SLA 目標
 - **優先級**: P0
 - **類型**: 效能測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證 P50 響應時間符合目標
-- **測試配置**:
-  - 請求數量: 5 個請求（未來擴展至 600 個）
-  - 執行模式: 平行執行（5 個併發請求）
-  - 預期: P50 < 20 秒（調整為符合真實 LLM API）
-- **重要注意事項**:
-  - ⚠️ **必須關閉資源池快取**：測試真實 API 效能時，必須設定 `RESOURCE_POOL_ENABLED=false`
-  - ⚠️ **使用唯一測試資料**：每個請求必須使用不同的 JD/Resume 組合，避免資源池重用
-  - 建議方法：在測試資料中加入時間戳或請求 ID 確保唯一性
-  - 🚀 **平行執行**：使用 ThreadPoolExecutor 同時執行 5 個請求，大幅縮短測試時間
+- **測試目標**: 同時驗證 P50 < 20秒 和 P95 < 30秒 的 SLA 要求
+- **測試內容**: 使用唯一測試資料執行 20 個平行請求，關閉資源池快取，計算完整響應時間分布
+- **合併理由**: 原 API-GAP-001-PT 和 API-GAP-002-PT 邏輯相同，合併後更有效率
+- **判斷標準**: 
+  - **P50 < 20 秒** (中位數響應時間)
+  - **P95 < 30 秒** (95百分位響應時間) 
+  - 成功率 > 95%
+  - 無 timeout 錯誤
+  - 預估執行時間 < 80 秒
 
-#### API-GAP-002-PT: P95 響應時間測試
-- **名稱**: 95 百分位響應時間 < 30 秒驗證
-- **優先級**: P0
-- **類型**: 效能測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證 P95 響應時間符合目標
-- **測試配置**:
-  - 請求數量: 20 個請求（確保統計意義）
-  - 執行模式: 平行執行（5 個併發請求）
-  - 預期: P95 < 30 秒（調整為符合真實 LLM API）
-- **重要注意事項**:
-  - ⚠️ **同 API-GAP-001-PT**：必須關閉資源池快取並使用唯一測試資料
-  - 📊 **樣本數要求**：P95 需要至少 20 個樣本才有統計意義
-  - 🔄 **資料重用**：如果 P50 測試剛執行過，會優先使用其數據
-  - 🚀 **平行執行**：使用 ThreadPoolExecutor，預估 80 秒內完成
+#### ~~API-GAP-002-PT: P95 響應時間測試~~ [已合併]
+- **狀態**: ✅ 已合併至 API-GAP-001-PT
+- **合併原因**: 與 API-GAP-001-PT 測試邏輯相同，合併後可同時計算 P50 和 P95，提高測試效率
 
 #### API-GAP-003-PT: 資源池重用率測試 [已刪除]
 - **狀態**: ❌ 已刪除 - 移至 API-GAP-015-IT
@@ -645,33 +735,94 @@ API-GAP-[序號]-[類型]
 - **刪除原因**: 此測試驗證 Python 應用層資源池擴展行為，而非 Azure 服務性能，更適合作為整合測試
 - **參考**: 請見 API-GAP-016-IT
 
-### 2.4 端對端測試 (3個)
+### 2.4 端對端測試 (2個)
 
 #### API-GAP-001-E2E: 完整工作流程測試
 - **名稱**: 從請求到回應的完整流程驗證
 - **優先級**: P0
-- **類型**: 端對端測試
-- **需求編號**: REQ-004
-- **測試目標**: 使用真實數據驗證完整工作流程
-- **測試資料**: 使用實際的履歷和職缺描述（各 500+ 字元）
+- **類型**: E2E測試
+- **測試目標**: 使用真實 Azure API 驗證完整工作流程
+- **測試內容**: 使用實際的履歷和職缺描述（各 500+ 字元）執行完整的差距分析流程
+- **驗證項目**:
+  - API 回應成功 (HTTP 200)
+  - **核心欄位驗證**（簡化為三個必要欄位）：
+    - `data.raw_similarity_percentage`: number (0-100) - 相似度分數
+    - `data.keyword_coverage`: object - 關鍵字覆蓋資訊
+    - `data.gap_analysis`: object - 差距分析結果
+  - **實際處理時間測量**: 測試會記錄真實的 API 呼叫時間（預期 12-20 秒）
+- **測試輸出摘要**:
+  - 相似度分數：顯示實際的 similarity_percentage 值
+  - 實際處理時間：測量並顯示真實的 API 處理時間
+  - 核心欄位驗證：檢查三個必要欄位是否存在且有值 
+
+### 回應範例
+
+```json
+{
+  "success": true,
+  "data": {
+    "raw_similarity_percentage": 68,
+    "similarity_percentage": 78,
+    "keyword_coverage": {
+      "total_keywords": 8,
+      "covered_count": 3,
+      "coverage_percentage": 38,
+      "covered_keywords": ["Python", "FastAPI", "Docker"],
+      "missed_keywords": ["React", "Kubernetes", "AWS", "CI/CD", "DevOps"]
+    },
+    "gap_analysis": {
+      "CoreStrengths": "<ol><li>Strong Python backend expertise with FastAPI framework</li><li>8+ years of software engineering experience exceeding requirements</li><li>Leadership experience managing development teams</li></ol>",
+      "KeyGaps": "<ol><li>Missing React frontend development experience</li><li>No demonstrated Kubernetes container orchestration skills</li><li>Lack of AWS cloud platform experience</li><li>No mention of CI/CD pipeline implementation</li></ol>",
+      "QuickImprovements": "<ol><li>Add specific React projects or mention any frontend JavaScript experience</li><li>Include Docker experience and mention any container-related work</li><li>Highlight any cloud platform experience (Azure, GCP) as transferable skills</li><li>Add any automation or deployment pipeline experience</li></ol>",
+      "OverallAssessment": "<p>The candidate shows strong backend development skills with 60% higher experience than required. However, significant gaps exist in frontend (React), DevOps (Kubernetes, CI/CD), and cloud (AWS) technologies. With a 38% keyword match, the candidate would need 3-6 months of focused learning to become competitive. Immediate resume improvements and highlighting transferable skills could increase match to 50-60%. Currently positioned as a backend specialist rather than full-stack developer.</p>",
+      "SkillSearchQueries": [
+        {
+          "skill_name": "React",
+          "skill_category": "TECHNICAL",
+          "description": "Frontend framework for building interactive user interfaces required for full-stack role"
+        },
+        {
+          "skill_name": "Kubernetes",
+          "skill_category": "TECHNICAL",
+          "description": "Container orchestration platform essential for modern DevOps practices"
+        },
+        {
+          "skill_name": "AWS",
+          "skill_category": "TECHNICAL",
+          "description": "Cloud platform knowledge required for deploying and managing applications"
+        }
+      ]
+    }
+  },
+  "error": {
+    "code": "",
+    "message": "",
+    "details": ""
+  },
+  "timestamp": "2025-08-03T10:30:00.000Z"
+}
+```
+
+
 
 #### API-GAP-002-E2E: 輕量級監控整合測試
+
 - **名稱**: LIGHTWEIGHT_MONITORING=true 監控驗證
 - **優先級**: P1
-- **類型**: 端對端測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證輕量級監控正確記錄關鍵指標
-- **驗證項目**:
-  - IndexCalAndGapAnalysisV2Completed 事件
-  - processing_time_ms 記錄
-  - version: "v2" 標記
+- **類型**: E2E測試
+- **測試目標**: 驗證輕量級監控在真實環境的整合
+- **測試內容**: 啟用輕量級監控，執行請求並驗證監控事件
+- **判斷標準**: 
+  - IndexCalAndGapAnalysisV2Completed 事件被記錄
+  - processing_time_ms 正確記錄
+  - version: "v2" 標記存在
 
-#### API-GAP-003-E2E: 部分結果支援驗證
-- **名稱**: 實際場景的部分結果功能
-- **優先級**: P1
-- **類型**: 端對端測試
-- **需求編號**: REQ-004
-- **測試目標**: 驗證生產環境中部分失敗時的行為
+#### ~~API-GAP-003-E2E: 部分結果支援驗證~~ [已刪除]
+- **狀態**: ❌ **已刪除** - 與產品策略矛盾
+- **刪除原因**: 產品需求已確定為「要嘛就全失敗 要嘛就都成功，不需要partial successful」
+- **產品策略**: 任一服務失敗時，整個 API 必須失敗，確保用戶得到完整且有意義的結果
+- **替代測試**: 請參考 API-GAP-009-IT (完整失敗處理測試) 和 API-GAP-012-UT (Gap Analysis 失敗處理)
+- **影響**: E2E 測試數量從 3 個減少為 2 個
 
 ## 3. 測試資料規範
 
@@ -755,13 +906,13 @@ for i in range(600):
 本專案提供兩個主要測試腳本：
 
 1. **Mock 測試腳本** (`run_index_cal_gap_analysis_unit_integration.sh`)
-   - 執行 **單元測試 + 整合測試** (37 個測試: 20 UT + 17 IT)
+   - 執行 **單元測試 + 整合測試** (37 個測試: 20 UT + 27 IT)
    - 使用 **Mock 服務**，不需要 Azure OpenAI API
    - 執行時間：< 20 秒
    - 適合開發過程中的快速驗證
 
 2. **真實 API 測試腳本** (`run_index_cal_gap_analysis_real_api_perf_e2e.sh`)
-   - 執行 **效能測試 + E2E 測試** (5 個測試: 2 PT + 3 E2E)
+   - 執行 **效能測試 + E2E 測試** (3 個測試: 1 PT + 2 E2E)
    - 使用 **真實 Azure OpenAI API**，會產生費用
    - 執行時間：< 90 秒
    - 適合完整驗證和效能測試
@@ -770,13 +921,13 @@ for i in range(600):
 
 #### 基本用法
 ```bash
-# 執行所有 37 個 Mock 測試（20 UT + 17 IT）
+# 執行所有 47 個 Mock 測試（20 UT + 27 IT）
 ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh
 
 # 只執行單元測試 (20 個)
 ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --stage unit
 
-# 只執行整合測試 (17 個)
+# 只執行整合測試 (27 個)
 ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh --stage integration
 
 # 詳細輸出模式
@@ -793,7 +944,7 @@ for i in range(600):
 
 #### 基本用法
 ```bash
-# 執行所有 5 個真實 API 測試（2 PT + 3 E2E）
+# 執行所有 3 個真實 API 測試（1 PT + 2 E2E）
 ./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh
 
 # 只執行效能測試 (2 個)
@@ -836,20 +987,8 @@ tail -f test/logs/test_suite_real_api_perf_e2e_*.log
 
 #### 效能測試注意事項
 1. **真實 API 測試**：效能測試使用真實的 Azure OpenAI API，會產生實際費用
-2. **測試規模**：
-   - P50 測試：5 個請求，平行執行
-   - P95 測試：20 個請求，平行執行（或重用 P50 數據 + 額外請求）
-3. **執行時間**：
-   - P50 測試：約 20-30 秒（平行執行）
-   - P95 測試：約 80-90 秒（平行執行）
-   - 資源池測試：簡化為功能驗證，快速完成
-4. **結果儲存**：
-   - 測試結果自動保存到 `test/logs/` 目錄
-   - 格式：`performance_API-GAP-XXX-PT_YYYYMMDD_HHMMSS.json`
-   - 系統自動清理舊日誌（只保留最新的 6 個）
 5. **測試目標**（✅ 調整為符合真實 LLM API）：
-   - ✅ API-GAP-001-PT (P50): 目標 < 20 秒（已實作）
-   - ✅ API-GAP-002-PT (P95): 目標 < 30 秒（已實作）
+   - ✅ API-GAP-001-PT: 響應時間效能測試 (P50/P95): 目標約 80-90 秒
    - ⚠️ **已遷移**: API-GAP-003/004/005-PT 已移至整合測試 (API-GAP-015/016/017-IT)
    - ✅ **整合測試驗證**: 資源池功能現由整合測試驗證，使用 Mock 服務，節省成本
 
@@ -1093,13 +1232,13 @@ P2 (Nice to have): 3/3 (100%)
 #### 真實 API 測試實作 ✅
 ```
 實作狀態: 已完成實作
-測試範圍: 5 個測試 (2 Performance + 3 E2E)
+測試範圍: 3 個測試 (1 Performance + 2 E2E)
 支援功能:
 - ✅ P50 效能測試 (API-GAP-001-PT)
 - ✅ P95 效能測試 (API-GAP-002-PT)  
 - ✅ E2E 完整流程測試 (API-GAP-001-E2E)
 - ✅ 輕量級監控測試 (API-GAP-002-E2E)
-- ✅ 部分結果支援測試 (API-GAP-003-E2E)
+- ❌ ~~部分結果支援測試 (API-GAP-003-E2E)~~ - 已刪除，與產品策略矛盾
 - ✅ 背景執行模式
 - ✅ 具體效能測試選項 (--perf-test)
 ```
@@ -1120,4 +1259,52 @@ P2 (Nice to have): 3/3 (100%)
 
 ---
 
-**文檔結束** - 版本 1.0.6 | 所有測試已完成驗證 ✅
+## 錯誤碼對照表
+
+### 標準 HTTP 錯誤碼 vs Gap Analysis 實作對照
+
+| 錯誤類型 | 標準建議狀態碼 | Gap Analysis 實作 | 符合性 | 相關測試案例 |
+|---------|----------------|-------------------|--------|-------------|
+| **請求格式錯誤** | 400 Bad Request | 400 Bad Request | ✅ 符合 | API-GAP-002-IT, API-GAP-003-IT |
+| **文字太短** | 422 Unprocessable Entity (Pydantic驗證) | 422 Unprocessable Entity | ✅ 符合 | API-GAP-002-IT, API-GAP-003-IT |
+| **無效語言** | 422 Unprocessable Entity (Pydantic驗證) | 422 Unprocessable Entity | ✅ 符合 | API-GAP-006-IT |
+| **JSON 解析錯誤** | 400 Bad Request | 422 Unprocessable Entity | ❌ 不符 | (需要調整) |
+| **認證失敗** | 401 Unauthorized | 401 Unauthorized | ✅ 符合 | API-GAP-014-IT |
+| **權限不足** | 403 Forbidden | 403 Forbidden | ✅ 符合 | (預留) |
+| **驗證錯誤** | 422 Unprocessable Entity | 422 Unprocessable Entity | ✅ 符合 | API-GAP-022-IT |
+| **速率限制** | 429 Too Many Requests | 429 Too Many Requests | ✅ 符合 | API-GAP-011-IT, API-GAP-019-IT |
+| **服務錯誤** | 500 Internal Server Error | 500 Internal Server Error | ✅ 符合 | API-GAP-021-IT |
+| **外部服務錯誤** | 502 Bad Gateway | 502 Bad Gateway | ✅ 符合 | (預留) |
+| **服務不可用** | 503 Service Unavailable | 503 Service Unavailable | ✅ 符合 | (預留) |
+| **請求超時** | 504 Gateway Timeout | 504 Gateway Timeout | ✅ 符合 | API-GAP-020-IT |
+
+### 錯誤處理機制對照
+
+| 錯誤處理機制 | Index Calculation V2 | Gap Analysis | 差異說明 |
+|-------------|---------------------|--------------|----------|
+| **認證錯誤處理** | 自定義 `AuthenticationError` 保留原始狀態碼 | 待實作 | Gap Analysis 需要相同處理 |
+| **外部服務錯誤** | 自定義 `ExternalServiceError` → 502 | 待實作 | Gap Analysis 需要相同處理 |
+| **JSON 解析錯誤** | 特殊處理返回 400 | 返回 422 | Gap Analysis 需要調整為 400 |
+| **重試機制** | 使用統一重試策略 | 使用 AdaptiveRetryStrategy | 實作方式不同但功能相似 |
+| **錯誤分類** | 按 HTTP 狀態碼分類 | 按錯誤類型分類（timeout, rate_limit等） | 分類維度不同 |
+
+### 建議調整項目
+
+1. **JSON 解析錯誤** (高優先級)
+   - 當前：422 Unprocessable Entity
+   - 建議：400 Bad Request
+   - 原因：JSON 格式錯誤屬於請求格式問題，應返回 400
+
+2. **認證錯誤處理** (中優先級)
+   - 當前：可能統一返回某個錯誤碼
+   - 建議：實作類似 `AuthenticationError` 的機制，保留原始 401/403 狀態碼
+   - 相關測試：需要新增測試案例
+
+3. **外部服務錯誤** (中優先級)
+   - 當前：可能返回 500
+   - 建議：返回 502 Bad Gateway
+   - 原因：明確區分內部錯誤和外部依賴錯誤
+
+---
+
+**文檔結束** - 版本 1.0.7 | 所有測試已完成驗證 ✅ | 錯誤碼對照表已新增

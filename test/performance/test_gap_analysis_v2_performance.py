@@ -213,13 +213,13 @@ class TestGapAnalysisV2Performance:
         
         response_times = []
         failed_responses = []
-        # P50 only needs 5 samples for median calculation
-        total_requests = 5  # P50 needs fewer samples than P95
+        # Need 20 samples for accurate P50/P95 calculation (merged test)
+        total_requests = 20  # Sufficient sample size for reliable P50 and P95 statistics
         target_qps = 10
         test_duration = 60  # seconds
 
-        print(f"\nStarting P50 REAL API performance test:")
-        print(f"Target: {total_requests} requests for P50 calculation")
+        print(f"\nStarting P50/P95 REAL API performance test:")
+        print(f"Target: {total_requests} requests for P50 and P95 calculation")
         print(f"Using REAL Azure OpenAI APIs - no mocks!")
         print(f"Execution mode: Parallel (5 concurrent requests)")
         

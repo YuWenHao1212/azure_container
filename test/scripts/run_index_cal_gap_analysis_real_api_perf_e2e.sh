@@ -90,9 +90,9 @@ if [ "$SHOW_HELP" = true ]; then
     echo "  --help, -h                         Show this help message"
     echo ""
     echo "Examples:"
-    echo "  \$0                                 # Run all 5 tests (2 perf + 3 e2e)"
-    echo "  \$0 --stage performance             # Run only performance tests (2 tests)"
-    echo "  $0 --stage e2e                     # Run only E2E tests (3 tests)"
+    echo "  \\$0                                 # Run all 3 tests (1 perf + 2 e2e)"
+    echo "  \\$0 --stage performance             # Run only performance tests (1 test)"
+    echo "  \$0 --stage e2e                     # Run only E2E tests (2 tests)"
     echo "  $0 --perf-test p50                 # Run P50 test only"
     echo "  $0 --perf-test \"p50,p95\"           # Run both P50 and P95 tests"
     echo ""
@@ -102,7 +102,10 @@ fi
 
 # Function to log with timestamp
 log_message() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+    # Strip ANSI color codes from log messages for clean file output
+    local clean_message
+    clean_message=$(echo "$1" | sed $'s/\033\[[0-9;]*m//g')
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $clean_message" >> "$LOG_FILE"
 }
 
 # Function to log environment info
@@ -111,21 +114,21 @@ log_environment_info() {
     log_message "Python Version: $(python --version 2>&1)"
     log_message "Working Directory: $(pwd)"
     log_message "Script Version: Real API Test Runner v1.0"
-    log_message "Test Specification: test-spec-index-cal-gap-analysis.md v1.0.1"
+    log_message "Test Specification: test-spec-index-cal-gap-analysis.md v1.0.9"
     log_message "API Endpoint: ${AZURE_OPENAI_ENDPOINT:-Not Set}"
     
     # LLM Configuration
     log_message "LLM Configuration:"
     log_message "  - Keywords Extraction: ${LLM_MODEL_KEYWORDS:-gpt41-mini} @ ${GPT41_MINI_JAPANEAST_ENDPOINT:-Not Set}"
     log_message "  - Gap Analysis: ${LLM_MODEL_GAP_ANALYSIS:-gpt4o-2} @ ${AZURE_OPENAI_ENDPOINT:-Not Set}"
-    log_message "  - Index Calculation: ${LLM_MODEL_INDEX_CAL:-gpt4o-2} @ ${AZURE_OPENAI_ENDPOINT:-Not Set}"
+    log_message "  - Index Calculation: Uses Embedding API only (no LLM)"
     log_message "  - GPT-4.1 Deployment: ${AZURE_OPENAI_GPT4_DEPLOYMENT:-Not Set}"
     log_message "  - GPT-4.1 Mini Deployment: ${GPT41_MINI_JAPANEAST_DEPLOYMENT:-Not Set}"
     
     log_message "Test Files:"
     log_message "  - Performance: test/performance/test_gap_analysis_v2_performance.py"
     log_message "  - E2E: test/e2e_standalone/test_gap_analysis_v2_e2e.py"
-    log_message "Total Tests: 5 (2 Performance + 3 E2E)"
+    log_message "Total Tests: 3 (1 Performance + 2 E2E)"
     log_message "================================"
 }
 
@@ -277,7 +280,7 @@ run_test() {
 
 # Function to run performance tests
 run_performance_tests() {
-    echo -e "${BLUE}Running Performance Tests (2 tests)${NC}"
+    echo -e "${BLUE}Running Performance Tests (1 test)${NC}"
     echo "Testing file: test/performance/test_gap_analysis_v2_performance.py"
     echo "⚠️  Performance tests may take longer and use real Azure OpenAI APIs"
     echo
@@ -285,7 +288,7 @@ run_performance_tests() {
     # Performance test configurations
     local performance_tests=(
         "API-GAP-001-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_p50_response_time"
-        "API-GAP-002-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_p95_response_time"
+        # "API-GAP-002-PT:test/performance/test_gap_analysis_v2_performance.py::TestGapAnalysisV2Performance::test_p95_response_time"  # Merged into API-GAP-001-PT
     )
     
     # Check if specific tests requested
@@ -341,7 +344,7 @@ run_performance_tests() {
 
 # Function to run E2E tests
 run_e2e_tests() {
-    echo -e "${BLUE}Running E2E Tests (3 tests)${NC}"
+    echo -e "${BLUE}Running E2E Tests (2 tests)${NC}"
     echo "Testing file: test/e2e_standalone/test_gap_analysis_v2_e2e.py"
     echo "⚠️  E2E tests use real Azure OpenAI API"
     echo
@@ -376,7 +379,7 @@ run_e2e_tests() {
     local e2e_tests=(
         "API-GAP-001-E2E:test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_complete_workflow"
         "API-GAP-002-E2E:test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_lightweight_monitoring_integration"
-        "API-GAP-003-E2E:test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_partial_result_support"
+        # "API-GAP-003-E2E:test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_partial_result_support"  # Deleted in spec v1.0.9
     )
     
     # Run E2E tests with proper isolation
@@ -499,7 +502,7 @@ format_performance_results() {
     
     # Convert decimal to percentage for display
     local success_rate_pct=$(echo "${success_rate:-0} * 100" | bc -l)
-    printf "| API-GAP-001-PT | P50 響應時間 | %.3f | %.3f | %.1f%% | < 25s | %s |
+    printf "| API-GAP-001-PT | P50/P95 響應時間 (合併測試) | %.3f | %.3f | %.1f%% | < 25s | %s |
 " \
         "${p50:-0}" "${p95:-0}" "${success_rate_pct}" "$p50_status"
     
@@ -517,8 +520,8 @@ generate_report() {
     echo "Real API 測試報告 (Performance + E2E)"
     echo "==============================================="
     echo "執行日期: $(date '+%Y-%m-%d %H:%M:%S')"
-    echo "測試規格: test-spec-index-cal-gap-analysis.md v1.0.1"
-    echo "測試總數: 5 個測試案例 (2 Performance + 3 E2E)"
+    echo "測試規格: test-spec-index-cal-gap-analysis.md v1.0.9"
+    echo "測試總數: 3 個測試案例 (1 Performance + 2 E2E)"
     echo "執行環境: $(python --version 2>&1 | cut -d' ' -f2)"
     echo "總執行時間: ${total_duration}s"
     echo "日誌檔案: $(basename "$LOG_FILE")"
@@ -533,16 +536,16 @@ generate_report() {
     
     echo "測試檔案清單"
     echo "------------"
-    echo "效能測試 (2個測試):"
+    echo "效能測試 (1個測試):"
     echo "  - test/performance/test_gap_analysis_v2_performance.py"
     echo ""
-    echo "E2E測試 (3個測試):"
+    echo "E2E測試 (2個測試):"
     echo "  - test/e2e_standalone/test_gap_analysis_v2_e2e.py"
     echo
     
     echo "測試摘要"
     echo "--------"
-    echo "總測試數: $total_tests / 5"
+    echo "總測試數: $total_tests / 3"
     echo "通過: ${#PASSED_TESTS[@]} (${pass_rate}%)"
     echo "失敗: ${#FAILED_TESTS[@]}"
     echo "跳過: ${#SKIPPED_TESTS[@]}"
@@ -610,6 +613,36 @@ generate_report() {
         format_performance_results
     fi
     
+    # Show E2E field validation summaries if available
+    if [ ${#E2E_PASSED[@]} -gt 0 ] || [ ${#E2E_FAILED[@]} -gt 0 ]; then
+        echo
+        echo "=== E2E 測試欄位驗證結果 ==="
+        echo
+        
+        local e2e_summary_file="$LOG_DIR/e2e_field_validation_API-GAP-001-E2E.txt"
+        if [ -f "$e2e_summary_file" ]; then
+            echo "📋 **API-GAP-001-E2E** 回應欄位驗證摘要："
+            echo
+            # Display the summary content with proper formatting
+            while IFS= read -r line; do
+                if [[ "$line" == "API-GAP-001-E2E Field Validation Summary:" ]]; then
+                    continue  # Skip the header line
+                elif [[ "$line" == "Similarity Score:"* ]]; then
+                    echo "   🎯 相似度分數: $(echo "$line" | cut -d':' -f2 | xargs)"
+                elif [[ "$line" == "Processing Time:"* ]]; then
+                    echo "   ⏱️  實際處理時間: $(echo "$line" | cut -d':' -f2 | xargs)"
+                elif [[ "$line" == "Core Fields:"* ]]; then
+                    # Use sed to extract everything after "Core Fields: " instead of cut
+                    echo "   ✅ 核心欄位驗證: $(echo "$line" | sed 's/Core Fields: //')"
+                fi
+            done < "$e2e_summary_file"
+            echo
+        else
+            echo "   ⚠️  未找到 API-GAP-001-E2E 的欄位驗證摘要"
+            echo
+        fi
+    fi
+    
     # Show failed tests for debugging
     if [ ${#FAILED_TESTS[@]} -gt 0 ]; then
         echo "失敗的測試案例詳情:"
@@ -629,10 +662,10 @@ generate_report() {
     
     # Success celebration or failure summary
     if [ ${#FAILED_TESTS[@]} -eq 0 ]; then
-        echo "🎉 ${GREEN}所有 Real API 測試全部通過！${NC}"
+        log_and_print "🎉 ${GREEN}所有 Real API 測試全部通過！${NC}"
         echo "   Performance 和 E2E 測試都成功使用真實 Azure OpenAI API"
     else
-        echo "❌ ${RED}${#FAILED_TESTS[@]} 個測試失敗，總成功率: ${pass_rate}%${NC}"
+        log_and_print "❌ ${RED}${#FAILED_TESTS[@]} 個測試失敗，總成功率: ${pass_rate}%${NC}"
         if [ ${#P0_FAILED[@]} -gt 0 ]; then
             echo "   ⚠️  有 ${#P0_FAILED[@]} 個 P0 (Critical) 測試失敗，需要優先修復"
         fi
