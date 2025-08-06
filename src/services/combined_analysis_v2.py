@@ -311,7 +311,8 @@ class CombinedAnalysisServiceV2(BaseService):
         # since embeddings are handled by a specialized service, not LLM Factory
         from src.services.embedding_client import get_azure_embedding_client
 
-        async with get_azure_embedding_client() as embedding_client:
+        embedding_client = get_azure_embedding_client()
+        async with embedding_client:
             embeddings = await embedding_client.create_embeddings([text])
             return embeddings[0]
 

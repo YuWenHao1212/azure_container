@@ -324,62 +324,88 @@ run_integration_tests() {
         python_cmd="venv/bin/python"
     fi
     
-    # Run both integration test files
-    if $python_cmd -m pytest test/integration/test_gap_analysis_v2_integration_complete.py test/integration/test_error_handling_v2.py -v --tb=short --durations=0 > "$test_output_file" 2>&1; then
-        local test_end=$(date +%s)
-        local duration=$((test_end - test_start))
-        
-        # Parse results from pytest output
-        local passed_count=$(grep -E "passed" "$test_output_file" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
-        local failed_count=$(grep -E "failed" "$test_output_file" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
-        
-        echo -e "  ${GREEN}✓ Batch test completed${NC} (${duration}s)"
-        echo -e "  Results: ${GREEN}${passed_count} passed${NC}, ${RED}${failed_count} failed${NC}"
-        
-        # Parse individual test results for reporting
-        parse_batch_test_results "$test_output_file"
-        
+    # Run integration test files separately to avoid cross-test contamination
+    local gap_analysis_passed=0
+    local gap_analysis_failed=0
+    local error_handling_passed=0
+    local error_handling_failed=0
+    
+    # First run gap analysis tests
+    echo -e "  Running gap_analysis_v2_integration_complete.py..."
+    if $python_cmd -m pytest test/integration/test_gap_analysis_v2_integration_complete.py -v --tb=short --durations=0 > "${test_output_file}.gap" 2>&1; then
+        gap_analysis_passed=$(grep -E "passed" "${test_output_file}.gap" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+        gap_analysis_failed=$(grep -E "failed" "${test_output_file}.gap" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
     else
-        local test_end=$(date +%s)
-        local duration=$((test_end - test_start))
-        
-        echo -e "  ${RED}✗ Batch test failed${NC} (${duration}s)"
+        gap_analysis_passed=0
+        gap_analysis_failed=17
+        echo -e "    ${RED}✗ Test execution failed${NC}"
+    fi
+    
+    # Then run error handling tests
+    echo -e "  Running error_handling_v2.py..."
+    if $python_cmd -m pytest test/integration/test_error_handling_v2.py -v --tb=short --durations=0 > "${test_output_file}.error" 2>&1; then
+        error_handling_passed=$(grep -E "passed" "${test_output_file}.error" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+        error_handling_failed=$(grep -E "failed" "${test_output_file}.error" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+    else
+        error_handling_passed=0
+        error_handling_failed=10
+        echo -e "    ${RED}✗ Test execution failed${NC}"
+    fi
+    
+    # Combine results into single output file
+    cat "${test_output_file}.gap" "${test_output_file}.error" > "$test_output_file" 2>&1
+    
+    # Calculate totals
+    local total_passed=$((gap_analysis_passed + error_handling_passed))
+    local total_failed=$((gap_analysis_failed + error_handling_failed))
+    
+    local test_end=$(date +%s)
+    local duration=$((test_end - test_start))
+    
+    echo -e "  ${BLUE}Test Results:${NC} (${duration}s)"
+    echo -e "    Gap Analysis: ${GREEN}${gap_analysis_passed} passed${NC}, ${RED}${gap_analysis_failed} failed${NC}"
+    echo -e "    Error Handling: ${GREEN}${error_handling_passed} passed${NC}, ${RED}${error_handling_failed} failed${NC}"
+    echo -e "    Total: ${GREEN}${total_passed} passed${NC}, ${RED}${total_failed} failed${NC}"
+    
+    # Update global arrays based on results
+    # For gap analysis tests
+    if [ "$gap_analysis_failed" -eq 0 ]; then
+        for i in {1..17}; do
+            test_id=$(printf "API-GAP-%03d-IT" $i)
+            PASSED_TESTS+=("$test_id")
+            INTEGRATION_PASSED+=("$test_id")
+        done
+    else
+        for i in {1..17}; do
+            test_id=$(printf "API-GAP-%03d-IT" $i)
+            FAILED_TESTS+=("$test_id")
+            INTEGRATION_FAILED+=("$test_id")
+        done
+    fi
+    
+    # For error handling tests (API-GAP-018-IT to API-GAP-027-IT)
+    if [ "$error_handling_failed" -eq 0 ]; then
+        for i in {18..27}; do
+            test_id=$(printf "API-GAP-%03d-IT" $i)
+            PASSED_TESTS+=("$test_id")
+            INTEGRATION_PASSED+=("$test_id")
+        done
+    else
+        for i in {18..27}; do
+            test_id=$(printf "API-GAP-%03d-IT" $i)
+            FAILED_TESTS+=("$test_id")
+            INTEGRATION_FAILED+=("$test_id")
+        done
+    fi
+    
+    # Clean up temp files
+    rm -f "${test_output_file}.gap" "${test_output_file}.error"
+    
+    if [ "$total_failed" -eq 0 ]; then
+        echo -e "  ${GREEN}✓ All integration tests passed${NC}"
+    else
+        echo -e "  ${RED}✗ Some tests failed${NC}"
         echo "  Error details saved to: $(basename "$test_output_file")"
-        
-        # Parse individual test results even on failure
-        parse_batch_test_results "$test_output_file"
-        
-        # Add error handling test results manually (API-GAP-018-IT to API-GAP-027-IT)
-        # Count error handling tests
-        local error_handling_passed=$(grep -E "test_error_handling_v2\.py::.*PASSED" "$test_output_file" | wc -l | tr -d ' ')
-        local error_handling_failed=$(grep -E "test_error_handling_v2\.py::.*FAILED" "$test_output_file" | wc -l | tr -d ' ')
-        
-        if [ "$error_handling_passed" -gt 0 ] || [ "$error_handling_failed" -gt 0 ]; then
-            # Add the error handling tests based on their results
-            local error_test_ids=("API-GAP-018-IT" "API-GAP-019-IT" "API-GAP-020-IT" "API-GAP-021-IT" "API-GAP-022-IT" 
-                                 "API-GAP-023-IT" "API-GAP-024-IT" "API-GAP-025-IT" "API-GAP-026-IT" "API-GAP-027-IT")
-            
-            # Assume all passed if no specific failures (simplified approach)
-            if [ "$error_handling_failed" -eq 0 ]; then
-                for test_id in "${error_test_ids[@]}"; do
-                    PASSED_TESTS+=("$test_id")
-                    INTEGRATION_PASSED+=("$test_id")
-                    P1_PASSED+=("$test_id")  # All error handling tests are P1
-                done
-            else
-                # Some failed - we can't determine which ones specifically, so add them as failed
-                for test_id in "${error_test_ids[@]}"; do
-                    FAILED_TESTS+=("$test_id")
-                    INTEGRATION_FAILED+=("$test_id")
-                    P1_FAILED+=("$test_id")  # All error handling tests are P1
-                done
-            fi
-        fi
-        
-        if [ "$VERBOSE" = true ]; then
-            echo "  Test summary:"
-            grep -E "(PASSED|FAILED|ERROR)" "$test_output_file" | tail -20 | sed 's/^/    /'
-        fi
     fi
 }
 

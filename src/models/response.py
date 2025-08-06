@@ -125,6 +125,8 @@ class ErrorCodes:
     TIMEOUT_ERROR = "TIMEOUT_ERROR"
     RATE_LIMIT_ERROR = "RATE_LIMIT_ERROR"
     INTERNAL_ERROR = "INTERNAL_ERROR"
+    EXTERNAL_SERVICE_ERROR = "EXTERNAL_SERVICE_ERROR"
+    AUTHENTICATION_ERROR = "AUTHENTICATION_ERROR"
 
 
 def create_validation_error_response(field: str, message: str) -> UnifiedResponse:

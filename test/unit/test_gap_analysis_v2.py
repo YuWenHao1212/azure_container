@@ -718,20 +718,27 @@ class TestGapAnalysisV2Unit:
 
         驗證 _classify_gap_error 正確識別錯誤類型。
         """
-        # Mock error classifier
+        # Mock error classifier (matching AdaptiveRetryStrategy._default_error_classifier)
         def classify_gap_error(error):
+            # Check error type first (matching actual implementation)
+            if isinstance(error, ValueError):
+                return "validation"
+            elif isinstance(error, asyncio.TimeoutError):
+                return "timeout"
+            
             error_str = str(error).lower()
 
-            if "empty" in error_str or "missing required" in error_str:
-                return "empty_fields"
-            elif "timeout" in error_str or "timed out" in error_str:
+            # Check for specific error patterns
+            if "timeout" in error_str or "timed out" in error_str:
                 return "timeout"
-            elif "rate limit" in error_str or "429" in error_str:
+            elif "rate" in error_str and "limit" in error_str:
                 return "rate_limit"
+            elif any(word in error_str for word in ["empty", "missing", "blank", "required"]):
+                return "empty_fields"
             elif "authentication" in error_str or "401" in error_str:
-                return "auth_error"
+                return "authentication"
             else:
-                return "unknown"
+                return "general"
 
         # Test various error types
         assert (
@@ -739,8 +746,12 @@ class TestGapAnalysisV2Unit:
         )
         assert classify_gap_error(Exception("Request timed out")) == "timeout"
         assert classify_gap_error(Exception("Rate limit exceeded")) == "rate_limit"
-        assert classify_gap_error(Exception("Authentication failed")) == "auth_error"
-        assert classify_gap_error(Exception("Random error")) == "unknown"
+        assert classify_gap_error(Exception("Authentication failed")) == "authentication"
+        assert classify_gap_error(Exception("Random error")) == "general"
+        
+        # Test with specific exception types
+        assert classify_gap_error(ValueError("Invalid input")) == "validation"
+        assert classify_gap_error(asyncio.TimeoutError("Timed out")) == "timeout"
 
     # TEST: API-GAP-017-UT
     def test_statistics_tracking(self):

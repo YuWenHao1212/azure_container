@@ -26,17 +26,46 @@ class TestErrorHandlingV2:
         """Create mock services for testing."""
         with patch('src.services.combined_analysis_v2.IndexCalculationServiceV2') as mock_index:
             with patch('src.services.combined_analysis_v2.GapAnalysisServiceV2') as mock_gap:
-                # Configure mocks
-                mock_index_instance = AsyncMock()
-                mock_gap_instance = AsyncMock()
-                
-                mock_index.return_value = mock_index_instance
-                mock_gap.return_value = mock_gap_instance
-                
-                yield {
-                    'index': mock_index_instance,
-                    'gap': mock_gap_instance
-                }
+                with patch('src.services.embedding_client.get_azure_embedding_client') as mock_get_embedding:
+                    with patch('src.services.combined_analysis_v2.ResourcePoolManager') as mock_resource_pool:
+                        # Configure mocks
+                        mock_index_instance = AsyncMock()
+                        mock_gap_instance = AsyncMock()
+                        
+                        # Configure embedding client mock
+                        mock_embedding_instance = AsyncMock()
+                        mock_embedding_instance.create_embeddings = AsyncMock(
+                            return_value=[[0.1] * 1536, [0.2] * 1536]
+                        )
+                        mock_embedding_instance.close = AsyncMock()
+                        # Make the mock support async context manager protocol
+                        mock_embedding_instance.__aenter__ = AsyncMock(return_value=mock_embedding_instance)
+                        mock_embedding_instance.__aexit__ = AsyncMock(return_value=None)
+                        mock_get_embedding.return_value = mock_embedding_instance
+                        
+                        # Configure ResourcePoolManager mock
+                        mock_pool_instance = AsyncMock()
+                        mock_client = AsyncMock()
+                        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+                        mock_client.__aexit__ = AsyncMock(return_value=None)
+                        # get_client should return the context manager directly, not as a coroutine
+                        mock_pool_instance.get_client = Mock(return_value=mock_client)
+                        mock_pool_instance.get_stats = Mock(return_value={
+                            "total_clients": 1,
+                            "active_clients": 0,
+                            "available_clients": 1
+                        })
+                        mock_resource_pool.return_value = mock_pool_instance
+                        
+                        mock_index.return_value = mock_index_instance
+                        mock_gap.return_value = mock_gap_instance
+                        
+                        yield {
+                            'index': mock_index_instance,
+                            'gap': mock_gap_instance,
+                            'embedding': mock_embedding_instance,
+                            'resource_pool': mock_pool_instance
+                        }
 
     @pytest.mark.asyncio
     async def test_API_GAP_018_IT_rate_limit_retry_timing(self, mock_services):

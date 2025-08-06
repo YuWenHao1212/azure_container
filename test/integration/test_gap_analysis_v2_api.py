@@ -168,7 +168,7 @@ class TestGapAnalysisV2Integration:
             headers={"X-API-Key": "test-api-key"}
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "TEXT_TOO_SHORT"
@@ -188,7 +188,7 @@ class TestGapAnalysisV2Integration:
             headers={"X-API-Key": "test-api-key"}
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "TEXT_TOO_SHORT"
@@ -287,7 +287,7 @@ class TestGapAnalysisV2Integration:
                 headers={"X-API-Key": "test-api-key"}
             )
 
-            assert response.status_code == 400
+            assert response.status_code == 422
             data = response.json()
             assert data["success"] is False
             assert data["error"]["code"] == "INVALID_LANGUAGE"

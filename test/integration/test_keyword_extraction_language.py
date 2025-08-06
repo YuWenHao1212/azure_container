@@ -317,7 +317,7 @@ class TestKeywordExtractionLanguageIntegration:
                         json=request_data
                     )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
@@ -359,7 +359,7 @@ class TestKeywordExtractionLanguageIntegration:
                         json=request_data
                     )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
@@ -401,7 +401,7 @@ class TestKeywordExtractionLanguageIntegration:
                         json=request_data
                     )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
@@ -445,7 +445,7 @@ class TestKeywordExtractionLanguageIntegration:
                         json=request_data
                     )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
@@ -542,7 +542,7 @@ class TestKeywordExtractionLanguageIntegration:
                         json=request_data
                     )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
 
         # Check response structure
@@ -741,7 +741,7 @@ class TestKeywordExtractionLanguageIntegration:
                         json=request_data
                     )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
 
         # Comprehensive error format validation

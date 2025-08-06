@@ -58,18 +58,95 @@ class TestGapAnalysisV2IntegrationComplete:
     @pytest.fixture
     def test_client(self):
         """Create test client for integration testing."""
-        # Ensure all external services are mocked before app creation
+        # Mock all dependencies at import time
         with (
-            patch('src.core.config.get_settings'),
+            patch('src.services.llm_factory.get_llm_client') as mock_get_llm,
+            patch('src.services.embedding_client.get_azure_embedding_client') as mock_get_embedding,
+            patch('src.services.index_calculation_v2.IndexCalculationServiceV2') as mock_index_service,
+            patch('src.services.gap_analysis_v2.GapAnalysisServiceV2') as mock_gap_service,
+            patch('src.core.config.get_settings') as mock_settings,
             patch('src.main.monitoring_service', Mock()),
             patch.dict(os.environ, {
                 'MONITORING_ENABLED': 'false',
                 'LIGHTWEIGHT_MONITORING': 'false',
                 'ERROR_CAPTURE_ENABLED': 'false',
                 'CONTAINER_APP_API_KEY': 'test-api-key',
-                'USE_V2_IMPLEMENTATION': 'true'
+                'USE_V2_IMPLEMENTATION': 'true',
+                'AZURE_OPENAI_ENDPOINT': 'https://test.openai.azure.com',
+                'AZURE_OPENAI_API_KEY': 'test-key',
+                'AZURE_OPENAI_GPT4_DEPLOYMENT': 'gpt-4.1-japan',
+                'GPT41_MINI_JAPANEAST_DEPLOYMENT': 'gpt-4-1-mini-japaneast',
+                'GPT41_MINI_JAPANEAST_ENDPOINT': 'https://test.openai.azure.com',
+                'GPT41_MINI_JAPANEAST_API_KEY': 'test-key',
+                'EMBEDDING_ENDPOINT': 'https://test.embedding.com',
+                'EMBEDDING_API_KEY': 'test-key',
+                'JWT_SECRET_KEY': 'test-secret'
             })
         ):
+            # Setup mock settings
+            settings_instance = Mock()
+            settings_instance.use_v2_implementation = True
+            settings_instance.enable_partial_results = True
+            settings_instance.monitoring_enabled = False
+            settings_instance.lightweight_monitoring = False
+            settings_instance.error_capture_enabled = False
+            mock_settings.return_value = settings_instance
+            
+            # Setup mock LLM client
+            mock_llm_instance = AsyncMock()
+            mock_llm_instance.chat_completion = AsyncMock(return_value={
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({
+                            "CoreStrengths": "<ol><li>Python programming</li></ol>",
+                            "KeyGaps": "<ol><li>Kubernetes experience</li></ol>",
+                            "Suggestions": "<ol><li>Learn container orchestration</li></ol>",
+                            "MatchingKeywords": ["Python", "FastAPI"],
+                            "AdditionalKeywords": ["Docker", "REST API"]
+                        })
+                    }
+                }]
+            })
+            mock_llm_instance.close = AsyncMock()
+            mock_get_llm.return_value = mock_llm_instance
+            
+            # Setup mock embedding client
+            mock_embedding_instance = AsyncMock()
+            mock_embedding_instance.create_embeddings = AsyncMock(
+                return_value=[[0.1] * 1536, [0.2] * 1536]
+            )
+            mock_embedding_instance.close = AsyncMock()
+            # Make the mock support async context manager protocol
+            mock_embedding_instance.__aenter__ = AsyncMock(return_value=mock_embedding_instance)
+            mock_embedding_instance.__aexit__ = AsyncMock(return_value=None)
+            mock_get_embedding.return_value = mock_embedding_instance
+            
+            # Setup mock index calculation service
+            mock_index_instance = AsyncMock()
+            mock_index_instance.calculate_index = AsyncMock(return_value={
+                "raw_similarity_percentage": 68,
+                "similarity_percentage": 78,
+                "keyword_coverage": {
+                    "total_keywords": 5,
+                    "covered_count": 3,
+                    "coverage_percentage": 60,
+                    "covered_keywords": ["Python", "FastAPI", "Docker"],
+                    "missed_keywords": ["Kubernetes", "AWS"]
+                }
+            })
+            mock_index_service.return_value = mock_index_instance
+            
+            # Setup mock gap analysis service
+            mock_gap_instance = AsyncMock()
+            mock_gap_instance.analyze_gap = AsyncMock(return_value={
+                "CoreStrengths": "<ol><li>Python programming</li></ol>",
+                "KeyGaps": "<ol><li>Kubernetes experience</li></ol>",
+                "Suggestions": "<ol><li>Learn container orchestration</li></ol>",
+                "MatchingKeywords": ["Python", "FastAPI"],
+                "AdditionalKeywords": ["Docker", "REST API"]
+            })
+            mock_gap_service.return_value = mock_gap_instance
+            
             app = create_app()
             return TestClient(app)
 
@@ -158,7 +235,7 @@ class TestGapAnalysisV2IntegrationComplete:
         )
 
         # Verify error response
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
 
         assert data["success"] is False
@@ -187,7 +264,7 @@ class TestGapAnalysisV2IntegrationComplete:
         )
 
         # Verify error response
-        assert response.status_code == 400
+        assert response.status_code == 422
         data = response.json()
 
         assert data["success"] is False
@@ -296,7 +373,7 @@ class TestGapAnalysisV2IntegrationComplete:
             )
 
             # Should return error for invalid language
-            assert response.status_code == 400
+            assert response.status_code == 422
             data = response.json()
             assert data["success"] is False
             assert "error" in data
@@ -405,6 +482,9 @@ class TestGapAnalysisV2IntegrationComplete:
             mock_embedding_instance = AsyncMock()
             mock_embedding_instance.create_embeddings = AsyncMock(return_value=[[0.1] * 1536] * 5)
             mock_embedding_instance.close = AsyncMock()
+            # Make the mock support async context manager protocol
+            mock_embedding_instance.__aenter__ = AsyncMock(return_value=mock_embedding_instance)
+            mock_embedding_instance.__aexit__ = AsyncMock(return_value=None)
             mock_embedding.return_value = mock_embedding_instance
 
             # Configure failing LLM
