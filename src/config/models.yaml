@@ -106,7 +106,7 @@ api_model_mapping:
   gap_analysis: "LLM_MODEL_GAP_ANALYSIS"
   resume_format: "LLM_MODEL_RESUME_FORMAT"
   resume_tailor: "LLM_MODEL_RESUME_TAILOR"
-  index_calculation: "LLM_MODEL_INDEX_CALCULATION"
+  # index_calculation: Uses Embedding API only, no LLM needed
 
 # Default fallback strategy
 default_selection_strategy:
