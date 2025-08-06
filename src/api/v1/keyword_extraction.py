@@ -356,38 +356,8 @@ async def extract_jd_keywords(
             timestamp=datetime.utcnow().isoformat()
         )
 
-    except ValueError as e:
-        # Input validation errors (400 Bad Request)
-        error_msg = str(e)
-        logger.warning(f"Validation error: {error_msg}")
-
-        # Store failure for analysis
-        await failure_storage.store_failure(
-            category="validation_error",
-            job_description=request.job_description,
-            failure_reason=error_msg,
-            additional_info={
-                "max_keywords": request.max_keywords,
-                "prompt_version": request.prompt_version
-            }
-        )
-
-        # Return Bubble.io compatible error response
-        # Note: JD preview tracking is handled in main.py validation_exception_handler
-        error_response = create_error_response(
-            code="VALIDATION_ERROR",
-            message="輸入參數驗證失敗",
-            details=error_msg,
-            data=KeywordExtractionData().dict()  # Empty but consistent data structure
-        )
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_response.dict()
-        ) from None
-
     except UnsupportedLanguageError as e:
-        # Unsupported language errors (400 Bad Request)
+        # Unsupported language errors (422 Unprocessable Entity - as per specification)
         error_msg = f"Unsupported language: {e.detected_language}"
         logger.warning(f"Unsupported language error: {error_msg}")
 
@@ -412,6 +382,36 @@ async def extract_jd_keywords(
                 f"Detected language: {e.detected_language}"
             ),
             data=KeywordExtractionData().dict()
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=error_response.dict()
+        ) from None
+
+    except ValueError as e:
+        # Input validation errors (400 Bad Request)
+        error_msg = str(e)
+        logger.warning(f"Validation error: {error_msg}")
+
+        # Store failure for analysis
+        await failure_storage.store_failure(
+            category="validation_error",
+            job_description=request.job_description,
+            failure_reason=error_msg,
+            additional_info={
+                "max_keywords": request.max_keywords,
+                "prompt_version": request.prompt_version
+            }
+        )
+
+        # Return Bubble.io compatible error response
+        # Note: JD preview tracking is handled in main.py validation_exception_handler
+        error_response = create_error_response(
+            code="VALIDATION_ERROR",
+            message="輸入參數驗證失敗",
+            details=error_msg,
+            data=KeywordExtractionData().dict()  # Empty but consistent data structure
         )
 
         raise HTTPException(

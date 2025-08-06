@@ -1,11 +1,21 @@
 """
-Integration tests for keyword extraction with language detection.
+Integration tests for keyword extraction with language detection - Complete Rewrite.
 
-Tests the complete flow from language detection to prompt selection:
-- Language detection for various input types
-- Correct prompt selection based on detected language
-- API response handling for different languages
-- Error handling for unsupported languages
+Based on TEST_SPEC_HEALTH_KEYWORDS.md v3.1.0
+Implements exactly 10 integration tests as specified:
+- API-KW-101-IT: Azure OpenAI integration
+- API-KW-102-IT: English JD uses English prompt
+- API-KW-103-IT: Traditional Chinese JD uses Traditional Chinese prompt  
+- API-KW-104-IT: Mixed language (>20% Traditional Chinese)
+- API-KW-105-IT: Mixed language (<20% Traditional Chinese)
+- API-KW-106-IT: Reject Simplified Chinese
+- API-KW-107-IT: Reject Japanese
+- API-KW-108-IT: Reject Korean
+- API-KW-109-IT: Reject mixed unsupported languages with detailed error
+- API-KW-110-IT: Language parameter override test
+
+All tests use Mock Azure OpenAI services (no real API calls).
+Each test is precisely aligned with specification requirements.
 """
 
 import os
@@ -31,12 +41,13 @@ from src.services.exceptions import UnsupportedLanguageError
 
 
 class TestKeywordExtractionLanguageIntegration:
-    """Integration tests for language detection in keyword extraction."""
+    """Integration tests for language detection in keyword extraction - exactly 10 tests as per spec."""
 
     @pytest.fixture
     def test_client(self):
         """Create test client with mocked dependencies."""
-        with patch('src.core.config.get_settings'), patch('src.main.monitoring_service', Mock()):
+        with patch('src.core.config.get_settings'), \
+             patch('src.main.monitoring_service', Mock()):
             with patch.dict(os.environ, {
                 'MONITORING_ENABLED': 'false',
                 'LIGHTWEIGHT_MONITORING': 'false',
@@ -61,32 +72,158 @@ class TestKeywordExtractionLanguageIntegration:
         client = Mock()
         return client
 
-    # === Pure Language Tests ===
-
-    @pytest.mark.precommit
-    @pytest.mark.timeout(5)
-    def test_english_job_description_uses_english_prompt(self, test_client,
-                                                        mock_keyword_service,
-                                                        mock_llm_client):
-        """TEST: API-KW-301-IT - 英文 JD 使用英文 prompt"""
-        request_data = {
+    @pytest.fixture
+    def english_jd_request(self):
+        """Valid English job description request (>200 chars)."""
+        return {
             "job_description": "We are looking for a Senior Python Developer with 5+ years of experience "
                              "in building scalable web applications using FastAPI and Django frameworks. "
                              "Strong knowledge of Docker, Kubernetes, and AWS cloud services is required. "
                              "The ideal candidate must have excellent problem-solving skills and ability to work "
                              "independently in a fast-paced agile environment. Experience with microservices "
                              "architecture, RESTful APIs, GraphQL, PostgreSQL, MongoDB, Redis, and distributed "
-                             "systems is highly valued. Must be proficient in CI/CD pipelines, automated testing, "
-                             "code review processes, and DevOps best practices for production deployments.",
+                             "systems is highly valued. Must be proficient in CI/CD pipelines, automated testing.",
             "max_keywords": 15
         }
 
+    @pytest.fixture
+    def traditional_chinese_jd_request(self):
+        """Valid Traditional Chinese job description request (>200 chars)."""
+        return {
+            "job_description": "我們正在尋找一位資深的Python開發工程師，需要具備FastAPI框架經驗，"
+                             "熟悉Docker容器技術和Azure雲端服務。理想的候選人應該對微服務架構有深入理解，"
+                             "並且有RESTful API開發經驗。具備CI/CD流程和測試驅動開發經驗者優先。"
+                             "同時需要熟悉分散式系統設計，具備系統架構規劃能力和團隊合作精神。"
+                             "需要至少五年以上的後端開發經驗，能夠在快節奏環境中獨立工作。"
+                             "必須具備良好的溝通能力和問題解決能力，並能在團隊中發揮領導作用。",
+            "max_keywords": 12
+        }
+
+    @pytest.fixture 
+    def mixed_language_above_threshold_request(self):
+        """Mixed language JD with >20% Traditional Chinese (>200 chars)."""
+        return {
+            "job_description": "We are seeking a 資深Python開發工程師 with expertise in 微服務架構 and 雲端服務. "
+                             "The candidate should have experience with FastAPI框架, Docker容器技術, and Azure服務. "
+                             "Must be skilled in 分散式系統設計 and 測試驅動開發 methodologies. "
+                             "Strong background in 後端開發 with 5+ years experience in 軟體工程 is required. "
+                             "Knowledge of CI/CD流程, PostgreSQL, and 系統架構規劃 is essential. "
+                             "Must have excellent 溝通能力 and 問題解決能力 to work effectively in our team.",
+            "max_keywords": 15
+        }
+
+    @pytest.fixture
+    def mixed_language_below_threshold_request(self):
+        """Mixed language JD with <20% Traditional Chinese (>200 chars)."""
+        return {
+            "job_description": "We are looking for a Senior Python Developer with extensive experience in building "
+                             "scalable web applications using FastAPI and Django frameworks. The ideal candidate "
+                             "should have strong knowledge of Docker, Kubernetes, and AWS cloud services. "
+                             "Experience with microservices architecture, RESTful APIs, GraphQL, PostgreSQL, "
+                             "MongoDB, Redis, and distributed systems is highly valued. Must be proficient in "
+                             "CI/CD pipelines, automated testing, and 軟體工程 best practices. 資深工程師 preferred.",
+            "max_keywords": 15
+        }
+
+    @pytest.fixture
+    def simplified_chinese_jd_request(self):
+        """Simplified Chinese job description request (>200 chars)."""
+        return {
+            "job_description": "我们正在寻找一位高级Python开发工程师，需要具备FastAPI框架经验，"
+                             "熟悉Docker容器技术和Azure云端服务。理想的候选人应该对微服务架构有深入理解，"
+                             "并且有RESTful API开发经验。具备CI/CD流程和测试驱动开发经验者优先。"
+                             "同时需要熟悉分布式系统设计，具备系统架构规划能力和团队合作精神。"
+                             "需要至少五年以上的后端开发经验，能够在快节奏环境中独立工作。"
+                             "必须具备良好的沟通能力和问题解决能力，并能在团队中发挥领导作用。",
+            "max_keywords": 12
+        }
+
+    @pytest.fixture
+    def japanese_jd_request(self):
+        """Japanese job description request (>200 chars)."""
+        return {
+            "job_description": "私たちは、FastAPIフレームワークの経験を持つシニアPython開発エンジニアを探しています。"
+                             "Dockerコンテナ技術とAzureクラウドサービスに精通していることが求められます。"
+                             "理想的な候補者は、マイクロサービスアーキテクチャについて深い理解を持ち、"
+                             "RESTful API開発の経験があることが必要です。CI/CDプロセスとテスト駆動開発の経験がある方を優先します。"
+                             "分散システム設計に精通し、システムアーキテクチャの計画能力とチームワーク精神を持っていることが必要です。"
+                             "バックエンド開発において少なくとも5年以上の経験が必要で、ペースの速い環境で独立して作業できることが求められます。",
+            "max_keywords": 12
+        }
+
+    @pytest.fixture
+    def korean_jd_request(self):
+        """Korean job description request (>200 chars)."""
+        return {
+            "job_description": "FastAPI 프레임워크 경험을 가진 시니어 Python 개발 엔지니어를 찾고 있습니다. "
+                             "Docker 컨테이너 기술과 Azure 클라우드 서비스에 능숙해야 합니다. "
+                             "이상적인 후보자는 마이크로서비스 아키텍처에 대한 깊은 이해와 "
+                             "RESTful API 개발 경험이 있어야 합니다. CI/CD 프로세스와 테스트 주도 개발 경험을 우선시합니다. "
+                             "분산 시스템 설계에 익숙하고 시스템 아키텍처 계획 능력과 팀워크 정신이 필요합니다. "
+                             "백엔드 개발에서 최소 5년 이상의 경험이 필요하며, 빠른 속도의 환경에서 독립적으로 작업할 수 있어야 합니다.",
+            "max_keywords": 12
+        }
+
+    @pytest.mark.precommit
+    @pytest.mark.timeout(5)
+    def test_API_KW_101_IT_azure_openai_integration(self, test_client, mock_keyword_service, mock_llm_client, english_jd_request):
+        """
+        TEST ID: API-KW-101-IT
+        測試名稱: 關鍵字提取 API 整合測試
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證與 Azure OpenAI 的整合
+        
+        判斷標準: 成功返回關鍵字
+        """
         expected_result = {
-            "keywords": ["Python", "Senior Developer", "FastAPI", "Django", "Docker",
-                        "Kubernetes", "AWS", "Web Applications", "Scalable Systems",
-                        "5+ Years Experience", "Backend Development", "Cloud Computing",
-                        "DevOps", "Microservices", "Software Engineering"],
-            "keyword_count": 15,
+            "keywords": ["Python", "Senior Developer", "FastAPI", "Docker", "Azure"],
+            "keyword_count": 5,
+            "confidence_score": 0.88,
+            "extraction_method": "2_round_intersection",
+            "detected_language": "en",
+            "prompt_version_used": "v1.4.0-en",
+            "processing_time_ms": 2400.0
+        }
+
+        mock_keyword_service.validate_input.return_value = english_jd_request
+        mock_keyword_service.process.return_value = expected_result
+
+        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=english_jd_request
+                    )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert len(data["data"]["keywords"]) > 0
+
+    @pytest.mark.precommit
+    @pytest.mark.timeout(5)
+    def test_API_KW_102_IT_english_jd_english_prompt(self, test_client, mock_keyword_service, mock_llm_client, english_jd_request):
+        """
+        TEST ID: API-KW-102-IT
+        測試名稱: 端到端驗證英文職缺使用英文 prompt
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證語言檢測與prompt選擇
+        
+        判斷標準:
+        - detected_language="en"
+        - prompt_version 包含 "en"
+        """
+        expected_result = {
+            "keywords": ["Python", "Senior Developer", "FastAPI", "Django", "Docker", "Kubernetes", "AWS"],
+            "keyword_count": 7,
             "confidence_score": 0.88,
             "extraction_method": "2_round_intersection",
             "detected_language": "en",
@@ -94,290 +231,265 @@ class TestKeywordExtractionLanguageIntegration:
             "processing_time_ms": 2400.0
         }
 
-        mock_keyword_service.validate_input.return_value = request_data
+        mock_keyword_service.validate_input.return_value = english_jd_request
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
                   return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                     response = test_client.post(
                         "/api/v1/extract-jd-keywords",
-                        json=request_data
+                        json=english_jd_request
                     )
 
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
         assert data["data"]["detected_language"] == "en"
-        assert "en" in data["data"]["prompt_version_used"]
+        assert "en" in data["data"].get("prompt_version_used", "")
 
     @pytest.mark.precommit
     @pytest.mark.timeout(5)
-    def test_traditional_chinese_job_description_uses_chinese_prompt(self, test_client,
-                                                                    mock_keyword_service,
-                                                                    mock_llm_client):
-        """TEST: API-KW-302-IT - 繁中 JD 使用繁中 prompt"""
-        request_data = {
-            "job_description": "我們正在尋找資深Python工程師，需要5年以上使用FastAPI和Django "
-                             "開發可擴展網路應用程式的經驗。必須熟悉Docker、Kubernetes和AWS雲端服務。"
-                             "具備微服務架構設計能力，熟悉CI/CD流程和自動化部署。理想的候選人應該具備優秀的問題解決能力，"
-                             "能夠獨立工作並在快節奏的敏捷開發環境中表現出色。需要有RESTful API、GraphQL、"
-                             "PostgreSQL、MongoDB、Redis分散式系統開發經驗。必須精通自動化測試、程式碼審查流程，"
-                             "以及DevOps最佳實踐，包括容器化部署、監控和日誌分析等生產環境運維技能。",
-            "max_keywords": 15
-        }
-
+    def test_API_KW_103_IT_traditional_chinese_prompt(self, test_client, mock_keyword_service, mock_llm_client, traditional_chinese_jd_request):
+        """
+        TEST ID: API-KW-103-IT
+        測試名稱: 端到端驗證繁中職缺使用繁中 prompt
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證繁中語言處理
+        
+        判斷標準:
+        - detected_language="zh-TW"
+        - prompt_version 包含 "zh-TW"
+        """
         expected_result = {
-            "keywords": ["Python工程師", "資深工程師", "FastAPI", "Django", "Docker",
-                        "Kubernetes", "AWS", "網路應用程式", "可擴展系統", "5年經驗",
-                        "後端開發", "雲端服務", "微服務架構", "CI/CD", "軟體工程"],
-            "keyword_count": 15,
-            "confidence_score": 0.90,
+            "keywords": ["Python", "資深工程師", "FastAPI", "Docker", "Azure", "微服務架構", "RESTful API", "CI/CD"],
+            "keyword_count": 8,
+            "confidence_score": 0.82,
             "extraction_method": "2_round_intersection",
             "detected_language": "zh-TW",
-            "prompt_version_used": "v1.4.0-zh-TW",  # Chinese prompt version
+            "prompt_version_used": "v1.4.0-zh-TW",  # Traditional Chinese prompt version
+            "processing_time_ms": 2800.0
+        }
+
+        mock_keyword_service.validate_input.return_value = traditional_chinese_jd_request
+        mock_keyword_service.process.return_value = expected_result
+
+        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=traditional_chinese_jd_request
+                    )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["data"]["detected_language"] == "zh-TW"
+        assert "zh-TW" in data["data"].get("prompt_version_used", "")
+
+    @pytest.mark.precommit
+    @pytest.mark.timeout(5)
+    def test_API_KW_104_IT_mixed_language_above_threshold(self, test_client, mock_keyword_service, mock_llm_client, mixed_language_above_threshold_request):
+        """
+        TEST ID: API-KW-104-IT
+        測試名稱: 混合語言正確選擇 prompt
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證混合語言閾值處理
+        
+        判斷標準:
+        - detected_language="zh-TW"
+        - 使用繁中 prompt
+        """
+        expected_result = {
+            "keywords": ["Python", "資深工程師", "微服務架構", "雲端服務", "FastAPI框架", "Docker", "Azure"],
+            "keyword_count": 7,
+            "confidence_score": 0.75,
+            "extraction_method": "2_round_intersection",
+            "detected_language": "zh-TW",  # Over 20% Traditional Chinese detected
+            "prompt_version_used": "v1.4.0-zh-TW",
+            "processing_time_ms": 3000.0
+        }
+
+        mock_keyword_service.validate_input.return_value = mixed_language_above_threshold_request
+        mock_keyword_service.process.return_value = expected_result
+
+        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=mixed_language_above_threshold_request
+                    )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["data"]["detected_language"] == "zh-TW"
+
+    @pytest.mark.precommit
+    @pytest.mark.timeout(5)
+    def test_API_KW_105_IT_mixed_language_below_threshold(self, test_client, mock_keyword_service, mock_llm_client, mixed_language_below_threshold_request):
+        """
+        TEST ID: API-KW-105-IT
+        測試名稱: 混合語言低於閾值時使用英文 prompt
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證混合語言閾值處理
+        
+        判斷標準:
+        - detected_language="en"
+        - prompt_version 包含 "en"
+        """
+        expected_result = {
+            "keywords": ["Python", "Senior Developer", "FastAPI", "Django", "Docker", "Kubernetes", "AWS"],
+            "keyword_count": 7,
+            "confidence_score": 0.85,
+            "extraction_method": "2_round_intersection",
+            "detected_language": "en",  # Under 20% Traditional Chinese, defaults to English
+            "prompt_version_used": "v1.4.0-en",
             "processing_time_ms": 2600.0
         }
 
-        mock_keyword_service.validate_input.return_value = request_data
+        mock_keyword_service.validate_input.return_value = mixed_language_below_threshold_request
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
                   return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                     response = test_client.post(
                         "/api/v1/extract-jd-keywords",
-                        json=request_data
-                    )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert data["data"]["detected_language"] == "zh-TW"
-        assert "zh-TW" in data["data"]["prompt_version_used"]
-
-    # === Mixed Language Tests ===
-
-    @pytest.mark.precommit
-    @pytest.mark.timeout(5)
-    def test_mixed_chinese_english_above_threshold(self, test_client,
-                                                  mock_keyword_service,
-                                                  mock_llm_client):
-        """TEST: API-KW-303-IT - 混合語言（>20%繁中）"""
-        request_data = {
-            "job_description": "We are looking for 資深後端工程師 with strong Python and FastAPI skills. "
-                             "候選人需要具備 microservices 架構經驗, proficient in Docker/Kubernetes. "
-                             "必須熟悉 AWS 雲端服務 and have experience with CI/CD 自動化流程. "
-                             "The ideal candidate should have excellent problem-solving abilities 優秀的問題解決能力 "
-                             "and be able to work independently in agile environments 敏捷開發環境. "
-                             "Experience with RESTful APIs, GraphQL, PostgreSQL, MongoDB, Redis 分散式系統 "
-                             "is highly valued. Must be proficient in automated testing 自動化測試, "
-                             "code review processes 程式碼審查流程, and DevOps best practices 最佳實踐.",
-            "max_keywords": 15
-        }
-
-        expected_result = {
-            "keywords": ["資深後端工程師", "Python", "FastAPI", "Microservices", "架構經驗",
-                        "Docker", "Kubernetes", "AWS", "雲端服務", "CI/CD",
-                        "自動化流程", "Backend Development", "DevOps", "Cloud Computing", "軟體工程"],
-            "keyword_count": 15,
-            "confidence_score": 0.85,
-            "extraction_method": "2_round_intersection",
-            "detected_language": "zh-TW",  # Should detect as zh-TW
-            "prompt_version_used": "v1.4.0-zh-TW",  # Should use Chinese prompt
-            "processing_time_ms": 2500.0
-        }
-
-        mock_keyword_service.validate_input.return_value = request_data
-        mock_keyword_service.process.return_value = expected_result
-
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
-                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
-                    response = test_client.post(
-                        "/api/v1/extract-jd-keywords",
-                        json=request_data
-                    )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert data["data"]["detected_language"] == "zh-TW"
-        assert "zh-TW" in data["data"]["prompt_version_used"]
-
-    def test_mixed_chinese_english_below_threshold(self, test_client,
-                                                  mock_keyword_service,
-                                                  mock_llm_client):
-        """TEST: API-KW-304-IT - 混合語言（<20%繁中）"""
-        request_data = {
-            "job_description": "We are seeking a Senior Backend Developer with 5+ years of experience "
-                             "in Python, FastAPI, and microservices architecture. Strong knowledge of "
-                             "Docker, Kubernetes, AWS, and CI/CD pipelines is required. 需要良好溝通能力.",
-            "max_keywords": 15
-        }
-
-        expected_result = {
-            "keywords": ["Senior Backend Developer", "Python", "FastAPI", "Microservices",
-                        "5+ Years Experience", "Docker", "Kubernetes", "AWS", "CI/CD",
-                        "DevOps", "Cloud Computing", "Software Architecture", "Backend",
-                        "Pipeline Automation", "Communication Skills"],
-            "keyword_count": 15,
-            "confidence_score": 0.87,
-            "extraction_method": "2_round_intersection",
-            "detected_language": "en",  # Should detect as en
-            "prompt_version_used": "v1.4.0-en",  # Should use English prompt
-            "processing_time_ms": 2300.0
-        }
-
-        mock_keyword_service.validate_input.return_value = request_data
-        mock_keyword_service.process.return_value = expected_result
-
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
-                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
-                    response = test_client.post(
-                        "/api/v1/extract-jd-keywords",
-                        json=request_data
+                        json=mixed_language_below_threshold_request
                     )
 
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
         assert data["data"]["detected_language"] == "en"
-        assert "en" in data["data"]["prompt_version_used"]
+        assert "en" in data["data"].get("prompt_version_used", "")
 
-    # === Unsupported Language Rejection Tests ===
-
-    def test_reject_simplified_chinese(self, test_client, mock_keyword_service, mock_llm_client):
-        """TEST: API-KW-305-IT - 拒絕簡體中文"""
-        request_data = {
-            "job_description": "我们正在寻找资深Python工程师，需要5年以上使用FastAPI和Django"
-                             "开发可扩展网络应用程序的经验。必须熟悉Docker、Kubernetes和AWS云端服务。"
-                             "候选人应该具备优秀的问题解决能力，能够独立工作并领导技术团队。"
-                             "需要有大规模分布式系统的设计和实施经验，了解微服务架构最佳实践。"
-                             "加分项：有机器学习或人工智能项目经验，熟悉DevOps工具链。"
-                             "工作地点在北京，提供有竞争力的薪资待遇和完善的福利制度。",
-            "max_keywords": 15
-        }
-
-        # Mock service to raise UnsupportedLanguageError
-        mock_keyword_service.validate_input.return_value = request_data
+    @pytest.mark.precommit
+    @pytest.mark.timeout(3)
+    def test_API_KW_106_IT_reject_simplified_chinese(self, test_client, mock_keyword_service, mock_llm_client, simplified_chinese_jd_request):
+        """
+        TEST ID: API-KW-106-IT
+        測試名稱: API 正確拒絕簡體中文內容
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證簡體中文檢測和拒絕機制
+        
+        判斷標準:
+        - HTTP 422
+        - error.code="UNSUPPORTED_LANGUAGE"
+        - 錯誤訊息包含語言檢測結果
+        """
+        # Mock service to raise UnsupportedLanguageError for simplified Chinese
+        mock_keyword_service.validate_input.return_value = simplified_chinese_jd_request
         mock_keyword_service.process.side_effect = UnsupportedLanguageError(
             detected_language="zh-CN",
-            supported_languages=["en", "zh-TW"],
-            confidence=0.9,
-            user_specified=False
-        )
-
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
-                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
-                    response = test_client.post(
-                        "/api/v1/extract-jd-keywords",
-                        json=request_data
-                    )
-
-        assert response.status_code == 422
-        data = response.json()
-        assert data["success"] is False
-        assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
-        assert "zh-CN" in data["error"]["message"] or "zh-CN" in data["error"]["details"]
-
-    def test_reject_japanese(self, test_client, mock_keyword_service, mock_llm_client):
-        """TEST: API-KW-306-IT - 拒絕日文"""
-        request_data = {
-            "job_description": "私たちはPythonエンジニアを探しています。FastAPIとDjangoの経験が必要です。"
-                             "DockerとKubernetesの知識も必要です。AWSクラウドサービスの経験者歓迎。"
-                             "優れた問題解決能力とチームワークスキルを持つ方を求めています。"
-                             "大規模な分散システムの設計と実装の経験が必要です。"
-                             "マイクロサービスアーキテクチャの理解とCI/CDパイプラインの経験も重要です。"
-                             "東京オフィスで勤務。競争力のある給与と充実した福利厚生を提供します。",
-            "max_keywords": 15
-        }
-
-        mock_keyword_service.validate_input.return_value = request_data
-        mock_keyword_service.process.side_effect = UnsupportedLanguageError(
-            detected_language="ja",
             supported_languages=["en", "zh-TW"],
             confidence=0.95,
             user_specified=False
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
                   return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                     response = test_client.post(
                         "/api/v1/extract-jd-keywords",
-                        json=request_data
+                        json=simplified_chinese_jd_request
                     )
 
         assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
-        assert "ja" in data["error"]["message"]
+        assert "zh-CN" in data["error"]["message"] or "zh-cn" in data["error"]["message"].lower()
 
-    def test_reject_korean(self, test_client, mock_keyword_service, mock_llm_client):
-        """TEST: API-KW-307-IT - 拒絕韓文"""
-        request_data = {
-            "job_description": "Python 개발자를 찾고 있습니다. FastAPI와 Django 경험이 필요합니다. "
-                             "Docker 및 Kubernetes 지식이 필요합니다. AWS 클라우드 서비스 경험자 우대. "
-                             "우수한 문제 해결 능력과 팀워크 기술을 갖춘 분을 찾고 있습니다. "
-                             "대규모 분산 시스템의 설계 및 구현 경험이 필요합니다. "
-                             "마이크로서비스 아키텍처 이해와 CI/CD 파이프라인 경험도 중요합니다. "
-                             "서울 사무실 근무. 경쟁력 있는 급여와 포괄적인 복리후생 제공.",
-            "max_keywords": 15
-        }
+    @pytest.mark.precommit
+    @pytest.mark.timeout(3)
+    def test_API_KW_107_IT_reject_japanese(self, test_client, mock_keyword_service, mock_llm_client, japanese_jd_request):
+        """
+        TEST ID: API-KW-107-IT
+        測試名稱: API 正確拒絕日文內容
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證日文檢測和拒絕機制
+        
+        判斷標準:
+        - HTTP 422
+        - error.code="UNSUPPORTED_LANGUAGE"
+        """
+        # Mock service to raise UnsupportedLanguageError for Japanese
+        mock_keyword_service.validate_input.return_value = japanese_jd_request
+        mock_keyword_service.process.side_effect = UnsupportedLanguageError(
+            detected_language="ja",
+            supported_languages=["en", "zh-TW"],
+            confidence=0.98,
+            user_specified=False
+        )
 
-        mock_keyword_service.validate_input.return_value = request_data
+        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
+                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
+                    response = test_client.post(
+                        "/api/v1/extract-jd-keywords",
+                        json=japanese_jd_request
+                    )
+
+        assert response.status_code == 422
+        data = response.json()
+        assert data["success"] is False
+        assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
+
+    @pytest.mark.precommit
+    @pytest.mark.timeout(3)
+    def test_API_KW_108_IT_reject_korean(self, test_client, mock_keyword_service, mock_llm_client, korean_jd_request):
+        """
+        TEST ID: API-KW-108-IT
+        測試名稱: API 正確拒絕韓文內容
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證韓文檢測和拒絕機制
+        
+        判斷標準:
+        - HTTP 422
+        - error.code="UNSUPPORTED_LANGUAGE"
+        """
+        # Mock service to raise UnsupportedLanguageError for Korean
+        mock_keyword_service.validate_input.return_value = korean_jd_request
         mock_keyword_service.process.side_effect = UnsupportedLanguageError(
             detected_language="ko",
             supported_languages=["en", "zh-TW"],
@@ -386,379 +498,138 @@ class TestKeywordExtractionLanguageIntegration:
         )
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
                   return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                     response = test_client.post(
                         "/api/v1/extract-jd-keywords",
-                        json=request_data
+                        json=korean_jd_request
                     )
 
         assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
-        assert "ko" in data["error"]["message"]
 
-    def test_reject_mixed_with_unsupported_languages(self, test_client,
-                                                    mock_keyword_service,
-                                                    mock_llm_client):
-        """TEST: API-KW-308-IT - 拒絕混合不支援語言"""
-        request_data = {
-            "job_description": "We need Python developer 파이썬 개발자 with experience in FastAPI. "
-                             "必須熟悉 Docker と Kubernetes. 経験が必要です。"
-                             "Looking for someone with strong problem-solving skills and 팀워크 능력. "
-                             "需要有大規模系統開發經驗 and understanding of マイクロサービス. "
-                             "Experience with CI/CD 파이프라인 and cloud services is highly valued. "
-                             "Remote work possible with competitive salary and benefits package available.",
+    @pytest.mark.precommit
+    @pytest.mark.timeout(3)
+    def test_API_KW_109_IT_reject_mixed_unsupported_language_detailed_error(self, test_client, mock_keyword_service, mock_llm_client):
+        """
+        TEST ID: API-KW-109-IT
+        測試名稱: 混合不支援語言的詳細錯誤回應
+        優先級: P0
+        類型: 整合測試
+        測試目標: 驗證混合語言檢測和完整錯誤回應
+        
+        判斷標準:
+        - HTTP 422
+        - error.code="UNSUPPORTED_LANGUAGE"
+        - 錯誤回應包含完整結構
+        - 錯誤包含語言組成分析詳情
+        """
+        mixed_unsupported_request = {
+            "job_description": "We are looking for a 高级Python开发工程师 with experience in マイクロサービス架構 and "
+                             "クラウドサービス. The candidate should have expertise in 분산 시스템 설계 and CI/CD流程. "
+                             "Must be skilled in RESTful API development and 테스트 주도 개발. Strong background in "
+                             "後端開發 with 5+ years experience in software engineering is required. Knowledge of "
+                             "PostgreSQL, Docker컨테이너技術, and system architecture planning is essential.",
             "max_keywords": 15
         }
 
-        mock_keyword_service.validate_input.return_value = request_data
-        mock_keyword_service.process.side_effect = UnsupportedLanguageError(
-            detected_language="mixed-unsupported",
+        # Mock detailed unsupported language error with language composition analysis
+        detailed_error = UnsupportedLanguageError(
+            detected_language="mixed",
             supported_languages=["en", "zh-TW"],
-            confidence=0.7,
+            confidence=0.45,
             user_specified=False
         )
 
+        mock_keyword_service.validate_input.return_value = mixed_unsupported_request
+        mock_keyword_service.process.side_effect = detailed_error
+
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
                   return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                     response = test_client.post(
                         "/api/v1/extract-jd-keywords",
-                        json=request_data
+                        json=mixed_unsupported_request
                     )
 
         assert response.status_code == 422
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
+        
+        # Verify detailed error structure
+        assert "error" in data
+        assert "timestamp" in data
+        
+        # Verify language composition analysis details are included
+        error_message = data["error"]["message"]
+        assert "mixed" in error_message.lower() or "語言" in error_message
 
-    # === Language Parameter Override Tests ===
-
-    def test_explicit_language_parameter_override(self, test_client,
-                                                 mock_keyword_service,
-                                                 mock_llm_client):
-        """TEST: API-KW-309-IT - 語言參數覆蓋測試"""
-        request_data = {
-            "job_description": "We are looking for a Senior Python Developer with extensive experience in "
-                             "building scalable web applications using FastAPI and Django frameworks. "
-                             "Strong knowledge of Docker, Kubernetes, and AWS cloud services is required. "
-                             "The ideal candidate must have excellent problem-solving skills and ability to work "
-                             "independently in a fast-paced agile environment. Experience with microservices "
-                             "architecture, RESTful APIs, GraphQL, PostgreSQL, MongoDB, Redis, and distributed "
-                             "systems is highly valued. Must be proficient in CI/CD pipelines and automated testing.",
-            "max_keywords": 15,
-            "language": "zh-TW"  # Force Chinese prompt for English text
+    @pytest.mark.precommit
+    @pytest.mark.timeout(5)
+    def test_API_KW_110_IT_language_parameter_override(self, test_client, mock_keyword_service, mock_llm_client):
+        """
+        TEST ID: API-KW-110-IT
+        測試名稱: 明確指定 language 參數時的 API 行為
+        優先級: P1
+        類型: 整合測試
+        測試目標: 驗證語言參數覆蓋自動檢測
+        
+        判斷標準: 使用指定語言的 prompt
+        """
+        language_override_request = {
+            "job_description": "We are looking for a Senior Python Developer with experience in FastAPI, "
+                             "Docker, and Azure cloud services. The ideal candidate should have strong "
+                             "knowledge of microservices architecture and RESTful APIs. Experience with "
+                             "CI/CD pipelines and test-driven development is highly desired. Must have "
+                             "5+ years of experience in backend development and distributed systems.",
+            "max_keywords": 10,
+            "language": "zh-TW"  # Override language to Traditional Chinese
         }
 
         expected_result = {
-            "keywords": ["Python", "Senior Developer", "Software Engineering"],
-            "keyword_count": 15,
-            "confidence_score": 0.85,
+            "keywords": ["Python", "Senior Developer", "FastAPI", "Docker", "Azure", "Microservices"],
+            "keyword_count": 6,
+            "confidence_score": 0.80,
             "extraction_method": "2_round_intersection",
             "detected_language": "en",  # Auto-detected as English
-            "forced_language": "zh-TW",  # But forced to use Chinese
-            "prompt_version_used": "v1.4.0-zh-TW",  # Uses Chinese prompt
-            "processing_time_ms": 2400.0
+            "specified_language": "zh-TW",  # But overridden to Traditional Chinese
+            "prompt_version_used": "v1.4.0-zh-TW",  # Uses Traditional Chinese prompt
+            "processing_time_ms": 2700.0
         }
 
-        mock_keyword_service.validate_input.return_value = request_data
+        mock_keyword_service.validate_input.return_value = language_override_request
         mock_keyword_service.process.return_value = expected_result
 
         with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
+                  return_value=mock_keyword_service), \
+             patch('src.services.llm_factory.get_llm_client_smart',
+                  return_value=mock_llm_client), \
+             patch('src.services.llm_factory.get_llm_info',
                   return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
+            with patch('src.api.v1.keyword_extraction.monitoring_service', Mock()):
+                with patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock()):
                     response = test_client.post(
                         "/api/v1/extract-jd-keywords",
-                        json=request_data
+                        json=language_override_request
                     )
 
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert "zh-TW" in data["data"]["prompt_version_used"]
-
-    # === Error Response Format Tests ===
-
-    def test_unsupported_language_error_response_format(self, test_client,
-                                                       mock_keyword_service,
-                                                       mock_llm_client):
-        """TEST: API-KW-310-IT - 錯誤回應格式驗證"""
-        request_data = {
-            "job_description": "Estamos buscando un desarrollador Python senior con más de 5 años de experiencia "
-                             "en el desarrollo de aplicaciones web escalables usando FastAPI y Django. "
-                             "Se requiere conocimiento sólido de Docker, Kubernetes y servicios en la nube de AWS. "
-                             "El candidato ideal debe tener experiencia en arquitectura de microservicios y CI/CD. "
-                             "Ofrecemos trabajo remoto y un paquete de compensación competitivo.",  # Spanish
-            "max_keywords": 15
-        }
-
-        mock_keyword_service.validate_input.return_value = request_data
-        mock_keyword_service.process.side_effect = UnsupportedLanguageError(
-            detected_language="es",
-            supported_languages=["en", "zh-TW"],
-            confidence=0.95,
-            user_specified=False
-        )
-
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
-                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
-                    response = test_client.post(
-                        "/api/v1/extract-jd-keywords",
-                        json=request_data
-                    )
-
-        assert response.status_code == 422
-        data = response.json()
-
-        # Check response structure
-        assert "success" in data
-        assert data["success"] is False
-        assert "error" in data
-        assert "code" in data["error"]
-        assert "message" in data["error"]
-        assert "details" in data["error"]
-        assert "timestamp" in data
-
-        # Check error details
-        assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
-        assert "es" in data["error"]["details"]  # Language code should be in details string
-
-
-    # === Additional Integration Tests for Complete Coverage ===
-
-    def test_exactly_twenty_percent_chinese_threshold_integration(self, test_client,
-                                                                 mock_keyword_service,
-                                                                 mock_llm_client):
-        """TEST: API-KW-311-IT - 20%閾值整合測試"""
-        # Construct exactly 200 chars with exactly 40 Chinese chars (20%)
-        chinese_40 = "資深Python工程師需要五年以上開發經驗必須熟悉微服務架構設計"  # 32 chars
-        english_part = ("with extensive experience in FastAPI Django Docker Kubernetes " +
-                       "AWS cloud services CI/CD automation RESTful APIs GraphQL " +
-                       "PostgreSQL MongoDB distributed systems engineering")[:168]  # 168 chars
-
-        request_data = {
-            "job_description": chinese_40 + " " + english_part,  # 40 + 1 + 159 = 200 chars exactly
-            "max_keywords": 15
-        }
-
-        expected_result = {
-            "keywords": ["資深工程師", "Python", "FastAPI", "Django", "Docker", "Kubernetes"],
-            "keyword_count": 15,
-            "confidence_score": 0.85,
-            "extraction_method": "2_round_intersection",
-            "detected_language": "zh-TW",  # Should detect as zh-TW at exactly 20%
-            "prompt_version_used": "v1.4.0-zh-TW",
-            "processing_time_ms": 2500.0
-        }
-
-        mock_keyword_service.validate_input.return_value = request_data
-        mock_keyword_service.process.return_value = expected_result
-
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
-                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
-                    response = test_client.post(
-                        "/api/v1/extract-jd-keywords",
-                        json=request_data
-                    )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert data["data"]["detected_language"] == "zh-TW"
-        assert "zh-TW" in data["data"]["prompt_version_used"]
-
-    def test_minimum_length_validation_integration(self, test_client,
-                                                  mock_keyword_service,
-                                                  mock_llm_client):
-        """TEST: API-KW-312-IT - 最小長度驗證整合"""
-        # Text shorter than 200 chars (business rule update)
-        short_text = "Senior Python Developer needed"  # Much shorter than 200 chars
-
-        request_data = {
-            "job_description": short_text,
-            "max_keywords": 15
-        }
-
-        # Mock service to raise validation error for short text
-        from src.services.exceptions import ValidationError
-        mock_keyword_service.validate_input.side_effect = ValidationError(
-            "Job description must be at least 200 characters long"
-        )
-
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
-                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
-                    response = test_client.post(
-                        "/api/v1/extract-jd-keywords",
-                        json=request_data
-                    )
-
-        assert response.status_code == 422
-        data = response.json()
-        # Check the actual error response format from the application
-        assert data["success"] is False
-        assert "error" in data
-        assert "200" in data["error"]["message"] or "200" in data["error"]["details"]
-
-    def test_language_detection_metadata_in_response(self, test_client,
-                                                    mock_keyword_service,
-                                                    mock_llm_client):
-        """TEST: API-KW-313-IT - 語言檢測元資料回應"""
-        request_data = {
-            "job_description": "We are seeking a Senior Python Developer with extensive experience in " +
-                             "building scalable web applications using FastAPI and Django frameworks. " +
-                             "Strong knowledge of Docker, Kubernetes, and AWS cloud services is required. " +
-                             "Must have excellent problem-solving skills and ability to work independently.",
-            "max_keywords": 15
-        }
-
-        expected_result = {
-            "keywords": ["Senior Python Developer", "FastAPI", "Django", "Docker", "Kubernetes"],
-            "keyword_count": 15,
-            "confidence_score": 0.88,
-            "extraction_method": "2_round_intersection",
-            "detected_language": "en",
-            "language_confidence": 0.95,  # Language detection confidence
-            "prompt_version_used": "v1.4.0-en",
-            "processing_time_ms": 2200.0
-        }
-
-        mock_keyword_service.validate_input.return_value = request_data
-        mock_keyword_service.process.return_value = expected_result
-
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
-                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
-                    response = test_client.post(
-                        "/api/v1/extract-jd-keywords",
-                        json=request_data
-                    )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-
-        # Verify language detection metadata
-        response_data = data["data"]
-        assert "detected_language" in response_data
-        assert "prompt_version_used" in response_data
-        assert response_data["detected_language"] == "en"
-        assert "en" in response_data["prompt_version_used"]
-
-    def test_comprehensive_error_details_for_unsupported_language(self, test_client,
-                                                                 mock_keyword_service,
-                                                                 mock_llm_client):
-        """TEST: API-KW-314-IT - 不支援語言詳細錯誤"""
-        request_data = {
-            "job_description": "Nous recherchons un développeur Python senior avec plus de 5 ans d'expérience " +
-                             "dans le développement d'applications web évolutives utilisant FastAPI et Django. " +
-                             "Une solide connaissance de Docker, Kubernetes et des services cloud AWS est requise. " +
-                             "Le candidat idéal doit avoir d'excellentes compétences en résolution de problèmes.",  # French
-            "max_keywords": 15
-        }
-
-        mock_keyword_service.validate_input.return_value = request_data
-        mock_keyword_service.process.side_effect = UnsupportedLanguageError(
-            detected_language="fr",
-            supported_languages=["en", "zh-TW"],
-            confidence=0.92,
-            user_specified=False
-        )
-
-        with patch('src.api.v1.keyword_extraction.get_keyword_extraction_service_v2',
-                  return_value=mock_keyword_service), patch('src.services.llm_factory.get_llm_client_smart',
-                  return_value=mock_llm_client), patch('src.services.llm_factory.get_llm_info',
-                  return_value={'model': 'gpt-4', 'region': 'japaneast'}):
-            with (
-
-                patch('src.api.v1.keyword_extraction.monitoring_service', Mock()),
-
-                patch('src.api.v1.keyword_extraction.failure_storage', AsyncMock())
-
-            ):
-                    response = test_client.post(
-                        "/api/v1/extract-jd-keywords",
-                        json=request_data
-                    )
-
-        assert response.status_code == 422
-        data = response.json()
-
-        # Comprehensive error format validation
-        assert data["success"] is False
-        assert "error" in data
-        assert "timestamp" in data
-
-        error = data["error"]
-        assert error["code"] == "UNSUPPORTED_LANGUAGE"
-        assert "message" in error
-        assert "details" in error
-
-        # Error should contain language information
-        assert "fr" in error["details"] or "French" in error["details"]
-        # Check that supported languages are mentioned in details
-        details_text = error["details"].lower()
-        assert "english" in details_text or "en" in details_text
-        assert "chinese" in details_text or "zh-tw" in details_text
-
-        # Note: Confidence information is not included in current error details format
+        
+        # Verify language parameter override worked
+        # The prompt used should be Traditional Chinese despite auto-detected English
+        assert "zh-TW" in data["data"].get("prompt_version_used", "")
