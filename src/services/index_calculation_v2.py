@@ -357,9 +357,14 @@ class IndexCalculationServiceV2(BaseService):
             from src.services.exceptions import RateLimitError
             raise RateLimitError("Azure OpenAI rate limit exceeded") from e
         except AzureOpenAIAuthError as e:
-            # Handle authentication errors
-            from src.services.exceptions import ExternalServiceError
-            raise ExternalServiceError("Azure OpenAI authentication failed") from e
+            # Handle authentication errors - preserve original status code
+            from src.services.exceptions import AuthenticationError
+            # AzureOpenAIAuthError can be 401 or 403
+            status_code = getattr(e, 'status_code', 401)
+            raise AuthenticationError(
+                f"Azure OpenAI authentication failed: {str(e)}", 
+                status_code=status_code
+            ) from e
         except AzureOpenAIServerError as e:
             # Handle server errors
             from src.services.exceptions import ExternalServiceError
@@ -402,10 +407,10 @@ class IndexCalculationServiceV2(BaseService):
                 return resume_embedding, job_embedding
             except Exception as e:
                 # For specific errors that should not fallback, re-raise immediately
-                from src.services.exceptions import ExternalServiceError, RateLimitError
+                from src.services.exceptions import AuthenticationError, ExternalServiceError, RateLimitError
                 from src.services.openai_client import AzureOpenAIAuthError, AzureOpenAIRateLimitError
                 if isinstance(e, (
-                    RateLimitError | ExternalServiceError | AzureOpenAIRateLimitError | AzureOpenAIAuthError
+                    RateLimitError | AuthenticationError | ExternalServiceError | AzureOpenAIRateLimitError | AzureOpenAIAuthError
                 )):
                     # Don't fallback for rate limit or external service errors
                     raise
@@ -718,8 +723,8 @@ class IndexCalculationServiceV2(BaseService):
             raise
         except Exception as e:
             # Check if it's a specific error type that should be propagated
-            from src.services.exceptions import ExternalServiceError, RateLimitError
-            if isinstance(e, RateLimitError | ExternalServiceError | TimeoutError):
+            from src.services.exceptions import AuthenticationError, ExternalServiceError, RateLimitError
+            if isinstance(e, RateLimitError | AuthenticationError | ExternalServiceError | TimeoutError):
                 # Re-raise specific errors directly
                 self.calculation_stats["error_count"] += 1
                 self.logger.error(f"Index calculation failed with {type(e).__name__}: {e}")

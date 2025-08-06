@@ -181,7 +181,7 @@ async def calculate_index(
 
     except Exception as e:
         # Import specific exception types
-        from src.services.exceptions import ExternalServiceError, RateLimitError, ServiceError
+        from src.services.exceptions import AuthenticationError, ExternalServiceError, RateLimitError, ServiceError
 
         # Check for specific error types
         if isinstance(e, RateLimitError) or "rate limit" in str(e).lower():
@@ -201,6 +201,28 @@ async def calculate_index(
                     code="RATE_LIMIT_ERROR",
                     message="Rate limit exceeded",
                     details="Please try again later"
+                ).model_dump()
+            ) from e
+
+        elif isinstance(e, AuthenticationError):
+            # Authentication errors (401/403)
+            logger.error(f"Authentication error in index calculation V2: {e}")
+            monitoring_service.track_event(
+                "IndexCalculationV2AuthenticationError",
+                {
+                    "error_message": str(e),
+                    "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                    "service_version": "v2"
+                }
+            )
+            # Use the status code from the AuthenticationError
+            auth_status_code = getattr(e, 'status_code', 401)
+            raise HTTPException(
+                status_code=auth_status_code,
+                detail=create_error_response(
+                    code="AUTHENTICATION_ERROR" if auth_status_code == 401 else "FORBIDDEN",
+                    message=str(e),
+                    details="Authentication failed"
                 ).model_dump()
             ) from e
 

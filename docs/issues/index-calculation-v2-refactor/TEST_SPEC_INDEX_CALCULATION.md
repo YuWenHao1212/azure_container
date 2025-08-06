@@ -173,10 +173,10 @@
 - **優先級**: P0
 - **類型**: 整合測試
 - **測試目標**: 驗證認證錯誤的處理
-- **測試內容**: 模擬 AzureOpenAIAuthError（401/403錯誤）
+- **測試內容**: 模擬 AuthenticationError（401/403錯誤）
 - **判斷標準**: 
-  - 返回502錯誤碼（Bad Gateway）
-  - 錯誤訊息為 "External service error"
+  - 返回401錯誤碼（Unauthorized）或403（Forbidden）
+  - 錯誤訊息包含 "authentication"
   - 不洩露敏感的認證資訊
 
 ### API-IC-106-IT: Azure OpenAI伺服器錯誤測試
@@ -184,10 +184,10 @@
 - **優先級**: P1
 - **類型**: 整合測試
 - **測試目標**: 驗證伺服器錯誤的處理
-- **測試內容**: 模擬 AzureOpenAIServerError（500+錯誤）
+- **測試內容**: 模擬 ExternalServiceError（500+錯誤）
 - **判斷標準**: 
   - 返回502錯誤碼（Bad Gateway）
-  - 錯誤訊息為 "External service error"
+  - 錯誤訊息包含 "external service error"
   - 包含友善錯誤訊息，不暴露內部細節
 
 ### API-IC-107-IT: 並發請求處理測試
@@ -380,17 +380,17 @@
 
 ## 錯誤處理映射說明
 
-### 錯誤碼標準 vs 實際實作對照表
+### 錯誤碼標準 vs 實際實作對照表 (已更新)
 
-| 錯誤類型 | 原始錯誤 | 標準建議狀態碼 | 目前實作狀態碼 | 差異說明 |
-|---------|----------|----------------|----------------|----------|
+| 錯誤類型 | 原始錯誤 | 標準建議狀態碼 | 實作狀態碼 | 符合標準 |
+|---------|----------|----------------|------------|----------|
 | **速率限制** | AzureOpenAIRateLimitError (429) | 429 Too Many Requests | 429 Too Many Requests | ✅ 符合標準 |
-| **認證失敗** | AzureOpenAIAuthError (401) | 401 Unauthorized | 502 Bad Gateway | ❌ 應保持 401 或映射到 503 |
-| **權限不足** | AzureOpenAIAuthError (403) | 403 Forbidden | 502 Bad Gateway | ❌ 應保持 403 或映射到 503 |
+| **認證失敗** | AzureOpenAIAuthError (401) | 401 Unauthorized | 401 Unauthorized | ✅ 符合標準 |
+| **權限不足** | AzureOpenAIAuthError (403) | 403 Forbidden | 403 Forbidden | ✅ 符合標準 |
 | **上游服務錯誤** | AzureOpenAIServerError (500+) | 502 Bad Gateway | 502 Bad Gateway | ✅ 符合標準 |
 | **服務不可用** | ServiceError | 503 Service Unavailable | 503 Service Unavailable | ✅ 符合標準 |
 | **驗證錯誤** | ValidationError | 422 Unprocessable Entity | 422 Unprocessable Entity | ✅ 符合標準 |
-| **請求格式錯誤** | JSON解析錯誤 | 400 Bad Request | 422 Unprocessable Entity | ⚠️ 可接受但不理想 |
+| **請求格式錯誤** | JSON解析錯誤 | 400 Bad Request | 400 Bad Request | ✅ 符合標準 |
 
 ### 錯誤碼標準參考（來自 FASTAPI_ERROR_CODES_STANDARD.md）
 
@@ -405,38 +405,51 @@
 - **502 Bad Gateway**: 上游服務錯誤（外部API錯誤、資料庫連線失敗）
 - **503 Service Unavailable**: 服務暫時不可用（維護中、過載、依賴服務下線）
 
-### Index Calculation V2 錯誤碼映射流程
-根據實際程式碼實現，以下是錯誤的處理流程：
+### Index Calculation V2 錯誤碼映射流程 (2025-08-06 更新)
+根據最新程式碼實現，以下是錯誤的處理流程：
 
 1. **速率限制錯誤**
-   - `AzureOpenAIRateLimitError` → `RateLimitError` → **429 Too Many Requests**
+   - `AzureOpenAIRateLimitError` → `RateLimitError` → **429 Too Many Requests** ✅
    
 2. **認證錯誤**
-   - `AzureOpenAIAuthError` → `ExternalServiceError` → **502 Bad Gateway**
-   - 注意：雖然原始錯誤是 401/403，但系統將其映射為 502
+   - `AzureOpenAIAuthError` → `AuthenticationError` → **401 Unauthorized / 403 Forbidden** ✅
+   - 新增了 `AuthenticationError` 類別來保留原始狀態碼
    
 3. **伺服器錯誤**
-   - `AzureOpenAIServerError` → `ExternalServiceError` → **502 Bad Gateway**
-   - 原始錯誤是 500+，映射為 502 表示上游服務錯誤
+   - `AzureOpenAIServerError` → `ExternalServiceError` → **502 Bad Gateway** ✅
+   - 正確映射為 502 表示上游服務錯誤
 
 4. **一般服務錯誤**
-   - `ServiceError` → **503 Service Unavailable**
+   - `ServiceError` → **503 Service Unavailable** ✅
    
 5. **驗證錯誤**
-   - `ValidationError` → **422 Unprocessable Entity**
+   - `ValidationError` → **422 Unprocessable Entity** ✅
+   
+6. **JSON 解析錯誤**
+   - `RequestValidationError` (type='json_invalid') → **400 Bad Request** ✅
+   - 在 main.py 中特別處理 JSON 解析錯誤
 
-### 測試注意事項
-- API-IC-105-IT 和 API-IC-106-IT 的測試程式碼期望返回 503，但實際實現返回 502
-- 這是因為測試編寫時的預期與實際實現有差異
-- 文檔已根據實際實現更新
+### 實作細節
+1. **新增異常類別**：
+   - `src/services/exceptions.py`: 新增 `AuthenticationError` 類別，包含 `status_code` 屬性
 
-### 建議改進
-1. **認證錯誤處理**：應該保持原始的 401/403 狀態碼，或映射到 503（服務暫時不可用）而非 502
-2. **測試一致性**：更新測試程式碼以匹配實際實現，或修改實現以符合測試預期
-3. **錯誤訊息**：確保錯誤訊息不洩露敏感資訊，同時提供足夠的除錯資訊
+2. **服務層處理**：
+   - `src/services/index_calculation_v2.py`: 捕獲 `AzureOpenAIAuthError` 並轉換為 `AuthenticationError`
+
+3. **API 層處理**：
+   - `src/api/v1/index_calculation.py`: 專門處理 `AuthenticationError`，返回原始狀態碼
+
+4. **JSON 錯誤處理**：
+   - `src/main.py`: 在 `request_validation_exception_handler` 中檢查 `json_invalid` 類型
+
+### 測試更新
+- API-IC-105-IT: 現在正確期望返回 401（認證錯誤）
+- API-IC-106-IT: 現在正確期望返回 502（外部服務錯誤）
+- 測試使用自定義異常類別（`AuthenticationError`, `ExternalServiceError`）進行 mock
 
 ---
 
 ## 版本歷史
 - v1.0.0 (2025-01-31): 初始版本，定義21個測試案例
 - v1.0.1 (2025-01-31): 更新為30個測試案例，修正錯誤碼映射文檔
+- v1.0.2 (2025-08-06): 更新錯誤碼實作對照表，反映認證錯誤和JSON解析錯誤的修正

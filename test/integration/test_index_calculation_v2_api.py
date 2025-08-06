@@ -239,15 +239,16 @@ class TestIndexCalculationV2Integration:
     ):
         """TEST: API-IC-105-IT - Azure OpenAI 認證錯誤測試."""
         with patch('src.services.index_calculation_v2.IndexCalculationServiceV2._compute_embeddings_parallel') as mock_compute:
-            # Mock authentication error
-            mock_compute.side_effect = AzureOpenAIAuthError("Authentication failed")
+            # Mock authentication error - raise our custom AuthenticationError
+            from src.services.exceptions import AuthenticationError
+            mock_compute.side_effect = AuthenticationError("Authentication failed", status_code=401)
             
             response = test_client.post("/api/v1/index-calculation", json=valid_index_calc_request)
             
-            assert response.status_code == 503  # API maps auth errors to 503
+            assert response.status_code == 401  # Authentication errors now return 401
             data = response.json()
             assert data["success"] is False
-            assert "service temporarily unavailable" in data["error"]["message"].lower()
+            assert "authentication" in data["error"]["message"].lower()
             
         print("Azure OpenAI authentication error handling verified")
 
@@ -257,15 +258,16 @@ class TestIndexCalculationV2Integration:
     ):
         """TEST: API-IC-106-IT - Azure OpenAI 伺服器錯誤測試."""
         with patch('src.services.index_calculation_v2.IndexCalculationServiceV2._compute_embeddings_parallel') as mock_compute:
-            # Mock server error
-            mock_compute.side_effect = AzureOpenAIServerError("Server error")
+            # Mock server error - raise our custom ExternalServiceError
+            from src.services.exceptions import ExternalServiceError
+            mock_compute.side_effect = ExternalServiceError("Azure OpenAI server error")
             
             response = test_client.post("/api/v1/index-calculation", json=valid_index_calc_request)
             
-            assert response.status_code == 503
+            assert response.status_code == 502  # External service errors return 502
             data = response.json()
             assert data["success"] is False
-            assert "service temporarily unavailable" in data["error"]["message"].lower()
+            assert "external service error" in data["error"]["message"].lower()
             
         print("Azure OpenAI server error handling verified")
 

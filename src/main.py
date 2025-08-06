@@ -390,6 +390,25 @@ def create_app() -> FastAPI:
 
         logger.warning(f"Validation error: {exc.errors()}")
 
+        # Check if this is a JSON parsing error
+        for error in exc.errors():
+            if error.get('type') == 'json_invalid':
+                # Return 400 for JSON parsing errors
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "success": False,
+                        "data": {},
+                        "error": {
+                            "code": "BAD_REQUEST",
+                            "message": "Invalid JSON format",
+                            "type": "bad_request",
+                            "details": "The request body contains invalid JSON"
+                        },
+                        "timestamp": datetime.now(UTC).isoformat()
+                    }
+                )
+
         # Extract validation error metrics
         error_metrics = get_validation_error_metrics(exc)
 
