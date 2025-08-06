@@ -90,9 +90,9 @@ if [ "$SHOW_HELP" = true ]; then
     echo "  --help, -h                         Show this help message"
     echo ""
     echo "Examples:"
-    echo "  \$0                                 # Run all 8 tests (5 perf + 3 e2e)"
-    echo "  \$0 --stage performance             # Run only performance tests (5 tests)"
-    echo "  $0 --stage e2e                     # Run only E2E tests (3 tests)"
+    echo "  \$0                                 # Run all 5 tests (3 perf + 2 e2e)"
+    echo "  \$0 --stage performance             # Run only performance tests (3 tests)"
+    echo "  $0 --stage e2e                     # Run only E2E tests (2 tests)"
     echo "  $0 --perf-test p50                 # Run P50 test only"
     echo "  $0 --perf-test \"p50,cache\"         # Run P50 and cache tests"
     echo ""
@@ -123,7 +123,7 @@ log_environment_info() {
     log_message "Test Files:"
     log_message "  - Performance: test/performance/test_index_calculation_v2_performance.py"
     log_message "  - E2E: test/e2e/test_index_calculation_v2_e2e_real_api.py"
-    log_message "Total Tests: 8 (5 Performance + 3 E2E)"
+    log_message "Total Tests: 5 (3 Performance + 2 E2E)"
     log_message "================================"
 }
 
@@ -141,13 +141,14 @@ get_test_priority() {
         # P0 Priority tests
         "API-IC-201-PT"|"API-IC-202-PT")
             echo "P0" ;;
-        "API-IC-301-E2E")
+        "API-IC-301-E2E"|"API-IC-302-E2E"|"API-IC-303-E2E")
             echo "P0" ;;
         # P1 Priority tests
-        "API-IC-203-PT"|"API-IC-204-PT"|"API-IC-205-PT")
+        "API-IC-203-PT") # 移除了 API-IC-204-PT 和 API-IC-205-PT (已移至整合測試)
             echo "P1" ;;
-        "API-IC-302-E2E"|"API-IC-303-E2E")
-            echo "P1" ;;
+        # P2 Priority tests
+        "API-IC-304-E2E")
+            echo "P2" ;;
         *)
             echo "Unknown" ;;
     esac
@@ -276,7 +277,7 @@ run_test() {
 
 # Function to run performance tests
 run_performance_tests() {
-    echo -e "${BLUE}Running Index Calculation Performance Tests (5 tests)${NC}"
+    echo -e "${BLUE}Running Index Calculation Performance Tests (3 tests)${NC}"
     echo "Testing file: test/performance/test_index_calculation_v2_performance.py"
     echo "⚠️  Performance tests may take longer and use real Azure OpenAI APIs"
     echo
@@ -284,10 +285,11 @@ run_performance_tests() {
     # Performance test configurations
     local performance_tests=(
         "API-IC-201-PT:test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_response_time_benchmark"
-        "API-IC-202-PT:test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_cache_performance"
+        # "API-IC-202-PT:test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_cache_performance"  # 已移除：快取對響應時間影響不大
         "API-IC-203-PT:test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_high_concurrency_load"
-        "API-IC-204-PT:test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_memory_efficiency"
-        "API-IC-205-PT:test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_cache_size_limits"
+        # 註解掉：這兩個測試已移至整合測試 (IT)
+        # "API-IC-204-PT:test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_memory_efficiency"  # 已移至 API-IC-112-IT
+        # "API-IC-205-PT:test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_cache_size_limits"   # 已移至 API-IC-113-IT
     )
     
     # Check if specific tests requested
@@ -313,12 +315,13 @@ run_performance_tests() {
                 "concurrency"|"load")
                     test_id="API-IC-203-PT"
                     ;;
-                "memory")
-                    test_id="API-IC-204-PT"
-                    ;;
-                "cache-size"|"lru")
-                    test_id="API-IC-205-PT"
-                    ;;
+                # 註解掉：這些測試已移至整合測試
+                # "memory")
+                #     test_id="API-IC-204-PT"
+                #     ;;
+                # "cache-size"|"lru")
+                #     test_id="API-IC-205-PT"
+                #     ;;
             esac
             
             # Find matching test entry
@@ -364,18 +367,20 @@ run_e2e_tests() {
         touch test/e2e_standalone/__init__.py
         
         # Copy test file if needed
-        if [ ! -f "test/e2e/test_index_calculation_v2_e2e_real_api.py" ]; then
-            cp test/e2e/test_index_calculation_v2_e2e.py test/e2e_standalone/
+        if [ -f "test/e2e/test_index_calculation_v2_e2e_real_api.py" ]; then
+            cp test/e2e/test_index_calculation_v2_e2e_real_api.py test/e2e_standalone/test_index_calculation_v2_e2e.py
+        else
+            cp test/e2e/test_index_calculation_v2_e2e_real_api.py test/e2e_standalone/test_index_calculation_v2_e2e.py
             
             # Remove skip marks and mock imports
             if [[ "$OSTYPE" == "darwin"* ]]; then
                 # macOS
-                sed -i '' '/pytestmark = pytest.mark.skip/d' test/e2e/test_index_calculation_v2_e2e_real_api.py
-                sed -i '' 's/from unittest.mock import AsyncMock, Mock, patch//g' test/e2e/test_index_calculation_v2_e2e_real_api.py
+                sed -i '' '/pytestmark = pytest.mark.skip/d' test/e2e_standalone/test_index_calculation_v2_e2e.py
+                sed -i '' 's/from unittest.mock import AsyncMock, Mock, patch//g' test/e2e_standalone/test_index_calculation_v2_e2e.py
             else
                 # Linux
-                sed -i '/pytestmark = pytest.mark.skip/d' test/e2e/test_index_calculation_v2_e2e_real_api.py
-                sed -i 's/from unittest.mock import AsyncMock, Mock, patch//g' test/e2e/test_index_calculation_v2_e2e_real_api.py
+                sed -i '/pytestmark = pytest.mark.skip/d' test/e2e_standalone/test_index_calculation_v2_e2e.py
+                sed -i 's/from unittest.mock import AsyncMock, Mock, patch//g' test/e2e_standalone/test_index_calculation_v2_e2e.py
             fi
         fi
     fi
@@ -385,9 +390,10 @@ run_e2e_tests() {
     
     # E2E test configurations
     local e2e_tests=(
-        "API-IC-301-E2E:test_index_calculation_v2_e2e.py::TestIndexCalculationV2E2E::test_complete_workflow"
-        "API-IC-302-E2E:test_index_calculation_v2_e2e.py::TestIndexCalculationV2E2E::test_error_recovery"
-        "API-IC-303-E2E:test_index_calculation_v2_e2e.py::TestIndexCalculationV2E2E::test_monitoring_and_logging_integration"
+        "API-IC-301-E2E:test_index_calculation_v2_e2e.py::TestIndexCalculationV2E2ERealAPI::test_API_IC_301_E2E_basic_workflow"
+        "API-IC-302-E2E:test_index_calculation_v2_e2e.py::TestIndexCalculationV2E2ERealAPI::test_API_IC_302_E2E_html_format"
+        "API-IC-303-E2E:test_index_calculation_v2_e2e.py::TestIndexCalculationV2E2ERealAPI::test_API_IC_303_E2E_string_keywords"
+        # "API-IC-304-E2E:test_index_calculation_v2_e2e.py::TestIndexCalculationV2E2ERealAPI::test_API_IC_304_E2E_performance_and_monitoring"  # 待實作 - 需等待監控功能開發完成
     )
     
     # Run E2E tests with proper isolation
@@ -430,8 +436,8 @@ run_e2e_tests() {
             # Priority tracking
             if [[ "$test_id" == "API-IC-301-E2E" ]]; then
                 P0_PASSED+=("${test_id}")
-            else
-                P1_PASSED+=("${test_id}")
+            elif [[ "$test_id" == "API-IC-303-E2E" ]]; then
+                P2_PASSED+=("${test_id}")
             fi
             
             if [ "$VERBOSE" = false ]; then
@@ -450,8 +456,8 @@ run_e2e_tests() {
             # Priority tracking
             if [[ "$test_id" == "API-IC-301-E2E" ]]; then
                 P0_FAILED+=("${test_id}")
-            else
-                P1_FAILED+=("${test_id}")
+            elif [[ "$test_id" == "API-IC-303-E2E" ]]; then
+                P2_FAILED+=("${test_id}")
             fi
             
             echo "  Error details saved to: $(basename "$test_output_file")"
@@ -508,25 +514,72 @@ format_performance_results() {
         p50_status="❌"
     fi
     
-    # Convert decimal to percentage for display
-    local success_rate_pct=$(echo "${success_rate:-0} * 100" | bc -l)
-    printf "| API-IC-201-PT | 響應時間基準 | %.3f | %.3f | %.1f%% | < 1.0s | %s |
-" \
-        "${p50:-0}" "${p95:-0}" "${success_rate_pct}" "$p50_status"
-    
-    # API-IC-202-PT (Cache Performance)
-    local result=$(read_performance_results "API-IC-202-PT")
-    IFS='|' read -r p50 p95 success_rate <<< "$result"
-    
-    local cache_status="✅"
-    if [[ " ${FAILED_TESTS[@]} " =~ " API-IC-202-PT " ]]; then
-        cache_status="❌"
+    # Check if P95 meets target
+    if [ "$p95" != "N/A" ] && (( $(echo "$p95 > 2.0" | bc -l) )); then
+        p50_status="❌"
     fi
     
-    local success_rate_pct=$(echo "${success_rate:-0} * 100" | bc -l)
-    printf "| API-IC-202-PT | 快取效能測試 | %.3f | %.3f | %.1f%% | Hit Rate > 60%% | %s |
+    # Format values (handle N/A)
+    if [ "$p50" = "N/A" ]; then
+        p50_fmt="N/A"
+    else
+        p50_fmt=$(printf "%.3f" "$p50")
+    fi
+    
+    if [ "$p95" = "N/A" ]; then
+        p95_fmt="N/A"
+    else
+        p95_fmt=$(printf "%.3f" "$p95")
+    fi
+    
+    if [ "$success_rate" = "N/A" ]; then
+        success_rate_pct="N/A"
+    else
+        success_rate_pct=$(printf "%.1f%%" "$(echo "$success_rate * 100" | bc -l)")
+    fi
+    
+    printf "| API-IC-201-PT | 響應時間基準 | %s | %s | %s | P50<1s,P95<2s | %s |
 " \
-        "${p50:-0}" "${p95:-0}" "${success_rate_pct}" "$cache_status"
+        "$p50_fmt" "$p95_fmt" "$success_rate_pct" "$p50_status"
+    
+    # API-IC-203-PT (High Concurrency Load)
+    local result=$(read_performance_results "API-IC-203-PT")
+    IFS='|' read -r p50 p95 success_rate <<< "$result"
+    
+    # Debug: Show what was read
+    # echo "DEBUG API-IC-203-PT: result='$result', p50='$p50', p95='$p95', success_rate='$success_rate'"
+    
+    local p203_status="✅"
+    if [[ " ${FAILED_TESTS[@]} " =~ " API-IC-203-PT " ]]; then
+        p203_status="❌"
+    elif [ "$success_rate" != "N/A" ] && (( $(echo "$success_rate < 0.9" | bc -l) )); then
+        p203_status="❌"
+    elif [ "$p95" != "N/A" ] && (( $(echo "$p95 > 4.0" | bc -l) )); then
+        p203_status="❌"
+    fi
+    
+    # Format values (handle N/A)
+    if [ "$p50" = "N/A" ]; then
+        p50_fmt="N/A"
+    else
+        p50_fmt=$(printf "%.3f" "$p50")
+    fi
+    
+    if [ "$p95" = "N/A" ]; then
+        p95_fmt="N/A"
+    else
+        p95_fmt=$(printf "%.3f" "$p95")
+    fi
+    
+    if [ "$success_rate" = "N/A" ]; then
+        success_rate_pct="N/A"
+    else
+        success_rate_pct=$(printf "%.1f%%" "$(echo "$success_rate * 100" | bc -l)")
+    fi
+    
+    printf "| API-IC-203-PT | 高並發負載測試 | %s | %s | %s | SR>90%%,P95<4s | %s |
+" \
+        "$p50_fmt" "$p95_fmt" "$success_rate_pct" "$p203_status"
     
     echo
 }
@@ -542,7 +595,7 @@ generate_report() {
     echo "==============================================="
     echo "執行日期: $(date '+%Y-%m-%d %H:%M:%S')"
     echo "測試規格: Index Calculation test specifications"
-    echo "測試總數: 8 個測試案例 (5 Performance + 3 E2E)"
+    echo "測試總數: 5 個測試案例 (2 Performance + 3 E2E)"
     echo "執行環境: $(python --version 2>&1 | cut -d' ' -f2)"
     echo "總執行時間: ${total_duration}s"
     echo "日誌檔案: $(basename "$LOG_FILE")"
@@ -557,7 +610,7 @@ generate_report() {
     
     echo "測試檔案清單"
     echo "------------"
-    echo "效能測試 (5個測試):"
+    echo "效能測試 (2個測試):"
     echo "  - test/performance/test_index_calculation_v2_performance.py"
     echo ""
     echo "E2E測試 (3個測試):"
@@ -566,7 +619,7 @@ generate_report() {
     
     echo "測試摘要"
     echo "--------"
-    echo "總測試數: $total_tests / 8"
+    echo "總測試數: $total_tests / 5"
     echo "通過: ${#PASSED_TESTS[@]} (${pass_rate}%)"
     echo "失敗: ${#FAILED_TESTS[@]}"
     echo "跳過: ${#SKIPPED_TESTS[@]}"
@@ -653,10 +706,10 @@ generate_report() {
     
     # Success celebration or failure summary
     if [ ${#FAILED_TESTS[@]} -eq 0 ]; then
-        echo "🎉 ${GREEN}所有 Index Calculation Real API 測試全部通過！${NC}"
+        echo -e "🎉 ${GREEN}所有 Index Calculation Real API 測試全部通過！${NC}"
         echo "   Performance 和 E2E 測試都成功使用真實 Azure OpenAI API"
     else
-        echo "❌ ${RED}${#FAILED_TESTS[@]} 個測試失敗，總成功率: ${pass_rate}%${NC}"
+        echo -e "❌ ${RED}${#FAILED_TESTS[@]} 個測試失敗，總成功率: ${pass_rate}%${NC}"
         if [ ${#P0_FAILED[@]} -gt 0 ]; then
             echo "   ⚠️  有 ${#P0_FAILED[@]} 個 P0 (Critical) 測試失敗，需要優先修復"
         fi
@@ -675,6 +728,8 @@ main() {
     # Setup logging with absolute path
     LOG_DIR="$PROJECT_ROOT/test/logs"
     mkdir -p "$LOG_DIR"
+    # Export LOG_DIR so Python tests can access it
+    export LOG_DIR
     # Generate timestamp once for consistent naming
     TIMESTAMP=$(date +%Y%m%d_%H%M)
     LOG_FILE="$LOG_DIR/test_suite_index_calculation_real_api_perf_e2e_${TIMESTAMP}.log"
