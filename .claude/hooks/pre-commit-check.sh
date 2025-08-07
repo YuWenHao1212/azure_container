@@ -28,8 +28,22 @@ fi
 
 echo ""
 
-# 2. Health & Keyword 測試
-echo "📝 Step 2/4: Running Health & Keyword tests..."
+# 2. Service Modules 測試
+echo "📝 Step 2/5: Running Service Modules tests..."
+if ./test/scripts/run_service_modules_tests_final.sh > /tmp/test_service_modules.log 2>&1; then
+    echo "✅ Service Modules tests passed"
+else
+    echo "❌ Service Modules tests FAILED"
+    echo "Check log: /tmp/test_service_modules.log"
+    echo ""
+    echo "⛔ BLOCKING COMMIT - Fix test failures first"
+    exit 1
+fi
+
+echo ""
+
+# 3. Health & Keyword 測試
+echo "📝 Step 3/5: Running Health & Keyword tests..."
 if ./test/scripts/run_health_keyword_unit_integration.sh > /tmp/test_health_keyword.log 2>&1; then
     echo "✅ Health & Keyword tests passed"
 else
@@ -42,8 +56,8 @@ fi
 
 echo ""
 
-# 3. Index Calculation 測試
-echo "📝 Step 3/4: Running Index Calculation tests..."
+# 4. Index Calculation 測試
+echo "📝 Step 4/5: Running Index Calculation tests..."
 if ./test/scripts/run_index_calculation_unit_integration.sh > /tmp/test_index_calc.log 2>&1; then
     echo "✅ Index Calculation tests passed"
 else
@@ -56,8 +70,8 @@ fi
 
 echo ""
 
-# 4. Gap Analysis 測試
-echo "📝 Step 4/4: Running Gap Analysis tests..."
+# 5. Gap Analysis 測試
+echo "📝 Step 5/5: Running Gap Analysis tests..."
 if ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh > /tmp/test_gap_analysis.log 2>&1; then
     echo "✅ Gap Analysis tests passed"
 else
@@ -72,6 +86,7 @@ echo ""
 echo "=" 
 echo "🎉 All pre-commit checks passed!"
 echo "✅ Ruff check: PASSED"
+echo "✅ Service Modules tests: PASSED"
 echo "✅ Health & Keyword tests: PASSED"
 echo "✅ Index Calculation tests: PASSED"
 echo "✅ Gap Analysis tests: PASSED"
