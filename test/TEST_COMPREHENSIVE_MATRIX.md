@@ -39,7 +39,7 @@
 | 5 | test/unit/test_prompt_manager.py | 單元測試 | API-KW-241~264 | 24 |
 | 6 | test/unit/test_llm_factory_deployment_mapping.py | 單元測試 | SVC-LLM-501~508 | 8 |
 | 7 | test/integration/test_keyword_extraction_language.py | 整合測試 | API-KW-301~314 | 14 |
-| 8 | test/integration/test_health_integration.py | 整合測試 | API-HLT-010-IT | 1 |
+| 8 | test/integration/test_health_integration.py | 整合測試 | API-HLT-101-IT | 1 |
 | 9 | test/integration/test_azure_openai_integration.py | 整合測試 | API-KW-111-IT | 1 |
 | 10 | test/performance/test_keyword_extraction_performance_simple.py | 效能測試 | API-KW-315-PT | 1 |
 | 11 | test/unit/test_index_calculation_v2.py | 單元測試 | API-IC-001~010 | 10 |
@@ -337,7 +337,7 @@
 ## 11. 關鍵測試案例位置
 
 ### 11.1 整合測試
-- **API-HLT-010-IT**: `test/integration/test_health_integration.py:78`
+- **API-HLT-101-IT**: `test/integration/test_health_integration.py:78`
 - **API-KW-111-IT**: `test/integration/test_azure_openai_integration.py:113`
 - **API-IC-101-IT**: `test/integration/test_index_calculation_v2_api.py`
 

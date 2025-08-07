@@ -2,7 +2,7 @@
 Integration tests for health check endpoint with external dependencies.
 
 Tests:
-- API-HLT-010-IT: 健康檢查整合測試
+- API-HLT-101-IT: 健康檢查整合測試
 - Health check with external services (database, cache, external APIs)
 - Service status reporting and dependency validation
 - Error handling for service failures
@@ -78,7 +78,7 @@ class TestHealthCheckIntegration:
     @pytest.mark.precommit
     @pytest.mark.timeout(5)
     def test_health_check_integration(self, test_client, mock_azure_openai_client, mock_embedding_client):
-        """TEST: API-HLT-010-IT - Comprehensive health check integration test."""
+        """TEST: API-HLT-101-IT - Comprehensive health check integration test."""
 
         # === Basic Health Check ===
         response = test_client.get("/health")

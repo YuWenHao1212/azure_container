@@ -30,10 +30,11 @@
 |------|----------|------|----------|--------|----------|
 | 1 | test/unit/test_health.py | 單元測試 | API-HLT-001~002-UT | 2 | ✅ 100% 通過 |
 | 2 | test/unit/test_keyword_extraction.py | 單元測試 | API-KW-001~006-UT | 6 | ✅ 100% 通過 |
-| 3 | test/integration/test_keyword_extraction_language.py | 整合測試 | API-HLT-101-IT, API-KW-101~110-IT | 11 | ✅ 100% 通過 |
-| 4 | test/performance/test_keyword_extraction_performance.py | 效能測試 | API-KW-201-PT | 1 | ✅ 已實作 |
-| 5 | test/scripts/run_health_keyword_unit_integration.sh | 測試腳本 | Mock 測試執行器 | 19 | ✅ 已驗證 |
-| 6 | test/scripts/run_health_keyword_real_api_perf.sh | 測試腳本 | 真實 API 測試執行器 | 1 | ✅ 已實作 |
+| 3 | test/integration/test_health_integration.py | 整合測試 | API-HLT-101-IT | 1 | ✅ 100% 通過 |
+| 4 | test/integration/test_keyword_extraction_language.py | 整合測試 | API-KW-101~110-IT | 10 | ✅ 100% 通過 |
+| 5 | test/performance/test_keyword_extraction_performance.py | 效能測試 | API-KW-201-PT | 1 | ✅ 已實作 |
+| 6 | test/scripts/run_health_keyword_unit_integration.sh | 測試腳本 | Mock 測試執行器 | 19 | ✅ 已驗證 |
+| 7 | test/scripts/run_health_keyword_real_api_perf.sh | 測試腳本 | 真實 API 測試執行器 | 1 | ✅ 已實作 |
 
 ### 1.2 模組符合度分析
 
@@ -323,7 +324,7 @@ P1 (Important): 3/3 (100%)
 - **API-KW-005-UT**: `test/unit/test_keyword_extraction.py::TestKeywordExtraction::test_extract_keywords_traditional_chinese_jd`
 
 ### 11.2 整合測試
-- **API-HLT-101-IT**: `test/integration/test_keyword_extraction_language.py::TestKeywordExtractionLanguage::test_health_check_integration`
+- **API-HLT-101-IT**: `test/integration/test_health_integration.py::TestHealthCheckIntegration::test_health_check_integration`
 - **API-KW-103-IT**: `test/integration/test_keyword_extraction_language.py::TestKeywordExtractionLanguage::test_reject_simplified_chinese`
 
 ### 11.3 效能測試
