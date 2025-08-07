@@ -145,7 +145,7 @@ class TestErrorHandlingV2:
         - Caps wait time at maximum limit (20s)
         """
         # Create error with Retry-After header
-        rate_limit_error = Exception("Rate limit exceeded")
+        rate_limit_error = RuntimeError("Rate limit exceeded")
         rate_limit_error.status_code = 429
         rate_limit_error.response = Mock()
         rate_limit_error.response.headers = {'Retry-After': '30'}  # 30s > 20s max
@@ -171,7 +171,7 @@ class TestErrorHandlingV2:
                 enable_partial_results=False
             )
 
-            with pytest.raises(Exception):
+            with pytest.raises(RuntimeError):
                 await service.analyze(
                     resume="Test resume " * 50,
                     job_description="Test JD " * 50,
