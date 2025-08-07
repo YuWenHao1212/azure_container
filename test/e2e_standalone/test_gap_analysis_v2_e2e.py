@@ -131,16 +131,15 @@ class TestGapAnalysisV2E2E:
         Description: 完整工作流程測試 - 測試從關鍵字提取到差距分析的完整流程
         """
         # Record start time for actual processing time measurement
-        import time
         start_time = time.time()
-        
+
         # Step 1: Test index calculation and gap analysis
         response = test_client.post(
             "/api/v1/index-cal-and-gap-analysis",
             json=test_data,
             headers={"X-API-Key": "test-api-key"}
         )
-        
+
         # Record actual processing time
         actual_processing_time = round(time.time() - start_time, 2)
 
@@ -192,22 +191,22 @@ class TestGapAnalysisV2E2E:
             "keyword_coverage": "keyword_coverage" in data and data["keyword_coverage"] is not None,
             "gap_analysis": "gap_analysis" in data and data["gap_analysis"] is not None
         }
-        
+
         # Create summary of validated response fields
         field_summary = ", ".join([f"{k}:{'✓' if v else '✗'}" for k, v in validated_fields.items()])
-        
+
         print(f"✅ API-GAP-001-E2E passed: Similarity = {similarity_percentage}%, Processing time = {actual_processing_time}s")
         print(f"   Core fields validated: {field_summary}")
-        
+
         # Store validation results for script summary
         self._field_validation_summary = validated_fields
-        
+
         # Write summary to file for script to read
         import os
         summary_file = os.path.join(os.path.dirname(__file__), "../../test/logs/e2e_field_validation_API-GAP-001-E2E.txt")
         os.makedirs(os.path.dirname(summary_file), exist_ok=True)
         with open(summary_file, 'w') as f:
-            f.write(f"API-GAP-001-E2E Field Validation Summary:\n")
+            f.write("API-GAP-001-E2E Field Validation Summary:\n")
             f.write(f"Similarity Score: {similarity_percentage}%\n")
             f.write(f"Processing Time: {actual_processing_time}s\n")
             f.write(f"Core Fields: {field_summary}\n")

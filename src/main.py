@@ -4,7 +4,7 @@ Following FHS architecture principles.
 """
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException

@@ -179,9 +179,9 @@ class TestKeywordExtraction:
 
     @pytest.mark.precommit
     @pytest.mark.timeout(5)
-    def test_API_KW_001_UT_success_path_complete_validation(self, test_client, 
+    def test_API_KW_001_UT_success_path_complete_validation(self, test_client,
                                                             mock_keyword_service,
-                                                            mock_llm_client, 
+                                                            mock_llm_client,
                                                             valid_english_jd_request,
                                                             successful_english_extraction_result):
         """
@@ -225,7 +225,7 @@ class TestKeywordExtraction:
 
         # ✅ success = true
         assert data["success"] is True
-        
+
         # ✅ Check response structure
         assert "data" in data
         assert "error" in data
@@ -316,13 +316,13 @@ class TestKeywordExtraction:
         - ✅ error.details 包含 "ensure this value is greater than or equal to 5" (< 5 時)
         - ✅ error.details 包含 "ensure this value is less than or equal to 25" (> 25 時)
         """
-        
+
         # Test max_keywords < 5
         request_too_low = valid_english_jd_request.copy()
         request_too_low["max_keywords"] = 3
 
         response_low = test_client.post("/api/v1/extract-jd-keywords", json=request_too_low)
-        
+
         # ✅ HTTP 422 for too low value
         assert response_low.status_code == 422
         data_low = response_low.json()
@@ -334,7 +334,7 @@ class TestKeywordExtraction:
         request_too_high["max_keywords"] = 35
 
         response_high = test_client.post("/api/v1/extract-jd-keywords", json=request_too_high)
-        
+
         # ✅ HTTP 422 for too high value
         assert response_high.status_code == 422
         data_high = response_high.json()
@@ -364,7 +364,7 @@ class TestKeywordExtraction:
           - ✅ error.code = "EXTERNAL_SERVICE_TIMEOUT"
           - ✅ 建議稍後重試
         """
-        
+
         # Test Rate Limit Error
         mock_keyword_service.validate_input.return_value = valid_english_jd_request
         mock_keyword_service.process.side_effect = AzureOpenAIRateLimitError("Rate limit exceeded")
@@ -386,7 +386,7 @@ class TestKeywordExtraction:
         assert response_rate_limit.status_code in [429, 503]  # Accept both
         data_rate_limit = response_rate_limit.json()
         assert data_rate_limit["success"] is False
-        
+
         # Test Timeout Error
         mock_keyword_service.process.side_effect = TimeoutError("Service timeout")
 
@@ -457,7 +457,7 @@ class TestKeywordExtraction:
         # ✅ 返回相關中文關鍵字
         keywords = data["data"]["keywords"]
         assert len(keywords) == 12
-        
+
         # ✅ 關鍵字符合中文技能詞彙 (check for Chinese characters in keywords)
         chinese_keywords = ["資深工程師", "微服務架構", "測試驅動開發", "後端開發", "雲端服務", "分散式系統"]
         found_chinese = [kw for kw in keywords if kw in chinese_keywords]
@@ -486,10 +486,10 @@ class TestKeywordExtraction:
           - ✅ warning.message 包含品質提示
           - ✅ warning.suggestion 提供改進建議
         """
-        
+
         # Test 1: Super long JD (3000 characters)
         long_jd_request = {
-            "job_description": "Senior Python Developer position with extensive experience required. " * 50 + 
+            "job_description": "Senior Python Developer position with extensive experience required. " * 50 +
                               "Additional requirements include FastAPI, Docker, Azure, and microservices. " * 20,
             "max_keywords": 25,
             "prompt_version": "latest"
@@ -499,7 +499,7 @@ class TestKeywordExtraction:
             "keywords": ["Python", "Senior Developer", "FastAPI", "Docker", "Azure"] * 5,  # 25 keywords
             "keyword_count": 25,
             "confidence_score": 0.75,
-            "extraction_method": "2_round_intersection", 
+            "extraction_method": "2_round_intersection",
             "detected_language": "en",
             "prompt_version_used": "v1.4.0-en",
             "intersection_stats": {
@@ -585,7 +585,7 @@ class TestKeywordExtraction:
         data_quality = response_quality.json()
         assert data_quality["success"] is True
         assert data_quality["warning"]["has_warning"] is True
-        
+
         # ✅ warning.message 包含品質提示 & ✅ warning.suggestion 提供改進建議
         assert "Low keyword count detected" in data_quality["warning"]["message"]
         assert data_quality["warning"]["expected_minimum"] == 12

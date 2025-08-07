@@ -55,20 +55,20 @@ def mock_openai_clients():
         return
     # Mock all possible OpenAI client imports and services
     with (
-        # Core OpenAI clients 
+        # Core OpenAI clients
         patch('src.services.openai_client.get_azure_openai_client') as mock_openai,
         patch('src.services.openai_client_gpt41.get_gpt41_mini_client') as mock_gpt41,
         patch('src.services.embedding_client.get_azure_embedding_client') as mock_embedding,
-        
+
         # Service-level mocks
         patch('src.services.keyword_extraction.get_keyword_extraction_service') as mock_keyword_service,
-        
+
         # LLM Factory for Gap Analysis V2
         patch('src.services.llm_factory.get_llm_client') as mock_llm_factory,
-        
+
         # Resource pool manager
         patch('src.services.resource_pool_manager.ResourcePoolManager') as mock_resource_pool,
-        
+
         # HTTP clients that might bypass mocks
         patch('httpx.AsyncClient') as mock_httpx,
         patch('aiohttp.ClientSession') as mock_aiohttp
@@ -85,7 +85,7 @@ def mock_openai_clients():
         })
         mock_openai_instance.close = AsyncMock()
         mock_openai.return_value = mock_openai_instance
-        
+
         # Configure GPT-4.1 mini client mock
         mock_gpt41_instance = AsyncMock()
         mock_gpt41_instance.chat_completion = AsyncMock(return_value={
@@ -98,13 +98,13 @@ def mock_openai_clients():
         })
         mock_gpt41_instance.close = AsyncMock()
         mock_gpt41.return_value = mock_gpt41_instance
-        
+
         # Configure embedding client mock
         mock_embedding_instance = AsyncMock()
         mock_embedding_instance.create_embeddings = AsyncMock(return_value=[[0.1] * 1536, [0.2] * 1536])
         mock_embedding_instance.close = AsyncMock()
         mock_embedding.return_value = mock_embedding_instance
-        
+
         # Configure keyword extraction service mock
         mock_keyword_instance = AsyncMock()
         mock_keyword_instance.validate_input = AsyncMock(return_value={
@@ -120,7 +120,7 @@ def mock_openai_clients():
         })
         mock_keyword_instance.close = AsyncMock()
         mock_keyword_service.return_value = mock_keyword_instance
-        
+
         # Configure LLM Factory mock for Gap Analysis V2
         mock_llm_client = AsyncMock()
         mock_llm_client.chat_completion = AsyncMock(return_value={
@@ -133,7 +133,7 @@ def mock_openai_clients():
         })
         mock_llm_client.close = AsyncMock()
         mock_llm_factory.return_value = mock_llm_client
-        
+
         # Configure resource pool manager mock
         mock_pool_instance = Mock()
         mock_pool_instance.get_client = Mock()
@@ -145,18 +145,18 @@ def mock_openai_clients():
             "current_pool_size": 1
         })
         mock_resource_pool.return_value = mock_pool_instance
-        
+
         # Configure HTTP client mocks to prevent any real network calls
         mock_httpx_instance = Mock()
         mock_httpx_instance.post = Mock(side_effect=Exception("HTTP calls should be mocked"))
         mock_httpx_instance.close = Mock()
         mock_httpx.return_value = mock_httpx_instance
-        
+
         mock_aiohttp_instance = Mock()
         mock_aiohttp_instance.post = Mock(side_effect=Exception("HTTP calls should be mocked"))
         mock_aiohttp_instance.close = Mock()
         mock_aiohttp.return_value = mock_aiohttp_instance
-        
+
         # Azure OpenAI direct mock removed to avoid importing openai module
-        
+
         yield

@@ -56,10 +56,10 @@ class TestIndexCalculationV2E2ERealAPI:
         os.environ['INDEX_CALC_CACHE_ENABLED'] = 'true'
         os.environ['INDEX_CALC_CACHE_TTL_MINUTES'] = '60'
         os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = '1000'
-        
+
         # Set API key for authentication
         os.environ['CONTAINER_APP_API_KEY'] = 'e2e-test-key'
-        
+
         return create_app()
 
     def create_test_client(self, app):
@@ -91,7 +91,7 @@ class TestIndexCalculationV2E2ERealAPI:
         """
         # Create fresh client for this test
         client = self.create_test_client(app)
-        
+
         # Use real test data - medium size for comprehensive testing
         real_resume = test_data["standard_resumes"][1]["content"]
         real_jd = test_data["job_descriptions"][1]["content"]
@@ -116,7 +116,7 @@ class TestIndexCalculationV2E2ERealAPI:
         # Verify success response
         assert data["success"] is True
         assert "data" in data
-        
+
         # Verify data structure completeness
         result = data["data"]
         assert "raw_similarity_percentage" in result
@@ -134,7 +134,7 @@ class TestIndexCalculationV2E2ERealAPI:
         assert coverage["total_keywords"] == len(real_keywords)
         assert isinstance(coverage["covered_count"], int)
         assert isinstance(coverage["coverage_percentage"], int)
-        
+
         # Verify performance
         assert processing_time < 15.0
 
@@ -150,10 +150,10 @@ class TestIndexCalculationV2E2ERealAPI:
         """
         # Create fresh client for this test
         client = self.create_test_client(app)
-        
+
         html_resume = test_data["standard_resumes"][3]["content"]
         real_jd = test_data["job_descriptions"][1]["content"]
-        
+
         response = client.post(
             "/api/v1/index-calculation",
             json={
@@ -179,10 +179,10 @@ class TestIndexCalculationV2E2ERealAPI:
         """
         # Create fresh client for this test
         client = self.create_test_client(app)
-        
+
         real_resume = test_data["standard_resumes"][1]["content"]
         real_jd = test_data["job_descriptions"][1]["content"]
-        
+
         response = client.post(
             "/api/v1/index-calculation",
             json={
@@ -203,14 +203,14 @@ class TestIndexCalculationV2E2ERealAPI:
     # @pytest.mark.timeout(90)
     # def test_API_IC_304_E2E_performance_and_monitoring(self, app, test_data):
     #     """TEST: API-IC-304-E2E - 效能和監控整合測試（待實作）.
-    #     
+    #
     #     待實作功能：
     #     1. 監控事件追蹤驗證
     #     2. 日誌格式和內容檢查
     #     3. 錯誤處理和監控測試
     #     4. 性能指標收集（記憶體、CPU等）
     #     5. 快取監控驗證
-    #     
+    #
     #     注意：目前的實作只是基本的穩定性測試，未包含真正的監控整合驗證。
     #     需等待監控功能開發完成後實施。
     #     """

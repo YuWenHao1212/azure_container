@@ -23,6 +23,7 @@ def mock_openai_clients():
 
 # Load real environment variables from .env FIRST
 from dotenv import load_dotenv
+
 load_dotenv(override=True)
 
 # Performance test environment setup - SET AFTER loading .env
@@ -37,7 +38,7 @@ os.environ['USE_V2_IMPLEMENTATION'] = 'true'  # Enable V2 for performance tests
 
 # Verify critical Azure OpenAI environment variables are loaded
 assert os.environ.get('AZURE_OPENAI_ENDPOINT'), "AZURE_OPENAI_ENDPOINT not loaded from .env"
-assert os.environ.get('AZURE_OPENAI_API_KEY'), "AZURE_OPENAI_API_KEY not loaded from .env"  
+assert os.environ.get('AZURE_OPENAI_API_KEY'), "AZURE_OPENAI_API_KEY not loaded from .env"
 assert os.environ.get('AZURE_OPENAI_GPT4_DEPLOYMENT'), "AZURE_OPENAI_GPT4_DEPLOYMENT not loaded from .env"
 assert os.environ.get('EMBEDDING_ENDPOINT'), "EMBEDDING_ENDPOINT not loaded from .env"
 
@@ -57,7 +58,7 @@ def mock_monitoring_service():
     """Mock only monitoring service for performance tests."""
     service = Mock()
     service.track_event = Mock()
-    service.track_error = Mock() 
+    service.track_error = Mock()
     service.track_metric = Mock()
     return service
 

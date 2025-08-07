@@ -25,8 +25,8 @@ from datetime import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 from dotenv import load_dotenv
+from fastapi.testclient import TestClient
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
@@ -44,13 +44,12 @@ class TestGapAnalysisV2Performance:
     @pytest.fixture(scope="class")  # Share client across all test methods in the class
     def test_client(self):
         """Create test client for REAL performance testing with actual LLM APIs."""
-        
+
         print("🚀 Creating test client with REAL Azure OpenAI APIs")
-        
+
         # Load real environment variables for Azure OpenAI first
-        from dotenv import load_dotenv
         load_dotenv(override=True)
-        
+
         # CRITICAL: Set test API key AFTER load_dotenv to override .env value
         # Must be done BEFORE importing main
         os.environ['CONTAINER_APP_API_KEY'] = 'test-api-key'
@@ -59,15 +58,14 @@ class TestGapAnalysisV2Performance:
         os.environ['LIGHTWEIGHT_MONITORING'] = 'false'  # Disable all monitoring for cleaner logs
         os.environ['ERROR_CAPTURE_ENABLED'] = 'false'  # Reduce overhead
         os.environ['ENVIRONMENT'] = 'development'  # Valid enum value
-        
+
         print(f"📋 Using API key: {os.environ['CONTAINER_APP_API_KEY']}")
         print(f"📋 LLM_MODEL_GAP_ANALYSIS: {os.environ.get('LLM_MODEL_GAP_ANALYSIS')}")
-        
+
         # Create app with real services (mocks disabled in performance/conftest.py)
-        from src.main import create_app
         app = create_app()
         client = TestClient(app)
-        
+
         print("✅ Test client created - ready for REAL API performance testing")
         return client
 
@@ -121,24 +119,24 @@ class TestGapAnalysisV2Performance:
         """Save performance test results to test/logs with automatic cleanup of old files."""
         log_dir = os.path.join(os.path.dirname(__file__), '../logs')
         os.makedirs(log_dir, exist_ok=True)
-        
+
         # Create filename with timestamp
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"performance_{test_name}_{timestamp}.json"
         filepath = os.path.join(log_dir, filename)
-        
+
         # Save results
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2)
-        
+
         print(f"📊 Performance results saved to: {filepath}")
-        
+
         # Clean up old performance test files (keep only latest 6)
         pattern = f"performance_{test_name}_*.json"
         import glob
         files = glob.glob(os.path.join(log_dir, pattern))
         files.sort(key=os.path.getmtime, reverse=True)
-        
+
         # Delete old files
         for old_file in files[6:]:
             try:
@@ -198,19 +196,18 @@ class TestGapAnalysisV2Performance:
         注意：這是真實的 LLM API 效能測試，會調用實際的 Azure OpenAI 服務
         """
         print("🚀 Creating test client with REAL API access")
-        
+
         # Environment should already be set by performance/conftest.py
         # Just ensure critical settings are correct
         os.environ['CONTAINER_APP_API_KEY'] = 'test-api-key'
-        
+
         from fastapi.testclient import TestClient
-        from src.main import create_app
-        
+
         app = create_app()
         test_client = TestClient(app)
-        
+
         print("✅ Direct test client created successfully")
-        
+
         response_times = []
         failed_responses = []
         # Need 20 samples for accurate P50/P95 calculation (merged test)
@@ -218,25 +215,26 @@ class TestGapAnalysisV2Performance:
         target_qps = 10
         test_duration = 60  # seconds
 
-        print(f"\nStarting P50/P95 REAL API performance test:")
+        print("\nStarting P50/P95 REAL API performance test:")
         print(f"Target: {total_requests} requests for P50 and P95 calculation")
-        print(f"Using REAL Azure OpenAI APIs - no mocks!")
-        print(f"Execution mode: Parallel (5 concurrent requests)")
-        
+        print("Using REAL Azure OpenAI APIs - no mocks!")
+        print("Execution mode: Parallel (5 concurrent requests)")
+
         # Function to make a single request
         def make_single_request(request_id):
             # Create a new test client for each thread
             from fastapi.testclient import TestClient
+
             from src.main import create_app
             thread_app = create_app()
             thread_client = TestClient(thread_app)
-            
+
             # Generate unique data for each request
             unique_data = self.generate_unique_test_data(request_id, test_data)
-            
+
             print(f"  Request {request_id+1}: Starting...")
             request_start = time.time()
-            
+
             try:
                 response = thread_client.post(
                     "/api/v1/index-cal-and-gap-analysis",
@@ -244,37 +242,37 @@ class TestGapAnalysisV2Performance:
                     headers={"X-API-Key": "test-api-key"}
                 )
                 request_time = time.time() - request_start
-                
+
                 result = {
                     'request_id': request_id,
                     'status_code': response.status_code,
                     'request_time': request_time,
                     'response': response.text[:200] if hasattr(response, 'text') else str(response.content)[:200]
                 }
-                
+
                 if response.status_code == 200:
                     print(f"  ✅ Request {request_id+1}: Success in {request_time:.3f}s")
                 else:
                     print(f"  ❌ Request {request_id+1}: Failed with {response.status_code} in {request_time:.3f}s")
-                
+
                 return result
             except Exception as e:
-                print(f"  ❌ Request {request_id+1}: Exception {str(e)}")
+                print(f"  ❌ Request {request_id+1}: Exception {e!s}")
                 return {
                     'request_id': request_id,
                     'status_code': 500,
                     'request_time': time.time() - request_start,
                     'response': str(e)[:200]
                 }
-        
+
         # Execute requests in parallel using ThreadPoolExecutor
         start_time = time.time()
         print("\n  Launching requests in parallel (max 5 concurrent)...")
-        
+
         with ThreadPoolExecutor(max_workers=5) as executor:
             # Submit all tasks
             futures = [executor.submit(make_single_request, i) for i in range(total_requests)]
-            
+
             # Collect results as they complete
             for future in as_completed(futures):
                 result = future.result()
@@ -293,7 +291,7 @@ class TestGapAnalysisV2Performance:
         print(f"\nTest completed in {actual_duration:.1f}s")
         print(f"Successful requests: {len(response_times)}")
         print(f"Failed requests: {len(failed_responses)}")
-        
+
         # Show all failures for debugging
         for failure in failed_responses:
             print(f"Failed request {failure['request_id']}: Status {failure['status_code']}")
@@ -310,24 +308,24 @@ class TestGapAnalysisV2Performance:
         assert p50 < 20.0, f"P50 response time {p50:.3f}s exceeds 20.0s target"
 
         # Additional metrics for debugging
-        print(f"\n✅ REAL API Performance Results:")
+        print("\n✅ REAL API Performance Results:")
         print(f"P50 Response Time: {p50:.3f}s (target: < 20.0s)")
         print(f"Min Response Time: {min(response_times):.3f}s")
         print(f"Max Response Time: {max(response_times):.3f}s")
         print(f"Success Rate: {len(response_times)/total_requests:.1%}")
-        
+
         # Also calculate P95 for additional insight (used by API-GAP-002-PT)
         if len(response_times) > 1:
             sorted_times = sorted(response_times)
             p95_index = int(len(sorted_times) * 0.95)
             p95 = sorted_times[p95_index] if p95_index < len(sorted_times) else sorted_times[-1]
             print(f"P95 Response Time: {p95:.3f}s (API-GAP-002-PT target: < 30.0s)")
-            
+
             # Store P95 result for potential use by API-GAP-002-PT
             TestGapAnalysisV2Performance._p95_result = p95
             TestGapAnalysisV2Performance._p50_result = p50
             TestGapAnalysisV2Performance._response_times = response_times
-        
+
         # Save detailed results to log
         test_results = {
             "test_name": "API-GAP-001-PT",
@@ -344,9 +342,9 @@ class TestGapAnalysisV2Performance:
             "detailed_times": response_times,
             "failures": failed_responses
         }
-        
+
         self.save_performance_results("API-GAP-001-PT", test_results)
-        
+
         print(f"✅ P50 REAL API test PASSED with {len(response_times)} successful requests!")
 
     # TEST: API-GAP-002-PT
@@ -371,20 +369,20 @@ class TestGapAnalysisV2Performance:
         if hasattr(TestGapAnalysisV2Performance, '_response_times'):
             existing_response_times = TestGapAnalysisV2Performance._response_times
             print(f"\n✅ Found {len(existing_response_times)} samples from P50 test")
-            
+
             # Calculate how many more samples we need for meaningful P95
             total_needed = 20  # At least 20 samples for P95
             additional_needed = max(0, total_needed - len(existing_response_times))
-            
+
             if additional_needed == 0:
                 # We already have enough samples from P50
                 sorted_times = sorted(existing_response_times)
                 p95_index = int(len(sorted_times) * 0.95)
                 p95 = sorted_times[p95_index] if p95_index < len(sorted_times) else sorted_times[-1]
-                
+
                 print(f"✅ Using existing {len(existing_response_times)} samples for P95 calculation")
                 print(f"P95 Response Time: {p95:.3f}s")
-                
+
                 # Save results
                 test_results = {
                     "test_name": "API-GAP-002-PT",
@@ -396,61 +394,63 @@ class TestGapAnalysisV2Performance:
                     "note": "P95 calculated from P50 test data (sufficient samples)"
                 }
                 self.save_performance_results("API-GAP-002-PT", test_results)
-                
+
                 # Verify P95 < 30 seconds
                 assert p95 < 30.0, f"P95 response time {p95:.3f}s exceeds 30.0s target"
                 print(f"✅ P95 test passed: {p95:.3f}s < 30.0s")
                 return
             else:
                 print(f"ℹ️  Need {additional_needed} more samples for meaningful P95 (have {len(existing_response_times)}, need {total_needed})")
-            
+
         else:
             # Run the same test as P50 but with more requests for better P95 calculation
             additional_needed = 20  # Run full 20 samples if no P50 data
-            print(f"\nRunning P95 performance test with REAL Azure OpenAI APIs:")
+            print("\nRunning P95 performance test with REAL Azure OpenAI APIs:")
             print(f"Will collect {additional_needed} new samples for P95 calculation")
-            
+
             # Environment should already be set by performance/conftest.py
             # Just ensure critical settings are correct
             os.environ['CONTAINER_APP_API_KEY'] = 'test-api-key'
-            
+
             from fastapi.testclient import TestClient
+
             from src.main import create_app
-            
+
             app = create_app()
             test_client = TestClient(app)
-            
+
             print("✅ Direct test client created successfully")
-            
+
             # Start with existing response times if available
             response_times = existing_response_times.copy() if existing_response_times else []
             failed_responses = []
-            
+
             # Determine how many new requests to make
             if existing_response_times:
                 total_requests = additional_needed
             else:
                 total_requests = 20  # Need at least 20 samples for meaningful P95
-            
-            print(f"\nStarting P95 REAL API performance test:")
+
+            print("\nStarting P95 REAL API performance test:")
             print(f"Target: {total_requests} requests for P95 calculation")
-            print(f"Using REAL Azure OpenAI APIs - no mocks!")
-            print(f"Execution mode: Parallel (5 concurrent requests)")
-            
+            print("Using REAL Azure OpenAI APIs - no mocks!")
+            print("Execution mode: Parallel (5 concurrent requests)")
+
             # Function to make a single request
             def make_single_request(request_id):
                 # Create a new test client for each thread
                 from fastapi.testclient import TestClient
+
                 from src.main import create_app
                 thread_app = create_app()
                 thread_client = TestClient(thread_app)
-                
+
                 # Generate unique data for each request
                 unique_data = self.generate_unique_test_data(request_id, test_data)
-                
+
                 print(f"  Request {request_id+1}: Starting...")
                 request_start = time.time()
-                
+
                 try:
                     response = thread_client.post(
                         "/api/v1/index-cal-and-gap-analysis",
@@ -458,37 +458,37 @@ class TestGapAnalysisV2Performance:
                         headers={"X-API-Key": "test-api-key"}
                     )
                     request_time = time.time() - request_start
-                    
+
                     result = {
                         'request_id': request_id,
                         'status_code': response.status_code,
                         'request_time': request_time,
                         'response': response.text[:200] if hasattr(response, 'text') else str(response.content)[:200]
                     }
-                    
+
                     if response.status_code == 200:
                         print(f"  ✅ Request {request_id+1}: Success in {request_time:.3f}s")
                     else:
                         print(f"  ❌ Request {request_id+1}: Failed with {response.status_code} in {request_time:.3f}s")
-                    
+
                     return result
                 except Exception as e:
-                    print(f"  ❌ Request {request_id+1}: Exception {str(e)}")
+                    print(f"  ❌ Request {request_id+1}: Exception {e!s}")
                     return {
                         'request_id': request_id,
                         'status_code': 500,
                         'request_time': time.time() - request_start,
                         'response': str(e)[:200]
                     }
-            
+
             # Execute requests in parallel using ThreadPoolExecutor
             start_time = time.time()
             print("\n  Launching requests in parallel (max 5 concurrent)...")
-            
+
             with ThreadPoolExecutor(max_workers=5) as executor:
                 # Submit all tasks
                 futures = [executor.submit(make_single_request, i) for i in range(total_requests)]
-                
+
                 # Collect results as they complete
                 for future in as_completed(futures):
                     result = future.result()
@@ -507,7 +507,7 @@ class TestGapAnalysisV2Performance:
             print(f"\nTest completed in {actual_duration:.1f}s")
             print(f"Successful requests: {len(response_times)}")
             print(f"Failed requests: {len(failed_responses)}")
-            
+
             # Show all failures for debugging
             for failure in failed_responses:
                 print(f"Failed request {failure['request_id']}: Status {failure['status_code']}")
@@ -521,17 +521,17 @@ class TestGapAnalysisV2Performance:
             sorted_times = sorted(response_times)
             p95_index = int(len(sorted_times) * 0.95)
             p95 = sorted_times[p95_index] if p95_index < len(sorted_times) else sorted_times[-1]
-            
+
             # Also calculate P50 for comparison
             p50 = statistics.median(response_times)
 
-            print(f"\n✅ REAL API Performance Results:")
+            print("\n✅ REAL API Performance Results:")
             print(f"P95 Response Time: {p95:.3f}s (target: < 30.0s)")
             print(f"P50 Response Time: {p50:.3f}s")
             print(f"Min Response Time: {min(response_times):.3f}s")
             print(f"Max Response Time: {max(response_times):.3f}s")
             print(f"Success Rate: {len(response_times)/total_requests:.1%}")
-            
+
             # Save detailed results to log
             test_results = {
                 "test_name": "API-GAP-002-PT",
@@ -550,12 +550,12 @@ class TestGapAnalysisV2Performance:
                 "failures": failed_responses,
                 "data_source": f"Combined: {len(existing_response_times)} from P50 + {total_requests} new samples" if existing_response_times else "Direct REAL API test (no P50 data available)"
             }
-            
+
             self.save_performance_results("API-GAP-002-PT", test_results)
 
         # Verify P95 < 30 seconds as per updated test spec (realistic for real LLM APIs)
         assert p95 < 30.0, f"P95 response time {p95:.3f}s exceeds 30.0s target"
-        
+
         print(f"✅ P95 test passed: {p95:.3f}s < 30.0s")
 
     # TEST: API-GAP-003-PT
@@ -568,19 +568,19 @@ class TestGapAnalysisV2Performance:
         """
         # This test verifies resource pool functionality but uses simplified validation
         # Real performance benefits are better measured in production environments
-        
+
         print("\n🚀 Testing resource pool reuse rate functionality")
         print("Note: This test verifies resource pool is working, actual reuse rates depend on environment")
-        
+
         # Enable resource pool for this test
         with patch.dict(os.environ, {
             'RESOURCE_POOL_ENABLED': 'true',
-            'RESOURCE_POOL_MIN_SIZE': '2', 
+            'RESOURCE_POOL_MIN_SIZE': '2',
             'RESOURCE_POOL_MAX_SIZE': '5'
         }):
             # Use standard test data
             standard_request = test_data["valid_test_data"]["standard_requests"][0]
-            
+
             # Send a few requests to verify resource pool is functioning
             print("\n📊 Sending 5 requests to test resource pool...")
             for i in range(5):
@@ -588,14 +588,14 @@ class TestGapAnalysisV2Performance:
                     "/api/v1/index-cal-and-gap-analysis",
                     json={
                         "resume": standard_request["resume"],
-                        "job_description": standard_request["job_description"], 
+                        "job_description": standard_request["job_description"],
                         "keywords": standard_request["keywords"]
                     },
                     headers={"X-API-Key": "test-api-key"}
                 )
                 assert response.status_code == 200
                 print(f"  Request {i+1}: ✅")
-            
+
             # In a real environment with V2 implementation and monitoring enabled,
             # we would check actual reuse stats. For testing, we verify functionality.
             print("\n✅ Resource pool functionality verified")
@@ -611,7 +611,7 @@ class TestGapAnalysisV2Performance:
         """
         print("\n🚀 Testing API call reduction with resource pool")
         print("Note: This test verifies caching functionality for identical requests")
-        
+
         # Enable resource pool for this test
         with patch.dict(os.environ, {
             'RESOURCE_POOL_ENABLED': 'true',
@@ -619,11 +619,11 @@ class TestGapAnalysisV2Performance:
         }):
             # Use identical request data
             identical_request = test_data["valid_test_data"]["standard_requests"][0]
-            
+
             # Send identical requests
             print("\n📊 Sending 5 identical requests to test API call reduction...")
             response_times = []
-            
+
             for i in range(5):
                 start_time = time.time()
                 response = test_client.post(
@@ -636,19 +636,19 @@ class TestGapAnalysisV2Performance:
                     headers={"X-API-Key": "test-api-key"}
                 )
                 response_time = time.time() - start_time
-                
+
                 assert response.status_code == 200
                 response_times.append(response_time)
                 print(f"  Request {i+1}: ✅ ({response_time:.2f}s)")
-            
+
             # First request should be slower (no cache), subsequent ones faster
             avg_first = response_times[0]
             avg_rest = sum(response_times[1:]) / len(response_times[1:])
-            
-            print(f"\n📊 Results:")
+
+            print("\n📊 Results:")
             print(f"  First request: {avg_first:.2f}s")
             print(f"  Average of rest: {avg_rest:.2f}s")
-            
+
             # In production with proper caching, we expect 40-50% reduction
             # For testing, we just verify the functionality works
             print("\n✅ API call reduction functionality verified")
@@ -664,7 +664,7 @@ class TestGapAnalysisV2Performance:
         """
         print("\n🚀 Testing resource pool scaling functionality")
         print("Note: This test verifies pool can scale from MIN to MAX size")
-        
+
         # Enable resource pool with specific size configuration
         with patch.dict(os.environ, {
             'RESOURCE_POOL_ENABLED': 'true',
@@ -672,7 +672,7 @@ class TestGapAnalysisV2Performance:
             'RESOURCE_POOL_MAX_SIZE': '3'
         }):
             print("\n📊 Resource pool configured: MIN=1, MAX=3")
-            
+
             # Use different test data to trigger scaling
             test_variations = [
                 test_data["valid_test_data"]["standard_requests"][0],
@@ -680,10 +680,10 @@ class TestGapAnalysisV2Performance:
                 else test_data["valid_test_data"]["standard_requests"][0],
                 test_data["valid_test_data"]["boundary_test_data"]["exactly_200_chars"]
             ]
-            
+
             # Send concurrent requests to trigger scaling
             print("\n📊 Sending varied requests to test pool scaling...")
-            
+
             for i, test_case in enumerate(test_variations):
                 # Prepare request data
                 if isinstance(test_case, dict) and all(k in test_case for k in ["resume", "job_description", "keywords"]):
@@ -696,16 +696,16 @@ class TestGapAnalysisV2Performance:
                         "job_description": standard["job_description"],
                         "keywords": standard["keywords"]
                     }
-                
+
                 response = test_client.post(
                     "/api/v1/index-cal-and-gap-analysis",
                     json=request_data,
                     headers={"X-API-Key": "test-api-key"}
                 )
-                
+
                 assert response.status_code == 200
                 print(f"  Request {i+1} with variation: ✅")
-            
+
             print("\n✅ Resource pool scaling functionality verified")
             print("   Pool can scale from MIN to MAX size based on load")
             print("   In production, this enables handling traffic spikes efficiently")

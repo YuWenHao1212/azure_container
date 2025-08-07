@@ -205,11 +205,11 @@ def prevent_external_calls():
         patch('aiohttp.ClientSession.get', side_effect=RuntimeError("External HTTP calls blocked in tests")),
         patch('requests.post', side_effect=RuntimeError("External HTTP calls blocked in tests")),
         patch('requests.get', side_effect=RuntimeError("External HTTP calls blocked in tests")),
-        
+
         # Block urllib3 and socket level calls
         patch('urllib3.poolmanager.PoolManager.urlopen', side_effect=RuntimeError("External HTTP calls blocked in tests")),
         patch('socket.create_connection', side_effect=RuntimeError("External socket connections blocked in tests")),
-        
+
         # Block OpenAI SDK direct calls - removed to avoid importing openai module
         # Direct OpenAI SDK usage is prevented by LLM Factory pattern
     ):
@@ -226,13 +226,13 @@ def comprehensive_mock_services():
     """
     # Mock embedding service - IndexCalculationServiceV2 expects create_embeddings to return list of embeddings
     embedding_mock = AsyncMock()
-    
+
     # Configure create_embeddings as an AsyncMock that returns proper format
     embedding_mock.create_embeddings = AsyncMock(return_value=[
         [0.1 + i * 0.01] * 1536 for i in range(2)  # Generate 2 embeddings (resume + JD)
     ])
     embedding_mock.close = AsyncMock()
-    
+
     # Mock LLM service with realistic gap analysis response
     llm_mock = AsyncMock()
     llm_mock.chat_completion = AsyncMock(return_value={
@@ -240,7 +240,7 @@ def comprehensive_mock_services():
             "message": {
                 "content": json.dumps({
                     "CoreStrengths": "<ol><li>Strong Python programming skills</li><li>Experience with web frameworks</li></ol>",
-                    "KeyGaps": "<ol><li>Limited cloud experience</li><li>Missing DevOps skills</li></ol>", 
+                    "KeyGaps": "<ol><li>Limited cloud experience</li><li>Missing DevOps skills</li></ol>",
                     "QuickImprovements": "<ol><li>Learn Docker basics</li><li>Get AWS certification</li></ol>",
                     "OverallAssessment": "<p>Good technical foundation but needs cloud and DevOps skills</p>",
                     "SkillSearchQueries": ["AWS", "Docker", "Kubernetes", "CI/CD"]
@@ -254,7 +254,7 @@ def comprehensive_mock_services():
         }
     })
     llm_mock.close = AsyncMock()
-    
+
     # Mock keyword extraction service
     keyword_mock = AsyncMock()
     keyword_mock.validate_input = AsyncMock(return_value={
@@ -269,21 +269,21 @@ def comprehensive_mock_services():
         "processing_time_ms": 280
     })
     keyword_mock.close = AsyncMock()
-    
+
     # Mock resource pool manager with proper async context manager
     pool_mock = Mock()
-    
+
     # Create a proper async context manager for get_client
     class AsyncContextManagerMock:
         def __init__(self, return_value):
             self.return_value = return_value
-            
+
         async def __aenter__(self):
             return self.return_value
-            
+
         async def __aexit__(self, exc_type, exc_val, exc_tb):
             return None
-    
+
     # Configure get_client to return an async context manager
     pool_mock.get_client = Mock(return_value=AsyncContextManagerMock(llm_mock))
     pool_mock.get_stats = Mock(return_value={
@@ -293,7 +293,7 @@ def comprehensive_mock_services():
         "pool_hits": 8,
         "pool_misses": 2
     })
-    
+
     return {
         "embedding": embedding_mock,
         "llm": llm_mock,
@@ -314,17 +314,17 @@ def mock_all_external_services(comprehensive_mock_services):
     and add integration-specific mocks here.
     """
     services = comprehensive_mock_services
-    
+
     with (
         # Only patch services that definitely exist at module level
         patch('src.services.resource_pool_manager.ResourcePoolManager', return_value=services["resource_pool"]),
-        
+
         # Mock the embedding client to return our mock
         patch('src.services.embedding_client.get_azure_embedding_client', return_value=services["embedding"]),
-        
+
         # Also mock the class directly in case it's imported directly
         patch('src.services.embedding_client.AzureEmbeddingClient', return_value=services["embedding"]),
-        
+
         # Low-level client creation prevention - removed to avoid importing openai module
         # Direct OpenAI SDK usage is prevented by LLM Factory pattern
     ):

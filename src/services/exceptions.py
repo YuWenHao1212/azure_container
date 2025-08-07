@@ -379,11 +379,11 @@ class ExternalServiceError(ServiceError):
 
 class AuthenticationError(ServiceError):
     """Exception raised when authentication fails.
-    
+
     This error preserves the original authentication status code (401/403)
     from external services like Azure OpenAI.
     """
-    
+
     def __init__(self, message: str, status_code: int = 401):
         super().__init__(message)
         self.status_code = status_code

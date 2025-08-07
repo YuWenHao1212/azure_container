@@ -55,10 +55,10 @@ class TestIndexCalculationV2E2ERealAPI:
         os.environ['INDEX_CALC_CACHE_ENABLED'] = 'true'
         os.environ['INDEX_CALC_CACHE_TTL_MINUTES'] = '60'
         os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = '1000'
-        
+
         # Set API key for authentication
         os.environ['CONTAINER_APP_API_KEY'] = 'e2e-test-key'
-        
+
         app = create_app()
         client = TestClient(app)
         # Add API key header for authentication
@@ -209,7 +209,7 @@ class TestIndexCalculationV2E2ERealAPI:
         base_keywords = ["Python", "API", "Development"]
 
         results = []
-        
+
         for case in test_cases:
             start_time = time.time()
             response = test_client.post(
@@ -245,7 +245,7 @@ class TestIndexCalculationV2E2ERealAPI:
             assert result["similarity"] >= 0 and result["similarity"] <= 100
             assert result["coverage"] >= 0 and result["coverage"] <= 100
 
-        print(f"✅ API-IC-302-E2E: Multiple input formats test passed")
+        print("✅ API-IC-302-E2E: Multiple input formats test passed")
         for result in results:
             print(f"   {result['name']}: similarity={result['similarity']}%, coverage={result['coverage']}%, time={result['processing_time']:.2f}s")
 
@@ -261,15 +261,15 @@ class TestIndexCalculationV2E2ERealAPI:
         # Test multiple consecutive requests for stability
         response_times = []
         similarity_scores = []
-        
+
         base_resume = test_data["standard_resumes"][0]["content"]
         base_jd = test_data["job_descriptions"][0]["content"]
-        
+
         # Run 5 consecutive requests
         for i in range(5):
             # Vary keywords slightly for each request
             keywords = [f"Python{i}", "API", "Development", f"Skill{i}"]
-            
+
             start_time = time.time()
             response = test_client.post(
                 "/api/v1/index-calculation",
@@ -329,14 +329,14 @@ class TestIndexCalculationV2E2ERealAPI:
         # Both should succeed
         assert response1.status_code == 200
         assert response2.status_code == 200
-        
+
         # Results should be identical
         data1 = response1.json()
         data2 = response2.json()
         assert data1["data"]["similarity_percentage"] == data2["data"]["similarity_percentage"]
         assert data1["data"]["keyword_coverage"]["coverage_percentage"] == data2["data"]["keyword_coverage"]["coverage_percentage"]
 
-        print(f"✅ API-IC-303-E2E: Performance and monitoring test passed")
+        print("✅ API-IC-303-E2E: Performance and monitoring test passed")
         print(f"   Average response time: {avg_response_time:.2f}s")
         print(f"   Response time range: {min_response_time:.2f}s - {max_response_time:.2f}s")
         print(f"   Cache test: {time1:.2f}s -> {time2:.2f}s")

@@ -139,11 +139,11 @@ class TestKeywordExtractionPerformance:
 
         for test_case in test_cases:
             response_times = []
-            
+
             # Perform multiple requests for statistical significance
             for i in range(num_requests):
                 start_time = time.time()
-                
+
                 response = test_client.post(
                     "/api/v1/extract-jd-keywords",
                     json={
@@ -200,7 +200,7 @@ class TestKeywordExtractionPerformance:
         overall_p50 = statistics.median(sorted_times)  # P50
         overall_p95 = sorted_times[int(len(sorted_times) * 0.95) - 1] if len(sorted_times) > 1 else sorted_times[0]  # P95
         overall_avg = statistics.mean(all_response_times)
-        
+
         # Check against specification requirements
         p50_target = 3500  # 3.5 seconds in milliseconds
         p95_target = 4500  # 4.5 seconds in milliseconds
@@ -215,7 +215,7 @@ class TestKeywordExtractionPerformance:
         print(f"  P95: {overall_p95:.2f} ms (Target: < {p95_target} ms) {'✅' if p95_passed else '❌'}")
         print(f"  Min: {min(all_response_times):.2f} ms")
         print(f"  Max: {max(all_response_times):.2f} ms")
-        print(f"  Success Rate: 100% (Target: > 95%) ✅")
+        print("  Success Rate: 100% (Target: > 95%) ✅")
 
         # Save detailed results
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -247,7 +247,7 @@ class TestKeywordExtractionPerformance:
         print("Performance Test Summary:")
         print(f"  P50 Requirement: < {p50_target}ms, Actual: {overall_p50:.2f}ms")
         print(f"  P95 Requirement: < {p95_target}ms, Actual: {overall_p95:.2f}ms")
-        
+
         # For now, we log warnings if targets are not met but don't fail the test
         # This allows monitoring of actual performance while development continues
         if not p50_passed or not p95_passed:

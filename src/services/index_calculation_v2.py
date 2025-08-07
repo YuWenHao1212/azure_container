@@ -362,7 +362,7 @@ class IndexCalculationServiceV2(BaseService):
             # AzureOpenAIAuthError can be 401 or 403
             status_code = getattr(e, 'status_code', 401)
             raise AuthenticationError(
-                f"Azure OpenAI authentication failed: {str(e)}", 
+                f"Azure OpenAI authentication failed: {e!s}",
                 status_code=status_code
             ) from e
         except AzureOpenAIServerError as e:
@@ -410,7 +410,8 @@ class IndexCalculationServiceV2(BaseService):
                 from src.services.exceptions import AuthenticationError, ExternalServiceError, RateLimitError
                 from src.services.openai_client import AzureOpenAIAuthError, AzureOpenAIRateLimitError
                 if isinstance(e, (
-                    RateLimitError | AuthenticationError | ExternalServiceError | AzureOpenAIRateLimitError | AzureOpenAIAuthError
+                    RateLimitError | AuthenticationError | ExternalServiceError |
+                    AzureOpenAIRateLimitError | AzureOpenAIAuthError
                 )):
                     # Don't fallback for rate limit or external service errors
                     raise

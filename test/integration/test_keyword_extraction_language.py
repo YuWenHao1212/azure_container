@@ -99,7 +99,7 @@ class TestKeywordExtractionLanguageIntegration:
             "max_keywords": 12
         }
 
-    @pytest.fixture 
+    @pytest.fixture
     def mixed_language_above_threshold_request(self):
         """Mixed language JD with >20% Traditional Chinese (>200 chars)."""
         return {
@@ -568,11 +568,11 @@ class TestKeywordExtractionLanguageIntegration:
         data = response.json()
         assert data["success"] is False
         assert data["error"]["code"] == "UNSUPPORTED_LANGUAGE"
-        
+
         # Verify detailed error structure
         assert "error" in data
         assert "timestamp" in data
-        
+
         # Verify language composition analysis details are included
         error_message = data["error"]["message"]
         assert "mixed" in error_message.lower() or "語言" in error_message
@@ -629,7 +629,7 @@ class TestKeywordExtractionLanguageIntegration:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        
+
         # Verify language parameter override worked
         # The prompt used should be Traditional Chinese despite auto-detected English
         assert "zh-TW" in data["data"].get("prompt_version_used", "")

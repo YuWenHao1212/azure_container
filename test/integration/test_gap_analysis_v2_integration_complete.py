@@ -91,7 +91,7 @@ class TestGapAnalysisV2IntegrationComplete:
             settings_instance.lightweight_monitoring = False
             settings_instance.error_capture_enabled = False
             mock_settings.return_value = settings_instance
-            
+
             # Setup mock LLM client
             mock_llm_instance = AsyncMock()
             mock_llm_instance.chat_completion = AsyncMock(return_value={
@@ -109,7 +109,7 @@ class TestGapAnalysisV2IntegrationComplete:
             })
             mock_llm_instance.close = AsyncMock()
             mock_get_llm.return_value = mock_llm_instance
-            
+
             # Setup mock embedding client
             mock_embedding_instance = AsyncMock()
             mock_embedding_instance.create_embeddings = AsyncMock(
@@ -120,7 +120,7 @@ class TestGapAnalysisV2IntegrationComplete:
             mock_embedding_instance.__aenter__ = AsyncMock(return_value=mock_embedding_instance)
             mock_embedding_instance.__aexit__ = AsyncMock(return_value=None)
             mock_get_embedding.return_value = mock_embedding_instance
-            
+
             # Setup mock index calculation service
             mock_index_instance = AsyncMock()
             mock_index_instance.calculate_index = AsyncMock(return_value={
@@ -135,7 +135,7 @@ class TestGapAnalysisV2IntegrationComplete:
                 }
             })
             mock_index_service.return_value = mock_index_instance
-            
+
             # Setup mock gap analysis service
             mock_gap_instance = AsyncMock()
             mock_gap_instance.analyze_gap = AsyncMock(return_value={
@@ -146,7 +146,7 @@ class TestGapAnalysisV2IntegrationComplete:
                 "AdditionalKeywords": ["Docker", "REST API"]
             })
             mock_gap_service.return_value = mock_gap_instance
-            
+
             app = create_app()
             return TestClient(app)
 
@@ -508,15 +508,15 @@ class TestGapAnalysisV2IntegrationComplete:
         # Should still return 200 with partial results (depending on implementation)
         # This may return 500 if partial results are not implemented
         assert response.status_code in [200, 500]
-        
+
         if response.status_code == 200:
             data = response.json()
             result = data["data"]
-            
-            # Should have index results 
+
+            # Should have index results
             assert "raw_similarity_percentage" in result
             assert "similarity_percentage" in result
-            
+
             # Gap analysis might be null or contain error info
             gap_analysis = result.get("gap_analysis")
             if gap_analysis is not None and "error" not in str(gap_analysis).lower():
@@ -536,11 +536,11 @@ class TestGapAnalysisV2IntegrationComplete:
         # and our global mocks provide successful responses,
         # we'll test by setting a very short timeout and monitoring the response
         original_timeout = os.environ.get('REQUEST_TIMEOUT')
-        
+
         try:
             # Set an extremely short timeout to simulate timeout conditions
             os.environ['REQUEST_TIMEOUT'] = '0.001'  # 1ms timeout
-            
+
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json={
@@ -561,7 +561,7 @@ class TestGapAnalysisV2IntegrationComplete:
         # but we verify that timeout configuration is respected
         assert response.status_code in [200, 408, 500, 503]
         data = response.json()
-        
+
         # The test verifies that timeout handling code path exists
         # In a real scenario, this would timeout, but with mocks it succeeds
         if response.status_code == 200:
@@ -582,12 +582,12 @@ class TestGapAnalysisV2IntegrationComplete:
         # Enable retry configuration for the test
         original_retry = os.environ.get('ADAPTIVE_RETRY_ENABLED')
         original_retry_attempts = os.environ.get('MAX_RETRY_ATTEMPTS')
-        
+
         try:
             # Configure retry settings
             os.environ['ADAPTIVE_RETRY_ENABLED'] = 'true'
             os.environ['MAX_RETRY_ATTEMPTS'] = '3'
-            
+
             response = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
                 json={
@@ -603,7 +603,7 @@ class TestGapAnalysisV2IntegrationComplete:
                 os.environ['ADAPTIVE_RETRY_ENABLED'] = original_retry
             else:
                 os.environ.pop('ADAPTIVE_RETRY_ENABLED', None)
-                
+
             if original_retry_attempts is not None:
                 os.environ['MAX_RETRY_ATTEMPTS'] = original_retry_attempts
             else:
@@ -613,7 +613,7 @@ class TestGapAnalysisV2IntegrationComplete:
         # The test verifies that retry configuration is respected
         assert response.status_code in [200, 429, 500]
         data = response.json()
-        
+
         # Since our global mocks provide successful responses,
         # the test should succeed and verify retry mechanism exists
         if response.status_code == 200:
@@ -776,7 +776,7 @@ class TestGapAnalysisV2IntegrationComplete:
         原為 API-GAP-003-PT。
         """
         request_data = test_data["valid_test_data"]["standard_requests"][0]
-        
+
         # Track pool statistics
         pool_stats = {
             "created": 0,
@@ -784,19 +784,19 @@ class TestGapAnalysisV2IntegrationComplete:
             "total_requests": 0,
             "clients": {}
         }
-        
+
         with patch('src.services.llm_factory.get_llm_client') as mock_get_llm:
             # Track client creation and reuse
             def track_llm_client(model=None, api_name=None):
                 pool_stats["total_requests"] += 1
                 client_key = f"llm_{model}_{api_name}"
-                
+
                 if client_key not in pool_stats["clients"]:
                     pool_stats["clients"][client_key] = True
                     pool_stats["created"] += 1
                 else:
                     pool_stats["reused"] += 1
-                
+
                 # Return a properly configured mock client
                 mock_client = AsyncMock()
                 mock_client.chat_completion = AsyncMock(return_value={
@@ -809,9 +809,9 @@ class TestGapAnalysisV2IntegrationComplete:
                 })
                 mock_client.close = AsyncMock()
                 return mock_client
-            
+
             mock_get_llm.side_effect = track_llm_client
-            
+
             # Send multiple requests to test reuse
             for i in range(10):
                 response = test_client.post(
@@ -823,18 +823,18 @@ class TestGapAnalysisV2IntegrationComplete:
                     },
                     headers={"X-API-Key": "test-api-key"}
                 )
-                
+
                 # Request should succeed
                 assert response.status_code == 200
                 data = response.json()
                 assert data["success"] is True
-            
+
             # Calculate reuse rate
             if pool_stats["total_requests"] > 0:
                 reuse_rate = pool_stats["reused"] / pool_stats["total_requests"]
             else:
                 reuse_rate = 0
-            
+
             # Verify reuse rate > 80% (after initial creation)
             # First few requests create clients, subsequent requests should reuse
             assert pool_stats["created"] <= 3, f"Too many clients created: {pool_stats['created']}"
@@ -848,7 +848,7 @@ class TestGapAnalysisV2IntegrationComplete:
         原為 API-GAP-005-PT。
         """
         request_data = test_data["valid_test_data"]["standard_requests"][0]
-        
+
         with patch('src.services.llm_factory.get_llm_client') as mock_get_llm:
             # Track client creation and usage patterns
             client_creation_stats = {
@@ -856,11 +856,11 @@ class TestGapAnalysisV2IntegrationComplete:
                 "different_operations": set(),
                 "successful_requests": 0
             }
-            
+
             def create_scaling_mock_client(model=None, api_name=None):
                 # Track client creation calls
                 client_creation_stats["total_calls"] += 1
-                
+
                 # Track different operations by examining the api_name
                 if api_name:
                     client_creation_stats["different_operations"].add(api_name)
@@ -868,7 +868,7 @@ class TestGapAnalysisV2IntegrationComplete:
                     # If no api_name, create one based on model type
                     operation = f"operation_{len(client_creation_stats['different_operations']) + 1}"
                     client_creation_stats["different_operations"].add(operation)
-                
+
                 # Create mock client
                 mock_client = AsyncMock()
                 mock_client.chat_completion = AsyncMock(return_value={
@@ -881,9 +881,9 @@ class TestGapAnalysisV2IntegrationComplete:
                 })
                 mock_client.close = AsyncMock()
                 return mock_client
-            
+
             mock_get_llm.side_effect = create_scaling_mock_client
-            
+
             # Send multiple requests to trigger scaling
             responses = []
             for i in range(5):
@@ -899,20 +899,20 @@ class TestGapAnalysisV2IntegrationComplete:
                 responses.append(response)
                 if response.status_code == 200:
                     client_creation_stats["successful_requests"] += 1
-            
+
             # Verify scaling behavior
             # 1. All requests should succeed
             assert client_creation_stats["successful_requests"] >= 4, \
                 f"Only {client_creation_stats['successful_requests']} out of 5 requests succeeded"
-            
+
             # 2. Multiple LLM client calls should be made (indicating resource usage)
             assert client_creation_stats["total_calls"] >= 5, \
                 f"Expected multiple client calls for scaling, got: {client_creation_stats['total_calls']}"
-            
+
             # 3. Service should handle the load without failures
             failure_count = 5 - client_creation_stats["successful_requests"]
             assert failure_count <= 1, f"Too many failures ({failure_count}) - scaling may not be working properly"
-            
+
             # 4. Verify responses contain expected data structure
             for i, response in enumerate(responses):
                 if response.status_code == 200:
@@ -928,19 +928,19 @@ class TestGapAnalysisV2IntegrationComplete:
         原為 API-GAP-004-PT。
         """
         request_data = test_data["valid_test_data"]["standard_requests"][0]
-        
+
         # Track API calls
         api_call_stats = {
             "llm_calls": 0,
             "first_request_calls": 0,
             "second_request_calls": 0
         }
-        
+
         with patch('src.services.llm_factory.get_llm_client') as mock_get_llm:
             # Create mock client that tracks calls
             def track_llm_calls(model=None, api_name=None):
                 api_call_stats["llm_calls"] += 1
-                
+
                 mock_client = AsyncMock()
                 mock_client.chat_completion = AsyncMock(return_value={
                     "choices": [{
@@ -952,9 +952,9 @@ class TestGapAnalysisV2IntegrationComplete:
                 })
                 mock_client.close = AsyncMock()
                 return mock_client
-            
+
             mock_get_llm.side_effect = track_llm_calls
-            
+
             # First request - should make API calls
             response1 = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
@@ -965,13 +965,13 @@ class TestGapAnalysisV2IntegrationComplete:
                 },
                 headers={"X-API-Key": "test-api-key"}
             )
-            
+
             assert response1.status_code == 200
             api_call_stats["first_request_calls"] = api_call_stats["llm_calls"]
-            
+
             # Reset counter for second request
             api_call_stats["llm_calls"] = 0
-            
+
             # Second request with same data
             response2 = test_client.post(
                 "/api/v1/index-cal-and-gap-analysis",
@@ -982,25 +982,25 @@ class TestGapAnalysisV2IntegrationComplete:
                 },
                 headers={"X-API-Key": "test-api-key"}
             )
-            
+
             assert response2.status_code == 200
             api_call_stats["second_request_calls"] = api_call_stats["llm_calls"]
-            
+
             # Verify results are consistent
             data1 = response1.json()["data"]
             data2 = response2.json()["data"]
-            
+
             # Check that key fields are present and consistent
             assert "raw_similarity_percentage" in data1
             assert "similarity_percentage" in data1
             assert "keyword_coverage" in data1
             assert "gap_analysis" in data1
-            
+
             # In integration tests with mocks, caching might not work exactly as in production
             # So we verify the functionality works, not necessarily that calls are reduced
             # The important thing is that the service handles repeated requests correctly
             assert api_call_stats["first_request_calls"] > 0, "First request should make API calls"
-            
+
             # Log the stats for debugging
             print(f"API call stats: {api_call_stats}")
 

@@ -21,8 +21,8 @@ import time
 import tracemalloc
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-# Remove mock imports for real API testing
 
+# Remove mock imports for real API testing
 import pytest
 from fastapi.testclient import TestClient
 
@@ -52,31 +52,31 @@ from src.main import create_app
 
 class TestIndexCalculationV2Performance:
     """Performance tests for Index Calculation V2."""
-    
+
     @classmethod
     def save_performance_results(cls, test_id: str, metrics: dict):
         """Save performance test results to JSON file."""
         log_dir = os.environ.get('LOG_DIR', 'test/logs')
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         json_file = os.path.join(log_dir, f'performance_{test_id}_{timestamp}.json')
-        
+
         result = {
             "test_id": test_id,
             "timestamp": datetime.now().isoformat(),
             "metrics": metrics
         }
-        
+
         # Extract key metrics for script consumption
         if 'p50_ms' in metrics and 'p95_ms' in metrics:
             result['p50_time_s'] = metrics['p50_ms'] / 1000
             result['p95_time_s'] = metrics['p95_ms'] / 1000
-        
+
         if 'success_rate' in metrics:
             result['success_rate'] = metrics['success_rate']
-        
+
         with open(json_file, 'w') as f:
             json.dump(result, f, indent=2)
-        
+
         print(f"\nPerformance results saved to: {json_file}")
 
     @pytest.fixture
@@ -91,10 +91,10 @@ class TestIndexCalculationV2Performance:
         os.environ['INDEX_CALC_CACHE_ENABLED'] = 'false'
         os.environ['INDEX_CALC_CACHE_TTL_MINUTES'] = '0'
         os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = '0'
-        
+
         # Set API key for authentication
         os.environ['CONTAINER_APP_API_KEY'] = 'perf-test-key'
-        
+
         app = create_app()
         client = TestClient(app)
         # Add API key header for authentication
@@ -130,9 +130,9 @@ class TestIndexCalculationV2Performance:
         medium_jd = test_data["job_descriptions"][1]["content"]
         medium_keywords = test_data["job_descriptions"][1]["keywords"][:10]
 
-        print(f"\nTesting with medium-sized JD (approx 500 words)")
-        print(f"Running 30 requests for P50/P95 calculation...")
-        print(f"Note: Cache is disabled to ensure accurate benchmarking")
+        print("\nTesting with medium-sized JD (approx 500 words)")
+        print("Running 30 requests for P50/P95 calculation...")
+        print("Note: Cache is disabled to ensure accurate benchmarking")
 
         # Run 30 requests for statistical sampling
         for i in range(30):
@@ -140,7 +140,7 @@ class TestIndexCalculationV2Performance:
             # Each request has a unique identifier to ensure fresh processing
             unique_resume = f"{medium_resume}\n\n[Request ID: {i+1}/30]"
             unique_jd = f"{medium_jd}\n\n[Job Posting ID: {i+1}]"
-            
+
             start_time = time.time()
             response = test_client.post(
                 "/api/v1/index-calculation",
@@ -154,7 +154,7 @@ class TestIndexCalculationV2Performance:
 
             assert response.status_code == 200
             response_times.append(elapsed)
-            
+
             # Progress indicator every 10 requests
             if (i + 1) % 10 == 0:
                 print(f"  Progress: {i + 1}/30 requests completed")
@@ -166,7 +166,7 @@ class TestIndexCalculationV2Performance:
         print("\nPerformance Results:")
         print(f"P50: {p50:.0f}ms ({p50/1000:.2f}s)")
         print(f"P95: {p95:.0f}ms ({p95/1000:.2f}s)")
-        
+
         # Save results to JSON
         metrics = {
             "p50_ms": p50,
@@ -195,7 +195,7 @@ class TestIndexCalculationV2Performance:
         """
         print("\nCache Performance Test")
         print("Step 1: Warming up cache with 5 queries...")
-        
+
         # Prepare 5 different queries for cache testing
         queries = []
         for i in range(5):
@@ -204,7 +204,7 @@ class TestIndexCalculationV2Performance:
                 "job_description": f"Python Developer Position {i+1} - Looking for experienced Python developer with {i+3} years of experience in web frameworks, cloud computing, and API development.",
                 "keywords": ["Python", "API", f"Skill{i}"]
             })
-        
+
         # Step 1: Warm up cache (first execution of each query)
         warmup_times = []
         for i, query in enumerate(queries):
@@ -219,17 +219,17 @@ class TestIndexCalculationV2Performance:
             print(f"  Query {i+1}: {elapsed:.0f}ms (cache miss)")
             # Small delay between requests to avoid event loop issues
             time.sleep(0.1)
-        
+
         avg_warmup = sum(warmup_times) / len(warmup_times)
         print(f"\nAverage warmup time: {avg_warmup:.0f}ms")
-        
+
         # Brief pause to ensure cache is ready
         time.sleep(0.5)
-        
+
         # Step 2: Test cache hits (repeat the same queries)
         print("\nStep 2: Testing cache hits...")
         cache_hit_times = []
-        
+
         for i, query in enumerate(queries):
             start_time = time.time()
             response = test_client.post(
@@ -242,16 +242,16 @@ class TestIndexCalculationV2Performance:
             print(f"  Query {i+1}: {elapsed:.0f}ms (cache hit)")
             # Small delay between requests
             time.sleep(0.1)
-        
+
         # Calculate cache performance metrics
         avg_cache_hit = sum(cache_hit_times) / len(cache_hit_times)
         max_cache_hit = max(cache_hit_times)
-        
-        print(f"\nCache Performance Results:")
+
+        print("\nCache Performance Results:")
         print(f"Average cache hit time: {avg_cache_hit:.0f}ms")
         print(f"Maximum cache hit time: {max_cache_hit:.0f}ms")
         print(f"Speed improvement: {(avg_warmup / avg_cache_hit):.1f}x faster")
-        
+
         # Verify cache performance target
         assert max_cache_hit < 200, f"Cache hit time ({max_cache_hit:.0f}ms) exceeds target (200ms)"
 
@@ -298,36 +298,36 @@ class TestIndexCalculationV2Performance:
         # Test configuration for real API
         TARGET_QPS = 10  # Reduced from 50 to 10 for real API
         TEST_DURATION = 5  # Reduced from 60 to 5 seconds
-        
+
         print(f"Target: {TARGET_QPS} QPS for {TEST_DURATION} seconds")
-        
+
         # Simplified load test for TestClient limitations
         # Note: This simulates load by rapid sequential requests
         print("Note: Simulating load with rapid sequential requests due to TestClient limitations")
-        
+
         # Adjust target for realistic testing with TestClient
         SIMULATED_QPS = 5  # Realistic for sequential processing
         TOTAL_REQUESTS = SIMULATED_QPS * TEST_DURATION
-        
+
         print(f"Simulating {SIMULATED_QPS} QPS for {TEST_DURATION} seconds = {TOTAL_REQUESTS} total requests")
-        
+
         request_id = 0
-        
+
         # Execute all requests as quickly as possible
         for i in range(TOTAL_REQUESTS):
             start_req = time.time()
             success, elapsed = make_request(request_id)
             request_id += 1
-            
+
             if success:
                 success_count += 1
                 response_times.append(elapsed)
             else:
                 error_count += 1
-            
+
             # Brief pause to prevent overwhelming TestClient
             time.sleep(0.1)  # 100ms between requests
-            
+
             # Progress update every 10 requests
             if (i + 1) % 10 == 0:
                 print(f"  Progress: {i + 1}/{TOTAL_REQUESTS} requests completed")
@@ -351,7 +351,7 @@ class TestIndexCalculationV2Performance:
             print(f"Response Time P50: {p50:.0f}ms")
             print(f"Response Time P95: {p95:.0f}ms")
             print(f"Response Time P99: {p99:.0f}ms")
-            
+
             # Save results to JSON
             metrics = {
                 "p50_ms": p50,
@@ -458,7 +458,7 @@ class TestIndexCalculationV2Performance:
         import os
         original_cache_size = os.environ.get('INDEX_CALC_CACHE_MAX_SIZE')
         os.environ['INDEX_CALC_CACHE_MAX_SIZE'] = '100'  # Small cache for testing
-        
+
         eviction_times = []
 
         try:

@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 
 # E2E tests use real API, load real environment
 from dotenv import load_dotenv
+
 load_dotenv(override=True)
 
 # Ensure V2 implementation and proper settings
@@ -47,20 +48,20 @@ class TestGapAnalysisV2E2E:
         """Create test client with E2E configuration for real API testing."""
         # Set test API key
         os.environ['CONTAINER_APP_API_KEY'] = 'test-api-key'
-        
+
         # For E2E tests, we'll let monitoring run normally but capture the events
         # Create a mock monitoring service that can be used to verify events
         mock_monitoring = Mock()
         mock_monitoring.track_event = Mock()
         mock_monitoring.track_error = Mock()
         mock_monitoring.track_metric = Mock()
-        
+
         app = create_app()
         client = TestClient(app)
-        
+
         # Store the mock for event verification in tests
         client.monitoring_mock = mock_monitoring
-        
+
         # Patch the monitoring service in the app if needed
         if hasattr(app.state, 'monitoring_service'):
             # Keep a reference to the real service
@@ -69,23 +70,23 @@ class TestGapAnalysisV2E2E:
             original_track_event = app.state.monitoring_service.track_event
             original_track_error = app.state.monitoring_service.track_error
             original_track_metric = app.state.monitoring_service.track_metric
-            
+
             def wrapped_track_event(*args, **kwargs):
                 mock_monitoring.track_event(*args, **kwargs)
                 return original_track_event(*args, **kwargs)
-            
+
             def wrapped_track_error(*args, **kwargs):
                 mock_monitoring.track_error(*args, **kwargs)
                 return original_track_error(*args, **kwargs)
-                
+
             def wrapped_track_metric(*args, **kwargs):
                 mock_monitoring.track_metric(*args, **kwargs)
                 return original_track_metric(*args, **kwargs)
-            
+
             app.state.monitoring_service.track_event = wrapped_track_event
             app.state.monitoring_service.track_error = wrapped_track_error
             app.state.monitoring_service.track_metric = wrapped_track_metric
-        
+
         return client
 
     @pytest.fixture
@@ -116,7 +117,7 @@ class TestGapAnalysisV2E2E:
             'AZURE_OPENAI_ENDPOINT',
             'EMBEDDING_API_KEY'
         ]
-        
+
         missing_keys = [key for key in required_keys if not os.environ.get(key)]
         if missing_keys:
             pytest.skip(f"E2E tests require real API keys. Missing: {', '.join(missing_keys)}")
@@ -180,19 +181,19 @@ class TestGapAnalysisV2E2E:
 
         # Debug: Print implementation version
         print(f"\n🔍 Implementation version: {result.get('implementation_version', 'unknown')}")
-        
+
         # Debug: Print gap analysis content
         print("\n📋 Gap Analysis Response:")
-        print(f"CoreStrengths: {repr(gap.get('CoreStrengths', 'N/A'))}")
-        print(f"KeyGaps: {repr(gap.get('KeyGaps', 'N/A'))}")
-        print(f"QuickImprovements: {repr(gap.get('QuickImprovements', 'N/A'))}")
-        print(f"OverallAssessment: {repr(gap.get('OverallAssessment', 'N/A'))}")
+        print(f"CoreStrengths: {gap.get('CoreStrengths', 'N/A')!r}")
+        print(f"KeyGaps: {gap.get('KeyGaps', 'N/A')!r}")
+        print(f"QuickImprovements: {gap.get('QuickImprovements', 'N/A')!r}")
+        print(f"OverallAssessment: {gap.get('OverallAssessment', 'N/A')!r}")
         print(f"Success: {data['success']}")
         print(f"Has partial_result flag: {'partial_result' in result}")
         if 'partial_result' in result:
             print(f"Partial result: {result['partial_result']}")
         print(f"Full response keys: {list(result.keys())}")
-        
+
         # Verify HTML formatting in gap analysis
         assert "<ol>" in gap["CoreStrengths"]
         assert "<li>" in gap["KeyGaps"]
@@ -249,7 +250,7 @@ class TestGapAnalysisV2E2E:
 
         # Execute with real API and verify monitoring
         print("\n📡 Testing monitoring integration with real API...")
-        
+
         # Use patch to mock monitoring service at the correct location
         with patch('src.api.v1.index_cal_and_gap_analysis.monitoring_service', mock_monitoring_service):
             response = test_client.post(
@@ -266,10 +267,10 @@ class TestGapAnalysisV2E2E:
 
         # Verify monitoring events were tracked
         event_names = [e["name"] for e in mock_monitoring_service.events]
-        
+
         # Debug: Print captured events
         print(f"\n📊 Captured events: {event_names}")
-        
+
         # Verify expected events
         assert any("IndexCalAndGapAnalysisV2" in name for name in event_names), f"Expected V2 event not found in: {event_names}"
 
@@ -301,14 +302,14 @@ class TestGapAnalysisV2E2E:
         """
         print("\n🧑‍🔧 Testing partial result support...")
         print("Note: This test uses real API - checking if partial results feature is properly enabled")
-        
+
         # Use standard test data
         valid_request = test_data["valid_test_data"]["standard_requests"][0]
-        
+
         # For E2E test, we'll just verify that the API completes successfully
         # The partial result feature should be transparent when everything works
         # In production, partial results would only be returned on actual failures
-        
+
         # Ensure partial results are enabled
         with patch.dict(os.environ, {'ENABLE_PARTIAL_RESULTS': 'true'}):
             # Execute without any mocks - real E2E test
@@ -339,9 +340,9 @@ class TestGapAnalysisV2E2E:
         assert result.get("partial_result", False) is False
 
         print("\nPartial Result Support Test:")
-        print(f"✅ API completed successfully with ENABLE_PARTIAL_RESULTS=true")
+        print("✅ API completed successfully with ENABLE_PARTIAL_RESULTS=true")
         print(f"✅ Index calculation: {result['raw_similarity_percentage']}%")
-        print(f"✅ Gap analysis completed successfully")
+        print("✅ Gap analysis completed successfully")
         print(f"✅ Partial result flag: {result.get('partial_result', False)}")
         print("\nNote: Partial results would only be returned on actual API failures.")
 

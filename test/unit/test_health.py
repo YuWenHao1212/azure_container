@@ -156,19 +156,19 @@ class TestHealthCheck:
         - ✅ 所有非 GET 方法返回 405 Method Not Allowed
         - ✅ 錯誤回應格式正確
         """
-        
+
         # ✅ POST method should return 405 Method Not Allowed
         post_response = test_client.post("/health")
         assert post_response.status_code == 405
-        
+
         # ✅ PUT method should return 405 Method Not Allowed
         put_response = test_client.put("/health")
         assert put_response.status_code == 405
-        
+
         # ✅ DELETE method should return 405 Method Not Allowed
         delete_response = test_client.delete("/health")
         assert delete_response.status_code == 405
-        
+
         # ✅ 錯誤回應格式正確
         # Verify that error response has proper structure
         for response in [post_response, put_response, delete_response]:

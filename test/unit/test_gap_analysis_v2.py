@@ -725,7 +725,7 @@ class TestGapAnalysisV2Unit:
                 return "validation"
             elif isinstance(error, asyncio.TimeoutError):
                 return "timeout"
-            
+
             error_str = str(error).lower()
 
             # Check for specific error patterns
@@ -748,10 +748,10 @@ class TestGapAnalysisV2Unit:
         assert classify_gap_error(Exception("Rate limit exceeded")) == "rate_limit"
         assert classify_gap_error(Exception("Authentication failed")) == "authentication"
         assert classify_gap_error(Exception("Random error")) == "general"
-        
+
         # Test with specific exception types
         assert classify_gap_error(ValueError("Invalid input")) == "validation"
-        assert classify_gap_error(asyncio.TimeoutError("Timed out")) == "timeout"
+        assert classify_gap_error(TimeoutError("Timed out")) == "timeout"
 
     # TEST: API-GAP-017-UT
     def test_statistics_tracking(self):

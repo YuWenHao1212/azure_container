@@ -31,7 +31,7 @@ class TestErrorHandlingV2:
                         # Configure mocks
                         mock_index_instance = AsyncMock()
                         mock_gap_instance = AsyncMock()
-                        
+
                         # Configure embedding client mock
                         mock_embedding_instance = AsyncMock()
                         mock_embedding_instance.create_embeddings = AsyncMock(
@@ -42,7 +42,7 @@ class TestErrorHandlingV2:
                         mock_embedding_instance.__aenter__ = AsyncMock(return_value=mock_embedding_instance)
                         mock_embedding_instance.__aexit__ = AsyncMock(return_value=None)
                         mock_get_embedding.return_value = mock_embedding_instance
-                        
+
                         # Configure ResourcePoolManager mock
                         mock_pool_instance = AsyncMock()
                         mock_client = AsyncMock()
@@ -56,10 +56,10 @@ class TestErrorHandlingV2:
                             "available_clients": 1
                         })
                         mock_resource_pool.return_value = mock_pool_instance
-                        
+
                         mock_index.return_value = mock_index_instance
                         mock_gap.return_value = mock_gap_instance
-                        
+
                         yield {
                             'index': mock_index_instance,
                             'gap': mock_gap_instance,
@@ -80,10 +80,10 @@ class TestErrorHandlingV2:
         # Configure mock to fail with rate limit error
         rate_limit_error = Exception("Rate limit exceeded")
         rate_limit_error.status_code = 429
-        
+
         call_times = []
         call_count = 0
-        
+
         async def mock_calculate_index(*args, **kwargs):
             nonlocal call_count
             call_times.append(time.time())
@@ -101,19 +101,19 @@ class TestErrorHandlingV2:
                     "missed_keywords": ["react"]
                 }
             }
-        
+
         mock_services['index'].calculate_index = mock_calculate_index
-        
+
         # Create service with retry enabled
         service = CombinedAnalysisServiceV2(
             index_service=mock_services['index'],
             gap_service=mock_services['gap'],
             enable_partial_results=False
         )
-        
+
         # Execute with timing measurement
         start_time = time.time()
-        
+
         with pytest.raises(Exception) as exc_info:
             await service.analyze(
                 resume="Test resume " * 50,  # > 200 chars
@@ -121,16 +121,16 @@ class TestErrorHandlingV2:
                 keywords=["python", "fastapi", "react"],
                 language="en"
             )
-        
+
         # Verify it failed after retries
         assert "Rate limit" in str(exc_info.value)
         assert call_count == 3  # Initial + 2 retries
-        
+
         # Verify retry delays (allowing some tolerance)
         if len(call_times) >= 3:
             delay1 = call_times[1] - call_times[0]
             delay2 = call_times[2] - call_times[1]
-            
+
             assert 2.5 <= delay1 <= 3.5, f"First retry delay should be ~3s, got {delay1}"
             assert 5.5 <= delay2 <= 6.5, f"Second retry delay should be ~6s, got {delay2}"
 
@@ -149,28 +149,28 @@ class TestErrorHandlingV2:
         rate_limit_error.status_code = 429
         rate_limit_error.response = Mock()
         rate_limit_error.response.headers = {'Retry-After': '30'}  # 30s > 20s max
-        
+
         retry_delays = []
-        
+
         async def mock_calculate_with_retry_after(*args, **kwargs):
             raise rate_limit_error
-        
+
         mock_services['index'].calculate_index = mock_calculate_with_retry_after
-        
+
         # Patch sleep to capture delays
         original_sleep = asyncio.sleep
-        
+
         async def mock_sleep(delay):
             retry_delays.append(delay)
             await original_sleep(0.01)  # Short delay for testing
-        
+
         with patch('asyncio.sleep', mock_sleep):
             service = CombinedAnalysisServiceV2(
                 index_service=mock_services['index'],
                 gap_service=mock_services['gap'],
                 enable_partial_results=False
             )
-            
+
             with pytest.raises(Exception):
                 await service.analyze(
                     resume="Test resume " * 50,
@@ -178,7 +178,7 @@ class TestErrorHandlingV2:
                     keywords=["test"],
                     language="en"
                 )
-        
+
         # Verify Retry-After was capped at 20s
         assert any(19 <= delay <= 20 for delay in retry_delays), \
             f"Retry-After should be capped at 20s, got delays: {retry_delays}"
@@ -195,13 +195,13 @@ class TestErrorHandlingV2:
         """
         call_count = 0
         call_times = []
-        
+
         async def mock_calculate_with_timeout(*args, **kwargs):
             nonlocal call_count
             call_times.append(time.time())
             call_count += 1
             if call_count == 1:
-                raise asyncio.TimeoutError("Request timed out")
+                raise TimeoutError("Request timed out")
             return {
                 "raw_similarity_percentage": 70,
                 "similarity_percentage": 80,
@@ -213,15 +213,15 @@ class TestErrorHandlingV2:
                     "missed_keywords": []
                 }
             }
-        
+
         mock_services['index'].calculate_index = mock_calculate_with_timeout
-        
+
         service = CombinedAnalysisServiceV2(
             index_service=mock_services['index'],
             gap_service=mock_services['gap'],
             enable_partial_results=False
         )
-        
+
         # Configure gap service to succeed
         mock_services['gap'].analyze_with_context = AsyncMock(return_value={
             "CoreStrengths": "<ol><li>Test</li></ol>",
@@ -229,7 +229,7 @@ class TestErrorHandlingV2:
             "QuickImprovements": "<ol><li>Test</li></ol>",
             "SkillSearchQueries": []
         })
-        
+
         # Execute
         result = await service.analyze(
             resume="Test resume " * 50,
@@ -237,10 +237,10 @@ class TestErrorHandlingV2:
             keywords=["python"],
             language="en"
         )
-        
+
         # Verify retry happened
         assert call_count == 2  # Initial + 1 retry
-        
+
         # Verify delay was ~0.5s
         if len(call_times) >= 2:
             delay = call_times[1] - call_times[0]
@@ -258,7 +258,7 @@ class TestErrorHandlingV2:
         """
         call_count = 0
         call_times = []
-        
+
         async def mock_calculate_with_error(*args, **kwargs):
             nonlocal call_count
             call_times.append(time.time())
@@ -276,15 +276,15 @@ class TestErrorHandlingV2:
                     "missed_keywords": []
                 }
             }
-        
+
         mock_services['index'].calculate_index = mock_calculate_with_error
-        
+
         service = CombinedAnalysisServiceV2(
             index_service=mock_services['index'],
             gap_service=mock_services['gap'],
             enable_partial_results=False
         )
-        
+
         with pytest.raises(Exception) as exc_info:
             await service.analyze(
                 resume="Test resume " * 50,
@@ -292,11 +292,11 @@ class TestErrorHandlingV2:
                 keywords=["python"],
                 language="en"
             )
-        
+
         # Verify it failed after retries
         assert "General processing error" in str(exc_info.value)
         assert call_count == 2  # Initial + 1 retry (max_attempts=2)
-        
+
         # Verify delay was ~1s
         if len(call_times) >= 2:
             delay = call_times[1] - call_times[0]
@@ -324,18 +324,18 @@ class TestErrorHandlingV2:
                 "missed_keywords": []
             }
         })
-        
+
         # Gap analysis fails
         mock_services['gap'].analyze_with_context = AsyncMock(
             side_effect=Exception("Gap analysis failed")
         )
-        
+
         service = CombinedAnalysisServiceV2(
             index_service=mock_services['index'],
             gap_service=mock_services['gap'],
             enable_partial_results=False  # Should be default
         )
-        
+
         # Execute and expect complete failure
         with pytest.raises(Exception) as exc_info:
             await service.analyze(
@@ -344,15 +344,15 @@ class TestErrorHandlingV2:
                 keywords=["python"],
                 language="en"
             )
-        
+
         # Verify complete failure (no partial results)
         assert "Gap analysis failed" in str(exc_info.value)
-        
+
         # Verify index was called but result wasn't returned
         assert mock_services['index'].calculate_index.called
         assert mock_services['gap'].analyze_with_context.called
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_API_GAP_021_IT_validation_error_no_retry(self, mock_services):
         """
         API-GAP-021-IT: Test validation error no retry.
@@ -363,20 +363,20 @@ class TestErrorHandlingV2:
         - Returns validation error response
         """
         call_count = 0
-        
+
         async def mock_calculate_with_validation_error(*args, **kwargs):
             nonlocal call_count
             call_count += 1
             raise ValueError("Resume must be at least 200 characters")
-        
+
         mock_services['index'].calculate_index = mock_calculate_with_validation_error
-        
+
         service = CombinedAnalysisServiceV2(
             index_service=mock_services['index'],
             gap_service=mock_services['gap'],
             enable_partial_results=False
         )
-        
+
         with pytest.raises(ValueError):
             await service.analyze(
                 resume="Short",  # < 200 chars
@@ -384,7 +384,7 @@ class TestErrorHandlingV2:
                 keywords=["python"],
                 language="en"
             )
-        
+
         # Verify no retries for validation errors
         assert call_count == 1  # Only initial call, no retries
 
@@ -403,20 +403,20 @@ class TestAdaptiveRetryStrategy:
         - Final error is propagated correctly
         """
         strategy = AdaptiveRetryStrategy()
-        
+
         # Verify rate limit config
         rate_limit_config = strategy.retry_configs['rate_limit']
         assert rate_limit_config['max_attempts'] == 3
         assert rate_limit_config['base_delay'] == 3.0
         assert rate_limit_config['max_delay'] == 20.0
         assert rate_limit_config['backoff'] == 'exponential'
-        
+
         # Verify timeout config
         timeout_config = strategy.retry_configs['timeout']
         assert timeout_config['max_attempts'] == 2  # Initial + 1 retry
         assert timeout_config['base_delay'] == 0.5
         assert timeout_config['max_delay'] == 0.5
-        
+
         # Verify general config
         general_config = strategy.retry_configs['general']
         assert general_config['max_attempts'] == 2
@@ -436,12 +436,12 @@ class TestAdaptiveRetryStrategy:
         """
         strategy = AdaptiveRetryStrategy()
         config = strategy.retry_configs['rate_limit']
-        
+
         # Test exponential backoff: 3s → 6s → 12s
         delay0 = strategy._calculate_delay(config, 0)
         delay1 = strategy._calculate_delay(config, 1)
         delay2 = strategy._calculate_delay(config, 2)
-        
+
         assert delay0 == 3.0  # 3 * (2^0) = 3
         assert delay1 == 6.0  # 3 * (2^1) = 6
         assert delay2 == 12.0  # 3 * (2^2) = 12
@@ -458,11 +458,11 @@ class TestAdaptiveRetryStrategy:
         """
         strategy = AdaptiveRetryStrategy()
         config = strategy.retry_configs['rate_limit']
-        
+
         # Test that delay is capped at 20s
         delay3 = strategy._calculate_delay(config, 3)  # Would be 24s
         delay4 = strategy._calculate_delay(config, 4)  # Would be 48s
-        
+
         assert delay3 == 20.0  # Capped at max_delay
         assert delay4 == 20.0  # Capped at max_delay
 
@@ -476,19 +476,19 @@ class TestAdaptiveRetryStrategy:
         - Single retry with 0.5s delay
         """
         strategy = AdaptiveRetryStrategy()
-        
+
         # Test timeout classification
         timeout_error = Exception("Request timed out")
         assert strategy._default_error_classifier(timeout_error) == "timeout"
-        
+
         # Test rate limit classification
         rate_error = Exception("Rate limit exceeded")
         assert strategy._default_error_classifier(rate_error) == "rate_limit"
-        
+
         # Test empty fields classification
         empty_error = Exception("Field is empty")
         assert strategy._default_error_classifier(empty_error) == "empty_fields"
-        
+
         # Test general classification
         general_error = Exception("Something went wrong")
         assert strategy._default_error_classifier(general_error) == "general"
