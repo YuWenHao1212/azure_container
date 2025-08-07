@@ -26,6 +26,38 @@ FAILED_INDEX_IT_TESTS=""
 FAILED_GAP_UT_TESTS=""
 FAILED_GAP_IT_TESTS=""
 
+# Variables to track overall test results
+OVERALL_TEST_FAILED=false
+RUFF_FAILED=false
+SERVICE_TESTS_FAILED=false
+HEALTH_TESTS_FAILED=false
+INDEX_TESTS_FAILED=false
+GAP_TESTS_FAILED=false
+
+# Variables to track execution time for each step
+RUFF_START_TIME=""
+RUFF_END_TIME=""
+RUFF_DURATION=""
+SERVICE_START_TIME=""
+SERVICE_END_TIME=""
+SERVICE_DURATION=""
+HEALTH_START_TIME=""
+HEALTH_END_TIME=""
+HEALTH_DURATION=""
+INDEX_START_TIME=""
+INDEX_END_TIME=""
+INDEX_DURATION=""
+GAP_START_TIME=""
+GAP_END_TIME=""
+GAP_DURATION=""
+
+# Function to calculate test execution time
+calculate_test_time() {
+    local start_time="$1"
+    local end_time="$2"
+    echo "$end_time - $start_time" | bc -l | xargs printf "%.1f"
+}
+
 # Function to parse service module test results
 parse_service_module_results() {
     local log_file="/tmp/test_service_modules.log"
@@ -82,26 +114,58 @@ parse_pytest_results() {
         local it_failed=0
         local failed_ut_ids=""
         local failed_it_ids=""
+        local ut_total_time=0
+        local it_total_time=0
         
-        # First pass: Parse the test summary table for Unit/Integration statistics
+        # First pass: Parse individual test execution times and calculate real UT/IT times
+        local current_section=""
         while read -r line; do
             # Clean ANSI color codes
             clean_line=$(echo "$line" | sed 's/\x1b\[[0-9;]*m//g')
             
-            # Look for Unit test statistics: "單元測試 (Unit): 8/8 (100%)"
-            if [[ "$clean_line" =~ 單元測試.*Unit.*:[[:space:]]*([0-9]+)/([0-9]+) ]]; then
-                local ut_pass_count="${BASH_REMATCH[1]}"
-                local ut_total="${BASH_REMATCH[2]}"
-                ut_passed="$ut_pass_count"
-                ut_failed=$((ut_total - ut_pass_count))
+            # Track which section we're in - handle different log formats
+            if [[ "$clean_line" =~ "Unit Tests" ]]; then
+                current_section="UT"
+            elif [[ "$clean_line" =~ "Integration Tests" ]]; then
+                current_section="IT"
             fi
             
-            # Look for Integration test statistics: "整合測試 (Integration): 11/11 (100%)" 
-            if [[ "$clean_line" =~ 整合測試.*Integration.*:[[:space:]]*([0-9]+)/([0-9]+) ]]; then
-                local it_pass_count="${BASH_REMATCH[1]}"
-                local it_total="${BASH_REMATCH[2]}"
-                it_passed="$it_pass_count"
-                it_failed=$((it_total - it_pass_count))
+            # Extract individual test times: "✓ PASSED (2s)" or "✗ FAILED (1s)"
+            if [[ "$clean_line" =~ (✓|✗)[[:space:]]*(PASSED|FAILED)[[:space:]]*\(([0-9]+)s\) ]]; then
+                local test_time="${BASH_REMATCH[3]}"
+                if [[ "$current_section" == "UT" ]]; then
+                    ut_total_time=$((ut_total_time + test_time))
+                    if [[ "$clean_line" =~ PASSED ]]; then
+                        ut_passed=$((ut_passed + 1))
+                    else
+                        ut_failed=$((ut_failed + 1))
+                    fi
+                elif [[ "$current_section" == "IT" ]]; then
+                    it_total_time=$((it_total_time + test_time))
+                    if [[ "$clean_line" =~ PASSED ]]; then
+                        it_passed=$((it_passed + 1))
+                    else
+                        it_failed=$((it_failed + 1))
+                    fi
+                fi
+            fi
+            
+            # Handle batch test results: "✓ Batch test completed (3s)" + "Results: 14 passed, 0 failed"
+            if [[ "$clean_line" =~ "Batch test completed".*\(([0-9]+)s\) ]] && [[ "$current_section" == "IT" ]]; then
+                local batch_time="${BASH_REMATCH[1]}"
+                it_total_time=$((it_total_time + batch_time))
+            fi
+            
+            # Handle Gap Analysis format: "Test Results: (17s)"
+            if [[ "$clean_line" =~ "Test Results:".*\(([0-9]+)s\) ]] && [[ "$current_section" == "IT" ]]; then
+                local gap_batch_time="${BASH_REMATCH[1]}"
+                it_total_time=$((it_total_time + gap_batch_time))
+            fi
+            
+            # Parse batch results: "Results: 14 passed, 0 failed" or "Total: 27 passed, 0 failed"
+            if [[ "$clean_line" =~ (Results:|Total:)[[:space:]]*([0-9]+)[[:space:]]*passed,[[:space:]]*([0-9]+)[[:space:]]*failed ]] && [[ "$current_section" == "IT" ]]; then
+                it_passed=$((it_passed + ${BASH_REMATCH[2]}))
+                it_failed=$((it_failed + ${BASH_REMATCH[3]}))
             fi
         done < "$log_file"
         
@@ -111,17 +175,13 @@ parse_pytest_results() {
                 # Clean ANSI color codes
                 clean_line=$(echo "$line" | sed 's/\x1b\[[0-9;]*m//g')
                 
-                # Look for failed test patterns: "✗ FAILED" lines and extract preceding test IDs
-                if [[ "$clean_line" =~ ✗[[:space:]]*FAILED ]] || [[ "$clean_line" =~ FAILED ]]; then
-                    # Look backwards for the test ID in recent lines
-                    local test_id=""
-                    if [[ "$clean_line" =~ (API-[A-Z]+-[0-9]+-[UT|IT]+) ]]; then
-                        test_id="${BASH_REMATCH[1]}"
-                        if [[ "$test_id" =~ -UT ]]; then
-                            failed_ut_ids="${failed_ut_ids}${test_id} "
-                        elif [[ "$test_id" =~ -IT ]]; then
-                            failed_it_ids="${failed_it_ids}${test_id} "
-                        fi
+                # Look for failed test patterns from the test summary section
+                if [[ "$clean_line" =~ ^[[:space:]]*-[[:space:]]+(API-[A-Z]+-[0-9]+-[UT|IT]+) ]]; then
+                    local test_id="${BASH_REMATCH[1]}"
+                    if [[ "$test_id" =~ -UT ]]; then
+                        failed_ut_ids="${failed_ut_ids}${test_id} "
+                    elif [[ "$test_id" =~ -IT ]]; then
+                        failed_it_ids="${failed_it_ids}${test_id} "
                     fi
                 fi
             done < "$log_file"
@@ -130,20 +190,20 @@ parse_pytest_results() {
         # Store results based on prefix
         case "$prefix" in
             "health")
-                HEALTH_UT="${ut_passed}:${ut_failed}"
-                HEALTH_IT="${it_passed}:${it_failed}"
+                HEALTH_UT="${ut_passed}:${ut_failed}:${ut_total_time}"
+                HEALTH_IT="${it_passed}:${it_failed}:${it_total_time}"
                 FAILED_HEALTH_UT_TESTS="$failed_ut_ids"
                 FAILED_HEALTH_IT_TESTS="$failed_it_ids"
                 ;;
             "index")
-                INDEX_UT="${ut_passed}:${ut_failed}"
-                INDEX_IT="${it_passed}:${it_failed}"
+                INDEX_UT="${ut_passed}:${ut_failed}:${ut_total_time}"
+                INDEX_IT="${it_passed}:${it_failed}:${it_total_time}"
                 FAILED_INDEX_UT_TESTS="$failed_ut_ids"
                 FAILED_INDEX_IT_TESTS="$failed_it_ids"
                 ;;
             "gap")
-                GAP_UT="${ut_passed}:${ut_failed}"
-                GAP_IT="${it_passed}:${it_failed}"
+                GAP_UT="${ut_passed}:${ut_failed}:${ut_total_time}"
+                GAP_IT="${it_passed}:${it_failed}:${it_total_time}"
                 FAILED_GAP_UT_TESTS="$failed_ut_ids"
                 FAILED_GAP_IT_TESTS="$failed_it_ids"
                 ;;
@@ -182,7 +242,10 @@ generate_summary_table() {
     echo "|----------------------------|-------|-------|-------|--------|------|"
     
     # Ruff check
-    printf "| %-26s | %-5s | %-5s | %-5s | %-6s | %-4s |\n" "🔍 Ruff 檢查" "✅" "-" "-" "0.2s" "✅"
+    local ruff_status="✅"
+    [ "$RUFF_FAILED" = true ] && ruff_status="❌"
+    printf "| %-26s | %-5s | %-5s | %-5s | %-6s | %-4s |
+" "🔍 Ruff 檢查" "$ruff_status" "-" "-" "${RUFF_DURATION}s" "$ruff_status"
     printf "| %-26s | %-5s | %-5s | %-5s | %-6s | %-4s |\n" "" "" "" "" "" ""
     
     # Service modules
@@ -238,11 +301,12 @@ generate_summary_table() {
             esac
             
             if [[ -n "$result" ]]; then
-                IFS=':' read -r passed failed <<< "$result"
+                IFS=':' read -r passed failed actual_time <<< "$result"
                 
                 # Ensure numeric values with defaults
                 passed=${passed:-0}
                 failed=${failed:-0}
+                actual_time=${actual_time:-0}
                 
                 # Only process if not zero values
                 if [[ "$passed" =~ ^[0-9]+$ ]] && [[ "$failed" =~ ^[0-9]+$ ]]; then
@@ -253,7 +317,11 @@ generate_summary_table() {
                     local type_label=""
                     [ "$type" = "UT" ] && type_label="單元測試 (UT)" || type_label="整合測試 (IT)"
                     
-                    printf "| %-26s | %-5s | %-5s | %-5s | %-6s | %-4s |\n" "  ├─ $type_label" "$passed" "$failed" "$total" "1.5s" "$status"
+                    # Use the real execution time from test logs
+                    local type_time="${actual_time}s"
+                    
+                    printf "| %-26s | %-5s | %-5s | %-5s | %-6s | %-4s |
+" "  ├─ $type_label" "$passed" "$failed" "$total" "$type_time" "$status"
                     
                     total_passed=$((total_passed + passed))
                     total_failed=$((total_failed + failed))
@@ -343,20 +411,19 @@ echo "="
 echo ""
 
 # 1. Ruff 檢查
-echo "📝 Step 1/4: Running Ruff check..."
+echo "📝 Step 1/5: Running Ruff check..."
 echo "Checking src/ and test/ directories"
 
+RUFF_START_TIME=$(date +%s.%N)
 RUFF_ERRORS=$(ruff check src/ test/ --line-length=120 2>&1)
 RUFF_EXIT_CODE=$?
+RUFF_END_TIME=$(date +%s.%N)
+RUFF_DURATION=$(calculate_test_time "$RUFF_START_TIME" "$RUFF_END_TIME")
 
 if [ $RUFF_EXIT_CODE -ne 0 ]; then
-    echo "❌ Ruff check FAILED:"
-    echo "$RUFF_ERRORS"
-    echo ""
-    echo "📌 To fix: ruff check src/ test/ --fix --line-length=120"
-    echo ""
-    echo "⛔ BLOCKING COMMIT - Fix Ruff errors first"
-    exit 1
+    echo "❌ Ruff check FAILED"
+    RUFF_FAILED=true
+    OVERALL_TEST_FAILED=true
 else
     echo "✅ Ruff check passed"
 fi
@@ -365,57 +432,61 @@ echo ""
 
 # 2. Service Modules 測試
 echo "📝 Step 2/5: Running Service Modules tests..."
+SERVICE_START_TIME=$(date +%s.%N)
 if ./test/scripts/run_service_modules_tests_final.sh > /tmp/test_service_modules.log 2>&1; then
     echo "✅ Service Modules tests passed"
 else
     echo "❌ Service Modules tests FAILED"
-    echo "Check log: /tmp/test_service_modules.log"
-    echo ""
-    echo "⛔ BLOCKING COMMIT - Fix test failures first"
-    exit 1
+    SERVICE_TESTS_FAILED=true
+    OVERALL_TEST_FAILED=true
 fi
+SERVICE_END_TIME=$(date +%s.%N)
+SERVICE_DURATION=$(calculate_test_time "$SERVICE_START_TIME" "$SERVICE_END_TIME")
 
 echo ""
 
 # 3. Health & Keyword 測試
 echo "📝 Step 3/5: Running Health & Keyword tests..."
+HEALTH_START_TIME=$(date +%s.%N)
 if ./test/scripts/run_health_keyword_unit_integration.sh > /tmp/test_health_keyword.log 2>&1; then
     echo "✅ Health & Keyword tests passed"
 else
     echo "❌ Health & Keyword tests FAILED"
-    echo "Check log: /tmp/test_health_keyword.log"
-    echo ""
-    echo "⛔ BLOCKING COMMIT - Fix test failures first"
-    exit 1
+    HEALTH_TESTS_FAILED=true
+    OVERALL_TEST_FAILED=true
 fi
+HEALTH_END_TIME=$(date +%s.%N)
+HEALTH_DURATION=$(calculate_test_time "$HEALTH_START_TIME" "$HEALTH_END_TIME")
 
 echo ""
 
 # 4. Index Calculation 測試
 echo "📝 Step 4/5: Running Index Calculation tests..."
+INDEX_START_TIME=$(date +%s.%N)
 if ./test/scripts/run_index_calculation_unit_integration.sh > /tmp/test_index_calc.log 2>&1; then
     echo "✅ Index Calculation tests passed"
 else
     echo "❌ Index Calculation tests FAILED"
-    echo "Check log: /tmp/test_index_calc.log"
-    echo ""
-    echo "⛔ BLOCKING COMMIT - Fix test failures first"
-    exit 1
+    INDEX_TESTS_FAILED=true
+    OVERALL_TEST_FAILED=true
 fi
+INDEX_END_TIME=$(date +%s.%N)
+INDEX_DURATION=$(calculate_test_time "$INDEX_START_TIME" "$INDEX_END_TIME")
 
 echo ""
 
 # 5. Gap Analysis 測試
 echo "📝 Step 5/5: Running Gap Analysis tests..."
+GAP_START_TIME=$(date +%s.%N)
 if ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh > /tmp/test_gap_analysis.log 2>&1; then
     echo "✅ Gap Analysis tests passed"
 else
     echo "❌ Gap Analysis tests FAILED"
-    echo "Check log: /tmp/test_gap_analysis.log"
-    echo ""
-    echo "⛔ BLOCKING COMMIT - Fix test failures first"
-    exit 1
+    GAP_TESTS_FAILED=true
+    OVERALL_TEST_FAILED=true
 fi
+GAP_END_TIME=$(date +%s.%N)
+GAP_DURATION=$(calculate_test_time "$GAP_START_TIME" "$GAP_END_TIME")
 
 echo ""
 echo "="
@@ -424,4 +495,29 @@ echo "="
 generate_summary_table
 
 echo ""
-echo "👍 Ready to commit!"
+
+# Final decision based on overall test results
+if [ "$OVERALL_TEST_FAILED" = true ]; then
+    echo ""
+    echo "⛔ BLOCKING COMMIT - Fix test failures first"
+    
+    # Show specific failure details for quick reference
+    if [ "$RUFF_FAILED" = true ]; then
+        echo ""
+        echo "📌 Ruff errors need to be fixed:"
+        echo "$RUFF_ERRORS"
+        echo ""
+        echo "To fix: ruff check src/ test/ --fix --line-length=120"
+    fi
+    
+    echo ""
+    echo "🔧 Next steps:"
+    echo "1. Fix the failed tests shown in the summary above"
+    echo "2. Run individual test suites to verify fixes"
+    echo "3. Re-run this pre-commit check"
+    echo "4. Once all tests pass, try committing again"
+    
+    exit 1
+else
+    echo "🏆 All checks passed! Ready to commit."
+fi
