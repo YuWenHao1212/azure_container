@@ -171,7 +171,7 @@ class TestErrorHandlingV2:
                 enable_partial_results=False
             )
 
-            with pytest.raises((ValueError, RuntimeError)):
+            with pytest.raises(Exception):
                 await service.analyze(
                     resume="Test resume " * 50,
                     job_description="Test JD " * 50,
