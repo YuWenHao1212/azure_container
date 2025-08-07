@@ -126,7 +126,7 @@ class TestKeywordExtractionPerformance:
         測試配置: 5 個測試案例 × 5 個請求 = 25 個總請求
         SLA: P50 < 2000ms, P95 < 3000ms
         """
-        num_requests = 5  # 5 requests per test case × 5 cases = 25 total samples
+        num_requests = 5  # 5 requests per test case x 5 cases = 25 total samples
         sla_target = 3500  # milliseconds (adjusted for real API performance)
         endpoint = "/api/v1/extract-jd-keywords"
 

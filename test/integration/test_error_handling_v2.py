@@ -71,7 +71,7 @@ class TestErrorHandlingV2:
     async def test_API_GAP_018_IT_rate_limit_retry_timing(self, mock_services):
         """
         API-GAP-018-IT: Test rate limit (429) retry with exponential backoff.
-        
+
         Verify:
         - 3 retry attempts for rate limit errors
         - Exponential backoff timing: 3s → 6s → 12s
@@ -112,7 +112,7 @@ class TestErrorHandlingV2:
         )
 
         # Execute with timing measurement
-        start_time = time.time()
+        time.time()
 
         with pytest.raises(Exception) as exc_info:
             await service.analyze(
@@ -138,7 +138,7 @@ class TestErrorHandlingV2:
     async def test_API_GAP_022_IT_retry_after_header_handling(self, mock_services):
         """
         API-GAP-022-IT: Test Retry-After header handling.
-        
+
         Verify:
         - System respects Retry-After header value
         - Waits specified time before retry
@@ -171,7 +171,7 @@ class TestErrorHandlingV2:
                 enable_partial_results=False
             )
 
-            with pytest.raises(Exception):
+            with pytest.raises((ValueError, RuntimeError)):
                 await service.analyze(
                     resume="Test resume " * 50,
                     job_description="Test JD " * 50,
@@ -187,7 +187,7 @@ class TestErrorHandlingV2:
     async def test_API_GAP_019_IT_timeout_quick_retry(self, mock_services):
         """
         API-GAP-019-IT: Test timeout (408) error single retry.
-        
+
         Verify:
         - Only 1 retry attempt for timeout errors
         - Fixed 0.5s delay before retry
@@ -231,7 +231,7 @@ class TestErrorHandlingV2:
         })
 
         # Execute
-        result = await service.analyze(
+        await service.analyze(
             resume="Test resume " * 50,
             job_description="Test JD " * 50,
             keywords=["python"],
@@ -250,7 +250,7 @@ class TestErrorHandlingV2:
     async def test_API_GAP_020_IT_general_error_retry(self, mock_services):
         """
         API-GAP-020-IT: Test general (500) error retry strategy.
-        
+
         Verify:
         - 2 retry attempts for general errors
         - Linear backoff with 1s delay
@@ -306,7 +306,7 @@ class TestErrorHandlingV2:
     async def test_API_GAP_025_IT_no_partial_results_on_failure(self, mock_services):
         """
         API-GAP-025-IT: Test no partial results on failure.
-        
+
         Verify:
         - When any service fails, no partial results returned
         - Complete failure mode only
@@ -356,7 +356,7 @@ class TestErrorHandlingV2:
     async def test_API_GAP_021_IT_validation_error_no_retry(self, mock_services):
         """
         API-GAP-021-IT: Test validation error no retry.
-        
+
         Verify:
         - Validation errors (400) fail immediately
         - No retry attempts made
@@ -396,7 +396,7 @@ class TestAdaptiveRetryStrategy:
     async def test_API_GAP_023_IT_max_retries_then_fail(self):
         """
         API-GAP-023-IT: Test max retries then fail.
-        
+
         Verify:
         - Fails after maximum retry attempts
         - Each error type has correct max attempts
@@ -428,7 +428,7 @@ class TestAdaptiveRetryStrategy:
     async def test_API_GAP_024_IT_first_retry_succeeds(self):
         """
         API-GAP-024-IT: Test retry succeeds on first attempt.
-        
+
         Verify:
         - Operation succeeds on first retry
         - No further retries needed
@@ -450,7 +450,7 @@ class TestAdaptiveRetryStrategy:
     async def test_API_GAP_026_IT_value_error_classification(self):
         """
         API-GAP-026-IT: Test ValueError classified as validation error.
-        
+
         Verify:
         - ValueError is classified as validation error
         - No retry for validation errors
@@ -469,7 +469,7 @@ class TestAdaptiveRetryStrategy:
     def test_API_GAP_027_IT_timeout_error_classification(self):
         """
         API-GAP-027-IT: Test asyncio.TimeoutError classification.
-        
+
         Verify:
         - asyncio.TimeoutError classified as timeout
         - Gets timeout retry strategy

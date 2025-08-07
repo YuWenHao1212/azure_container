@@ -5,7 +5,7 @@ Based on TEST_SPEC_HEALTH_KEYWORDS.md v3.1.0
 Implements exactly 10 integration tests as specified:
 - API-KW-101-IT: Azure OpenAI integration
 - API-KW-102-IT: English JD uses English prompt
-- API-KW-103-IT: Traditional Chinese JD uses Traditional Chinese prompt  
+- API-KW-103-IT: Traditional Chinese JD uses Traditional Chinese prompt
 - API-KW-104-IT: Mixed language (>20% Traditional Chinese)
 - API-KW-105-IT: Mixed language (<20% Traditional Chinese)
 - API-KW-106-IT: Reject Simplified Chinese
@@ -173,7 +173,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證與 Azure OpenAI 的整合
-        
+
         判斷標準: 成功返回關鍵字
         """
         expected_result = {
@@ -216,7 +216,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證語言檢測與prompt選擇
-        
+
         判斷標準:
         - detected_language="en"
         - prompt_version 包含 "en"
@@ -262,7 +262,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證繁中語言處理
-        
+
         判斷標準:
         - detected_language="zh-TW"
         - prompt_version 包含 "zh-TW"
@@ -308,7 +308,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證混合語言閾值處理
-        
+
         判斷標準:
         - detected_language="zh-TW"
         - 使用繁中 prompt
@@ -353,7 +353,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證混合語言閾值處理
-        
+
         判斷標準:
         - detected_language="en"
         - prompt_version 包含 "en"
@@ -399,7 +399,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證簡體中文檢測和拒絕機制
-        
+
         判斷標準:
         - HTTP 422
         - error.code="UNSUPPORTED_LANGUAGE"
@@ -442,7 +442,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證日文檢測和拒絕機制
-        
+
         判斷標準:
         - HTTP 422
         - error.code="UNSUPPORTED_LANGUAGE"
@@ -483,7 +483,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證韓文檢測和拒絕機制
-        
+
         判斷標準:
         - HTTP 422
         - error.code="UNSUPPORTED_LANGUAGE"
@@ -524,7 +524,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P0
         類型: 整合測試
         測試目標: 驗證混合語言檢測和完整錯誤回應
-        
+
         判斷標準:
         - HTTP 422
         - error.code="UNSUPPORTED_LANGUAGE"
@@ -586,7 +586,7 @@ class TestKeywordExtractionLanguageIntegration:
         優先級: P1
         類型: 整合測試
         測試目標: 驗證語言參數覆蓋自動檢測
-        
+
         判斷標準: 使用指定語言的 prompt
         """
         language_override_request = {

@@ -193,7 +193,7 @@ def stable_mock_factory():
 def prevent_external_calls():
     """
     Prevent all external HTTP/HTTPS calls during integration tests.
-    
+
     This fixture ensures that no test accidentally makes real network calls
     to external services like Azure OpenAI, even if mocks fail.
     """
@@ -220,7 +220,7 @@ def prevent_external_calls():
 def comprehensive_mock_services():
     """
     Comprehensive mock services that cover all possible service calls.
-    
+
     This fixture provides fully configured mock services that return
     realistic test data for all Azure OpenAI operations.
     """
@@ -306,10 +306,10 @@ def comprehensive_mock_services():
 def mock_all_external_services(comprehensive_mock_services):
     """
     Automatically mock all external services for integration tests.
-    
+
     This fixture is applied to every test in the integration directory
     and ensures complete isolation from external dependencies.
-    
+
     We rely on the global mocks from the root conftest.py for the core service patches,
     and add integration-specific mocks here.
     """
@@ -331,5 +331,5 @@ def mock_all_external_services(comprehensive_mock_services):
         yield services
 
 
-import json
-from unittest.mock import Mock, patch
+import json  # noqa: E402
+from unittest.mock import Mock, patch  # noqa: E402

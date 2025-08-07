@@ -187,12 +187,12 @@ class TestGapAnalysisV2Performance:
 
         驗證 P50 響應時間符合目標。
         重要:必須關閉資源池快取並使用唯一測試資料。
-        
+
         Test Spec 要求:
         - 持續時間: 60 秒
         - 請求率: 10 QPS (總共 600 個請求)
         - 預期: P50 < 20s (調整為符合真實 LLM API)
-        
+
         注意：這是真實的 LLM API 效能測試，會調用實際的 Azure OpenAI 服務
         """
         print("🚀 Creating test client with REAL API access")
@@ -204,7 +204,7 @@ class TestGapAnalysisV2Performance:
         from fastapi.testclient import TestClient
 
         app = create_app()
-        test_client = TestClient(app)
+        TestClient(app)
 
         print("✅ Direct test client created successfully")
 
@@ -212,8 +212,6 @@ class TestGapAnalysisV2Performance:
         failed_responses = []
         # Need 20 samples for accurate P50/P95 calculation (merged test)
         total_requests = 20  # Sufficient sample size for reliable P50 and P95 statistics
-        target_qps = 10
-        test_duration = 60  # seconds
 
         print("\nStarting P50/P95 REAL API performance test:")
         print(f"Target: {total_requests} requests for P50 and P95 calculation")
@@ -354,12 +352,12 @@ class TestGapAnalysisV2Performance:
 
         驗證 P95 響應時間符合目標。
         注意: 此測試優先重用 P50 測試的結果數據，符合真實效能測試場景。
-        
+
         Test Spec 要求:
         - 持續時間: 60 秒
-        - 請求率: 10 QPS (總共 600 個請求)  
+        - 請求率: 10 QPS (總共 600 個請求)
         - 預期: P95 < 30s (調整為符合真實 LLM API)
-        
+
         執行策略:
         1. 如果 P50 剛執行過，使用其數據
         2. 否則執行 10 個新請求並計算 P95
@@ -417,7 +415,7 @@ class TestGapAnalysisV2Performance:
             from src.main import create_app
 
             app = create_app()
-            test_client = TestClient(app)
+            TestClient(app)
 
             print("✅ Direct test client created successfully")
 
@@ -426,10 +424,7 @@ class TestGapAnalysisV2Performance:
             failed_responses = []
 
             # Determine how many new requests to make
-            if existing_response_times:
-                total_requests = additional_needed
-            else:
-                total_requests = 20  # Need at least 20 samples for meaningful P95
+            total_requests = additional_needed if existing_response_times else 20  # Need at least 20 samples for meaningful P95
 
             print("\nStarting P95 REAL API performance test:")
             print(f"Target: {total_requests} requests for P95 calculation")

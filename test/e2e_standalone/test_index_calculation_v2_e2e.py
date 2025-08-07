@@ -39,7 +39,7 @@ for var in required_env_vars:
     if not os.getenv(var):
         pytest.skip(f"E2E test requires {var} environment variable")
 
-from src.main import create_app
+from src.main import create_app  # noqa: E402
 
 
 class TestIndexCalculationV2E2ERealAPI:
@@ -64,7 +64,7 @@ class TestIndexCalculationV2E2ERealAPI:
 
     def create_test_client(self, app):
         """Create a new test client instance.
-        
+
         Solution 2: 重新創建 client - 每次需要時創建新的 TestClient
         """
         client = TestClient(app)
@@ -86,7 +86,7 @@ class TestIndexCalculationV2E2ERealAPI:
     @pytest.mark.timeout(30)
     def test_API_IC_301_E2E_basic_workflow(self, app, test_data):
         """TEST: API-IC-301-E2E - 基本工作流程測試.
-        
+
         Solution 1: 分離測試 - 基本功能測試
         """
         # Create fresh client for this test
@@ -144,7 +144,7 @@ class TestIndexCalculationV2E2ERealAPI:
     @pytest.mark.timeout(30)
     def test_API_IC_302_E2E_html_format(self, app, test_data):
         """TEST: API-IC-302-E2E - HTML格式測試.
-        
+
         Solution 1: 分離測試 - HTML 格式處理
         Solution 2: 重新創建 client
         """
@@ -173,7 +173,7 @@ class TestIndexCalculationV2E2ERealAPI:
     @pytest.mark.timeout(30)
     def test_API_IC_303_E2E_string_keywords(self, app, test_data):
         """TEST: API-IC-303-E2E - 字串格式關鍵字測試.
-        
+
         Solution 1: 分離測試 - 字串格式關鍵字
         Solution 2: 重新創建 client - 使用新的 TestClient
         """
@@ -202,16 +202,16 @@ class TestIndexCalculationV2E2ERealAPI:
     # TEST: API-IC-304-E2E - 待實作
     # @pytest.mark.timeout(90)
     # def test_API_IC_304_E2E_performance_and_monitoring(self, app, test_data):
-    #     """TEST: API-IC-304-E2E - 效能和監控整合測試（待實作）.
+    #     """TEST: API-IC-304-E2E - 效能和監控整合測試(待實作).
     #
-    #     待實作功能：
+    #     待實作功能:
     #     1. 監控事件追蹤驗證
     #     2. 日誌格式和內容檢查
     #     3. 錯誤處理和監控測試
-    #     4. 性能指標收集（記憶體、CPU等）
+    #     4. 性能指標收集(記憶體、CPU等)
     #     5. 快取監控驗證
     #
-    #     注意：目前的實作只是基本的穩定性測試，未包含真正的監控整合驗證。
+    #     注意: 目前的實作只是基本的穩定性測試, 未包含真正的監控整合驗證。
     #     需等待監控功能開發完成後實施。
     #     """
     #     pass

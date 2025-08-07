@@ -47,7 +47,7 @@ for var in required_env_vars:
     if not os.getenv(var):
         pytest.skip(f"Performance test requires {var} environment variable")
 
-from src.main import create_app
+from src.main import create_app  # noqa: E402
 
 
 class TestIndexCalculationV2Performance:
@@ -311,13 +311,10 @@ class TestIndexCalculationV2Performance:
 
         print(f"Simulating {SIMULATED_QPS} QPS for {TEST_DURATION} seconds = {TOTAL_REQUESTS} total requests")
 
-        request_id = 0
-
         # Execute all requests as quickly as possible
-        for i in range(TOTAL_REQUESTS):
-            start_req = time.time()
+        for i, request_id in enumerate(range(TOTAL_REQUESTS)):
+            time.time()
             success, elapsed = make_request(request_id)
-            request_id += 1
 
             if success:
                 success_count += 1

@@ -138,11 +138,11 @@ class TestIndexCalculationV2Integration:
         assert "processing_time_ms" in data["data"]
 
         # Verify data types and ranges
-        assert isinstance(data["data"]["raw_similarity_percentage"], (int, float))
+        assert isinstance(data["data"]["raw_similarity_percentage"], int | float)
         assert 0 <= data["data"]["raw_similarity_percentage"] <= 100
         assert isinstance(data["data"]["keyword_coverage"], dict)
         assert isinstance(data["data"]["cache_hit"], bool)
-        assert isinstance(data["data"]["processing_time_ms"], (int, float))
+        assert isinstance(data["data"]["processing_time_ms"], int | float)
 
         # Verify keyword coverage structure
         coverage = data["data"]["keyword_coverage"]
@@ -158,7 +158,7 @@ class TestIndexCalculationV2Integration:
         self, test_client, mock_embedding_client, valid_index_calc_request
     ):
         """TEST: API-IC-102-IT - 快取行為整合測試.
-        
+
         驗證快取在 API 層級的正確行為。
         """
         # First request - should miss cache
@@ -183,7 +183,7 @@ class TestIndexCalculationV2Integration:
     # TEST: API-IC-103-IT
     def test_input_validation(self, test_client):
         """TEST: API-IC-103-IT - 輸入驗證測試.
-        
+
         驗證各種無效輸入的錯誤處理。
         """
         # Test empty resume
@@ -393,11 +393,11 @@ class TestIndexCalculationV2Integration:
             return test_client.post("/api/v1/index-calculation", json=modified_request)
 
         # Test 20 concurrent requests
-        start_time = time.time()
+        time.time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
             futures = [executor.submit(make_concurrent_request, i) for i in range(20)]
             responses = [future.result() for future in concurrent.futures.as_completed(futures)]
-        end_time = time.time()
+        time.time()
 
         # All requests should succeed
         success_count = 0

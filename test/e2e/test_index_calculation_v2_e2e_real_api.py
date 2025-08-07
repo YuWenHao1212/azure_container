@@ -3,7 +3,7 @@ End-to-End tests for Index Calculation V2 with Real Azure API.
 
 TEST IDs:
 - API-IC-301-E2E: 完整工作流程測試
-- API-IC-302-E2E: 多種輸入格式測試  
+- API-IC-302-E2E: 多種輸入格式測試
 - API-IC-303-E2E: 效能和監控整合測試
 
 Note: These tests use real Azure OpenAI API and require proper environment variables.
@@ -38,7 +38,7 @@ for var in required_env_vars:
     if not os.getenv(var):
         pytest.skip(f"E2E test requires {var} environment variable")
 
-from src.main import create_app
+from src.main import create_app  # noqa: E402
 
 
 class TestIndexCalculationV2E2ERealAPI:

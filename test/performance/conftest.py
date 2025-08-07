@@ -22,7 +22,7 @@ def mock_openai_clients():
     yield
 
 # Load real environment variables from .env FIRST
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(override=True)
 

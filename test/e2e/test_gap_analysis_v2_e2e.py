@@ -25,7 +25,7 @@ pytestmark = pytest.mark.skip(reason="E2E tests conflict with global mock setup 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 
 # E2E tests use real API, load real environment
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(override=True)
 
@@ -36,8 +36,8 @@ os.environ['LIGHTWEIGHT_MONITORING'] = 'true'
 os.environ['MONITORING_ENABLED'] = 'true'
 os.environ['ERROR_CAPTURE_ENABLED'] = 'true'
 
-from src.main import create_app
-from src.services.openai_client import AzureOpenAIError
+from src.main import create_app  # noqa: E402
+from src.services.openai_client import AzureOpenAIError  # noqa: E402
 
 
 class TestGapAnalysisV2E2E:
@@ -296,7 +296,7 @@ class TestGapAnalysisV2E2E:
         """TEST: API-GAP-003-E2E - 部分結果支援驗證.
 
         驗證生產環境中部分失敗時的行為。
-        
+
         注意：這個測試通過使用特殊構造的輸入來觸發部分失敗，
         而不是 mock 整個 OpenAI 客戶端。
         """

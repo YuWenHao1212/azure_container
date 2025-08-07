@@ -771,7 +771,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-015-IT
     def test_API_GAP_015_IT_resource_pool_reuse_rate(self, test_client, test_data):
         """TEST: API-GAP-015-IT - 資源池重用率測試.
-        
+
         驗證資源池客戶端重用率 > 80%。
         原為 API-GAP-003-PT。
         """
@@ -813,7 +813,7 @@ class TestGapAnalysisV2IntegrationComplete:
             mock_get_llm.side_effect = track_llm_client
 
             # Send multiple requests to test reuse
-            for i in range(10):
+            for _i in range(10):
                 response = test_client.post(
                     "/api/v1/index-cal-and-gap-analysis",
                     json={
@@ -830,10 +830,7 @@ class TestGapAnalysisV2IntegrationComplete:
                 assert data["success"] is True
 
             # Calculate reuse rate
-            if pool_stats["total_requests"] > 0:
-                reuse_rate = pool_stats["reused"] / pool_stats["total_requests"]
-            else:
-                reuse_rate = 0
+            pool_stats['reused'] / pool_stats['total_requests'] if pool_stats['total_requests'] > 0 else 0
 
             # Verify reuse rate > 80% (after initial creation)
             # First few requests create clients, subsequent requests should reuse
@@ -843,7 +840,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-016-IT
     def test_API_GAP_016_IT_resource_pool_scaling(self, test_client, test_data):
         """TEST: API-GAP-016-IT - 資源池動態擴展測試.
-        
+
         驗證資源池在高負載時能動態擴展。
         原為 API-GAP-005-PT。
         """
@@ -886,7 +883,7 @@ class TestGapAnalysisV2IntegrationComplete:
 
             # Send multiple requests to trigger scaling
             responses = []
-            for i in range(5):
+            for _ in range(5):
                 response = test_client.post(
                     "/api/v1/index-cal-and-gap-analysis",
                     json={
@@ -923,7 +920,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-017-IT
     def test_API_GAP_017_IT_api_call_reduction(self, test_client, test_data):
         """TEST: API-GAP-017-IT - API 呼叫減少驗證.
-        
+
         驗證相同輸入重複請求時 API 呼叫次數減少。
         原為 API-GAP-004-PT。
         """
@@ -988,7 +985,7 @@ class TestGapAnalysisV2IntegrationComplete:
 
             # Verify results are consistent
             data1 = response1.json()["data"]
-            data2 = response2.json()["data"]
+            response2.json()["data"]
 
             # Check that key fields are present and consistent
             assert "raw_similarity_percentage" in data1

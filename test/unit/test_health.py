@@ -85,7 +85,7 @@ class TestHealthCheck:
         優先級: P0
         類型: 單元測試
         測試目標: 單一請求驗證所有健康檢查功能
-        
+
         判斷標準 (全部必須通過):
         - ✅ HTTP 200 狀態碼
         - ✅ 回應包含 "status": "healthy"
@@ -151,7 +151,7 @@ class TestHealthCheck:
         優先級: P0
         類型: 單元測試
         測試目標: 驗證非 GET 方法被正確拒絕
-        
+
         判斷標準:
         - ✅ 所有非 GET 方法返回 405 Method Not Allowed
         - ✅ 錯誤回應格式正確

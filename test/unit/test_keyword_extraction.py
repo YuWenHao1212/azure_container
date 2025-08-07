@@ -190,7 +190,7 @@ class TestKeywordExtraction:
         優先級: P0
         類型: 單元測試
         測試目標: 單一請求驗證所有成功路徑功能
-        
+
         判斷標準 (全部必須通過):
         - ✅ HTTP 200 狀態碼
         - ✅ success = true
@@ -270,7 +270,7 @@ class TestKeywordExtraction:
         優先級: P0
         類型: 單元測試
         測試目標: 驗證 JD 少於 200 字元的錯誤處理
-        
+
         判斷標準:
         - ✅ HTTP 422 (Unprocessable Entity)
         - ✅ error.code = "VALIDATION_ERROR"
@@ -309,7 +309,7 @@ class TestKeywordExtraction:
         優先級: P0
         類型: 單元測試
         測試目標: 驗證 max_keywords 範圍檢查
-        
+
         判斷標準:
         - ✅ HTTP 422 (Unprocessable Entity)
         - ✅ error.code = "VALIDATION_ERROR"
@@ -353,7 +353,7 @@ class TestKeywordExtraction:
         優先級: P0
         類型: 單元測試
         測試目標: 驗證外部服務錯誤的處理
-        
+
         判斷標準:
         - 速率限制錯誤:
           - ✅ HTTP 429 (Too Many Requests)
@@ -421,7 +421,7 @@ class TestKeywordExtraction:
         優先級: P0
         類型: 單元測試
         測試目標: 驗證繁體中文完整支援
-        
+
         判斷標準 (全部必須通過):
         - ✅ HTTP 200 狀態碼
         - ✅ detected_language = "zh-TW"
@@ -474,7 +474,7 @@ class TestKeywordExtraction:
         優先級: P1
         類型: 單元測試
         測試目標: 驗證邊界條件處理與品質警告機制
-        
+
         判斷標準:
         - 超長JD (3000字元):
           - ✅ HTTP 200 (正常處理)

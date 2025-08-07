@@ -26,8 +26,8 @@ from dotenv import load_dotenv
 # CRITICAL: Load environment variables BEFORE importing src modules
 load_dotenv(override=True)
 
-from src.main import create_app
-from src.services.openai_client import AzureOpenAIError
+from src.main import create_app  # noqa: E402
+from src.services.openai_client import AzureOpenAIError  # noqa: E402
 
 # Ensure V2 implementation and proper settings
 os.environ['USE_V2_IMPLEMENTATION'] = 'true'
@@ -58,42 +58,42 @@ class TestGapAnalysisV2E2E:
             "resume": """
             John Smith
             Software Engineer
-            
+
             Experience:
             - Full Stack Developer at Tech Corp (2020-2023)
               * Developed REST APIs using Python and FastAPI
               * Built responsive web applications with React and TypeScript
               * Managed databases with PostgreSQL and MongoDB
               * Implemented CI/CD pipelines using Docker and GitHub Actions
-            
-            - Junior Developer at StartupXYZ (2018-2020) 
+
+            - Junior Developer at StartupXYZ (2018-2020)
               * Created mobile applications using React Native
               * Worked with Node.js for backend development
               * Collaborated with cross-functional teams using Agile methodology
-              
+
             Skills:
             - Programming: Python, JavaScript, TypeScript, Java
             - Frameworks: FastAPI, React, Node.js, Express
             - Databases: PostgreSQL, MongoDB, Redis
             - Tools: Docker, Git, GitHub Actions, AWS
-            
+
             Education:
             - Bachelor of Computer Science, University of Technology (2018)
             """,
             "job_description": """
             Senior Software Engineer - AI/ML Platform
-            
-            We are seeking a Senior Software Engineer to join our AI/ML platform team. 
-            The ideal candidate will have strong experience in building scalable backend systems 
+
+            We are seeking a Senior Software Engineer to join our AI/ML platform team.
+            The ideal candidate will have strong experience in building scalable backend systems
             and working with machine learning technologies.
-            
+
             Responsibilities:
             - Design and develop high-performance API services for ML model inference
             - Build and maintain data pipelines for model training and deployment
             - Collaborate with data scientists to productionize ML models
             - Implement monitoring and observability solutions for ML systems
             - Optimize system performance for high-throughput ML workloads
-            
+
             Required Skills:
             - 5+ years of experience in software engineering
             - Strong proficiency in Python and modern web frameworks (FastAPI, Django)
@@ -102,7 +102,7 @@ class TestGapAnalysisV2E2E:
             - Experience with cloud platforms (AWS, Azure, or GCP)
             - Understanding of ML operations and model deployment strategies
             - Strong problem-solving and analytical skills
-            
+
             Preferred Skills:
             - Experience with real-time data streaming (Kafka, Redis Streams)
             - Knowledge of vector databases and similarity search
@@ -180,10 +180,6 @@ class TestGapAnalysisV2E2E:
 
         # Use actual measured processing time since API doesn't return it
         # The API doesn't have metadata field, so we create it with real values
-        metadata = {
-            "api_version": "v2",
-            "processing_time": actual_processing_time  # Real measured time
-        }
 
         # Validate only the three core fields as requested
         validated_fields = {
