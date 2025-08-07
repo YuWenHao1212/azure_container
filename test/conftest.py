@@ -160,3 +160,135 @@ def mock_openai_clients():
         # Azure OpenAI direct mock removed to avoid importing openai module
 
         yield
+
+
+# ==================== SHARED TEST DATA FIXTURES ====================
+# These fixtures provide common test data used across multiple test files
+
+@pytest.fixture
+def sample_english_jd():
+    """Standard English job description for testing (>200 chars)."""
+    return (
+        "We are looking for a Senior Python Developer with experience in FastAPI, "
+        "Docker, and Azure cloud services. The ideal candidate should have strong "
+        "knowledge of microservices architecture and RESTful APIs. Experience with "
+        "CI/CD pipelines and test-driven development is highly desired. Must have "
+        "5+ years of experience in backend development and distributed systems."
+    )
+
+@pytest.fixture
+def sample_chinese_jd():
+    """Standard Traditional Chinese job description for testing (>200 chars)."""
+    return (
+        "我們正在尋找一位資深的Python開發工程師，需要具備FastAPI框架經驗，"
+        "熟悉Docker容器技術和Azure雲端服務。理想的候選人應該對微服務架構有深入理解，"
+        "並且有RESTful API開發經驗。具備CI/CD流程和測試驅動開發經驗者優先。"
+        "同時需要熟悉分散式系統設計，具備系統架構規劃能力和團隊合作精神。"
+        "需要至少五年以上的後端開發經驗，能夠在快節奏環境中獨立工作。"
+        "此外還需要具備良好的問題解決能力、優秀的溝通技巧，以及持續學習新技術的熱忱。"
+    )
+
+@pytest.fixture
+def sample_mixed_jd():
+    """Mixed language job description with Chinese and English."""
+    return (
+        "We are seeking a 資深Python開發工程師 with expertise in 微服務架構 and 雲端服務. "
+        "The candidate should have experience with FastAPI框架, Docker容器技術, and Azure服務. "
+        "Must be skilled in 分散式系統設計 and 測試驅動開發 methodologies. "
+        "Strong background in 後端開發 with 5+ years experience in 軟體工程 is required."
+    )
+
+@pytest.fixture
+def sample_short_jd():
+    """Job description that is too short (<200 chars) for validation testing."""
+    return "This job description is too short and under 200 characters limit."
+
+@pytest.fixture
+def sample_long_jd():
+    """Very long job description for performance testing."""
+    base = (
+        "Senior Python Developer position with extensive experience required. "
+        "Must have strong technical skills and leadership abilities. "
+    )
+    return base * 50  # Creates a very long text
+
+@pytest.fixture
+def sample_html_resume():
+    """Sample HTML resume for testing."""
+    return """
+    <html>
+    <body>
+        <h1>John Doe</h1>
+        <h2>Senior Software Engineer</h2>
+        <section>
+            <h3>Skills</h3>
+            <ul>
+                <li>Python (5+ years)</li>
+                <li>FastAPI, Django</li>
+                <li>Docker, Kubernetes</li>
+                <li>Azure, AWS</li>
+                <li>Microservices Architecture</li>
+                <li>RESTful APIs</li>
+                <li>CI/CD Pipelines</li>
+            </ul>
+        </section>
+        <section>
+            <h3>Experience</h3>
+            <p>Senior Python Developer at Tech Corp (2020-Present)</p>
+            <ul>
+                <li>Developed scalable microservices using FastAPI</li>
+                <li>Implemented CI/CD pipelines with Azure DevOps</li>
+                <li>Led team of 5 developers</li>
+            </ul>
+        </section>
+    </body>
+    </html>
+    """.strip()
+
+@pytest.fixture
+def sample_text_resume():
+    """Sample plain text resume for testing."""
+    return """
+    John Doe
+    Senior Software Engineer
+
+    Skills:
+    - Python (5+ years)
+    - FastAPI, Django
+    - Docker, Kubernetes
+    - Azure, AWS
+    - Microservices Architecture
+    - RESTful APIs
+    - CI/CD Pipelines
+
+    Experience:
+    Senior Python Developer at Tech Corp (2020-Present)
+    - Developed scalable microservices using FastAPI
+    - Implemented CI/CD pipelines with Azure DevOps
+    - Led team of 5 developers
+    """.strip()
+
+@pytest.fixture
+def sample_keywords():
+    """Sample keyword list for testing."""
+    return [
+        "Python", "FastAPI", "Docker", "Kubernetes", "Azure",
+        "Microservices", "RESTful APIs", "CI/CD", "Backend Development",
+        "Distributed Systems", "Test-Driven Development", "Agile"
+    ]
+
+@pytest.fixture
+def expected_extraction_result():
+    """Expected keyword extraction result structure."""
+    return {
+        "keywords": [
+            "Python", "Senior Developer", "FastAPI", "Docker", "Azure",
+            "Microservices", "RESTful APIs", "CI/CD", "Backend Development"
+        ],
+        "keyword_count": 9,
+        "confidence_score": 0.85,
+        "extraction_method": "llm_extraction",
+        "detected_language": "en",
+        "prompt_version_used": "v1.4.0-en",
+        "processing_time_ms": 2500.0
+    }

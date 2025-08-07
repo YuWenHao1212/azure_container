@@ -47,7 +47,7 @@ class LanguageDetectionService:
 
     SUPPORTED_LANGUAGES: ClassVar[list] = ['en', 'zh-TW']
     CONFIDENCE_THRESHOLD = 0.8
-    MIN_TEXT_LENGTH = 50
+    MIN_TEXT_LENGTH = 200
 
     # Comprehensive Traditional vs Simplified Chinese character sets for accurate differentiation
     # These sets focus on the most distinguishing characters commonly found in job descriptions

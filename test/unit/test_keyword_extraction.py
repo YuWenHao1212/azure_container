@@ -100,28 +100,19 @@ class TestKeywordExtraction:
                         return TestClient(app)
 
     @pytest.fixture
-    def valid_english_jd_request(self):
-        """Valid English job description request (>200 chars)."""
+    def valid_english_jd_request(self, sample_english_jd):
+        """Valid English job description request (>200 chars) using shared fixture."""
         return {
-            "job_description": "We are looking for a Senior Python Developer with experience in FastAPI, "
-                             "Docker, and Azure cloud services. The ideal candidate should have strong "
-                             "knowledge of microservices architecture and RESTful APIs. Experience with "
-                             "CI/CD pipelines and test-driven development is highly desired. Must have "
-                             "5+ years of experience in backend development and distributed systems.",
+            "job_description": sample_english_jd,
             "max_keywords": 15,
             "prompt_version": "latest"
         }
 
     @pytest.fixture
-    def valid_traditional_chinese_jd_request(self):
-        """Valid Traditional Chinese job description request (>200 chars)."""
+    def valid_traditional_chinese_jd_request(self, sample_chinese_jd):
+        """Valid Traditional Chinese job description request (>200 chars) using shared fixture."""
         return {
-            "job_description": "我們正在尋找一位資深的Python開發工程師，需要具備FastAPI框架經驗，"
-                             "熟悉Docker容器技術和Azure雲端服務。理想的候選人應該對微服務架構有深入理解，"
-                             "並且有RESTful API開發經驗。具備CI/CD流程和測試驅動開發經驗者優先。"
-                             "同時需要熟悉分散式系統設計，具備系統架構規劃能力和團隊合作精神。"
-                             "需要至少五年以上的後端開發經驗，能夠在快節奏環境中獨立工作。"
-                             "此外還需要具備良好的問題解決能力、優秀的溝通技巧，以及持續學習新技術的熱忱。",
+            "job_description": sample_chinese_jd,
             "max_keywords": 12,
             "prompt_version": "latest"
         }
@@ -263,7 +254,7 @@ class TestKeywordExtraction:
 
     @pytest.mark.precommit
     @pytest.mark.timeout(3)
-    def test_API_KW_002_UT_validation_error_short_description(self, test_client):
+    def test_API_KW_002_UT_validation_error_short_description(self, test_client, sample_short_jd):
         """
         TEST ID: API-KW-002-UT
         測試名稱: JD 過短驗證錯誤
@@ -278,7 +269,7 @@ class TestKeywordExtraction:
         - ✅ error.details 包含 "Job description must be at least 200 characters"
         """
         short_jd_request = {
-            "job_description": "This job description is too short and under 200 characters limit.",  # Only ~80 chars
+            "job_description": sample_short_jd,  # Using shared fixture for short JD
             "max_keywords": 15
         }
 
@@ -467,7 +458,8 @@ class TestKeywordExtraction:
     @pytest.mark.timeout(5)
     def test_API_KW_006_UT_boundary_and_quality_warning(self, test_client,
                                                         mock_keyword_service,
-                                                        mock_llm_client):
+                                                        mock_llm_client,
+                                                        sample_long_jd):
         """
         TEST ID: API-KW-006-UT
         測試名稱: 邊界條件與品質檢查
@@ -489,8 +481,7 @@ class TestKeywordExtraction:
 
         # Test 1: Super long JD (3000 characters)
         long_jd_request = {
-            "job_description": "Senior Python Developer position with extensive experience required. " * 50 +
-                              "Additional requirements include FastAPI, Docker, Azure, and microservices. " * 20,
+            "job_description": sample_long_jd,  # Using shared fixture for long JD
             "max_keywords": 25,
             "prompt_version": "latest"
         }
