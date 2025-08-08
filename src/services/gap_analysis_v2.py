@@ -8,8 +8,11 @@ import logging
 import time
 from typing import Any, Optional
 
+from src.core.config import get_settings
 from src.core.simple_prompt_manager import prompt_manager
-from src.services.gap_analysis import GapAnalysisService
+from src.services.gap_analysis_utils import parse_gap_response
+from src.services.token_tracking_mixin import TokenTrackingMixin
+from src.services.unified_prompt_service import UnifiedPromptService
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +52,7 @@ def get_prompt(task: str, version: str, language: str = "en") -> str:
         return "Analyze the gap between resume and job requirements. Provide detailed feedback."
 
 
-class GapAnalysisServiceV2(GapAnalysisService):
+class GapAnalysisServiceV2(TokenTrackingMixin):
     """
     Enhanced Gap Analysis Service V2.
 
@@ -62,7 +65,12 @@ class GapAnalysisServiceV2(GapAnalysisService):
 
     def __init__(self, **kwargs):
         """Initialize V2 service with enhanced capabilities."""
-        super().__init__(**kwargs)
+        # Initialize base attributes from V1
+        self.settings = get_settings()
+        self.prompt_service = UnifiedPromptService(task_path="gap_analysis")
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+        # V2 specific attributes
         self.enable_context_enhancement = True
         self.enable_skill_priorities = True
 
@@ -661,7 +669,7 @@ Focus on the identified gaps while acknowledging the existing strengths.
         logger.warning("[GAP_V2] Attempting XML parsing as fallback")
 
         try:
-            from src.services.gap_analysis import parse_gap_response
+            # parse_gap_response is already imported at the top
             base_result = parse_gap_response(response)
 
             # Convert V1 format to V2 format

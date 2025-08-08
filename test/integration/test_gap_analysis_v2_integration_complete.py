@@ -49,7 +49,12 @@ os.environ['JWT_SECRET_KEY'] = 'test-secret'
 os.environ['CONTAINER_APP_API_KEY'] = 'test-api-key'
 os.environ['USE_V2_IMPLEMENTATION'] = 'true'
 
-from src.main import create_app
+# Import services first to ensure they're loaded
+with patch('src.services.llm_factory.get_llm_client'):
+    with patch('src.services.embedding_client.get_azure_embedding_client'):
+        from src.main import create_app
+        from src.services.gap_analysis_v2 import GapAnalysisServiceV2
+        from src.services.index_calculation_v2 import IndexCalculationServiceV2
 
 
 class TestGapAnalysisV2IntegrationComplete:
@@ -62,9 +67,6 @@ class TestGapAnalysisV2IntegrationComplete:
         with (
             patch('src.services.llm_factory.get_llm_client') as mock_get_llm,
             patch('src.services.embedding_client.get_azure_embedding_client') as mock_get_embedding,
-            patch('src.services.index_calculation_v2.IndexCalculationServiceV2') as mock_index_service,
-            patch('src.services.gap_analysis_v2.GapAnalysisServiceV2') as mock_gap_service,
-            patch('src.services.combined_analysis_v2.GapAnalysisServiceV2') as mock_gap_service2,
             patch('src.core.config.get_settings') as mock_settings,
             patch('src.main.monitoring_service', Mock()),
             patch.dict(os.environ, {
@@ -133,44 +135,7 @@ class TestGapAnalysisV2IntegrationComplete:
             mock_embedding_instance.__aexit__ = AsyncMock(return_value=None)
             mock_get_embedding.return_value = mock_embedding_instance
 
-            # Setup mock index calculation service
-            mock_index_instance = AsyncMock()
-            mock_index_instance.calculate_index = AsyncMock(return_value={
-                "raw_similarity_percentage": 68,
-                "similarity_percentage": 78,
-                "keyword_coverage": {
-                    "total_keywords": 5,
-                    "covered_count": 3,
-                    "coverage_percentage": 60,
-                    "covered_keywords": ["Python", "FastAPI", "Docker"],
-                    "missed_keywords": ["Kubernetes", "AWS"]
-                }
-            })
-            mock_index_service.return_value = mock_index_instance
-
-            # Setup mock gap analysis service
-            mock_gap_instance = AsyncMock()
-            # GapAnalysisServiceV2 uses analyze_with_context, not analyze_gap
-            mock_gap_instance.analyze_with_context = AsyncMock(return_value={
-                "CoreStrengths": "<ol><li>Python programming expertise</li><li>FastAPI framework experience</li><li>Docker containerization skills</li></ol>",
-                "KeyGaps": "<ol><li>Kubernetes orchestration experience</li><li>AWS cloud platform knowledge</li><li>CI/CD pipeline setup</li></ol>",
-                "QuickImprovements": "<ol><li>Complete Kubernetes certification</li><li>Build sample microservices project</li><li>Contribute to open-source projects</li></ol>",
-                "OverallAssessment": "<p>Strong backend developer with 75% match for the role. Solid foundation in Python and containerization. Main gaps in orchestration and cloud platforms can be addressed through focused learning.</p>",
-                "SkillSearchQueries": [
-                    {
-                        "skill_name": "Kubernetes",
-                        "skill_category": "TECHNICAL",
-                        "description": "Container orchestration platform for managing Docker containers"
-                    },
-                    {
-                        "skill_name": "AWS",
-                        "skill_category": "TECHNICAL",
-                        "description": "Amazon Web Services cloud platform fundamentals"
-                    }
-                ]
-            })
-            mock_gap_service.return_value = mock_gap_instance
-            mock_gap_service2.return_value = mock_gap_instance
+            # No need to setup mock index/gap methods since they're handled by global mocks
 
             app = create_app()
             return TestClient(app)
