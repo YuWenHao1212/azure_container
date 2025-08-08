@@ -191,14 +191,13 @@ main() {
     test_start=$(date +%s)
     test_log="$LOG_DIR/smoke_gap_${TIMESTAMP}.log"
     
-    # Simple gap analysis test - using correct field names (resume and job_description)
-    # Note: This endpoint may have additional validation requirements
+    # Simple gap analysis test - with all required fields including keywords
     local gap_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
         --max-time 30 \
         -X POST "$API_URL/api/v1/index-cal-and-gap-analysis" \
         -H "Content-Type: application/json" \
         -H "X-API-Key: $API_KEY" \
-        -d '{"job_description":"We need a Senior Full Stack Developer with expertise in React, Node.js, and MongoDB. The ideal candidate should have experience with microservices architecture, GraphQL, and containerization technologies. Strong understanding of software design patterns, test-driven development, and continuous integration practices is essential for this role.","resume":"Full Stack Developer with 3 years of experience in React and Node.js. Familiar with MongoDB and REST APIs. Some exposure to Docker. Have worked on several web applications using modern JavaScript frameworks. Experience with agile development, code reviews, and collaborative development using Git. Passionate about learning new technologies and best practices in software development."}' 2>&1 | tee "$test_log")
+        -d '{"job_description":"We need a Senior Full Stack Developer with expertise in React, Node.js, and MongoDB. The ideal candidate should have experience with microservices architecture, GraphQL, and containerization technologies. Strong understanding of software design patterns, test-driven development, and continuous integration practices is essential for this role.","resume":"Full Stack Developer with 3 years of experience in React and Node.js. Familiar with MongoDB and REST APIs. Some exposure to Docker. Have worked on several web applications using modern JavaScript frameworks. Experience with agile development, code reviews, and collaborative development using Git. Passionate about learning new technologies and best practices in software development.","keywords":["React","Node.js","MongoDB","GraphQL","Docker","Microservices","TDD","CI/CD","Git","REST APIs"]}' 2>&1 | tee "$test_log")
     
     http_code=$(echo "$gap_response" | tail -2 | head -1)
     response_time=$(echo "$gap_response" | tail -1)
@@ -213,14 +212,6 @@ main() {
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         PASSED_TESTS=$((PASSED_TESTS + 1))
         log_message "  ${GREEN}✓ Gap Analysis PASSED${NC} (${response_time_ms}ms < 25000ms)"
-    elif [ "$http_code" = "422" ]; then
-        # Gap Analysis may have stricter validation requirements
-        # Mark as warning instead of failure for now
-        TOTAL_TESTS=$((TOTAL_TESTS + 1))
-        log_message "  ${YELLOW}⚠ Gap Analysis SKIPPED${NC} (HTTP 422 - validation issue, not counting as failure)"
-        log_message "  Note: Gap Analysis endpoint has additional validation requirements"
-        log_message "  Error details: $(cat "$test_log" | grep -E "error|message" | head -2)"
-        # Don't mark as failed - this is a known issue
     else
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         FAILED_TESTS=$((FAILED_TESTS + 1))
