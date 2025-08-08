@@ -29,10 +29,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 
 from src.core.config import Settings
 from src.services.index_calculation import (
-    IndexCalculationService,
     analyze_keyword_coverage,
     compute_similarity,
     sigmoid_transform,
+)
+from src.services.index_calculation_v2 import (
+    IndexCalculationServiceV2,
+    get_index_calculation_service_v2,
 )
 
 
@@ -80,19 +83,21 @@ class TestIndexCalculationV2Unit:
 
     # TEST: API-IC-001-UT
     def test_service_initialization(self, mock_settings):
-        """TEST: API-IC-001-UT - 服務初始化測試.
+        """TEST: API-IC-001-UT - V2 服務初始化測試.
 
-        驗證 IndexCalculationService 能夠正確初始化，並確保所有依賴正確注入。
+        驗證 IndexCalculationServiceV2 能夠正確初始化，並確保所有依賴正確注入。
         """
-        with patch('src.services.index_calculation.get_settings', return_value=mock_settings):
-            # Test default initialization
-            service = IndexCalculationService()
+        with patch('src.services.index_calculation_v2.get_settings', return_value=mock_settings):
+            # Test V2 service initialization
+            service = get_index_calculation_service_v2()
             assert service is not None
-            assert service.settings == mock_settings
+            assert isinstance(service, IndexCalculationServiceV2)
 
-            # Verify service has required attributes
+            # Verify service has required methods
             assert hasattr(service, 'calculate_index')
             assert callable(service.calculate_index)
+            assert hasattr(service, 'get_service_stats')
+            assert callable(service.get_service_stats)
 
     # TEST: API-IC-002-UT
     def test_cache_key_generation(self, mock_settings):

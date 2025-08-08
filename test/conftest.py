@@ -60,8 +60,7 @@ def mock_openai_clients():
         patch('src.services.openai_client_gpt41.get_gpt41_mini_client') as mock_gpt41,
         patch('src.services.embedding_client.get_azure_embedding_client') as mock_embedding,
 
-        # Service-level mocks
-        patch('src.services.keyword_extraction.get_keyword_extraction_service') as mock_keyword_service,
+        # Service-level mocks (V1 services removed)
 
         # LLM Factory for Gap Analysis V2
         patch('src.services.llm_factory.get_llm_client') as mock_llm_factory,
@@ -118,8 +117,7 @@ def mock_openai_clients():
             "extraction_method": "llm_based",
             "processing_time_ms": 200
         })
-        mock_keyword_instance.close = AsyncMock()
-        mock_keyword_service.return_value = mock_keyword_instance
+        # V1 keyword service removed - using V2 via API mocking
 
         # Configure LLM Factory mock for Gap Analysis V2
         mock_llm_client = AsyncMock()

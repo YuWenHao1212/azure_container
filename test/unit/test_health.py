@@ -37,9 +37,8 @@ os.environ['JWT_SECRET_KEY'] = 'test-secret'
 # Mock services before importing main
 with patch('src.services.openai_client.get_azure_openai_client'):
     with patch('src.services.openai_client_gpt41.get_gpt41_mini_client'):
-        with patch('src.services.keyword_extraction.get_keyword_extraction_service'):
-            from src.core.config import Settings
-            from src.main import create_app
+        from src.core.config import Settings
+        from src.main import create_app
 
 
 class TestHealthCheck:
