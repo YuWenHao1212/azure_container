@@ -16,7 +16,7 @@ class FeatureFlags:
     """
 
     # Main feature flag - from environment variable
-    USE_V2_IMPLEMENTATION = os.getenv("USE_V2_IMPLEMENTATION", "false").lower() == "true"
+    USE_V2_IMPLEMENTATION = os.getenv("USE_V2_IMPLEMENTATION", "true").lower() == "true"
 
     # Percentage-based rollout (0-100)
     V2_ROLLOUT_PERCENTAGE = int(os.getenv("V2_ROLLOUT_PERCENTAGE", "0"))
