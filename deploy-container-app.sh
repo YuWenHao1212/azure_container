@@ -78,6 +78,11 @@ if az containerapp show --name $CONTAINER_APP_NAME --resource-group $RESOURCE_GR
             GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast \
             GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview \
             LLM_MODEL_KEYWORDS=gpt41-mini \
+            AZURE_OPENAI_API_KEY=secretref:azure-openai-key \
+            EMBEDDING_API_KEY=secretref:embedding-api-key \
+            GPT41_MINI_JAPANEAST_API_KEY=secretref:gpt41-mini-key \
+            JWT_SECRET_KEY=secretref:jwt-secret \
+            CONTAINER_APP_API_KEY=secretref:container-app-api-key \
         --secrets \
             azure-openai-key=secretref:azure-openai-key \
             embedding-api-key=secretref:embedding-api-key \
@@ -113,7 +118,18 @@ else
             CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \
             GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast \
             GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview \
-            LLM_MODEL_KEYWORDS=gpt41-mini
+            LLM_MODEL_KEYWORDS=gpt41-mini \
+            AZURE_OPENAI_API_KEY=secretref:azure-openai-key \
+            EMBEDDING_API_KEY=secretref:embedding-api-key \
+            GPT41_MINI_JAPANEAST_API_KEY=secretref:gpt41-mini-key \
+            JWT_SECRET_KEY=secretref:jwt-secret \
+            CONTAINER_APP_API_KEY=secretref:container-app-api-key \
+        --secrets \
+            azure-openai-key=secretref:azure-openai-key \
+            embedding-api-key=secretref:embedding-api-key \
+            gpt41-mini-key=secretref:gpt41-mini-key \
+            jwt-secret=secretref:jwt-secret \
+            container-app-api-key=secretref:container-app-api-key
 fi
 
 # Get the app URL
