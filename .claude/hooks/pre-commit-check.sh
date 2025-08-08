@@ -126,10 +126,11 @@ parse_pytest_results() {
             # Clean ANSI color codes
             clean_line=$(echo "$line" | sed 's/\x1b\[[0-9;]*m//g')
             
-            # Track which section we're in - handle different log formats
-            if [[ "$clean_line" =~ "Unit Tests" ]]; then
+            # Track which section we're in - use flexible pattern for main sections
+            # Look for "Running * Unit Tests (" or "Running * Integration Tests ("
+            if [[ "$clean_line" =~ Running.*Unit[[:space:]]Tests[[:space:]]\( ]]; then
                 current_section="UT"
-            elif [[ "$clean_line" =~ "Integration Tests" ]]; then
+            elif [[ "$clean_line" =~ Running.*Integration[[:space:]]Tests[[:space:]]\( ]]; then
                 current_section="IT"
             fi
             

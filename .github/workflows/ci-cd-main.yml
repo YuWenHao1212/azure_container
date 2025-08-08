@@ -87,18 +87,20 @@ jobs:
     - name: Run tests
       run: |
         # 確保測試腳本有執行權限
-        chmod +x test/scripts/run_complete_test_suite_ci.sh
-        chmod +x test/scripts/run_index_cal_gap_analysis_unit_integration.sh
+        chmod +x .claude/hooks/pre-commit-check.sh
         
-        # 執行原有測試套件
-        echo "=== Running complete test suite ==="
-        set -o pipefail
-        ./test/scripts/run_complete_test_suite_ci.sh | tee test_output.log
-        
-        # 執行 Index-Cal-Gap-Analysis V2 測試套件 (47 個測試)
+        # 執行完整測試套件 (包含所有測試)
+        echo "=== Running complete test suite with pre-commit check ==="
+        echo "This includes:"
+        echo "  - Ruff code style check"
+        echo "  - Service modules tests (47 tests)"
+        echo "  - Health & Keyword tests (19 tests)"
+        echo "  - Index Calculation tests (24 tests)"
+        echo "  - Gap Analysis tests (47 tests)"
         echo ""
-        echo "=== Running Index-Cal-Gap-Analysis V2 tests ==="
-        ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh | tee -a test_output.log
+        
+        set -o pipefail
+        ./.claude/hooks/pre-commit-check.sh | tee test_output.log
         
     - name: Upload test results
       if: always()
@@ -288,12 +290,12 @@ jobs:
     - name: Smoke test with performance check
       run: |
         # 確保測試腳本有執行權限
-        chmod +x test/scripts/ci_smoke_test.sh
+        chmod +x test/scripts/ci_smoke_test_v2.sh
         
-        # 執行 smoke test
+        # 執行 smoke test v2 (使用真實 API 效能測試)
         CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
         API_URL=https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io \
-        ./test/scripts/ci_smoke_test.sh
+        ./test/scripts/ci_smoke_test_v2.sh
         
   notify:
     name: Notify Deployment Status
@@ -315,10 +317,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🎯 Deployment Validation" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Health check passed" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Smoke tests passed (3 critical endpoints)" >> $GITHUB_STEP_SUMMARY
-          echo "  - Keyword Extraction: < 4000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
-          echo "  - Index Calculation V2: < 2000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
-          echo "  - Index Cal & Gap Analysis V2: < 20000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Smoke tests passed (Real API Performance)" >> $GITHUB_STEP_SUMMARY
+          echo "  - Keyword Extraction: P95 < 4500ms SLA ✅" >> $GITHUB_STEP_SUMMARY
+          echo "  - Index Calculation V2: P50 < 1000ms, P95 < 2000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
+          echo "  - Gap Analysis V2: P50 < 25000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
         else
           echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
