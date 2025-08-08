@@ -65,14 +65,38 @@ main() {
     
     # Check API key
     if [ -z "$API_KEY" ]; then
-        log_message "${RED}ERROR: CONTAINER_APP_API_KEY not set${NC}"
-        exit 1
+        log_message "${YELLOW}WARNING: CONTAINER_APP_API_KEY not set, will try without authentication${NC}"
+        log_message "This may fail if the API requires authentication"
+    else
+        log_message "API Key configured (length: ${#API_KEY})"
     fi
     
     # Check API health first
     if ! check_api_health; then
         log_message "${RED}Aborting: API is not healthy${NC}"
         exit 1
+    fi
+    
+    # Test API Key validity with a request (must be > 200 chars)
+    log_message ""
+    log_message "Testing API Key validity..."
+    local auth_test=$(curl -s -X POST "$API_URL/api/v1/extract-jd-keywords" \
+        -H "Content-Type: application/json" \
+        -H "X-API-Key: $API_KEY" \
+        -d '{"jd_description":"Quick test for API key validation. We are looking for a software engineer with strong programming skills, experience in web development, and knowledge of modern frameworks. The candidate should have good communication skills and ability to work in a team environment."}' \
+        -w "\n%{http_code}" 2>/dev/null | tail -1)
+    
+    if [ "$auth_test" = "401" ]; then
+        log_message "  ${RED}✗ API Key is invalid (HTTP 401)${NC}"
+        log_message "  Please check CONTAINER_APP_API_KEY secret in GitHub"
+        exit 1
+    elif [ "$auth_test" = "422" ]; then
+        log_message "  ${YELLOW}⚠ Received HTTP 422 - Request validation error${NC}"
+        log_message "  This might be due to content length requirements"
+    elif [ "$auth_test" = "200" ]; then
+        log_message "  ${GREEN}✓ API Key is valid${NC}"
+    else
+        log_message "  ${YELLOW}⚠ Unexpected response: HTTP $auth_test${NC}"
     fi
     
     log_message ""
@@ -107,6 +131,9 @@ main() {
     local response_time=$(echo "$keyword_response" | tail -1)
     local response_time_ms=$(echo "$response_time * 1000" | bc | cut -d. -f1)
     
+    # Log the actual response for debugging
+    log_message "  Response body (first 500 chars): $(echo "$keyword_response" | head -c 500)"
+    
     if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 4500 ]; then
         local test_end=$(date +%s)
         local duration=$((test_end - test_start))
@@ -117,6 +144,8 @@ main() {
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         FAILED_TESTS=$((FAILED_TESTS + 1))
         log_message "  ${RED}✗ Keyword Extraction FAILED${NC} (HTTP $http_code, ${response_time_ms}ms)"
+        # Show actual error from API
+        log_message "  Error details: $(cat "$test_log" | grep -E "error|message" | head -2)"
         all_passed=false
     fi
     
@@ -129,12 +158,12 @@ main() {
     test_start=$(date +%s)
     test_log="$LOG_DIR/smoke_index_${TIMESTAMP}.log"
     
-    # Simple index calculation test - using single line JSON
+    # Simple index calculation test - using single line JSON (ensure > 200 chars each)
     local index_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
         -X POST "$API_URL/api/v1/index-calculation" \
         -H "Content-Type: application/json" \
         -H "X-API-Key: $API_KEY" \
-        -d '{"jd_info":"Looking for a Python developer with Django experience. Must have strong skills in PostgreSQL, REST APIs, and cloud platforms.","cv_info":"Experienced Python developer with 5 years of Django development. Proficient in PostgreSQL, RESTful API design, and AWS cloud services."}' 2>&1 | tee "$test_log")
+        -d '{"jd_info":"Looking for a Python developer with Django experience. Must have strong skills in PostgreSQL, REST APIs, and cloud platforms. The ideal candidate will have experience building scalable web applications, working with microservices architecture, and implementing CI/CD pipelines.","cv_info":"Experienced Python developer with 5 years of Django development. Proficient in PostgreSQL, RESTful API design, and AWS cloud services. Have built and deployed multiple production applications serving thousands of users. Strong background in software architecture and agile development methodologies."}' 2>&1 | tee "$test_log")
     
     http_code=$(echo "$index_response" | tail -2 | head -1)
     response_time=$(echo "$index_response" | tail -1)
@@ -162,13 +191,13 @@ main() {
     test_start=$(date +%s)
     test_log="$LOG_DIR/smoke_gap_${TIMESTAMP}.log"
     
-    # Simple gap analysis test - using single line JSON
+    # Simple gap analysis test - using single line JSON (ensure > 200 chars each)
     local gap_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
         --max-time 30 \
         -X POST "$API_URL/api/v1/index-cal-and-gap-analysis" \
         -H "Content-Type: application/json" \
         -H "X-API-Key: $API_KEY" \
-        -d '{"jd_info":"We need a Senior Full Stack Developer with expertise in React, Node.js, and MongoDB. The ideal candidate should have experience with microservices architecture, GraphQL, and containerization technologies.","cv_info":"Full Stack Developer with 3 years of experience in React and Node.js. Familiar with MongoDB and REST APIs. Some exposure to Docker."}' 2>&1 | tee "$test_log")
+        -d '{"jd_info":"We need a Senior Full Stack Developer with expertise in React, Node.js, and MongoDB. The ideal candidate should have experience with microservices architecture, GraphQL, and containerization technologies. Strong understanding of software design patterns, test-driven development, and continuous integration practices is essential.","cv_info":"Full Stack Developer with 3 years of experience in React and Node.js. Familiar with MongoDB and REST APIs. Some exposure to Docker. Have worked on several web applications using modern JavaScript frameworks. Experience with agile development, code reviews, and collaborative development using Git. Passionate about learning new technologies and best practices."}' 2>&1 | tee "$test_log")
     
     http_code=$(echo "$gap_response" | tail -2 | head -1)
     response_time=$(echo "$gap_response" | tail -1)
