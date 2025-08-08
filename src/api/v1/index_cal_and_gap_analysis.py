@@ -18,8 +18,6 @@ from src.models.response import (
     create_success_response,
     create_validation_error_response,
 )
-from src.services.gap_analysis import GapAnalysisService
-from src.services.index_calculation import IndexCalculationService
 
 
 # Request/Response Models
@@ -221,8 +219,7 @@ async def _execute_v2_analysis(
                 "matched_keywords_count": len(index_result["keyword_coverage"]["covered_keywords"]),
                 "missed_keywords_count": len(index_result["keyword_coverage"]["missed_keywords"]),
 
-                # Implementation version
-                "implementation_version": "v2"
+
             }
         )
 
@@ -280,108 +277,7 @@ async def _execute_v2_analysis(
         raise
 
 
-async def _execute_v1_analysis(
-    request: IndexCalAndGapAnalysisRequest,
-    keywords_list: list[str],
-    start_time: float
-) -> UnifiedResponse:
-    """
-    Execute analysis using V1 implementation (existing logic).
 
-    Args:
-        request: API request data
-        keywords_list: Processed keywords list
-        start_time: Request start time for timing
-
-    Returns:
-        UnifiedResponse with V1 analysis results
-    """
-    # Step 1: Calculate index
-    index_start_time = time.time()
-    index_service = IndexCalculationService()
-    index_result = await index_service.calculate_index(
-        resume=request.resume,
-        job_description=request.job_description,
-        keywords=keywords_list
-    )
-    index_end_time = time.time()
-
-    # Extract keyword coverage data
-    keyword_coverage = index_result["keyword_coverage"]
-
-    # Step 2: Perform gap analysis
-    gap_service = GapAnalysisService()
-    gap_result = await gap_service.analyze_gap(
-        job_description=request.job_description,
-        resume=request.resume,
-        job_keywords=keywords_list,
-        matched_keywords=keyword_coverage["covered_keywords"],
-        missing_keywords=keyword_coverage["missed_keywords"],
-        language=request.language
-    )
-    gap_end_time = time.time()
-
-    # Track V1 metrics
-    processing_time = time.time() - start_time
-    index_time = index_end_time - index_start_time
-    gap_time = gap_end_time - index_end_time
-
-    monitoring_service.track_event(
-        "IndexCalAndGapAnalysisV1Completed",
-        {
-            # Existing metrics
-            "raw_similarity": index_result["raw_similarity_percentage"],
-            "transformed_similarity": index_result["similarity_percentage"],
-            "keyword_coverage": keyword_coverage["coverage_percentage"],
-            "language": request.language,
-            "skills_identified": len(gap_result.get("SkillSearchQueries", [])),
-
-            # Time metrics
-            "total_time_ms": round(processing_time * 1000, 2),
-            "index_calc_time_ms": round(index_time * 1000, 2),
-            "gap_analysis_time_ms": round(gap_time * 1000, 2),
-
-            # Data size metrics
-            "resume_length": len(request.resume),
-            "jd_length": len(request.job_description),
-            "keywords_count": len(keywords_list),
-
-            # Result metrics
-            "matched_keywords_count": len(keyword_coverage["covered_keywords"]),
-            "missed_keywords_count": len(keyword_coverage["missed_keywords"]),
-
-            # Implementation version
-            "implementation_version": "v1"
-        }
-    )
-
-    # Create response data
-    response_data = IndexCalAndGapAnalysisData(
-        raw_similarity_percentage=index_result["raw_similarity_percentage"],
-        similarity_percentage=index_result["similarity_percentage"],
-        keyword_coverage=KeywordCoverageData(**keyword_coverage),
-        gap_analysis=GapAnalysisData(
-            CoreStrengths=gap_result.get("CoreStrengths", ""),
-            KeyGaps=gap_result.get("KeyGaps", ""),
-            QuickImprovements=gap_result.get("QuickImprovements", ""),
-            OverallAssessment=gap_result.get("OverallAssessment", ""),
-            SkillSearchQueries=[
-                SkillQuery(**skill)
-                for skill in gap_result.get("SkillSearchQueries", [])
-            ]
-        )
-    )
-
-    logger.info(
-        f"V1 Index calculation and gap analysis completed: "
-        f"similarity={index_result['similarity_percentage']}%, "
-        f"coverage={keyword_coverage['coverage_percentage']}%, "
-        f"skills={len(gap_result.get('SkillSearchQueries', []))}, "
-        f"language={request.language}, "
-        f"time={processing_time:.2f}s"
-    )
-
-    return create_success_response(data=response_data.model_dump())
 
 async def calculate_index_and_analyze_gap(
     request: IndexCalAndGapAnalysisRequest,
@@ -390,6 +286,8 @@ async def calculate_index_and_analyze_gap(
 ) -> UnifiedResponse:
     """
     Calculate similarity index and perform gap analysis with enhanced error handling.
+
+    Uses V2 implementation (V1 has been removed for code simplification).
 
     Args:
         request: Combined calculation and analysis request data
@@ -423,27 +321,10 @@ async def calculate_index_and_analyze_gap(
             f"language={request.language}"
         )
 
-        # Feature flag check for V2 implementation
-        from src.utils.feature_flags import FeatureFlags
-
-        # Extract user identifier from request headers (if available)
-        user_id = req.headers.get('x-user-id', req.headers.get('x-api-key', ''))
-        use_v2 = FeatureFlags.should_use_v2(user_id)
-
-        if use_v2:
-            # Use V2 implementation
-            result = await _execute_v2_analysis(
-                request, keywords_list, start_time
-            )
-        else:
-            # Use V1 implementation (existing)
-            result = await _execute_v1_analysis(
-                request, keywords_list, start_time
-            )
-
-        # Add implementation version to response
-        if isinstance(result.data, dict):
-            result.data["implementation_version"] = "v2" if use_v2 else "v1"
+        # Execute V2 analysis (V1 has been removed)
+        result = await _execute_v2_analysis(
+            request, keywords_list, start_time
+        )
 
         return result
 
@@ -531,26 +412,17 @@ async def calculate_index_and_analyze_gap(
                 ).model_dump()
             ) from e
 
-        # Enhanced error handling with implementation version info
-        implementation_version = "unknown"
-        try:
-            from src.utils.feature_flags import FeatureFlags
-            user_id = req.headers.get('x-user-id', req.headers.get('x-api-key', ''))
-            implementation_version = "v2" if FeatureFlags.should_use_v2(user_id) else "v1"
-        except Exception as ex:
-            logger.warning(f"Failed to determine implementation version: {ex}")
-
+        # General error handling (simplified without version checking)
         processing_time = time.time() - start_time
 
-        # Log and track error with version info
-        logger.error(f"Index cal and gap analysis error ({implementation_version}): {e}")
+        # Log and track error
+        logger.error(f"Index cal and gap analysis error: {e}")
         monitoring_service.track_event(
-            f"IndexCalAndGapAnalysis{implementation_version.upper()}Error",
+            "IndexCalAndGapAnalysisV2Error",
             {
                 "error_message": str(e),
                 "error_type": type(e).__name__,
-                "processing_time_ms": round(processing_time * 1000, 2),
-                "implementation_version": implementation_version
+                "processing_time_ms": round(processing_time * 1000, 2)
             }
         )
 
@@ -610,7 +482,7 @@ async def calculate_index_and_analyze_gap(
                                 "OverallAssessment": "<p>Strong backend developer</p>",
                                 "SkillSearchQueries": []
                             },
-                            "implementation_version": "v2"
+
                         },
                         "error": {"code": "", "message": "", "details": ""},
                         "timestamp": "2025-08-03T10:30:00.000Z"

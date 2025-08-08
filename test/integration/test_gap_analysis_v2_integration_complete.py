@@ -482,9 +482,7 @@ class TestGapAnalysisV2IntegrationComplete:
         assert "raw_similarity_percentage" in result
         assert "similarity_percentage" in result
 
-        # V2 may include additional fields
-        if "implementation_version" in result:
-            assert result["implementation_version"] == "v2"
+        # V2 format validation (implementation_version removed after V1 cleanup)
 
     # TEST: API-GAP-009-IT
     @pytest.mark.integration

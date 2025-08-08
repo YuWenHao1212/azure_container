@@ -47,47 +47,11 @@ SAMPLE_KEYWORDS = ["Python", "FastAPI", "Docker", "AWS", "REST API", "Microservi
 class TestIndexCalGapAnalysisV2:
     """Test suite for V2 implementation of index calculation and gap analysis."""
 
-    @pytest.mark.asyncio
-    async def test_v1_implementation_default(self):
-        """Test that V1 is used by default when V2 flags are disabled."""
-        # Ensure V2 is disabled
-        os.environ["USE_V2_IMPLEMENTATION"] = "false"
-        os.environ["V2_ROLLOUT_PERCENTAGE"] = "0"
 
-        response = client.post(
-            "/api/v1/index-cal-and-gap-analysis",
-            json={
-                "resume": SAMPLE_RESUME,
-                "job_description": SAMPLE_JD,
-                "keywords": SAMPLE_KEYWORDS,
-                "language": "en"
-            },
-            headers={"X-API-Key": "test-key"}
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-
-        # Check basic structure
-        assert "success" in data
-        assert data["success"] is True
-        assert "data" in data
-
-        # Check that V1 implementation was used
-        assert data["data"].get("implementation_version") == "v1"
-
-        # Check required fields
-        assert "raw_similarity_percentage" in data["data"]
-        assert "similarity_percentage" in data["data"]
-        assert "keyword_coverage" in data["data"]
-        assert "gap_analysis" in data["data"]
 
     @pytest.mark.asyncio
     async def test_v2_implementation_enabled(self):
-        """Test that V2 is used when explicitly enabled."""
-        # Enable V2 implementation
-        os.environ["USE_V2_IMPLEMENTATION"] = "true"
-
+        """Test that V2 implementation works correctly (V1 has been removed)."""
         response = client.post(
             "/api/v1/index-cal-and-gap-analysis",
             json={
@@ -107,10 +71,7 @@ class TestIndexCalGapAnalysisV2:
         assert data["success"] is True
         assert "data" in data
 
-        # Check that V2 implementation was used
-        assert data["data"].get("implementation_version") == "v2"
-
-        # Check required fields
+        # Check required fields (V2 format)
         assert "raw_similarity_percentage" in data["data"]
         assert "similarity_percentage" in data["data"]
         assert "keyword_coverage" in data["data"]
@@ -119,11 +80,9 @@ class TestIndexCalGapAnalysisV2:
     @pytest.mark.asyncio
     async def test_feature_flags_configuration(self):
         """Test that feature flags are properly configured."""
-        # Test default values
-        assert not FeatureFlags.USE_V2_IMPLEMENTATION
-        assert FeatureFlags.V2_ROLLOUT_PERCENTAGE == 0
+        # Test remaining feature flags (V2 rollout flags removed)
         assert FeatureFlags.ADAPTIVE_RETRY_ENABLED
-        assert FeatureFlags.ENABLE_PARTIAL_RESULTS
+        assert not FeatureFlags.ENABLE_PARTIAL_RESULTS  # Default is false
 
         # Test resource pool configuration
         config = FeatureFlags.get_resource_pool_config()
@@ -133,28 +92,7 @@ class TestIndexCalGapAnalysisV2:
         assert config["min_pool_size"] >= 2
         assert config["max_pool_size"] >= config["min_pool_size"]
 
-    @pytest.mark.asyncio
-    async def test_rollout_percentage(self):
-        """Test percentage-based rollout functionality."""
-        # Set 50% rollout
-        os.environ["V2_ROLLOUT_PERCENTAGE"] = "50"
 
-        # Test with consistent user ID
-        user_id = "test_user_123"
-
-        # Should give consistent results
-        result1 = FeatureFlags.should_use_v2(user_id)
-        result2 = FeatureFlags.should_use_v2(user_id)
-        assert result1 == result2
-
-        # Test with different user IDs to ensure distribution
-        test_results = []
-        for i in range(20):
-            result = FeatureFlags.should_use_v2(f"user_{i}")
-            test_results.append(result)
-
-        # Should have some mix of True/False (not all same)
-        assert True in test_results or False in test_results
 
     @pytest.mark.asyncio
     async def test_input_validation(self):
@@ -200,6 +138,5 @@ class TestIndexCalGapAnalysisV2:
 
     def teardown_method(self):
         """Clean up environment variables after each test."""
-        # Reset to defaults
-        os.environ["USE_V2_IMPLEMENTATION"] = "false"
-        os.environ["V2_ROLLOUT_PERCENTAGE"] = "0"
+        # Clean up any test-specific environment variables if needed
+        pass

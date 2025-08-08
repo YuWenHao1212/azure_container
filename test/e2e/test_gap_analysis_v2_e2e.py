@@ -179,8 +179,7 @@ class TestGapAnalysisV2E2E:
             "SkillSearchQueries"
         ])
 
-        # Debug: Print implementation version
-        print(f"\n🔍 Implementation version: {result.get('implementation_version', 'unknown')}")
+        # Debug: Print API response format (V2 implementation only)
 
         # Debug: Print gap analysis content
         print("\n📋 Gap Analysis Response:")
@@ -280,8 +279,7 @@ class TestGapAnalysisV2E2E:
             if "IndexCalAndGapAnalysisV2Completed" in event_name:
                 properties = event.get("properties", {})
                 assert "total_time_ms" in properties
-                assert "implementation_version" in properties
-                assert properties["implementation_version"] == "v2"
+                # V2 implementation (implementation_version removed after V1 cleanup)
                 break
 
         # Verify metrics tracked
