@@ -15,7 +15,7 @@ import math
 import re
 import time
 from datetime import datetime, timedelta
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -487,7 +487,7 @@ class IndexCalculationServiceV2(BaseService):
     def _analyze_keyword_coverage(
         self,
         resume_text: str,
-        keywords: Union[list[str], str]
+        keywords: list[str] | str
     ) -> dict[str, Any]:
         """
         Analyze keyword coverage in resume text.
@@ -577,7 +577,7 @@ class IndexCalculationServiceV2(BaseService):
         self,
         resume: str,
         job_description: str,
-        keywords: Union[list[str], str],
+        keywords: list[str] | str,
         include_timing: bool = False
     ) -> dict[str, Any]:
         """

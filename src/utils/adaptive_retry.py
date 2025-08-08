@@ -8,7 +8,7 @@ import asyncio
 import logging
 import secrets
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +71,9 @@ class AdaptiveRetryStrategy:
     async def execute_with_retry(
         self,
         func: Callable,
-        error_classifier: Optional[Callable] = None,
-        on_retry: Optional[Callable] = None,
-        get_retry_after: Optional[Callable] = None
+        error_classifier: Callable | None = None,
+        on_retry: Callable | None = None,
+        get_retry_after: Callable | None = None
     ) -> Any:
         """
         Execute function with adaptive retry logic.

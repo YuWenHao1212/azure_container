@@ -6,7 +6,7 @@ Key component of Index Cal and Gap Analysis V2 refactoring.
 """
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 from src.core.config import get_settings
 from src.core.simple_prompt_manager import prompt_manager
@@ -87,7 +87,7 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
         job_description: str,
         index_result: dict[str, Any],
         language: str = "en",
-        options: Optional[dict[str, Any]] = None
+        options: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """
         Analyze gap with enhanced context from index calculation results.
@@ -172,7 +172,7 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
         job_description: str,
         index_result: dict[str, Any],
         language: str,
-        options: Optional[dict[str, Any]]
+        options: dict[str, Any] | None
     ) -> str:
         """
         Build enhanced prompt incorporating index calculation context.

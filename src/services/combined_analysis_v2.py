@@ -8,7 +8,7 @@ import asyncio
 import logging
 import os
 import time
-from typing import Any, Optional
+from typing import Any
 
 from src.services.base import BaseService
 from src.services.gap_analysis_v2 import GapAnalysisServiceV2
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class PartialFailureError(Exception):
     """Exception for partial failures with available data."""
 
-    def __init__(self, message: str, partial_data: dict[str, Any], details: Optional[dict] = None):
+    def __init__(self, message: str, partial_data: dict[str, Any], details: dict | None = None):
         super().__init__(message)
         self.partial_data = partial_data
         self.details = details or {}
@@ -48,10 +48,10 @@ class CombinedAnalysisServiceV2(BaseService):
 
     def __init__(
         self,
-        index_service: Optional[IndexCalculationServiceV2] = None,
-        gap_service: Optional[GapAnalysisServiceV2] = None,
-        resource_pool: Optional[ResourcePoolManager] = None,
-        enable_partial_results: Optional[bool] = None
+        index_service: IndexCalculationServiceV2 | None = None,
+        gap_service: GapAnalysisServiceV2 | None = None,
+        resource_pool: ResourcePoolManager | None = None,
+        enable_partial_results: bool | None = None
     ):
         """
         Initialize V2 combined analysis service.
@@ -102,7 +102,7 @@ class CombinedAnalysisServiceV2(BaseService):
         job_description: str,
         keywords: list[str],
         language: str = "en",
-        analysis_options: Optional[dict[str, Any]] = None
+        analysis_options: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """
         Execute combined analysis with V2 optimizations.
@@ -159,7 +159,7 @@ class CombinedAnalysisServiceV2(BaseService):
         job_description: str,
         keywords: list[str],
         language: str,
-        analysis_options: Optional[dict[str, Any]]
+        analysis_options: dict[str, Any] | None
     ) -> dict[str, Any]:
         """
         Execute analysis using three-phase parallel processing approach.
@@ -368,7 +368,7 @@ class CombinedAnalysisServiceV2(BaseService):
         else:
             return "general"
 
-    def _get_retry_after_from_error(self, error: Exception) -> Optional[int]:
+    def _get_retry_after_from_error(self, error: Exception) -> int | None:
         """
         Extract Retry-After value from error (Azure OpenAI rate limit errors).
 

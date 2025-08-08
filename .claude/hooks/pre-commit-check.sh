@@ -5,6 +5,15 @@
 # 確保在正確的工作目錄
 cd "${CLAUDE_PROJECT_DIR:-$(pwd)}" || exit 0
 
+# 檢查是否有 Python 版本的檢查腳本
+if [ -f "test/scripts/pre_commit_check_advanced.py" ]; then
+    echo "使用 Python 進階版 pre-commit 檢查..."
+    python test/scripts/pre_commit_check_advanced.py
+    exit $?
+fi
+
+# 如果 Python 版本不存在，繼續使用原始 shell 版本
+
 # Global variables for collecting test results
 SCRIPT_START_TIME=$(date +%s.%N)
 

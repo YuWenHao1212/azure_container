@@ -86,21 +86,32 @@ jobs:
         
     - name: Run tests
       run: |
+        # 安裝測試依賴
+        pip install pytest pytest-json-report
+        
         # 確保測試腳本有執行權限
+        chmod +x test/scripts/pre_commit_check_advanced.py
         chmod +x .claude/hooks/pre-commit-check.sh
         
-        # 執行完整測試套件 (包含所有測試)
-        echo "=== Running complete test suite with pre-commit check ==="
+        # 執行完整測試套件 (包含所有測試) - 使用 Python 版本
+        echo "=== Running complete test suite with Python pre-commit check ==="
         echo "This includes:"
         echo "  - Ruff code style check"
         echo "  - Service modules tests (47 tests)"
         echo "  - Health & Keyword tests (19 tests)"
         echo "  - Index Calculation tests (24 tests)"
         echo "  - Gap Analysis tests (47 tests)"
+        echo "Total: 137 tests"
         echo ""
         
-        set -o pipefail
-        ./.claude/hooks/pre-commit-check.sh | tee test_output.log
+        # 優先使用 Python 版本
+        if [ -f "test/scripts/pre_commit_check_advanced.py" ]; then
+            python test/scripts/pre_commit_check_advanced.py | tee test_output.log
+        else
+            # Fallback to shell version
+            set -o pipefail
+            ./.claude/hooks/pre-commit-check.sh | tee test_output.log
+        fi
         
     - name: Upload test results
       if: always()
