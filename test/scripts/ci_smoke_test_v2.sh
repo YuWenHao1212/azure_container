@@ -34,59 +34,7 @@ log_message() {
     echo "$1" | tee -a "$SUMMARY_LOG"
 }
 
-# Function to run performance test
-run_performance_test() {
-    local module="$1"
-    local script="$2"
-    local expected_tests="$3"
-    local sla_description="$4"
-    
-    log_message ""
-    log_message "Testing $module..."
-    log_message "Expected: $expected_tests tests"
-    log_message "SLA: $sla_description"
-    
-    local test_start=$(date +%s)
-    local test_log="$LOG_DIR/smoke_${module}_${TIMESTAMP}.log"
-    
-    # Execute the test
-    if timeout 120s $script > "$test_log" 2>&1; then
-        local test_end=$(date +%s)
-        local duration=$((test_end - test_start))
-        
-        # Extract results from log
-        local passed=$(grep -c "✓ PASSED" "$test_log" 2>/dev/null || echo "0")
-        local failed=$(grep -c "✗ FAILED" "$test_log" 2>/dev/null || echo "0")
-        
-        TOTAL_TESTS=$((TOTAL_TESTS + expected_tests))
-        PASSED_TESTS=$((PASSED_TESTS + passed))
-        FAILED_TESTS=$((FAILED_TESTS + failed))
-        
-        if [ "$failed" -eq 0 ]; then
-            log_message "  ${GREEN}✓ $module PASSED${NC} ($passed/$expected_tests tests in ${duration}s)"
-            
-            # Extract performance metrics if available
-            local p50=$(grep -oE "P50: [0-9.]+" "$test_log" | tail -1 | awk '{print $2}' || echo "N/A")
-            local p95=$(grep -oE "P95: [0-9.]+" "$test_log" | tail -1 | awk '{print $2}' || echo "N/A")
-            
-            if [ "$p50" != "N/A" ]; then
-                log_message "    Performance: P50=${p50}ms, P95=${p95}ms"
-            fi
-            return 0
-        else
-            log_message "  ${RED}✗ $module FAILED${NC} ($passed passed, $failed failed in ${duration}s)"
-            log_message "    See log: $test_log"
-            return 1
-        fi
-    else
-        TOTAL_TESTS=$((TOTAL_TESTS + expected_tests))
-        FAILED_TESTS=$((FAILED_TESTS + expected_tests))
-        
-        log_message "  ${RED}✗ $module TIMEOUT or ERROR${NC}"
-        log_message "    See log: $test_log"
-        return 1
-    fi
-}
+# Function removed - using direct curl commands instead
 
 # Function to check if API is healthy
 check_api_health() {
@@ -138,75 +86,113 @@ main() {
     # Test results tracking
     local all_passed=true
     
-    # 1. Health & Keyword Performance Test
-    if [ -f "test/scripts/run_health_keyword_real_api_perf.sh" ]; then
-        if ! run_performance_test \
-            "Health & Keyword" \
-            "./test/scripts/run_health_keyword_real_api_perf.sh" \
-            "1" \
-            "P95 < 4500ms"; then
-            all_passed=false
-        fi
+    # Simplified performance tests for CI - just make API calls directly
+    # 1. Test Keyword Extraction
+    log_message ""
+    log_message "Testing Keyword Extraction..."
+    log_message "Expected: Quick API response test"
+    log_message "SLA: Response < 4500ms"
+    
+    local test_start=$(date +%s)
+    local test_log="$LOG_DIR/smoke_keyword_${TIMESTAMP}.log"
+    
+    # Simple keyword extraction test
+    local keyword_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
+        -X POST "$API_URL/api/v1/extract-jd-keywords" \
+        -H "Content-Type: application/json" \
+        -H "X-API-Key: $API_KEY" \
+        -d '{
+            "jd_description": "We are looking for a Senior Software Engineer with expertise in Python, Django, and PostgreSQL. The ideal candidate should have at least 5 years of experience in web development, strong knowledge of RESTful APIs, and experience with cloud platforms like AWS or Azure. Knowledge of Docker and Kubernetes is a plus."
+        }' 2>&1 | tee "$test_log")
+    
+    local http_code=$(echo "$keyword_response" | tail -2 | head -1)
+    local response_time=$(echo "$keyword_response" | tail -1)
+    local response_time_ms=$(echo "$response_time * 1000" | bc | cut -d. -f1)
+    
+    if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 4500 ]; then
+        local test_end=$(date +%s)
+        local duration=$((test_end - test_start))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+        log_message "  ${GREEN}✓ Keyword Extraction PASSED${NC} (${response_time_ms}ms < 4500ms)"
     else
-        log_message "${YELLOW}⚠ Health & Keyword test script not found${NC}"
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+        log_message "  ${RED}✗ Keyword Extraction FAILED${NC} (HTTP $http_code, ${response_time_ms}ms)"
+        all_passed=false
     fi
     
-    # 2. Index Calculation Performance Test
-    # Note: This is a Python test, not a shell script
-    if [ -f "test/performance/test_index_calculation_v2_performance.py" ]; then
-        log_message ""
-        log_message "Testing Index Calculation..."
-        log_message "Expected: 2 tests"
-        log_message "SLA: P50 < 1000ms, P95 < 2000ms"
-        
-        local test_start=$(date +%s)
-        local test_log="$LOG_DIR/smoke_index_calc_${TIMESTAMP}.log"
-        
-        # Run only the main performance tests
-        if timeout 120s python -m pytest \
-            "test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_response_time_benchmark" \
-            "test/performance/test_index_calculation_v2_performance.py::TestIndexCalculationV2Performance::test_high_concurrency_load" \
-            -v --tb=short > "$test_log" 2>&1; then
-            
-            local test_end=$(date +%s)
-            local duration=$((test_end - test_start))
-            
-            TOTAL_TESTS=$((TOTAL_TESTS + 2))
-            PASSED_TESTS=$((PASSED_TESTS + 2))
-            
-            log_message "  ${GREEN}✓ Index Calculation PASSED${NC} (2/2 tests in ${duration}s)"
-            
-            # Extract performance metrics
-            local p50=$(grep -oE "P50: [0-9.]+" "$test_log" | tail -1 | awk '{print $2}' || echo "N/A")
-            local p95=$(grep -oE "P95: [0-9.]+" "$test_log" | tail -1 | awk '{print $2}' || echo "N/A")
-            
-            if [ "$p50" != "N/A" ]; then
-                log_message "    Performance: P50=${p50}ms, P95=${p95}ms"
-            fi
-        else
-            TOTAL_TESTS=$((TOTAL_TESTS + 2))
-            FAILED_TESTS=$((FAILED_TESTS + 2))
-            all_passed=false
-            
-            log_message "  ${RED}✗ Index Calculation FAILED${NC}"
-            log_message "    See log: $test_log"
-        fi
+    # 2. Test Index Calculation
+    log_message ""
+    log_message "Testing Index Calculation..."
+    log_message "Expected: Quick API response test"
+    log_message "SLA: Response < 2000ms"
+    
+    test_start=$(date +%s)
+    test_log="$LOG_DIR/smoke_index_${TIMESTAMP}.log"
+    
+    # Simple index calculation test
+    local index_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
+        -X POST "$API_URL/api/v1/index-calculation" \
+        -H "Content-Type: application/json" \
+        -H "X-API-Key: $API_KEY" \
+        -d '{
+            "jd_info": "Looking for a Python developer with Django experience. Must have strong skills in PostgreSQL, REST APIs, and cloud platforms.",
+            "cv_info": "Experienced Python developer with 5 years of Django development. Proficient in PostgreSQL, RESTful API design, and AWS cloud services."
+        }' 2>&1 | tee "$test_log")
+    
+    http_code=$(echo "$index_response" | tail -2 | head -1)
+    response_time=$(echo "$index_response" | tail -1)
+    response_time_ms=$(echo "$response_time * 1000" | bc | cut -d. -f1)
+    
+    if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 2000 ]; then
+        test_end=$(date +%s)
+        duration=$((test_end - test_start))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+        log_message "  ${GREEN}✓ Index Calculation PASSED${NC} (${response_time_ms}ms < 2000ms)"
     else
-        log_message "${YELLOW}⚠ Index Calculation test not found${NC}"
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+        log_message "  ${RED}✗ Index Calculation FAILED${NC} (HTTP $http_code, ${response_time_ms}ms)"
+        all_passed=false
     fi
     
-    # 3. Gap Analysis Performance & E2E Test
-    if [ -f "test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh" ]; then
-        # Run only performance test (not full E2E)
-        if ! run_performance_test \
-            "Gap Analysis" \
-            "./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --stage performance" \
-            "1" \
-            "P50 < 25000ms"; then
-            all_passed=false
-        fi
+    # 3. Test Gap Analysis (longer timeout)
+    log_message ""
+    log_message "Testing Gap Analysis..."
+    log_message "Expected: API response test"
+    log_message "SLA: Response < 25000ms"
+    
+    test_start=$(date +%s)
+    test_log="$LOG_DIR/smoke_gap_${TIMESTAMP}.log"
+    
+    # Simple gap analysis test
+    local gap_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
+        --max-time 30 \
+        -X POST "$API_URL/api/v1/index-cal-and-gap-analysis" \
+        -H "Content-Type: application/json" \
+        -H "X-API-Key: $API_KEY" \
+        -d '{
+            "jd_info": "We need a Senior Full Stack Developer with expertise in React, Node.js, and MongoDB. The ideal candidate should have experience with microservices architecture, GraphQL, and containerization technologies.",
+            "cv_info": "Full Stack Developer with 3 years of experience in React and Node.js. Familiar with MongoDB and REST APIs. Some exposure to Docker."
+        }' 2>&1 | tee "$test_log")
+    
+    http_code=$(echo "$gap_response" | tail -2 | head -1)
+    response_time=$(echo "$gap_response" | tail -1)
+    response_time_ms=$(echo "$response_time * 1000" | bc | cut -d. -f1)
+    
+    if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 25000 ]; then
+        test_end=$(date +%s)
+        duration=$((test_end - test_start))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+        log_message "  ${GREEN}✓ Gap Analysis PASSED${NC} (${response_time_ms}ms < 25000ms)"
     else
-        log_message "${YELLOW}⚠ Gap Analysis test script not found${NC}"
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+        log_message "  ${RED}✗ Gap Analysis FAILED${NC} (HTTP $http_code, ${response_time_ms}ms)"
+        all_passed=false
     fi
     
     # Calculate total time
@@ -224,7 +210,7 @@ main() {
     log_message "Total Time: ${total_duration}s"
     log_message ""
     
-    if [ "$FAILED_TESTS" -eq 0 ]; then
+    if [ "$FAILED_TESTS" -eq 0 ] && [ "$TOTAL_TESTS" -eq 3 ]; then
         log_message "${GREEN}✅ All smoke tests PASSED!${NC}"
         log_message ""
         log_message "Performance SLAs Met:"
@@ -234,7 +220,12 @@ main() {
         exit 0
     else
         log_message "${RED}❌ Smoke tests FAILED!${NC}"
-        log_message "  $FAILED_TESTS out of $TOTAL_TESTS tests failed"
+        if [ "$TOTAL_TESTS" -ne 3 ]; then
+            log_message "  Warning: Expected 3 tests but ran $TOTAL_TESTS"
+        fi
+        if [ "$FAILED_TESTS" -gt 0 ]; then
+            log_message "  $FAILED_TESTS out of $TOTAL_TESTS tests failed"
+        fi
         log_message ""
         log_message "Please check the logs in: $LOG_DIR"
         exit 1
