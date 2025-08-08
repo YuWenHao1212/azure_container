@@ -332,24 +332,34 @@ run_integration_tests() {
     
     # First run gap analysis tests
     echo -e "  Running gap_analysis_v2_integration_complete.py..."
-    if $python_cmd -m pytest test/integration/test_gap_analysis_v2_integration_complete.py -v --tb=short --durations=0 > "${test_output_file}.gap" 2>&1; then
-        gap_analysis_passed=$(grep -E "passed" "${test_output_file}.gap" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
-        gap_analysis_failed=$(grep -E "failed" "${test_output_file}.gap" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+    $python_cmd -m pytest test/integration/test_gap_analysis_v2_integration_complete.py -v --tb=short --durations=0 > "${test_output_file}.gap" 2>&1
+    # Always parse the output regardless of exit code
+    gap_analysis_passed=$(grep -E "passed" "${test_output_file}.gap" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+    gap_analysis_failed=$(grep -E "failed" "${test_output_file}.gap" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+    
+    if [ "$gap_analysis_failed" -gt 0 ]; then
+        echo -e "    ${RED}✗ Some tests failed${NC}"
+    elif [ "$gap_analysis_passed" -gt 0 ]; then
+        echo -e "    ${GREEN}✓ All tests passed${NC}"
     else
-        gap_analysis_passed=0
-        gap_analysis_failed=17
         echo -e "    ${RED}✗ Test execution failed${NC}"
+        gap_analysis_failed=17
     fi
     
     # Then run error handling tests
     echo -e "  Running error_handling_v2.py..."
-    if $python_cmd -m pytest test/integration/test_error_handling_v2.py -v --tb=short --durations=0 > "${test_output_file}.error" 2>&1; then
-        error_handling_passed=$(grep -E "passed" "${test_output_file}.error" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
-        error_handling_failed=$(grep -E "failed" "${test_output_file}.error" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+    $python_cmd -m pytest test/integration/test_error_handling_v2.py -v --tb=short --durations=0 > "${test_output_file}.error" 2>&1
+    # Always parse the output regardless of exit code
+    error_handling_passed=$(grep -E "passed" "${test_output_file}.error" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+    error_handling_failed=$(grep -E "failed" "${test_output_file}.error" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+    
+    if [ "$error_handling_failed" -gt 0 ]; then
+        echo -e "    ${RED}✗ Some tests failed${NC}"
+    elif [ "$error_handling_passed" -gt 0 ]; then
+        echo -e "    ${GREEN}✓ All tests passed${NC}"
     else
-        error_handling_passed=0
-        error_handling_failed=10
         echo -e "    ${RED}✗ Test execution failed${NC}"
+        error_handling_failed=10
     fi
     
     # Combine results into single output file
