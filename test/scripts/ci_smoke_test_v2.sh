@@ -6,12 +6,22 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colors for output - disable in CI environment
+if [ -t 1 ] && [ -z "$CI" ]; then
+    # Terminal supports colors and not in CI
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m'
+else
+    # No colors in CI or non-terminal
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+fi
 
 # Configuration from environment
 API_URL="${API_URL:-https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io}"
@@ -19,6 +29,7 @@ API_KEY="${CONTAINER_APP_API_KEY}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOG_DIR="test/logs"
 SUMMARY_LOG="$LOG_DIR/smoke_test_${TIMESTAMP}.log"
+PERF_LOG="$LOG_DIR/performance_metrics.jsonl"  # JSON Lines format for metrics
 
 # Create log directory if not exists
 mkdir -p "$LOG_DIR"
@@ -28,6 +39,11 @@ TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
 START_TIME=$(date +%s)
+
+# Performance metrics tracking
+KEYWORD_TIME_MS=0
+INDEX_TIME_MS=0
+GAP_TIME_MS=0
 
 # Function to log message
 log_message() {
@@ -45,10 +61,10 @@ check_api_health() {
         "$API_URL/health")
     
     if [ "$response" -eq 200 ]; then
-        log_message "  ${GREEN}✓ API is healthy${NC}"
+        log_message "  ✓ API is healthy"
         return 0
     else
-        log_message "  ${RED}✗ API health check failed (HTTP $response)${NC}"
+        log_message "  ✗ API health check failed (HTTP $response)"
         return 1
     fi
 }
@@ -65,7 +81,7 @@ main() {
     
     # Check API key
     if [ -z "$API_KEY" ]; then
-        log_message "${YELLOW}WARNING: CONTAINER_APP_API_KEY not set, will try without authentication${NC}"
+        log_message "WARNING: CONTAINER_APP_API_KEY not set, will try without authentication"
         log_message "This may fail if the API requires authentication"
     else
         log_message "API Key configured (length: ${#API_KEY})"
@@ -73,7 +89,7 @@ main() {
     
     # Check API health first
     if ! check_api_health; then
-        log_message "${RED}Aborting: API is not healthy${NC}"
+        log_message "Aborting: API is not healthy"
         exit 1
     fi
     
@@ -87,16 +103,16 @@ main() {
         -w "\n%{http_code}" 2>/dev/null | tail -1)
     
     if [ "$auth_test" = "401" ]; then
-        log_message "  ${RED}✗ API Key is invalid (HTTP 401)${NC}"
+        log_message "  ✗ API Key is invalid (HTTP 401)"
         log_message "  Please check CONTAINER_APP_API_KEY secret in GitHub"
         exit 1
     elif [ "$auth_test" = "422" ]; then
-        log_message "  ${YELLOW}⚠ Received HTTP 422 - Request validation error${NC}"
+        log_message "  ⚠ Received HTTP 422 - Request validation error"
         log_message "  This might be due to content length requirements"
     elif [ "$auth_test" = "200" ]; then
-        log_message "  ${GREEN}✓ API Key is valid${NC}"
+        log_message "  ✓ API Key is valid"
     else
-        log_message "  ${YELLOW}⚠ Unexpected response: HTTP $auth_test${NC}"
+        log_message "  ⚠ Unexpected response: HTTP $auth_test"
     fi
     
     log_message ""
@@ -131,19 +147,19 @@ main() {
     local response_time=$(echo "$keyword_response" | tail -1)
     local response_time_ms=$(echo "$response_time * 1000" | bc | cut -d. -f1)
     
-    # Log the actual response for debugging
-    log_message "  Response body (first 500 chars): $(echo "$keyword_response" | head -c 500)"
+    # Debug output removed for cleaner CI logs
     
     if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 4500 ]; then
         local test_end=$(date +%s)
         local duration=$((test_end - test_start))
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         PASSED_TESTS=$((PASSED_TESTS + 1))
-        log_message "  ${GREEN}✓ Keyword Extraction PASSED${NC} (${response_time_ms}ms < 4500ms)"
+        KEYWORD_TIME_MS=$response_time_ms
+        log_message "  ✓ Keyword Extraction PASSED (${response_time_ms}ms < 4500ms)"
     else
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         FAILED_TESTS=$((FAILED_TESTS + 1))
-        log_message "  ${RED}✗ Keyword Extraction FAILED${NC} (HTTP $http_code, ${response_time_ms}ms)"
+        log_message "  ✗ Keyword Extraction FAILED (HTTP $http_code, ${response_time_ms}ms)"
         # Show actual error from API
         log_message "  Error details: $(cat "$test_log" | grep -E "error|message" | head -2)"
         all_passed=false
@@ -174,11 +190,12 @@ main() {
         duration=$((test_end - test_start))
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         PASSED_TESTS=$((PASSED_TESTS + 1))
-        log_message "  ${GREEN}✓ Index Calculation PASSED${NC} (${response_time_ms}ms < 2000ms)"
+        INDEX_TIME_MS=$response_time_ms
+        log_message "  ✓ Index Calculation PASSED (${response_time_ms}ms < 2000ms)"
     else
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         FAILED_TESTS=$((FAILED_TESTS + 1))
-        log_message "  ${RED}✗ Index Calculation FAILED${NC} (HTTP $http_code, ${response_time_ms}ms)"
+        log_message "  ✗ Index Calculation FAILED (HTTP $http_code, ${response_time_ms}ms)"
         all_passed=false
     fi
     
@@ -203,19 +220,19 @@ main() {
     response_time=$(echo "$gap_response" | tail -1)
     response_time_ms=$(echo "$response_time * 1000" | bc | cut -d. -f1)
     
-    # Log the actual response for debugging
-    log_message "  Response body (first 500 chars): $(echo "$gap_response" | head -c 500)"
+    # Debug output removed for cleaner CI logs
     
     if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 25000 ]; then
         test_end=$(date +%s)
         duration=$((test_end - test_start))
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         PASSED_TESTS=$((PASSED_TESTS + 1))
-        log_message "  ${GREEN}✓ Gap Analysis PASSED${NC} (${response_time_ms}ms < 25000ms)"
+        GAP_TIME_MS=$response_time_ms
+        log_message "  ✓ Gap Analysis PASSED (${response_time_ms}ms < 25000ms)"
     else
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         FAILED_TESTS=$((FAILED_TESTS + 1))
-        log_message "  ${RED}✗ Gap Analysis FAILED${NC} (HTTP $http_code, ${response_time_ms}ms)"
+        log_message "  ✗ Gap Analysis FAILED (HTTP $http_code, ${response_time_ms}ms)"
         # Show actual error from API
         log_message "  Error details: $(cat "$test_log" | grep -E "error|message" | head -2)"
         all_passed=false
@@ -224,6 +241,32 @@ main() {
     # Calculate total time
     local end_time=$(date +%s)
     local total_duration=$((end_time - START_TIME))
+    
+    # Save performance metrics to JSON Lines file
+    if [ "$TOTAL_TESTS" -eq 3 ]; then
+        local commit_sha="${GITHUB_SHA:-unknown}"
+        local github_run_id="${GITHUB_RUN_ID:-0}"
+        local perf_json="{"
+        perf_json+="\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
+        perf_json+="\"commit_sha\":\"$commit_sha\","
+        perf_json+="\"github_run_id\":\"$github_run_id\","
+        perf_json+="\"environment\":\"production\","
+        perf_json+="\"tests_passed\":$PASSED_TESTS,"
+        perf_json+="\"tests_failed\":$FAILED_TESTS,"
+        perf_json+="\"keyword_extraction_ms\":$KEYWORD_TIME_MS,"
+        perf_json+="\"index_calculation_ms\":$INDEX_TIME_MS,"
+        perf_json+="\"gap_analysis_ms\":$GAP_TIME_MS,"
+        perf_json+="\"total_duration_s\":$total_duration"
+        perf_json+="}"
+        
+        # Append to performance log (create if doesn't exist)
+        echo "$perf_json" >> "$PERF_LOG"
+        
+        # Keep only last 100 entries to avoid file growing too large
+        if [ -f "$PERF_LOG" ] && [ $(wc -l < "$PERF_LOG") -gt 100 ]; then
+            tail -100 "$PERF_LOG" > "${PERF_LOG}.tmp" && mv "${PERF_LOG}.tmp" "$PERF_LOG"
+        fi
+    fi
     
     # Generate summary
     log_message ""
@@ -237,15 +280,17 @@ main() {
     log_message ""
     
     if [ "$FAILED_TESTS" -eq 0 ] && [ "$TOTAL_TESTS" -eq 3 ]; then
-        log_message "${GREEN}✅ All smoke tests PASSED!${NC}"
+        log_message "✅ All smoke tests PASSED!"
         log_message ""
         log_message "Performance SLAs Met:"
-        log_message "  • Keyword Extraction: ✓ (< 4.5s)"
-        log_message "  • Index Calculation: ✓ (< 2s)"
-        log_message "  • Gap Analysis: ✓ (< 25s)"
+        log_message "  • Keyword Extraction: ✓ (${KEYWORD_TIME_MS}ms < 4500ms)"
+        log_message "  • Index Calculation: ✓ (${INDEX_TIME_MS}ms < 2000ms)"
+        log_message "  • Gap Analysis: ✓ (${GAP_TIME_MS}ms < 25000ms)"
+        log_message ""
+        log_message "Performance metrics saved to: $PERF_LOG"
         exit 0
     else
-        log_message "${RED}❌ Smoke tests FAILED!${NC}"
+        log_message "❌ Smoke tests FAILED!"
         if [ "$TOTAL_TESTS" -ne 3 ]; then
             log_message "  Warning: Expected 3 tests but ran $TOTAL_TESTS"
         fi
