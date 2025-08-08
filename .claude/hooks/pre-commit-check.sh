@@ -2,6 +2,9 @@
 # UserPromptSubmit hook: Commit 前的完整檢查
 # 當使用者提到 commit 時觸發
 
+# 確保在正確的工作目錄
+cd "${CLAUDE_PROJECT_DIR:-$(pwd)}" || exit 0
+
 # Global variables for collecting test results
 SCRIPT_START_TIME=$(date +%s.%N)
 
