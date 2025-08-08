@@ -96,14 +96,12 @@ main() {
     local test_start=$(date +%s)
     local test_log="$LOG_DIR/smoke_keyword_${TIMESTAMP}.log"
     
-    # Simple keyword extraction test
+    # Simple keyword extraction test - using single line JSON to avoid parsing issues
     local keyword_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
         -X POST "$API_URL/api/v1/extract-jd-keywords" \
         -H "Content-Type: application/json" \
         -H "X-API-Key: $API_KEY" \
-        -d '{
-            "jd_description": "We are looking for a Senior Software Engineer with expertise in Python, Django, and PostgreSQL. The ideal candidate should have at least 5 years of experience in web development, strong knowledge of RESTful APIs, and experience with cloud platforms like AWS or Azure. Knowledge of Docker and Kubernetes is a plus."
-        }' 2>&1 | tee "$test_log")
+        -d '{"jd_description":"We are looking for a Senior Software Engineer with expertise in Python, Django, and PostgreSQL. The ideal candidate should have at least 5 years of experience in web development, strong knowledge of RESTful APIs, and experience with cloud platforms like AWS or Azure. Knowledge of Docker and Kubernetes is a plus."}' 2>&1 | tee "$test_log")
     
     local http_code=$(echo "$keyword_response" | tail -2 | head -1)
     local response_time=$(echo "$keyword_response" | tail -1)
@@ -131,15 +129,12 @@ main() {
     test_start=$(date +%s)
     test_log="$LOG_DIR/smoke_index_${TIMESTAMP}.log"
     
-    # Simple index calculation test
+    # Simple index calculation test - using single line JSON
     local index_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
         -X POST "$API_URL/api/v1/index-calculation" \
         -H "Content-Type: application/json" \
         -H "X-API-Key: $API_KEY" \
-        -d '{
-            "jd_info": "Looking for a Python developer with Django experience. Must have strong skills in PostgreSQL, REST APIs, and cloud platforms.",
-            "cv_info": "Experienced Python developer with 5 years of Django development. Proficient in PostgreSQL, RESTful API design, and AWS cloud services."
-        }' 2>&1 | tee "$test_log")
+        -d '{"jd_info":"Looking for a Python developer with Django experience. Must have strong skills in PostgreSQL, REST APIs, and cloud platforms.","cv_info":"Experienced Python developer with 5 years of Django development. Proficient in PostgreSQL, RESTful API design, and AWS cloud services."}' 2>&1 | tee "$test_log")
     
     http_code=$(echo "$index_response" | tail -2 | head -1)
     response_time=$(echo "$index_response" | tail -1)
@@ -167,16 +162,13 @@ main() {
     test_start=$(date +%s)
     test_log="$LOG_DIR/smoke_gap_${TIMESTAMP}.log"
     
-    # Simple gap analysis test
+    # Simple gap analysis test - using single line JSON
     local gap_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
         --max-time 30 \
         -X POST "$API_URL/api/v1/index-cal-and-gap-analysis" \
         -H "Content-Type: application/json" \
         -H "X-API-Key: $API_KEY" \
-        -d '{
-            "jd_info": "We need a Senior Full Stack Developer with expertise in React, Node.js, and MongoDB. The ideal candidate should have experience with microservices architecture, GraphQL, and containerization technologies.",
-            "cv_info": "Full Stack Developer with 3 years of experience in React and Node.js. Familiar with MongoDB and REST APIs. Some exposure to Docker."
-        }' 2>&1 | tee "$test_log")
+        -d '{"jd_info":"We need a Senior Full Stack Developer with expertise in React, Node.js, and MongoDB. The ideal candidate should have experience with microservices architecture, GraphQL, and containerization technologies.","cv_info":"Full Stack Developer with 3 years of experience in React and Node.js. Familiar with MongoDB and REST APIs. Some exposure to Docker."}' 2>&1 | tee "$test_log")
     
     http_code=$(echo "$gap_response" | tail -2 | head -1)
     response_time=$(echo "$gap_response" | tail -1)

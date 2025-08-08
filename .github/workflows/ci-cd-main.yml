@@ -275,7 +275,10 @@ jobs:
             USE_RULE_BASED_DETECTOR=true
             
     - name: Wait for deployment
-      run: sleep 30
+      run: |
+        echo "Waiting for deployment to fully propagate..."
+        sleep 60
+        echo "Deployment should be ready now"
       
     - name: Health check
       run: |
