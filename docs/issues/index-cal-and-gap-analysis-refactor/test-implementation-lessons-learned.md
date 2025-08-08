@@ -238,34 +238,125 @@ DEPLOYMENT_MAP = {
 }
 ```
 
-#### 問題 2: XML/JSON 格式混淆
-**根本原因**: V2 期望 JSON 但接收 XML 格式，型態轉換錯誤
+#### 問題 3: 硬編碼配置值和 JSON 截斷問題
+**根本原因**: 
+1. 程式碼中硬編碼 max_tokens 值（1500/3000），而非從 YAML 讀取
+2. JSON 回應因 token 限制被截斷，導致解析失敗
+3. Prompt 模板使用 .format() 與 JSON 大括號衝突
 
-**修復實作**：
-```python
-# V2 XML 回退邏輯修復
-def parse_v1_to_v2_format(base_result):
-    """正確處理 V1 XML 格式到 V2 API 格式的轉換"""
-    
-    def list_to_html_ol(items):
-        """將列表轉換為 HTML 有序列表"""
-        if not items or not isinstance(items, list):
-            return "<ol><li>Analysis in progress</li></ol>"
-        html_items = [f"<li>{item}</li>" for item in items if item]
-        return f"<ol>{''.join(html_items)}</ol>" if html_items else "<ol><li>Analysis in progress</li></ol>"
-    
-    # 正確的型態轉換
-    return {
-        "CoreStrengths": list_to_html_ol(base_result.get("strengths", [])),
-        "KeyGaps": list_to_html_ol(base_result.get("gaps", [])),
-        "QuickImprovements": list_to_html_ol(base_result.get("improvements", [])),
-        "Keywords": base_result.get("keywords", []),
-        "KeywordCoverage": base_result.get("keyword_coverage", 0.0),
-        "MatchPercentage": base_result.get("overall_match_percentage", 0)
-    }
+**錯誤症狀**：
+```
+JSONDecodeError: Expecting property name enclosed in double quotes: line 15 column 3 (char 378)
+Response preview: '
+  "CoreStrengths"'  # 明顯的截斷
 ```
 
-### 2.3 效能測試優化
+**修復實作**：
+
+1. **動態配置載入系統**：
+```python
+def _load_llm_config(self, language: str, resume: str = "", job_description: str = "") -> dict[str, Any]:
+    """
+    載入 LLM 配置，優先順序：
+    1. YAML 配置檔案
+    2. 環境變數（覆蓋）
+    3. 動態計算（基於輸入大小）
+    4. 預設值
+    """
+    config = {
+        "temperature": 0.3,
+        "max_tokens": 3000,
+        "additional_params": {}
+    }
+    
+    # 從 YAML 載入
+    filename = "v2.0.0-zh-TW.yaml" if language == "zh-TW" else "v2.0.0.yaml"
+    prompt_config = prompt_manager.load_prompt_config_by_filename("gap_analysis", filename)
+    
+    # 環境變數覆蓋
+    if os.getenv("GAP_ANALYSIS_MAX_TOKENS"):
+        config["max_tokens"] = int(os.getenv("GAP_ANALYSIS_MAX_TOKENS"))
+    
+    # 動態 token 計算
+    calculated_tokens = self._calculate_required_tokens(resume, job_description)
+    if calculated_tokens > config["max_tokens"]:
+        config["max_tokens"] = calculated_tokens
+    
+    return config
+```
+
+2. **Token 計算邏輯**：
+```python
+def _calculate_required_tokens(self, resume: str, job_description: str) -> int:
+    """基於輸入大小計算所需 tokens"""
+    chars_per_token = 3  # 經驗值：1 token ≈ 3 字元
+    input_chars = len(resume) + len(job_description)
+    estimated_input_tokens = input_chars // chars_per_token
+    
+    base_output_tokens = 2500  # Gap Analysis 基本需求
+    
+    # 大輸入需要更多輸出空間
+    if estimated_input_tokens > 2000:
+        base_output_tokens += int(base_output_tokens * 0.2)
+    
+    return base_output_tokens
+```
+
+3. **JSON 完整性檢查與修復**：
+```python
+def _is_json_complete(self, json_str: str) -> bool:
+    """檢查 JSON 是否完整"""
+    open_braces = json_str.count('{')
+    close_braces = json_str.count('}')
+    open_brackets = json_str.count('[')
+    close_brackets = json_str.count(']')
+    
+    return (open_braces == close_braces and 
+            open_brackets == close_brackets and
+            bool(re.search(r'[}\]]\s*$', json_str)))
+
+def _attempt_json_repair(self, json_str: str) -> str:
+    """嘗試修復截斷的 JSON"""
+    # 補充缺失的括號
+    for _ in range(json_str.count('[') - json_str.count(']')):
+        json_str += ']'
+    for _ in range(json_str.count('{') - json_str.count('}')):
+        json_str += '}'
+    
+    # 修復尾隨逗號
+    json_str = re.sub(r',\s*}', '}', json_str)
+    json_str = re.sub(r',\s*]', ']', json_str)
+    
+    return json_str
+```
+
+4. **Prompt 格式化修復**：
+```python
+# ❌ 錯誤：使用 format() 會與 JSON 大括號衝突
+enhanced_prompt = base_prompt.format(
+    job_description=job_description,
+    resume=resume
+)
+
+# ✅ 正確：使用 replace() 避免大括號問題
+enhanced_prompt = base_prompt.replace("{job_description}", job_description)
+enhanced_prompt = enhanced_prompt.replace("{resume}", resume)
+```
+
+**關鍵學習點**：
+1. **永不硬編碼配置值** - 所有配置都應該可從外部調整
+2. **實作配置優先順序鏈** - YAML → 環境變數 → 動態計算 → 預設值
+3. **為 LLM 輸出預留充足空間** - 動態計算而非固定值
+4. **處理 JSON 截斷** - 檢測並嘗試修復不完整的 JSON
+5. **正確處理模板字串** - 當模板包含 JSON 時使用 replace() 而非 format()
+
+**預防措施**：
+- 建立配置載入的單元測試
+- 監控 JSON 解析失敗率
+- 記錄實際使用的 token 數量以調優計算邏輯
+- 在開發環境啟用詳細日誌以追蹤配置來源
+
+$2
 
 #### 測試執行模式對比
 ```python
