@@ -168,10 +168,31 @@ class CombinedAnalysisServiceV2(BaseService):
         Phase 2: Index calculation with embeddings
         Phase 3: Context-aware gap analysis
         """
+        # Detailed timing tracking for V3 optimization
+        detailed_timings = {
+            "start": time.time(),
+            "embedding_start": None,
+            "resume_embedding_start": None,
+            "resume_embedding_end": None,
+            "jd_embedding_start": None,
+            "jd_embedding_end": None,
+            "embedding_end": None,
+            "keyword_match_start": None,
+            "keyword_match_end": None,
+            "index_llm_start": None,
+            "index_llm_end": None,
+            "gap_context_start": None,
+            "gap_context_end": None,
+            "gap_llm_start": None,
+            "gap_llm_end": None,
+            "end": None
+        }
+
         phase_timings = {}
 
         # Phase 1: Generate embeddings using resource pool
         phase1_start = time.time()
+        detailed_timings["embedding_start"] = phase1_start
 
         # Check if resource pool is enabled (for E2E tests)
         if os.getenv('RESOURCE_POOL_ENABLED', 'true').lower() == 'false':
@@ -187,10 +208,13 @@ class CombinedAnalysisServiceV2(BaseService):
                 )
                 self.stats["resource_pool_hits"] += 1
 
-        phase_timings["embedding_generation"] = time.time() - phase1_start
+        detailed_timings["embedding_end"] = time.time()
+        phase_timings["embedding_generation"] = detailed_timings["embedding_end"] - phase1_start
 
         # Phase 2: Index calculation with pre-computed embeddings
         phase2_start = time.time()
+        detailed_timings["index_llm_start"] = phase2_start
+
         if self.retry_strategy:
             index_result = await self.retry_strategy.execute_with_retry(
                 lambda: self.index_service.calculate_index(
@@ -209,10 +233,18 @@ class CombinedAnalysisServiceV2(BaseService):
                 keywords=keywords
             )
 
-        phase_timings["index_calculation"] = time.time() - phase2_start
+        detailed_timings["index_llm_end"] = time.time()
+        phase_timings["index_calculation"] = detailed_timings["index_llm_end"] - phase2_start
 
         # Phase 3: Context-aware gap analysis
         phase3_start = time.time()
+        detailed_timings["gap_context_start"] = phase3_start
+
+        # Note: Context preparation happens inside gap_service.analyze_with_context
+        # We'll need to modify that service to get more detailed timings
+
+        detailed_timings["gap_llm_start"] = time.time()
+
         if self.retry_strategy:
             gap_result = await self.retry_strategy.execute_with_retry(
                 lambda: self.gap_service.analyze_with_context(
@@ -234,15 +266,60 @@ class CombinedAnalysisServiceV2(BaseService):
                 options=analysis_options
             )
 
-        phase_timings["gap_analysis"] = time.time() - phase3_start
+        detailed_timings["gap_llm_end"] = time.time()
+        detailed_timings["end"] = time.time()
+        phase_timings["gap_analysis"] = detailed_timings["gap_llm_end"] - phase3_start
 
         # Calculate parallel processing efficiency
         total_sequential_time = sum(phase_timings.values())
-        total_actual_time = time.time() - (
-            phase3_start - phase_timings["embedding_generation"] - phase_timings["index_calculation"]
-        )
+        total_actual_time = detailed_timings["end"] - detailed_timings["start"]
         efficiency = 1 - (total_actual_time / total_sequential_time) if total_sequential_time > 0 else 0
         self.stats["parallel_efficiency"] = efficiency
+
+        # Calculate detailed timing breakdown
+        timing_breakdown = {
+            "total_time": round((detailed_timings["end"] - detailed_timings["start"]) * 1000, 2),
+            "embedding_time": (
+                round((detailed_timings["embedding_end"] - detailed_timings["embedding_start"]) * 1000, 2)
+                if detailed_timings["embedding_end"] and detailed_timings["embedding_start"]
+                else None
+            ),
+            "index_calculation_time": (
+                round((detailed_timings["index_llm_end"] - detailed_timings["index_llm_start"]) * 1000, 2)
+                if detailed_timings["index_llm_end"] and detailed_timings["index_llm_start"]
+                else None
+            ),
+            "gap_analysis_time": (
+                round((detailed_timings["gap_llm_end"] - detailed_timings["gap_llm_start"]) * 1000, 2)
+                if detailed_timings["gap_llm_end"] and detailed_timings["gap_llm_start"]
+                else None
+            ),
+        }
+
+        # Log detailed timings for V3 optimization analysis
+        logger.info(
+            "V3 Optimization - Detailed timing breakdown",
+            extra={
+                "timing_breakdown_ms": timing_breakdown,
+                "phase_percentages": {
+                    "embedding": (
+                        round((timing_breakdown["embedding_time"] / timing_breakdown["total_time"] * 100), 1)
+                        if timing_breakdown["embedding_time"]
+                        else None
+                    ),
+                    "index": (
+                        round((timing_breakdown["index_calculation_time"] / timing_breakdown["total_time"] * 100), 1)
+                        if timing_breakdown["index_calculation_time"]
+                        else None
+                    ),
+                    "gap": (
+                        round((timing_breakdown["gap_analysis_time"] / timing_breakdown["total_time"] * 100), 1)
+                        if timing_breakdown["gap_analysis_time"]
+                        else None
+                    ),
+                }
+            }
+        )
 
         # Combine results
         return {
@@ -256,6 +333,7 @@ class CombinedAnalysisServiceV2(BaseService):
                     phase: round(timing * 1000, 2)
                     for phase, timing in phase_timings.items()
                 },
+                "detailed_timings_ms": timing_breakdown,
                 "parallel_efficiency": round(efficiency * 100, 1),
                 "resource_pool_used": True
             }
@@ -295,6 +373,70 @@ class CombinedAnalysisServiceV2(BaseService):
             "resume": resume_task.result(),
             "job_description": job_task.result()
         }
+
+    async def _generate_embeddings_parallel_with_timing(
+        self,
+        client: Any,
+        resume: str,
+        job_description: str
+    ) -> tuple[dict[str, list[float]], dict[str, float]]:
+        """
+        Generate embeddings in parallel with detailed timing tracking.
+
+        Args:
+            client: OpenAI client from resource pool
+            resume: Resume text for embedding
+            job_description: Job description text for embedding
+
+        Returns:
+            Tuple of (embeddings dict, timings dict)
+        """
+        timings = {}
+
+        # Clean texts for embedding (remove HTML, normalize)
+        clean_start = time.time()
+        clean_resume = self._clean_text_for_embedding(resume)
+        clean_job_desc = self._clean_text_for_embedding(job_description)
+        timings["text_cleaning"] = time.time() - clean_start
+
+        # Track individual embedding times
+        resume_start = time.time()
+        jd_start = None
+
+        # Generate embeddings in parallel
+        async def timed_resume_embedding():
+            result = await self._create_embedding(client, clean_resume)
+            timings["resume_embedding"] = time.time() - resume_start
+            return result
+
+        async def timed_jd_embedding():
+            nonlocal jd_start
+            jd_start = time.time()
+            result = await self._create_embedding(client, clean_job_desc)
+            timings["jd_embedding"] = time.time() - jd_start
+            return result
+
+        async with asyncio.TaskGroup() as tg:
+            resume_task = tg.create_task(timed_resume_embedding())
+            job_task = tg.create_task(timed_jd_embedding())
+
+        embeddings = {
+            "resume": resume_task.result(),
+            "job_description": job_task.result()
+        }
+
+        # Log embedding timings
+        logger.debug(
+            "Embedding generation timings",
+            extra={
+                "text_cleaning_ms": round(timings["text_cleaning"] * 1000, 2),
+                "resume_embedding_ms": round(timings["resume_embedding"] * 1000, 2),
+                "jd_embedding_ms": round(timings["jd_embedding"] * 1000, 2),
+                "parallel": True
+            }
+        )
+
+        return embeddings, timings
 
     async def _create_embedding(self, client: Any, text: str) -> list[float]:
         """

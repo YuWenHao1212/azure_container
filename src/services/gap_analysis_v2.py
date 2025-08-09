@@ -191,50 +191,69 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
         Returns:
             Enhanced prompt with context information
         """
-        # Get base prompt template
-        try:
-            base_prompt = get_prompt("gap_analysis", version="2.0.0", language=language)
-        except Exception:
-            # Fallback to V1 prompt if V2 not available
-            base_prompt = get_prompt("gap_analysis", version="1.0.0", language=language)
-
         # Extract context from index results
         similarity_score = index_result.get("similarity_percentage", 0)
         keyword_coverage = index_result.get("keyword_coverage", {})
         covered_keywords = keyword_coverage.get("covered_keywords", [])
         missed_keywords = keyword_coverage.get("missed_keywords", [])
 
-        # Build context section
-        context_section = f"""
-### Analysis Context from Index Calculation:
+        # Load the prompt configuration
+        try:
+            filename = "v2.0.0-zh-TW.yaml" if language == "zh-TW" else "v2.0.0.yaml"
+            config = prompt_manager.load_prompt_config_by_filename("gap_analysis", filename)
+
+            # Get system and user prompts
+            system_prompt = ""
+            user_prompt = ""
+
+            if hasattr(config, 'prompts'):
+                system_prompt = config.prompts.get('system', '')
+                user_prompt = config.prompts.get('user', '')
+
+            # Replace placeholders in prompts
+            # First replace all context variables in system prompt
+            system_prompt = system_prompt.replace("{similarity_score}", str(similarity_score))
+            system_prompt = system_prompt.replace("{keyword_coverage_percentage}",
+                                                  str(keyword_coverage.get('coverage_percentage', 0)))
+            system_prompt = system_prompt.replace("{covered_keywords}",
+                                                  ', '.join(covered_keywords[:10]) if covered_keywords else "None")
+            system_prompt = system_prompt.replace("{missing_keywords}",
+                                                  ', '.join(missed_keywords[:10]) if missed_keywords else "None")
+
+            # Replace placeholders in user prompt
+            user_prompt = user_prompt.replace("{job_description}", job_description)
+            user_prompt = user_prompt.replace("{resume}", resume)
+            user_prompt = user_prompt.replace("{similarity_score}", str(similarity_score))
+            user_prompt = user_prompt.replace("{keyword_coverage_percentage}",
+                                             str(keyword_coverage.get('coverage_percentage', 0)))
+            user_prompt = user_prompt.replace("{covered_keywords}",
+                                             ', '.join(covered_keywords[:10]) if covered_keywords else "None")
+            user_prompt = user_prompt.replace("{missing_keywords}",
+                                             ', '.join(missed_keywords[:10]) if missed_keywords else "None")
+
+            # Combine system and user prompts
+            enhanced_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+        except Exception as e:
+            logger.warning(f"Failed to load v2.0.0 prompt config: {e}, using fallback")
+            # Fallback to basic prompt with context
+            enhanced_prompt = f"""
+Analyze the gap between the resume and job description.
+
+Context:
 - Overall Match Score: {similarity_score}%
 - Keyword Coverage: {keyword_coverage.get('coverage_percentage', 0)}%
-- Strengths (Covered Keywords): {', '.join(covered_keywords[:10])}
-- Gaps (Missing Keywords): {', '.join(missed_keywords[:10])}
+- Covered Keywords: {', '.join(covered_keywords[:10])}
+- Missing Keywords: {', '.join(missed_keywords[:10])}
 
-Please use this matching data to provide more targeted and specific analysis.
-Focus on the identified gaps while acknowledging the existing strengths.
+Job Description:
+{job_description}
+
+Resume:
+{resume}
+
+Please provide a comprehensive gap analysis.
 """
-
-        # Add analysis options if provided
-        options_section = ""
-        if options:
-            if options.get("focus_areas"):
-                areas = ", ".join(options["focus_areas"])
-                options_section += f"\nFocus Areas: {areas}"
-
-            if options.get("max_improvements"):
-                options_section += f"\nLimit improvements to {options['max_improvements']} items"
-
-            if options.get("experience_level"):
-                options_section += f"\nConsider experience level: {options['experience_level']}"
-
-        # Combine all sections
-        # Use replace instead of format to avoid issues with JSON braces in prompt
-        enhanced_prompt = base_prompt.replace("{job_description}", job_description)
-        enhanced_prompt = enhanced_prompt.replace("{resume}", resume)
-        enhanced_prompt = enhanced_prompt.replace("{context}", context_section)
-        enhanced_prompt = enhanced_prompt.replace("{options}", options_section)
 
         return enhanced_prompt
 
