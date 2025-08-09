@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
 """
-Ruff Checker Script for Azure Container Project
-Provides automated Python code quality checking with statistical reporting
+Simple Ruff Checker for Sub Agent Use
+Provides comprehensive Python code quality analysis with statistical reporting
 """
 
-import os
-import re
 import subprocess
 import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-
-# 嘗試匯入輸出格式化器
-try:
-    from output_formatter import RuffOutputFormatter
-    FORMATTER_AVAILABLE = True
-except ImportError:
-    FORMATTER_AVAILABLE = False
 
 
 class RuffChecker:
@@ -25,150 +16,122 @@ class RuffChecker:
         self.line_length = line_length
         self.results_file = "/tmp/claude_last_ruff_check.txt"
 
-    def get_modified_python_files(self):
-        """Get list of modified Python files from git diff"""
+    def run_ruff_check(self, fix=False, paths=None):
+        """Run ruff check with optional fix and specific paths"""
+        if paths is None:
+            paths = ["src/", "test/"]
+
+        cmd = ["ruff", "check"] + paths + [f"--line-length={self.line_length}"]
+        if fix:
+            cmd.append("--fix")
+
         try:
             result = subprocess.run(
-                ["git", "diff", "--name-only"],
+                cmd,
                 capture_output=True,
                 text=True,
-                check=True
+                cwd=Path.cwd()
             )
-            files = [
-                f for f in result.stdout.strip().split('\n')
-                if f.endswith('.py') and f
-            ]
-            return files
-        except subprocess.CalledProcessError:
-            return []
-
-    def get_all_python_files(self):
-        """Get all Python files in src/ and test/ directories"""
-        files = []
-        for directory in ['src', 'test']:
-            if os.path.exists(directory):
-                for py_file in Path(directory).rglob('*.py'):
-                    files.append(str(py_file))
-
-        # Also check root level Python files
-        for py_file in Path('.').glob('*.py'):
-            files.append(str(py_file))
-
-        return files
-
-    def run_ruff_check(self, files):
-        """Run ruff check on specified files"""
-        if not files:
-            return "", "", 0
-
-        cmd = ["ruff", "check"] + files + [f"--line-length={self.line_length}"]
-
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            return result.stdout, result.stderr, result.returncode
-        except subprocess.CalledProcessError as e:
-            return e.stdout, e.stderr, e.returncode
-
-    def run_ruff_fix(self, files):
-        """Run ruff check --fix on specified files"""
-        if not files:
-            return "", "", 0
-
-        cmd = ["ruff", "check", "--fix"] + files + [f"--line-length={self.line_length}"]
-
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            return result.stdout, result.stderr, result.returncode
-        except subprocess.CalledProcessError as e:
-            return e.stdout, e.stderr, e.returncode
+            return result
+        except FileNotFoundError:
+            return None
 
     def parse_ruff_output(self, output):
-        """Parse ruff output and extract error statistics"""
+        """Parse ruff output to extract statistics"""
         if not output:
-            return {}, 0, 0
+            return {"files": 0, "errors": 0, "by_type": {}, "details": []}
 
-        error_counts = defaultdict(int)
-        total_errors = 0
-        fixable_errors = 0
+        lines = output.strip().split('\n')
+        files = set()
+        errors_by_type = defaultdict(int)
+        details = []
 
-        # Count total errors from "Found X errors" line
-        found_match = re.search(r'Found (\d+) errors?\.', output)
-        if found_match:
-            total_errors = int(found_match.group(1))
-
-        # Count fixable errors
-        fixable_match = re.search(r'\[?\*?\]?\s*(\d+) fixable', output)
-        if fixable_match:
-            fixable_errors = int(fixable_match.group(1))
-
-        # Extract individual error types from each error line
-        lines = output.split('\n')
+        error_count = 0
         for line in lines:
-            # Look for error code patterns like "F401 [*]" or "W292"
-            error_match = re.search(r'(\w+\d+)(?:\s*\[?\*?\]?)?', line)
-            if error_match:
-                error_code = error_match.group(1)
-                # Only count common ruff error codes
-                if re.match(r'^[FWEINCUPTSIM]\d+$', error_code):
-                    error_counts[error_code] += 1
+            if ':' in line and any(x in line for x in ['E', 'W', 'F', 'N', 'C', 'R', 'S']):
+                error_count += 1
 
-        return dict(error_counts), total_errors, fixable_errors
+                # Extract file path
+                if line.count(':') >= 2:
+                    file_path = line.split(':')[0]
+                    files.add(file_path)
 
-    def generate_report(self, files, error_counts, total_errors, fixable_errors):
-        """Generate formatted report with enhanced formatting"""
-        # 準備統計資料
-        stats = {
-            'files_checked': len(files),
-            'total_errors': total_errors,
-            'auto_fixable': fixable_errors
+                # Extract error code
+                for part in line.split():
+                    if len(part) > 2 and part[0].isalpha() and part[1:].replace('-', '').isdigit():
+                        error_type = part[:3] if len(part) >= 3 else part
+                        errors_by_type[error_type] += 1
+                        break
+
+                details.append(line)
+
+        return {
+            "files": len(files),
+            "errors": error_count,
+            "by_type": dict(errors_by_type),
+            "details": details
         }
-        
-        # 如果有輸出格式化器，使用增強格式
-        if FORMATTER_AVAILABLE:
-            try:
-                formatter = RuffOutputFormatter(theme='subagent')
-                
-                if error_counts:
-                    return formatter.format_complete_report(
-                        "Ruff 程式碼品質檢查結果",
-                        stats,
-                        error_counts,
-                        files
-                    )
-                else:
-                    return formatter.format_complete_report(
-                        "Ruff 程式碼品質檢查結果",
-                        stats
-                    )
-            except Exception:
-                # 如果格式化器出錯，回退到原始格式
-                pass
-        
-        # 回退到原始格式
-        timestamp = datetime.now().strftime("%H:%M:%S")
 
-        report_lines = [
-            "═══════════════════════════════════════════════════════════════",
-            f"⚠️  Ruff Check Results - {timestamp}",
-            "═══════════════════════════════════════════════════════════════",
-            "📊 Statistics:",
-            f"   • Files checked: {len(files)}",
-            f"   • Total errors: {total_errors}",
-            f"   • Auto-fixable: {fixable_errors}",
-            ""
-        ]
+    def generate_report(self, check_result, fix_result=None):
+        """Generate comprehensive analysis report"""
+        if not check_result:
+            return "❌ Error: ruff command not found"
 
-        if error_counts:
-            report_lines.append("📋 Error breakdown:")
-            for error_type, count in sorted(error_counts.items()):
-                report_lines.append(f"   • {error_type}: {count}")
+        report_lines = []
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Header
+        report_lines.extend([
+            "═══════════════════════════════════════════════════════════════",
+            f"⚠️  Ruff Check Results - {timestamp.split()[1]}",
+            "═══════════════════════════════════════════════════════════════"
+        ])
+
+        # Parse results
+        stats = self.parse_ruff_output(check_result.stderr)
+
+        if check_result.returncode == 0:
+            report_lines.extend([
+                "🎉 程式碼品質檢查通過！",
+                "",
+                "📊 統計數據:",
+                f"   • 檢查完成: {timestamp}",
+                "   • 掃描檔案: 完整專案",
+                "   • 發現問題: 0 個",
+                "   • 程式碼狀態: ✅ 優秀"
+            ])
         else:
-            report_lines.append("🎉 No errors found!")
+            # Statistics
+            report_lines.extend([
+                "📊 統計數據:",
+                f"   • 檢查檔案: {stats['files']}",
+                f"   • 總錯誤數: {stats['errors']}",
+                f"   • 自動修復: {len(fix_result.stdout.split('Fixed')) - 1 if fix_result else 0}",
+                f"   • 剩餘問題: {stats['errors'] - (len(fix_result.stdout.split('Fixed')) - 1 if fix_result else 0)}"
+            ])
+
+            # Error breakdown
+            if stats['by_type']:
+                report_lines.extend([
+                    "",
+                    "📋 錯誤分類:"
+                ])
+                for error_type, count in sorted(stats['by_type'].items(), key=lambda x: x[1], reverse=True):
+                    report_lines.append(f"   • {count:2d}  {error_type}")
+
+            # Detailed errors (first 20)
+            if stats['details']:
+                report_lines.extend([
+                    "",
+                    "⚠️  剩餘問題詳情:"
+                ])
+                for detail in stats['details'][:20]:
+                    report_lines.append(detail)
+
+                if len(stats['details']) > 20:
+                    report_lines.append(f"... and {len(stats['details']) - 20} more issues")
 
         report_lines.extend([
-            "───────────────────────────────────────────────────────────────",
-            f"💡 Quick fix: ruff check --fix {' '.join(files)} --line-length={self.line_length}" if files else "💡 No files to fix",
-            f"📝 View details: ruff check {' '.join(files)} --line-length={self.line_length}" if files else "📝 No files to check",
             "═══════════════════════════════════════════════════════════════",
             ""
         ])
@@ -176,56 +139,52 @@ class RuffChecker:
         return "\n".join(report_lines)
 
     def save_results(self, report):
-        """Save results to temp file for persistence"""
+        """Save results to file"""
         try:
-            with open(self.results_file, 'w') as f:
+            with open(self.results_file, 'w', encoding='utf-8') as f:
                 f.write(report)
+            return True
         except Exception as e:
             print(f"Warning: Could not save results to {self.results_file}: {e}")
+            return False
 
-    def check_files(self, files=None, auto_fix=True):
-        """Main checking function"""
-        if files is None:
-            # First try modified files, then all files if none modified
-            files = self.get_modified_python_files()
-            if not files:
-                files = self.get_all_python_files()
+    def run_analysis(self, fix=True):
+        """Run complete ruff analysis"""
+        print("🔍 Running Ruff code quality analysis...")
 
-        if not files:
-            report = self.generate_report([], {}, 0, 0)
-            print(report)
-            self.save_results(report)
-            return
+        # Initial check
+        check_result = self.run_ruff_check(fix=False)
+        fix_result = None
 
-        # Run initial check
-        stdout, stderr, returncode = self.run_ruff_check(files)
-        error_counts, total_errors, fixable_errors = self.parse_ruff_output(stdout)
-
-        # Apply safe fixes if requested and errors found
-        if auto_fix and fixable_errors > 0:
-            fix_stdout, fix_stderr, fix_returncode = self.run_ruff_fix(files)
-
+        # Auto-fix if requested and issues found
+        if fix and check_result and check_result.returncode != 0:
+            print("🔧 Auto-fixing issues...")
+            fix_result = self.run_ruff_check(fix=True)
             # Re-check after fixes
-            stdout, stderr, returncode = self.run_ruff_check(files)
-            error_counts, total_errors, fixable_errors = self.parse_ruff_output(stdout)
+            check_result = self.run_ruff_check(fix=False)
 
-        # Generate and display report
-        report = self.generate_report(files, error_counts, total_errors, fixable_errors)
-        print(report)
+        # Generate report
+        report = self.generate_report(check_result, fix_result)
+
+        # Save and display
         self.save_results(report)
+        print(report)
 
-        return total_errors == 0
+        # Display clickable file path for Claude Code CLI
+        print(f"📁 詳細報告已儲存: {self.results_file}")
+        print(f"💡 快速查看: cat {self.results_file}")
+
+        return check_result.returncode == 0 if check_result else False
 
 
 def main():
+    """Main entry point"""
     checker = RuffChecker()
 
-    if len(sys.argv) > 1:
-        files = sys.argv[1:]
-    else:
-        files = None
+    # Check if fix mode requested
+    fix_mode = "--fix" in sys.argv or "-f" in sys.argv
 
-    success = checker.check_files(files)
+    success = checker.run_analysis(fix=fix_mode)
     sys.exit(0 if success else 1)
 
 
