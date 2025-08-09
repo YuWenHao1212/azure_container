@@ -467,8 +467,11 @@ Please provide a comprehensive gap analysis.
         """
         Parse enhanced LLM response with V2-specific improvements.
 
+        Note: V2 prompts (v2.0.0.yaml) return XML format, not JSON.
+        Directly parsing as XML to avoid unnecessary JSON parsing attempts.
+
         Args:
-            response: Raw LLM response
+            response: Raw LLM response in XML format
 
         Returns:
             Parsed gap analysis results
@@ -482,75 +485,10 @@ Please provide a comprehensive gap analysis.
             logger.warning("[GAP_V2] Received empty response from LLM")
             return self._create_fallback_response("Empty response from LLM")
 
-        # V2 returns JSON format, not XML
-        try:
-            # Parse JSON response - handle markdown code blocks if present
-            import json
-            import re
-
-            cleaned_response = response.strip()
-
-            # Remove ```json and ``` markers if present
-            if "```json" in cleaned_response:
-                # Extract JSON from markdown code block
-                json_match = re.search(r'```json\s*\n?(.*?)\n?```', cleaned_response, re.DOTALL)
-                if json_match:
-                    cleaned_response = json_match.group(1).strip()
-            elif "```" in cleaned_response:
-                # Handle generic code blocks
-                json_match = re.search(r'```\s*\n?(.*?)\n?```', cleaned_response, re.DOTALL)
-                if json_match:
-                    cleaned_response = json_match.group(1).strip()
-
-            # Check for JSON completeness before parsing
-            if not self._is_json_complete(cleaned_response):
-                logger.warning("[GAP_V2] JSON appears to be truncated")
-                # Try to fix common truncation issues
-                cleaned_response = self._attempt_json_repair(cleaned_response)
-
-            gap_data = json.loads(cleaned_response)
-
-            logger.info("[GAP_V2] Successfully parsed JSON response")
-
-            # Validate required fields
-            required_fields = ["CoreStrengths", "KeyGaps", "QuickImprovements", "OverallAssessment"]
-            missing_fields = [field for field in required_fields if field not in gap_data]
-
-            if missing_fields:
-                logger.warning(f"[GAP_V2] Missing required fields: {missing_fields}")
-                # Fill missing fields with defaults
-                for field in missing_fields:
-                    if field == "OverallAssessment":
-                        gap_data[field] = "<p>Analysis completed with partial data.</p>"
-                    else:
-                        gap_data[field] = "<ol><li>Analysis in progress</li></ol>"
-
-            # Process SkillSearchQueries
-            skill_queries = gap_data.get("SkillSearchQueries", [])
-            formatted_skills = self._format_skill_queries(skill_queries)
-
-            # Ensure valid non-empty strings for required fields
-            core_strengths = gap_data.get("CoreStrengths") or "<ol><li>Analysis in progress</li></ol>"
-            key_gaps = gap_data.get("KeyGaps") or "<ol><li>Analysis in progress</li></ol>"
-            quick_improvements = gap_data.get("QuickImprovements") or "<ol><li>Analysis in progress</li></ol>"
-            overall_assessment = gap_data.get("OverallAssessment") or "<p>Analysis completed successfully.</p>"
-
-            return {
-                "CoreStrengths": core_strengths,
-                "KeyGaps": key_gaps,
-                "QuickImprovements": quick_improvements,
-                "OverallAssessment": overall_assessment,
-                "SkillSearchQueries": formatted_skills,
-                "enhanced_analysis": True,
-                "version": "2.0"
-            }
-
-        except json.JSONDecodeError as e:
-            logger.error(f"[GAP_V2] JSON parse error: {e}")
-            logger.error(f"[GAP_V2] Error at position: {e.pos if hasattr(e, 'pos') else 'unknown'}")
-
-            # Try XML fallback as last resort
-            return self._try_xml_fallback(response)
+        # V2 prompts return XML format (same as V1)
+        # Directly parse as XML without attempting JSON first
+        logger.info("[GAP_V2] Parsing XML response from V2 prompt")
+        return self._try_xml_fallback(response)
 
     def _is_json_complete(self, json_str: str) -> bool:
         """
@@ -686,7 +624,7 @@ Please provide a comprehensive gap analysis.
         Returns:
             Converted response or fallback
         """
-        logger.warning("[GAP_V2] Attempting XML parsing as fallback")
+        logger.info("[GAP_V2] Parsing XML response")
 
         try:
             # parse_gap_response is already imported at the top
