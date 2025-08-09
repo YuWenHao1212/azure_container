@@ -351,3 +351,193 @@ async def stream_response():
 **文檔狀態**: 完成  
 **最後更新**: 2025-08-09 22:00  
 **下一步**: 評估 GPT-4.1-mini 可行性
+
+---
+
+## 9. V4 提案：雙 LLM 並行化 Gap Analysis
+
+**提案日期**: 2025-08-10  
+**提案者**: Claude Code + WenHao  
+**狀態**: 待實施
+
+### 9.1 核心概念
+
+基於 V3 refactor 的經驗，我們發現 Gap Analysis 佔據 99.9% 的執行時間（9.18 秒）。傳統的架構優化已達極限，必須從根本上改變 Gap Analysis 的執行方式。
+
+**解決方案**：將單一的 Gap Analysis LLM 調用拆分為 2 個並行的 LLM 調用。
+
+### 9.2 現況分析
+
+#### 當前 Prompt 結構依賴關係
+```
+1. CORE STRENGTHS (獨立)
+2. KEY GAPS (獨立，但結果被 3、5 依賴)  
+3. QUICK IMPROVEMENTS (依賴 KEY GAPS 的 PRESENTATION gaps)
+4. OVERALL ASSESSMENT (依賴 1、2、3、5)
+5. SKILL DEVELOPMENT (依賴 KEY GAPS 的 TRUE gaps)
+```
+
+#### 關鍵數據
+- **Gap Analysis 執行時間**：9.18 秒（佔總時間 99.9%）
+- **並行效率**：僅 50%（理論應達 100%）
+- **V2 Prompt Token 數**：~2520 input + ~2025 output
+
+### 9.3 提案方案
+
+#### 方案 A：深淺分析並行（推薦）
+
+**架構設計**：
+```python
+async def dual_llm_gap_analysis():
+    # LLM 1: 快速掃描（4-5秒）
+    llm1_task = analyze_capabilities()  # CORE STRENGTHS + KEY GAPS
+    
+    # LLM 2: 深度建議（4-5秒，並行）
+    llm2_task = generate_suggestions()  # IMPROVEMENTS + SKILL DEVELOPMENT
+    
+    # 並行執行
+    results = await asyncio.gather(llm1_task, llm2_task)
+    
+    # 智能合併（<0.5秒）
+    return merge_results(results)
+```
+
+**LLM 1 - 快速掃描分析**
+- 職責：表面分析 + 快速識別
+- 內容：
+  - CORE STRENGTHS（完整分析）
+  - KEY GAPS（快速識別，不分類 TRUE/PRESENTATION）
+- 優化：簡化 reasoning_steps（3步 vs 原本 6步）
+- 預期時間：4-5 秒
+
+**LLM 2 - 深度建議生成**
+- 職責：建議生成 + 策略規劃
+- 內容：
+  - QUICK IMPROVEMENTS（基於所有可能的 gaps）
+  - SKILL DEVELOPMENT PRIORITIES（基於所有可能的 gaps）
+  - 簡化的 OVERALL ASSESSMENT
+- 優化：減少 examples（2個 vs 原本 4個）
+- 預期時間：4-5 秒
+
+#### 方案 B：技術/非技術分離
+
+**LLM 1 - 技術能力專家**
+- Technical CORE STRENGTHS
+- Technical KEY GAPS  
+- Technical SKILL DEVELOPMENT
+- 只分析硬技能（程式語言、框架、工具等）
+
+**LLM 2 - 軟技能與策略專家**
+- Soft Skills STRENGTHS
+- Communication/Leadership GAPS
+- ALL QUICK IMPROVEMENTS
+- OVERALL ASSESSMENT
+
+#### 方案 C：雙階段流水線（最優化）
+
+結合並行與串行的優勢，實現最佳性能。
+
+### 9.4 預期效果
+
+| 方案 | 當前 P50 | 預期 P50 | 改善率 | 當前 P95 | 預期 P95 | 改善率 |
+|------|---------|---------|--------|---------|---------|--------|
+| 現況 | 9.04s | - | - | 11.96s | - | - |
+| 方案 A | - | 5.0s | -44.7% | - | 6.5s | -45.7% |
+| 方案 B | - | 5.5s | -39.2% | - | 7.0s | -41.5% |
+| 方案 C | - | 4.5s | -50.2% | - | 6.0s | -49.8% |
+
+### 9.5 實施計劃
+
+#### Phase 1：Prompt 拆分（1-2 天）
+1. 創建 `v2.1.0-llm1.yaml`（快速掃描）
+2. 創建 `v2.1.0-llm2.yaml`（深度建議）
+3. 確保兩個 prompt 可獨立執行
+
+#### Phase 2：程式碼實施（2-3 天）
+```python
+# gap_analysis_v2.py 修改
+class GapAnalysisServiceV2:
+    async def analyze_dual_llm(
+        self,
+        resume: str,
+        job_description: str,
+        context: dict
+    ) -> dict:
+        # 準備兩個 prompt
+        prompt1 = self._build_scan_prompt(resume, job_description, context)
+        prompt2 = self._build_suggest_prompt(resume, job_description, context)
+        
+        # 並行執行
+        async with asyncio.TaskGroup() as tg:
+            task1 = tg.create_task(
+                self._llm_analyze(prompt1, "gpt-4.1")
+            )
+            task2 = tg.create_task(
+                self._llm_analyze(prompt2, "gpt-4.1-mini")  # 可用更快模型
+            )
+        
+        # 合併結果
+        return self._merge_dual_results(
+            task1.result(),
+            task2.result()
+        )
+```
+
+#### Phase 3：測試驗證（2-3 天）
+1. 單元測試：驗證拆分邏輯
+2. 整合測試：確保結果品質
+3. 性能測試：20 次真實 API 測試
+4. A/B 測試：比較新舊方案
+
+### 9.6 風險與緩解
+
+| 風險 | 影響 | 緩解策略 |
+|------|------|---------|
+| 分析品質下降 | 高 | 保留完整分析邏輯，只是分散執行 |
+| 結果不一致 | 中 | 智能合併邏輯 + 完整測試 |
+| 一個 LLM 失敗 | 低 | 降級策略：使用另一個結果 + 預設值 |
+| 成本增加 | 低 | LLM 2 可用 gpt-4.1-mini 降低成本 |
+
+### 9.7 關鍵成功因素
+
+1. **Prompt 優化**
+   - 每個 LLM 聚焦 2-3 個分析部分
+   - 減少 reasoning_steps 到 3-4 步
+   - 精簡 examples 到 2 個
+
+2. **真正並行**
+   - 確保兩個 LLM 無依賴關係
+   - 使用 asyncio.TaskGroup 管理並行
+   - 監控並行效率達到 90%+
+
+3. **智能合併**
+   - 程式碼合併基礎結果
+   - 可選：第 3 個輕量 LLM 生成 OVERALL ASSESSMENT
+   - 確保輸出格式一致性
+
+### 9.8 預期投資回報
+
+| 指標 | 預期值 | 說明 |
+|------|--------|------|
+| 開發投入 | 5-7 人天 | 包含測試和文檔 |
+| P50 改善 | 44-50% | 從 9.04s 降至 4.5-5.0s |
+| P95 改善 | 45-50% | 從 11.96s 降至 6.0-6.5s |
+| 用戶體驗 | 顯著提升 | 達成 < 5 秒業務目標 |
+| 技術創新 | 高 | 業界領先的雙 LLM 架構 |
+
+### 9.9 結論
+
+雙 LLM 並行化是突破當前性能瓶頸的關鍵創新。透過將 Gap Analysis 拆分為兩個並行執行的 LLM，我們可以：
+
+1. **突破單點瓶頸**：從 9.18s 降至 4.5-5.0s
+2. **保持分析品質**：完整保留 V2 的分析邏輯
+3. **達成業務目標**：P95 < 5 秒的要求
+4. **建立技術優勢**：可複製到其他 LLM 密集型服務
+
+**建議**：優先實施方案 A（深淺分析並行），風險最低且易於實施。
+
+---
+
+**文檔狀態**: 更新 - 加入 V4 提案  
+**最後更新**: 2025-08-10  
+**下一步**: 評估並實施雙 LLM 並行化方案
