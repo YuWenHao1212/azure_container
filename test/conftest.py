@@ -102,6 +102,9 @@ def mock_openai_clients():
         mock_embedding_instance = AsyncMock()
         mock_embedding_instance.create_embeddings = AsyncMock(return_value=[[0.1] * 1536, [0.2] * 1536])
         mock_embedding_instance.close = AsyncMock()
+        # Configure as proper async context manager
+        mock_embedding_instance.__aenter__ = AsyncMock(return_value=mock_embedding_instance)
+        mock_embedding_instance.__aexit__ = AsyncMock(return_value=None)
         mock_embedding.return_value = mock_embedding_instance
 
         # Configure keyword extraction service mock

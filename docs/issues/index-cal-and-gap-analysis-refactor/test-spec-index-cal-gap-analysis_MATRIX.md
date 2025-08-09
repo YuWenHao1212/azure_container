@@ -37,6 +37,7 @@
 | 5 | test/e2e_standalone/test_gap_analysis_v2_e2e.py | E2E測試 | API-GAP-001~002-E2E | 2 | ✅ 已實作 |
 | 6 | test/scripts/run_index_cal_gap_analysis_unit_integration.sh | 測試腳本 | Mock 測試執行器 | 47 | ✅ 已驗證 |
 | 7 | test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh | 測試腳本 | 真實 API 測試執行器 | 3 | ✅ 已實作 |
+| 8 | test/scripts/pre_commit_check_advanced.py | Python 測試腳本 | 進階 Pre-commit 執行器 | 47 | ✅ 已驗證 |
 
 ### 1.2 模組符合度分析
 
@@ -317,7 +318,17 @@
 
 ### 10.1 Mock 測試腳本驗證
 
-**腳本**: `./test/scripts/run_index_cal_gap_analysis_unit_integration.sh`
+**推薦腳本**: `python test/scripts/pre_commit_check_advanced.py`
+**備用腳本**: `./test/scripts/run_index_cal_gap_analysis_unit_integration.sh`
+
+#### Python 進階版執行方式：
+```bash
+# 執行 Gap Analysis 測試
+python test/scripts/pre_commit_check_advanced.py --only-gap-analysis
+
+# 執行完整 pre-commit 檢查（包含 Gap Analysis）
+python test/scripts/pre_commit_check_advanced.py
+```
 
 ```
 執行日期: 2025-08-06 14:58:35
@@ -386,7 +397,10 @@ P2 (Nice to have): 3/3 (100%)
 
 ### 12.1 測試執行命令
 ```bash
-# 執行完整 Mock 測試套件（推薦開發使用）- 47 個測試
+# 使用 Python 進階版 pre-commit 檢查器執行測試（推薦）
+python test/scripts/pre_commit_check_advanced.py --only-gap-analysis
+
+# 或執行完整 Mock 測試套件 - 47 個測試
 ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh
 
 # 執行單元測試 - 20 個測試
@@ -415,6 +429,9 @@ pytest -m p0 -v
 
 # 生成測試報告
 pytest --junit-xml=reports/junit.xml --html=reports/report.html
+
+# 執行完整 pre-commit 檢查（包含所有測試）
+python test/scripts/pre_commit_check_advanced.py
 ```
 
 ### 12.2 新增測試檢查清單

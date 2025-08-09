@@ -3,6 +3,7 @@
 專門用於解決測試隔離和間歇性失敗問題
 """
 import asyncio
+import contextlib
 import gc
 import os
 import sys
@@ -19,15 +20,26 @@ def reset_global_services():
         import src.services.keyword_extraction_v2
         src.services.keyword_extraction_v2._keyword_extraction_service_v2 = None
 
-    # 重置其他可能的全域狀態
+    # 重置 index_calculation_v2 的全域實例
+    if 'src.services.index_calculation_v2' in sys.modules:
+        import src.services.index_calculation_v2
+        src.services.index_calculation_v2._index_calculation_service_v2 = None
+
+    # 確保 asyncio 模組狀態清潔
+    # 檢查並清理任何可能殘留的 asyncio 補丁或修改
+    if hasattr(asyncio, '_original_sleep'):
+        # 如果有備份的原始 sleep, 恢復它
+        asyncio.sleep = asyncio._original_sleep
+        delattr(asyncio, '_original_sleep')
+
     # 可以根據需要添加更多服務的重置
 
 
-@pytest.fixture(autouse=True)
-def isolate_test_environment():
+@pytest.fixture(autouse=True, scope="class")
+def isolate_test_class_environment():
     """
-    確保每個測試在隔離的環境中執行
-    這個 fixture 會自動應用到所有測試
+    確保每個測試類別在隔離的環境中執行
+    這個 fixture 會自動應用到所有測試類別，在類別之間提供更強的隔離
     """
     # 保存當前環境狀態
     original_env = os.environ.copy()
@@ -50,6 +62,48 @@ def isolate_test_environment():
     reset_global_services()
 
     # 強制垃圾回收
+    gc.collect()
+
+    # 清理 unittest.mock 的全域狀態
+    import unittest.mock
+    # 清理所有活躍的 patches
+    if hasattr(unittest.mock, '_patch_registry'):
+        # 確保所有 patches 都已經停止
+        try:
+            for patch_obj in list(unittest.mock._patch_registry):
+                if patch_obj and hasattr(patch_obj, 'stop'):
+                    with contextlib.suppress(Exception):
+                        patch_obj.stop()  # 忽略已經停止的 patch
+        except Exception:  # noqa: S110
+            pass  # 忽略清理過程中的錯誤
+
+    # 清理模組的 import 狀態, 強制重新載入關鍵服務
+    modules_to_reload = [
+        'src.services.combined_analysis_v2',
+        'src.services.index_calculation_v2',
+        'src.services.embedding_client',
+        'src.services.llm_factory'
+    ]
+
+    for module_name in modules_to_reload:
+        if module_name in sys.modules:
+            # 不實際重載模組, 只重置其中的全域變數
+            module = sys.modules[module_name]
+            if hasattr(module, '_instance'):
+                module._instance = None
+            if hasattr(module, '_client'):
+                module._client = None
+
+
+@pytest.fixture(autouse=True)
+def isolate_test_function():
+    """
+    確保每個測試函數在隔離的環境中執行
+    """
+    # 測試前準備
+    yield
+
+    # 測試後快速清理
     gc.collect()
 
 
@@ -232,6 +286,9 @@ def comprehensive_mock_services():
         [0.1 + i * 0.01] * 1536 for i in range(2)  # Generate 2 embeddings (resume + JD)
     ])
     embedding_mock.close = AsyncMock()
+    # Configure as proper async context manager
+    embedding_mock.__aenter__ = AsyncMock(return_value=embedding_mock)
+    embedding_mock.__aexit__ = AsyncMock(return_value=None)
 
     # Mock LLM service with realistic gap analysis response
     llm_mock = AsyncMock()
@@ -314,13 +371,16 @@ def mock_all_external_services(comprehensive_mock_services):
     and add integration-specific mocks here.
     """
     services = comprehensive_mock_services
+    # Resource pool mock is already configured in comprehensive_mock_services
 
     with (
-        # Only patch services that definitely exist at module level
+        # Patch ResourcePoolManager at both import locations to ensure complete mocking
         patch('src.services.resource_pool_manager.ResourcePoolManager', return_value=services["resource_pool"]),
+        patch('src.services.combined_analysis_v2.ResourcePoolManager', return_value=services["resource_pool"]),
 
-        # Mock the embedding client to return our mock
-        patch('src.services.embedding_client.get_azure_embedding_client', return_value=services["embedding"]),
+        # Mock the embedding client factory function to return our async mock
+        patch('src.services.embedding_client.get_azure_embedding_client') as mock_get_embedding,
+        patch('src.services.index_calculation_v2.get_azure_embedding_client') as mock_get_embedding_index,
 
         # Also mock the class directly in case it's imported directly
         patch('src.services.embedding_client.AzureEmbeddingClient', return_value=services["embedding"]),
@@ -328,6 +388,10 @@ def mock_all_external_services(comprehensive_mock_services):
         # Low-level client creation prevention - removed to avoid importing openai module
         # Direct OpenAI SDK usage is prevented by LLM Factory pattern
     ):
+        # Configure the embedding client mocks to return our AsyncMock
+        mock_get_embedding.return_value = services["embedding"]
+        mock_get_embedding_index.return_value = services["embedding"]
+
         yield services
 
 

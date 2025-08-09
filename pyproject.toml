@@ -28,8 +28,8 @@ ignore = [
 # 測試文件可以有更寬鬆的規則
 "test/**/*.py" = ["E501", "F401", "SIM117", "S101", "RUF001", "RUF002", "S105"]
 "tests/**/*.py" = ["E501", "F401", "SIM117", "S101", "RUF001", "RUF002", "S105"]
-# Pydantic models Config class doesn't need ClassVar
-"src/models/*.py" = ["RUF012"]
+# Pydantic models Config class doesn't need ClassVar and validators use cls
+"src/models/*.py" = ["RUF012", "N805"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]

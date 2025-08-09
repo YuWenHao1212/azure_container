@@ -32,6 +32,7 @@
 | 3 | test/unit/services/test_keyword_service_integration.py | 單元測試 | SVC-KW-001~010-UT | 10 | ✅ 100% 通過 |
 | 4 | test/unit/services/test_llm_factory_service.py | 單元測試 | SVC-LLM-001~008-UT | 8 | ✅ 100% 通過 |
 | 5 | test/scripts/run_service_modules_tests_final.sh | 測試腳本 | Mock 測試執行器 | 47 | ✅ 已驗證 |
+| 6 | test/scripts/pre_commit_check_advanced.py | Python 測試腳本 | 進階 Pre-commit 執行器 | 47 | ✅ 已驗證 |
 
 ### 1.2 模組符合度分析
 
@@ -279,7 +280,17 @@
 
 ### 10.1 Mock 測試腳本驗證
 
-**腳本**: `./test/scripts/run_service_modules_tests_final.sh`
+**推薦腳本**: `python test/scripts/pre_commit_check_advanced.py`
+**備用腳本**: `./test/scripts/run_service_modules_tests_final.sh`
+
+#### Python 進階版執行方式：
+```bash
+# 執行服務模組測試
+python test/scripts/pre_commit_check_advanced.py --only-service-modules
+
+# 執行完整 pre-commit 檢查（包含服務模組）
+python test/scripts/pre_commit_check_advanced.py
+```
 
 ```
 執行日期: 2025-08-07 18:19
@@ -336,7 +347,10 @@ P2 (Nice-to-have): 8/8 (100%)
 
 ### 12.1 測試執行命令
 ```bash
-# 執行完整服務層測試套件 - 47 個測試
+# 使用 Python 進階版 pre-commit 檢查器執行測試（推薦）
+python test/scripts/pre_commit_check_advanced.py --only-service-modules
+
+# 或執行完整服務層測試套件 - 47 個測試
 ./test/scripts/run_service_modules_tests_final.sh
 
 # 執行特定服務測試

@@ -40,8 +40,12 @@ def get_prompt(task: str, version: str, language: str = "en") -> str:
         if hasattr(config, 'prompts') and 'main' in config.prompts:
             return config.prompts['main']
         elif hasattr(config, 'prompts') and len(config.prompts) > 0:
-            # Return first available prompt
-            return next(iter(config.prompts.values()))
+            # Return first available prompt, safely handle empty case
+            try:
+                return next(iter(config.prompts.values()))
+            except StopIteration:
+                # Fallback if somehow prompts becomes empty
+                return "Analyze the gap between resume and job requirements. Provide detailed feedback."
         else:
             # Fallback: return a default prompt template
             return "Analyze the gap between resume and job requirements. Provide detailed feedback."

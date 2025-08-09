@@ -4,6 +4,7 @@ Advanced Pre-commit validation script
 使用 pytest 程式化 API 直接執行測試並收集詳細結果
 """
 # ruff: noqa: S603  # subprocess calls are safe in this test script
+import argparse
 import asyncio
 import os
 import subprocess
@@ -75,19 +76,31 @@ class CustomPlugin:
 class AdvancedPreCommitValidator:
     """Advanced pre-commit validation with pytest API"""
 
-    def __init__(self):
+    def __init__(self, option: str = "full"):
         self.start_time = time.time()
         self.results = {}
         self.overall_failed = False
+        self.option = option
 
         # Set testing environment
         os.environ['TESTING'] = 'true'
         os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
         os.environ['USE_V2_IMPLEMENTATION'] = 'true'
 
+        # Define available test options
+        self.available_options = {
+            "ruff": {"name": "Ruff 檢查", "step": 1},
+            "service": {"name": "服務模組測試", "step": 2},
+            "health-keyword": {"name": "Health & Keyword 測試", "step": 3},
+            "index-calculation": {"name": "Index Calculation 測試", "step": 4},
+            "gap-analysis": {"name": "Gap Analysis 測試", "step": 5},
+            "full": {"name": "完整測試", "step": None}
+        }
+
     def run_ruff_check(self) -> TestResult:
         """Run Ruff code quality check"""
-        print(f"{Colors.BLUE}📝 Step 1/5: Running Ruff check...{Colors.RESET}")
+        step_info = "Step 1/5: " if self.option == "full" else ""
+        print(f"{Colors.BLUE}📝 {step_info}Running Ruff check...{Colors.RESET}")
         print("Checking src/ and test/ directories")
 
         start = time.time()
@@ -212,7 +225,8 @@ class AdvancedPreCommitValidator:
 
     def run_service_modules_tests(self) -> dict[str, TestResult]:
         """Run service module tests"""
-        print(f"\n{Colors.BLUE}📝 Step 2/5: Running Service Modules tests...{Colors.RESET}")
+        step_info = "Step 2/5: " if self.option == "full" else ""
+        print(f"\n{Colors.BLUE}📝 {step_info}Running Service Modules tests...{Colors.RESET}")
 
         # Based on the actual test files in test/unit/services/
         service_tests = {
@@ -269,7 +283,8 @@ class AdvancedPreCommitValidator:
 
     def run_health_keyword_tests(self) -> dict[str, TestResult]:
         """Run Health & Keyword tests"""
-        print(f"\n{Colors.BLUE}📝 Step 3/5: Running Health & Keyword tests...{Colors.RESET}")
+        step_info = "Step 3/5: " if self.option == "full" else ""
+        print(f"\n{Colors.BLUE}📝 {step_info}Running Health & Keyword tests...{Colors.RESET}")
 
         unit_files = [
             "test/unit/test_health.py",
@@ -310,7 +325,8 @@ class AdvancedPreCommitValidator:
 
     def run_index_calculation_tests(self) -> dict[str, TestResult]:
         """Run Index Calculation tests"""
-        print(f"\n{Colors.BLUE}📝 Step 4/5: Running Index Calculation tests...{Colors.RESET}")
+        step_info = "Step 4/5: " if self.option == "full" else ""
+        print(f"\n{Colors.BLUE}📝 {step_info}Running Index Calculation tests...{Colors.RESET}")
 
         unit_files = ["test/unit/test_index_calculation_v2.py"]
         integration_files = ["test/integration/test_index_calculation_v2_api.py"]
@@ -344,7 +360,8 @@ class AdvancedPreCommitValidator:
 
     def run_gap_analysis_tests(self) -> dict[str, TestResult]:
         """Run Gap Analysis tests with timeout handling"""
-        print(f"\n{Colors.BLUE}📝 Step 5/5: Running Gap Analysis tests...{Colors.RESET}")
+        step_info = "Step 5/5: " if self.option == "full" else ""
+        print(f"\n{Colors.BLUE}📝 {step_info}Running Gap Analysis tests...{Colors.RESET}")
 
         unit_files = ["test/unit/test_gap_analysis_v2.py"]
         integration_files = [
@@ -401,61 +418,31 @@ class AdvancedPreCommitValidator:
     def print_summary_table(self):
         """Print the final summary table matching the shell script format"""
         total_duration = time.time() - self.start_time
-        total_passed = 0
-        total_failed = 0
+
+        # Get option name for header
+        option_name = self.available_options.get(self.option, {}).get("name", self.option)
+        header_title = 'Pre-commit 完整測試報告' if self.option == 'full' else f'{option_name}報告'
 
         # Print header
         print("\n" + "=" * 71)
         print("╔" + "═" * 69 + "╗")
-        print("║" + " " * 20 + "Pre-commit 完整測試報告" + " " * 25 + "║")
+        header_spaces = (69 - len(header_title)) // 2
+        print("║" + " " * header_spaces + header_title + " " * (69 - len(header_title) - header_spaces) + "║")
         print("╚" + "═" * 69 + "╝")
-        print("\n📊 測試統計總覽")
+
+        # Dynamic subtitle based on option
+        if self.option == "full":
+            print("\n📊 測試統計總覽")
+        else:
+            print(f"\n📊 {option_name}統計")
         print("=" * 71)
 
         # Table header
         print(f"| {'測試分類':<26} | {'通過':>5} | {'失敗':>5} | {'總計':>5} | {'耗時':>6} | {'狀態':>4} |")
         print("|" + "-" * 28 + "|" + "-" * 7 + "|" + "-" * 7 + "|" + "-" * 7 + "|" + "-" * 8 + "|" + "-" * 6 + "|")
 
-        # Ruff check
-        ruff_result = self.results.get("ruff", TestResult())
-        if ruff_result.skipped:
-            print(f"| {'🔍 Ruff 檢查':<26} | {'⏭️':>5} | {'-':>5} | {'-':>5} | {ruff_result.duration:.1f}s{' ':>2} | {'⏭️':>4} |")
-        else:
-            print(f"| {'🔍 Ruff 檢查':<26} | {ruff_result.status:>5} | {'-':>5} | {'-':>5} | {ruff_result.duration:.1f}s{' ':>2} | {ruff_result.status:>4} |")
-
-        print(f"| {'':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
-
-        # Service modules
-        print(f"| {'🏗️ 服務模組測試':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
-        service_results = self.results.get("service_modules", {})
-
-        for service_name, result in service_results.items():
-            total_passed += result.passed
-            total_failed += result.failed
-            print(f"|   ├─ {service_name:<22} | {result.passed:>5} | {result.failed:>5} | {result.total:>5} | {result.duration:.1f}s{' ':>2} | {result.status:>4} |")
-
-        print(f"| {'':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
-
-        # API tests
-        api_tests = [
-            ("🩺 Health & Keyword", "health_keyword"),
-            ("🧮 Index Calculation", "index_calc"),
-            ("📈 Gap Analysis", "gap_analysis")
-        ]
-
-        for display_name, key in api_tests:
-            print(f"| {display_name:<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
-            results = self.results.get(key, {})
-
-            for test_type in ["unit", "integration"]:
-                if test_type in results:
-                    result = results[test_type]
-                    total_passed += result.passed
-                    total_failed += result.failed
-                    type_label = "單元測試 (UT)" if test_type == "unit" else "整合測試 (IT)"
-                    print(f"|   ├─ {type_label:<22} | {result.passed:>5} | {result.failed:>5} | {result.total:>5} | {result.duration:.1f}s{' ':>2} | {result.status:>4} |")
-
-            print(f"| {'':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
+        # Display only results for executed tests
+        total_passed, total_failed = self._print_test_results()
 
         # Total row
         total_tests = total_passed + total_failed
@@ -471,6 +458,54 @@ class AdvancedPreCommitValidator:
         else:
             print(f"\n{Colors.RED}❌ 發現 {total_failed} 個測試失敗，無法提交{Colors.RESET}")
             self.print_failure_details()
+
+    def _print_test_results(self):
+        """Print test results based on executed tests"""
+        total_passed = 0
+        total_failed = 0
+
+        # Ruff check
+        if "ruff" in self.results:
+            ruff_result = self.results["ruff"]
+            if ruff_result.skipped:
+                print(f"| {'🔍 Ruff 檢查':<26} | {'⏭️':>5} | {'-':>5} | {'-':>5} | {ruff_result.duration:.1f}s{' ':>2} | {'⏭️':>4} |")
+            else:
+                print(f"| {'🔍 Ruff 檢查':<26} | {ruff_result.status:>5} | {'-':>5} | {'-':>5} | {ruff_result.duration:.1f}s{' ':>2} | {ruff_result.status:>4} |")
+            print(f"| {'':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
+
+        # Service modules
+        if "service_modules" in self.results:
+            print(f"| {'🏗️ 服務模組測試':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
+            service_results = self.results["service_modules"]
+            for service_name, result in service_results.items():
+                total_passed += result.passed
+                total_failed += result.failed
+                print(f"|   ├─ {service_name:<22} | {result.passed:>5} | {result.failed:>5} | {result.total:>5} | {result.duration:.1f}s{' ':>2} | {result.status:>4} |")
+            print(f"| {'':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
+
+        # API tests - only show executed ones
+        api_test_mapping = {
+            "health_keyword": ("🩺 Health & Keyword", "health_keyword"),
+            "index_calc": ("🧮 Index Calculation", "index_calc"),
+            "gap_analysis": ("📈 Gap Analysis", "gap_analysis")
+        }
+
+        for result_key, (display_name, _) in api_test_mapping.items():
+            if result_key in self.results:
+                print(f"| {display_name:<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
+                results = self.results[result_key]
+
+                for test_type in ["unit", "integration"]:
+                    if test_type in results:
+                        result = results[test_type]
+                        total_passed += result.passed
+                        total_failed += result.failed
+                        type_label = "單元測試 (UT)" if test_type == "unit" else "整合測試 (IT)"
+                        print(f"|   ├─ {type_label:<22} | {result.passed:>5} | {result.failed:>5} | {result.total:>5} | {result.duration:.1f}s{' ':>2} | {result.status:>4} |")
+
+                print(f"| {'':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
+
+        return total_passed, total_failed
 
     def print_failure_details(self):
         """Print detailed failure information"""
@@ -536,24 +571,26 @@ class AdvancedPreCommitValidator:
 
     def run(self):
         """Main execution method"""
-        print(f"\n{Colors.BOLD}🚨 Pre-commit validation starting...{Colors.RESET}")
-        print("=" * 70)
-        print()
+        # Determine which tests to run based on option
+        test_steps = self._get_test_steps()
 
-        # Step 1: Ruff check
-        self.results["ruff"] = self.run_ruff_check()
+        if self.option == "full":
+            print(f"\n{Colors.BOLD}🚨 Pre-commit validation starting...{Colors.RESET}")
+            print("=" * 70)
+            print()
+        else:
+            option_name = self.available_options.get(self.option, {}).get("name", self.option)
+            print(f"\n{Colors.BOLD}🚨 {option_name} starting...{Colors.RESET}")
+            print("=" * 70)
+            print()
 
-        # Step 2: Service Modules
-        self.results["service_modules"] = self.run_service_modules_tests()
+        # Execute selected test steps
+        for step_key, step_method in test_steps:
+            self.results[step_key] = step_method()
 
-        # Step 3: Health & Keyword
-        self.results["health_keyword"] = self.run_health_keyword_tests()
-
-        # Step 4: Index Calculation
-        self.results["index_calc"] = self.run_index_calculation_tests()
-
-        # Step 5: Gap Analysis
-        self.results["gap_analysis"] = self.run_gap_analysis_tests()
+            # Early exit on failure for single option runs
+            if self.option != "full" and self.overall_failed:
+                break
 
         # Print summary
         print("\n" + "=" * 70)
@@ -569,8 +606,63 @@ class AdvancedPreCommitValidator:
             print("4. Once all tests pass, try committing again")
             sys.exit(1)
         else:
+            if self.option == "full":
+                print("\n💡 Test commands:")
+                print("• Health & Keyword: ./test/scripts/run_health_keyword_unit_integration.sh")
+                print("• Index Calc: ./test/scripts/run_index_calculation_unit_integration.sh")
+                print("• Gap Analysis: ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh")
+                print("• Quick check: ruff check src/ test/ --line-length=120")
             sys.exit(0)
 
+    def _get_test_steps(self):
+        """Get test steps to execute based on option"""
+        all_steps = [
+            ("ruff", self.run_ruff_check),
+            ("service_modules", self.run_service_modules_tests),
+            ("health_keyword", self.run_health_keyword_tests),
+            ("index_calc", self.run_index_calculation_tests),
+            ("gap_analysis", self.run_gap_analysis_tests)
+        ]
+
+        option_mapping = {
+            "ruff": [("ruff", self.run_ruff_check)],
+            "service": [("service_modules", self.run_service_modules_tests)],
+            "health-keyword": [("health_keyword", self.run_health_keyword_tests)],
+            "index-calculation": [("index_calc", self.run_index_calculation_tests)],
+            "gap-analysis": [("gap_analysis", self.run_gap_analysis_tests)],
+            "full": all_steps
+        }
+
+        return option_mapping.get(self.option, all_steps)
+
 if __name__ == "__main__":
-    validator = AdvancedPreCommitValidator()
+    parser = argparse.ArgumentParser(
+        description="Advanced Pre-commit validation script",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Available options:
+  ruff              : Run only Ruff code quality check
+  service           : Run only Service Modules tests
+  health-keyword    : Run only Health & Keyword tests
+  index-calculation : Run only Index Calculation tests
+  gap-analysis      : Run only Gap Analysis tests
+  full              : Run all tests (default)
+
+Examples:
+  python test/scripts/pre_commit_check_advanced.py --option service
+  python test/scripts/pre_commit_check_advanced.py --option ruff
+  python test/scripts/pre_commit_check_advanced.py  # runs full by default
+        """
+    )
+
+    parser.add_argument(
+        "--option",
+        choices=["ruff", "service", "health-keyword", "index-calculation", "gap-analysis", "full"],
+        default="full",
+        help="Select which tests to run (default: full)"
+    )
+
+    args = parser.parse_args()
+
+    validator = AdvancedPreCommitValidator(option=args.option)
     validator.run()

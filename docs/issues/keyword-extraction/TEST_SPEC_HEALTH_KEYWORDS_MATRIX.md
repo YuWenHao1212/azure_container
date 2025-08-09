@@ -34,6 +34,7 @@
 | 4 | test/integration/test_keyword_extraction_language.py | 整合測試 | API-KW-101~110-IT | 10 | ✅ 100% 通過 |
 | 5 | test/performance/test_keyword_extraction_performance.py | 效能測試 | API-KW-201-PT | 1 | ✅ 已實作 |
 | 6 | test/scripts/run_health_keyword_unit_integration.sh | 測試腳本 | Mock 測試執行器 | 19 | ✅ 已驗證 |
+| 8 | test/scripts/pre_commit_check_advanced.py | Python 測試腳本 | 進階 Pre-commit 執行器 | 19 | ✅ 已驗證 |
 | 7 | test/scripts/run_health_keyword_real_api_perf.sh | 測試腳本 | 真實 API 測試執行器 | 1 | ✅ 已實作 |
 
 ### 1.2 模組符合度分析
@@ -270,7 +271,17 @@
 
 ### 10.1 Mock 測試腳本驗證
 
-**腳本**: `./test/scripts/run_health_keyword_unit_integration.sh`
+**推薦腳本**: `python test/scripts/pre_commit_check_advanced.py`
+**備用腳本**: `./test/scripts/run_health_keyword_unit_integration.sh`
+
+#### Python 進階版執行方式：
+```bash
+# 執行 Health & Keyword 測試
+python test/scripts/pre_commit_check_advanced.py --only-health-keyword
+
+# 執行完整 pre-commit 檢查（包含 Health & Keyword）
+python test/scripts/pre_commit_check_advanced.py
+```
 
 ```
 執行日期: 2025-08-06 18:50
@@ -336,7 +347,10 @@ P1 (Important): 3/3 (100%)
 
 ### 12.1 測試執行命令
 ```bash
-# 執行完整 Mock 測試套件（推薦開發使用）- 18 個測試
+# 使用 Python 進階版 pre-commit 檢查器執行測試（推薦）
+python test/scripts/pre_commit_check_advanced.py --only-health-keyword
+
+# 或執行完整 Mock 測試套件 - 19 個測試
 ./test/scripts/run_health_keyword_unit_integration.sh
 
 # 執行單元測試 - 8 個測試

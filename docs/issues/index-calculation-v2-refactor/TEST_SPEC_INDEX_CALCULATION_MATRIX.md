@@ -246,7 +246,8 @@
 
 | 腳本 | 用途 | 測試數量 | 執行時間 |
 |------|------|----------|----------|
-| `run_index_calculation_unit_integration.sh` | 單元和整合測試 | 24 | ~18秒 |
+| `python test/scripts/pre_commit_check_advanced.py --only-index-calc` | 單元和整合測試（推薦） | 24 | ~18秒 |
+| `run_index_calculation_unit_integration.sh` | 單元和整合測試（備用） | 24 | ~18秒 |
 | `run_index_calculation_real_api_perf_e2e.sh` | 效能和E2E測試 | 5 | ~40秒 |
 
 ---
@@ -254,7 +255,10 @@
 ## 9. 測試執行命令快速參考
 
 ```bash
-# 執行所有 Index Calculation V2 測試
+# 使用 Python 進階版 pre-commit 檢查器執行測試（推薦）
+python test/scripts/pre_commit_check_advanced.py --only-index-calc
+
+# 或執行所有 Index Calculation V2 測試
 ./test/scripts/run_index_calculation_unit_integration.sh
 ./test/scripts/run_index_calculation_real_api_perf_e2e.sh
 
@@ -272,6 +276,9 @@ pytest test/unit/test_index_calculation_v2.py --cov=src.services.index_calculati
 
 # 執行特定優先級測試
 pytest test/unit/test_index_calculation_v2.py -k "P0" -v
+
+# 執行完整 pre-commit 檢查（包含所有測試）
+python test/scripts/pre_commit_check_advanced.py
 ```
 
 ---

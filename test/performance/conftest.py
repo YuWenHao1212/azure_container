@@ -44,8 +44,7 @@ assert os.environ.get('EMBEDDING_ENDPOINT'), "EMBEDDING_ENDPOINT not loaded from
 
 print("🎯 Performance testing mode: REAL API calls enabled, mocks disabled")
 
-# Configure pytest-asyncio
-pytest_plugins = ['pytest_asyncio']
+# Configure pytest-asyncio (moved to root conftest)
 
 @pytest.fixture(scope="session")
 def event_loop_policy():
