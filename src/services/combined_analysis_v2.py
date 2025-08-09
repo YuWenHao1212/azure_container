@@ -162,12 +162,15 @@ class CombinedAnalysisServiceV2(BaseService):
         analysis_options: dict[str, Any] | None
     ) -> dict[str, Any]:
         """
-        Execute analysis using three-phase parallel processing approach.
+        Execute analysis using V3 true parallel processing approach.
 
-        Phase 1: Parallel embedding generation (shared)
-        Phase 2: Index calculation with embeddings
-        Phase 3: Context-aware gap analysis
+        V3 Optimization (Plan B):
+        - Keywords and Embeddings start simultaneously at T=0
+        - Gap Analysis starts immediately after Keywords (50ms)
+        - Index calculation runs in background
         """
+        import asyncio
+
         # Detailed timing tracking for V3 optimization
         detailed_timings = {
             "start": time.time(),
@@ -190,85 +193,119 @@ class CombinedAnalysisServiceV2(BaseService):
 
         phase_timings = {}
 
-        # Phase 1: Generate embeddings using resource pool
+        # V3 TRUE PARALLEL: Start Keywords and Embeddings simultaneously at T=0
         phase1_start = time.time()
         detailed_timings["embedding_start"] = phase1_start
+        detailed_timings["keyword_match_start"] = phase1_start
 
-        # Check if resource pool is enabled (for E2E tests)
+        # Create async tasks for parallel execution
+        keyword_task = asyncio.create_task(
+            asyncio.to_thread(self._quick_keyword_match, resume, keywords)
+        )
+
+        # Start embeddings generation in parallel
+        embedding_task = None
         if os.getenv('RESOURCE_POOL_ENABLED', 'true').lower() == 'false':
             # Direct embedding generation without resource pool
-            await self._generate_embeddings_parallel(
-                None, resume, job_description
+            embedding_task = asyncio.create_task(
+                self._generate_embeddings_parallel(None, resume, job_description)
             )
         else:
             # Use resource pool for production
-            async with self.resource_pool.get_client() as client:
-                await self._generate_embeddings_parallel(
-                    client, resume, job_description
-                )
-                self.stats["resource_pool_hits"] += 1
+            async def _generate_with_pool():
+                async with self.resource_pool.get_client() as client:
+                    result = await self._generate_embeddings_parallel(
+                        client, resume, job_description
+                    )
+                    self.stats["resource_pool_hits"] += 1
+                    return result
 
+            embedding_task = asyncio.create_task(_generate_with_pool())
+
+        # Wait for keywords to complete (should be ~50ms)
+        keyword_coverage = await keyword_task
+        detailed_timings["keyword_match_end"] = time.time()
+
+        # V3 KEY OPTIMIZATION: Start Gap Analysis immediately with just keywords
+        gap_start = time.time()
+        detailed_timings["gap_context_start"] = gap_start
+        detailed_timings["gap_llm_start"] = gap_start
+
+        # Build minimal index_result with just keywords (no similarity_score needed)
+        minimal_index_result = {
+            "keyword_coverage": keyword_coverage,
+            "similarity_percentage": 0,  # Default value to avoid errors
+            "raw_similarity_percentage": 0,
+            "processing_time_ms": 0
+        }
+
+        # Start Gap Analysis immediately (not waiting for embeddings or full index)
+        if self.retry_strategy:
+            gap_task = asyncio.create_task(
+                self.retry_strategy.execute_with_retry(
+                    lambda: self.gap_service.analyze_with_context(
+                        resume=resume,
+                        job_description=job_description,
+                        index_result=minimal_index_result,
+                        language=language,
+                        options=analysis_options
+                    ),
+                    error_classifier=self._classify_gap_error,
+                    get_retry_after=self._get_retry_after_from_error
+                )
+            )
+        else:
+            gap_task = asyncio.create_task(
+                self.gap_service.analyze_with_context(
+                    resume=resume,
+                    job_description=job_description,
+                    index_result=minimal_index_result,
+                    language=language,
+                    options=analysis_options
+                )
+            )
+
+        # Wait for embeddings to complete (background task)
+        await embedding_task
         detailed_timings["embedding_end"] = time.time()
         phase_timings["embedding_generation"] = detailed_timings["embedding_end"] - phase1_start
 
-        # Phase 2: Index calculation with pre-computed embeddings
-        phase2_start = time.time()
-        detailed_timings["index_llm_start"] = phase2_start
+        # Calculate full Index in background (not blocking Gap Analysis)
+        index_start = time.time()
+        detailed_timings["index_llm_start"] = index_start
 
         if self.retry_strategy:
-            index_result = await self.retry_strategy.execute_with_retry(
-                lambda: self.index_service.calculate_index(
+            index_task = asyncio.create_task(
+                self.retry_strategy.execute_with_retry(
+                    lambda: self.index_service.calculate_index(
+                        resume=resume,
+                        job_description=job_description,
+                        keywords=keywords
+                    ),
+                    error_classifier=self._classify_index_error,
+                    get_retry_after=self._get_retry_after_from_error
+                )
+            )
+        else:
+            index_task = asyncio.create_task(
+                self.index_service.calculate_index(
                     resume=resume,
                     job_description=job_description,
                     keywords=keywords
-                ),
-                error_classifier=self._classify_index_error,
-                get_retry_after=self._get_retry_after_from_error
-            )
-        else:
-            # Direct call without retry
-            index_result = await self.index_service.calculate_index(
-                resume=resume,
-                job_description=job_description,
-                keywords=keywords
+                )
             )
 
-        detailed_timings["index_llm_end"] = time.time()
-        phase_timings["index_calculation"] = detailed_timings["index_llm_end"] - phase2_start
-
-        # Phase 3: Context-aware gap analysis
-        phase3_start = time.time()
-        detailed_timings["gap_context_start"] = phase3_start
-
-        # Note: Context preparation happens inside gap_service.analyze_with_context
-        # We'll need to modify that service to get more detailed timings
-
-        detailed_timings["gap_llm_start"] = time.time()
-
-        if self.retry_strategy:
-            gap_result = await self.retry_strategy.execute_with_retry(
-                lambda: self.gap_service.analyze_with_context(
-                    resume=resume,
-                    job_description=job_description,
-                    index_result=index_result,
-                    language=language,
-                    options=analysis_options
-                ),
-                error_classifier=self._classify_gap_error,
-                get_retry_after=self._get_retry_after_from_error
-            )
-        else:
-            gap_result = await self.gap_service.analyze_with_context(
-                resume=resume,
-                job_description=job_description,
-                index_result=index_result,
-                language=language,
-                options=analysis_options
-            )
-
+        # Wait for Gap Analysis to complete (critical path)
+        gap_result = await gap_task
         detailed_timings["gap_llm_end"] = time.time()
+        phase_timings["gap_analysis"] = detailed_timings["gap_llm_end"] - gap_start
+
+        # Wait for Index to complete (background)
+        index_result = await index_task
+        detailed_timings["index_llm_end"] = time.time()
+        phase_timings["index_calculation"] = detailed_timings["index_llm_end"] - index_start
+
         detailed_timings["end"] = time.time()
-        phase_timings["gap_analysis"] = detailed_timings["gap_llm_end"] - phase3_start
 
         # Calculate parallel processing efficiency
         total_sequential_time = sum(phase_timings.values())
@@ -279,6 +316,11 @@ class CombinedAnalysisServiceV2(BaseService):
         # Calculate detailed timing breakdown
         timing_breakdown = {
             "total_time": round((detailed_timings["end"] - detailed_timings["start"]) * 1000, 2),
+            "keyword_matching_time": (
+                round((detailed_timings["keyword_match_end"] - detailed_timings["keyword_match_start"]) * 1000, 2)
+                if detailed_timings["keyword_match_end"] and detailed_timings["keyword_match_start"]
+                else None
+            ),
             "embedding_time": (
                 round((detailed_timings["embedding_end"] - detailed_timings["embedding_start"]) * 1000, 2)
                 if detailed_timings["embedding_end"] and detailed_timings["embedding_start"]
@@ -296,46 +338,59 @@ class CombinedAnalysisServiceV2(BaseService):
             ),
         }
 
-        # Log detailed timings for V3 optimization analysis
+        # Log V3 optimization performance
         logger.info(
-            "V3 Optimization - Detailed timing breakdown",
+            "V3 Optimization - True parallel execution",
             extra={
                 "timing_breakdown_ms": timing_breakdown,
+                "optimization": "Plan B",
+                "keyword_to_gap_latency_ms": timing_breakdown.get("keyword_matching_time", 0),
                 "phase_percentages": {
+                    "keywords": (
+                        round(
+                            (timing_breakdown.get("keyword_matching_time", 0) / timing_breakdown["total_time"] * 100), 1
+                        )
+                        if timing_breakdown.get("keyword_matching_time")
+                        else None
+                    ),
                     "embedding": (
-                        round((timing_breakdown["embedding_time"] / timing_breakdown["total_time"] * 100), 1)
-                        if timing_breakdown["embedding_time"]
+                        round((timing_breakdown.get("embedding_time", 0) / timing_breakdown["total_time"] * 100), 1)
+                        if timing_breakdown.get("embedding_time")
                         else None
                     ),
                     "index": (
-                        round((timing_breakdown["index_calculation_time"] / timing_breakdown["total_time"] * 100), 1)
-                        if timing_breakdown["index_calculation_time"]
+                        round(
+                            timing_breakdown.get("index_calculation_time", 0) / timing_breakdown["total_time"] * 100,
+                            1
+                        )
+                        if timing_breakdown.get("index_calculation_time")
                         else None
                     ),
                     "gap": (
-                        round((timing_breakdown["gap_analysis_time"] / timing_breakdown["total_time"] * 100), 1)
-                        if timing_breakdown["gap_analysis_time"]
+                        round((timing_breakdown.get("gap_analysis_time", 0) / timing_breakdown["total_time"] * 100), 1)
+                        if timing_breakdown.get("gap_analysis_time")
                         else None
                     ),
                 }
             }
         )
 
-        # Combine results
+        # Combine results (maintain API compatibility)
         return {
             "index_calculation": index_result,
             "gap_analysis": gap_result,
             "metadata": {
-                "version": "2.0",
+                "version": "3.0",
                 "language_detected": language,
-                "processing_approach": "parallel_optimized",
+                "processing_approach": "v3_true_parallel",
+                "optimization": "Plan B - Gap starts after keywords only",
                 "phase_timings_ms": {
                     phase: round(timing * 1000, 2)
                     for phase, timing in phase_timings.items()
                 },
                 "detailed_timings_ms": timing_breakdown,
                 "parallel_efficiency": round(efficiency * 100, 1),
-                "resource_pool_used": True
+                "resource_pool_used": os.getenv('RESOURCE_POOL_ENABLED', 'true').lower() != 'false'
             }
         }
 
@@ -372,6 +427,84 @@ class CombinedAnalysisServiceV2(BaseService):
         return {
             "resume": resume_task.result(),
             "job_description": job_task.result()
+        }
+
+    def _quick_keyword_match(self, resume: str, keywords: list[str]) -> dict[str, Any]:
+        """
+        Quickly match keywords without LLM calls.
+        Extracted from IndexCalculationServiceV2 for fast execution (~50ms).
+
+        Args:
+            resume: Resume text
+            keywords: List of keywords to match
+
+        Returns:
+            Keyword coverage dictionary
+        """
+        from src.services.text_processing import clean_html_text
+
+        # Clean HTML if present
+        resume_text = clean_html_text(resume)
+
+        # Handle empty inputs
+        if not keywords or not resume_text:
+            return {
+                "total_keywords": 0,
+                "covered_count": 0,
+                "coverage_percentage": 0,
+                "covered_keywords": [],
+                "missed_keywords": []
+            }
+
+        # Convert keywords to list if string
+        if isinstance(keywords, str):
+            keywords = [k.strip() for k in keywords.split(",") if k.strip()]
+
+        # Prepare resume text for matching (case insensitive)
+        resume_search_text = resume_text.lower()
+
+        covered = []
+        missed = []
+
+        for keyword in keywords:
+            keyword = keyword.strip()
+            if not keyword:
+                continue
+
+            # Case insensitive search
+            search_keyword = keyword.lower()
+
+            # Try exact word boundary match
+            import re
+            found = bool(re.search(rf'\b{re.escape(search_keyword)}\b', resume_search_text))
+
+            # Try plural matching if not found
+            if not found:
+                # Check if keyword ends with 's' and try without it
+                if search_keyword.endswith('s') and len(search_keyword) > 1:
+                    singular = search_keyword[:-1]
+                    found = bool(re.search(rf'\b{re.escape(singular)}\b', resume_search_text))
+                # Or check if we can add 's' to match plural
+                elif not search_keyword.endswith('s'):
+                    plural = search_keyword + 's'
+                    found = bool(re.search(rf'\b{re.escape(plural)}\b', resume_search_text))
+
+            if found:
+                covered.append(keyword)
+            else:
+                missed.append(keyword)
+
+        # Calculate statistics
+        total = len([k for k in keywords if k.strip()])
+        covered_count = len(covered)
+        percentage = round(covered_count / total * 100) if total else 0
+
+        return {
+            "total_keywords": total,
+            "covered_count": covered_count,
+            "coverage_percentage": percentage,
+            "covered_keywords": covered,
+            "missed_keywords": missed
         }
 
     async def _generate_embeddings_parallel_with_timing(

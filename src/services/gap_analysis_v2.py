@@ -192,7 +192,7 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
             Enhanced prompt with context information
         """
         # Extract context from index results
-        similarity_score = index_result.get("similarity_percentage", 0)
+        # Note: similarity_score is no longer used in v2.0.0 prompt
         keyword_coverage = index_result.get("keyword_coverage", {})
         covered_keywords = keyword_coverage.get("covered_keywords", [])
         missed_keywords = keyword_coverage.get("missed_keywords", [])
@@ -211,8 +211,7 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
                 user_prompt = config.prompts.get('user', '')
 
             # Replace placeholders in prompts
-            # First replace all context variables in system prompt
-            system_prompt = system_prompt.replace("{similarity_score}", str(similarity_score))
+            # Note: v2.0.0 prompt doesn't use similarity_score anymore
             system_prompt = system_prompt.replace("{keyword_coverage_percentage}",
                                                   str(keyword_coverage.get('coverage_percentage', 0)))
             system_prompt = system_prompt.replace("{covered_keywords}",
@@ -223,7 +222,6 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
             # Replace placeholders in user prompt
             user_prompt = user_prompt.replace("{job_description}", job_description)
             user_prompt = user_prompt.replace("{resume}", resume)
-            user_prompt = user_prompt.replace("{similarity_score}", str(similarity_score))
             user_prompt = user_prompt.replace("{keyword_coverage_percentage}",
                                              str(keyword_coverage.get('coverage_percentage', 0)))
             user_prompt = user_prompt.replace("{covered_keywords}",
@@ -241,7 +239,6 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
 Analyze the gap between the resume and job description.
 
 Context:
-- Overall Match Score: {similarity_score}%
 - Keyword Coverage: {keyword_coverage.get('coverage_percentage', 0)}%
 - Covered Keywords: {', '.join(covered_keywords[:10])}
 - Missing Keywords: {', '.join(missed_keywords[:10])}
