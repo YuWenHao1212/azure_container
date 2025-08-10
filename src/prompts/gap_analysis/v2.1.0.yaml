@@ -50,9 +50,9 @@ prompts:
     </reasoning_steps>
     
     <examples>
-     GOOD: "Python Backend Development (5 years) - Developed 3 FastAPI microservices handling 10K+ requests/second at TechCorp, directly matching the 'Python expertise' requirement"
+    ✓ GOOD: "Python Backend Development (5 years) - Developed 3 FastAPI microservices handling 10K+ requests/second at TechCorp, directly matching the 'Python expertise' requirement"
     L BAD: "Has experience with Python"
-     GOOD: "Team Leadership (3 years) - Led cross-functional team of 8 engineers, delivered 5 projects on time, aligns with 'team collaboration' requirement"
+    ✓ GOOD: "Team Leadership (3 years) - Led cross-functional team of 8 engineers, delivered 5 projects on time, aligns with 'team collaboration' requirement"
     L BAD: "Good team player"
     </examples>
 
@@ -85,9 +85,9 @@ prompts:
     </format>
     
     <examples>
-     GOOD [Skill Gap]: "[Skill Gap] Kubernetes orchestration - No container orchestration experience found. Critical for the DevOps aspects of this role. Learning timeline: 4-6 weeks with hands-on practice"
-     GOOD [Presentation Gap]: "[Presentation Gap] Machine Learning - Has 'built recommendation engine with scikit-learn' but doesn't mention 'ML' or 'Machine Learning' explicitly. Add ML terminology to skills section"
-     GOOD [Presentation Gap]: "[Presentation Gap] Python - Django and Flask experience implies Python proficiency but Python not explicitly stated. Add 'Python (5 years)' to skills"
+    ✓ GOOD [Skill Gap]: "[Skill Gap] Kubernetes orchestration - No container orchestration experience found. Critical for the DevOps aspects of this role. Learning timeline: 4-6 weeks with hands-on practice"
+    ✓ GOOD [Presentation Gap]: "[Presentation Gap] Machine Learning - Has 'built recommendation engine with scikit-learn' but doesn't mention 'ML' or 'Machine Learning' explicitly. Add ML terminology to skills section"
+    ✓ GOOD [Presentation Gap]: "[Presentation Gap] Python - Django and Flask experience implies Python proficiency but Python not explicitly stated. Add 'Python (5 years)' to skills"
     L BAD: "Missing Python" (no classification marker)
     L BAD: "Kubernetes orchestration missing" (no [Skill Gap] or [Presentation Gap] marker)
     </examples>
@@ -104,9 +104,9 @@ prompts:
     </reasoning_steps>
     
     <examples>
-     GOOD: "Add 'Machine Learning' to skills section since you already use scikit-learn for recommendation engine"
-     GOOD: "Quantify the 'improved system performance' achievement - add specific percentage or metrics"
-     GOOD: "Move your Python projects to the top of experience section to immediately show Python expertise"
+    ✓ GOOD: "Add 'Machine Learning' to skills section since you already use scikit-learn for recommendation engine"
+    ✓ GOOD: "Quantify the 'improved system performance' achievement - add specific percentage or metrics"
+    ✓ GOOD: "Move your Python projects to the top of experience section to immediately show Python expertise"
     L BAD: "Get a certification" (not a quick improvement)
     </examples>
 
@@ -138,7 +138,7 @@ prompts:
     </reasoning_steps>
     
     <examples>
-     GOOD LEARNABLE SKILLS (from [Skill Gap] items):
+    ✓ GOOD LEARNABLE SKILLS (from [Skill Gap] items):
     " "Kubernetes Container Orchestration" - Specific technology that can be learned via courses
     " "AWS Lambda Serverless Architecture" - Clear skill with available training resources
     " "GraphQL API Development" - Concrete technical skill with defined learning path
