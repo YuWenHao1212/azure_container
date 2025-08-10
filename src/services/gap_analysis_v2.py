@@ -210,9 +210,18 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
             if hasattr(config, 'prompts'):
                 system_prompt = config.prompts.get('system', '')
                 user_prompt = config.prompts.get('user', '')
+                logger.info(f"Loaded prompts - system length: {len(system_prompt)}, user length: {len(user_prompt)}")
+            else:
+                logger.error(f"Config has no 'prompts' attribute. Config type: {type(config)}, attributes: {dir(config)}")
+                raise ValueError("Prompt config missing 'prompts' section")
+
+            # Check if prompts are empty before replacement
+            if not system_prompt or not user_prompt:
+                logger.error(f"Empty prompts detected - system: {bool(system_prompt)}, user: {bool(user_prompt)}")
+                raise ValueError("System or user prompt is empty")
 
             # Replace placeholders in prompts
-            # Note: v2.0.0 prompt doesn't use similarity_score anymore
+            # Note: v2.1.0 prompt uses these placeholders
             system_prompt = system_prompt.replace("{keyword_coverage_percentage}",
                                                   str(keyword_coverage.get('coverage_percentage', 0)))
             system_prompt = system_prompt.replace("{covered_keywords}",
@@ -234,7 +243,7 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
             enhanced_prompt = f"{system_prompt}\n\n{user_prompt}"
 
         except Exception as e:
-            logger.warning(f"Failed to load v2.0.0 prompt config: {e}, using fallback")
+            logger.warning(f"Failed to load v2.1.0 prompt config: {e}, using fallback")
             # Fallback to basic prompt with context
             enhanced_prompt = f"""
 Analyze the gap between the resume and job description.
