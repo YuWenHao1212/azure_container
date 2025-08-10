@@ -245,6 +245,11 @@ X-API-Key: [YOUR_API_KEY]
 
 同時計算匹配指數並分析履歷差距。
 
+**版本更新 (v2.1.0)**
+- KeyGaps 現在包含分類標記：`[Skill Gap]` 或 `[Presentation Gap]`
+- [Skill Gap]: 候選人真正缺乏此技能，需要學習
+- [Presentation Gap]: 候選人具備技能但履歷中未明確展示
+
 **請求參數**
 ```json
 {
@@ -271,8 +276,8 @@ X-API-Key: [YOUR_API_KEY]
     },
     "gap_analysis": {
       "CoreStrengths": "<ul><li>Strong Python background</li><li>API development experience</li></ul>",
-      "KeyGaps": "<ul><li>Container orchestration (Docker/Kubernetes)</li><li>Cloud deployment experience</li></ul>",
-      "QuickImprovements": "<ul><li>Complete Docker fundamentals course</li><li>Build containerized project</li></ul>",
+      "KeyGaps": "<ul><li>[Skill Gap] Container orchestration (Docker/Kubernetes) - No orchestration experience found</li><li>[Presentation Gap] Cloud deployment - Has AWS experience but not explicitly mentioned</li></ul>",
+      "QuickImprovements": "<ul><li>Add 'AWS' explicitly to skills section</li><li>Complete Docker fundamentals course</li></ul>",
       "OverallAssessment": "<p>Good foundation with 75% match. Focus on DevOps skills to reach 90%+.</p>",
       "SkillSearchQueries": [
         {
@@ -908,6 +913,11 @@ A:
 
 ## 變更日誌
 
+### 2025-08-10
+- Gap Analysis v2.1.0：新增 [Skill Gap] 和 [Presentation Gap] 分類標記
+- 支援 Resume Tailoring v2.0.0 三階段架構
+- 改善差距分類精確度
+
 ### 2025-07-30
 - 遷移至 Azure Container Apps 平台
 - 新增監控和除錯端點
@@ -959,6 +969,6 @@ A:
 
 ---
 
-**文檔版本**: 2.1.0  
-**最後更新**: 2025-08-02  
+**文檔版本**: 2.2.0  
+**最後更新**: 2025-08-10  
 **維護團隊**: AI Resume Advisor Development Team

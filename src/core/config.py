@@ -131,6 +131,11 @@ class Settings(BaseSettings):
         validation_alias="LLM_MODEL_RESUME_TAILOR",
         description="LLM model for resume tailoring API (gpt4o-2 or gpt41-mini)"
     )
+    llm_model_instruction_compiler: str = Field(
+        default="gpt41-mini",
+        validation_alias="LLM_MODEL_INSTRUCTION_COMPILER",
+        description="LLM model for instruction compiler (default: gpt41-mini for fast processing)"
+    )
 
     # Feature flags for LLM model selection
     enable_llm_model_override: bool = Field(

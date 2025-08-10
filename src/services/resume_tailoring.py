@@ -2,38 +2,28 @@
 Resume Tailoring Service for optimizing resumes based on gap analysis.
 """
 
-import asyncio
 import json
 import logging
-import re
 import time
+from typing import Any
+
+from fastapi import HTTPException
 
 from ..core.config import get_settings
 from ..core.html_processor import HTMLProcessor
 from ..core.language_handler import LanguageHandler
 from ..core.marker_fixer import MarkerFixer
-from ..core.monitoring_service import monitoring_service
+from ..core.monitoring_service import MonitoringService
 from ..core.star_formatter import STARFormatter
-from ..models.api.resume_tailoring import (
-    CoverageDetails,
-    CoverageStats,
-    GapAnalysisInput,
-    SimilarityStats,
-    TailoringResult,
-    VisualMarkerStats,
-)
-from ..models.domain.tailoring import (
-    TailoringContext,
-)
-from ..services.index_calculation import (
-    IndexCalculationService,
-    analyze_keyword_coverage,
-)
+
+# ResumeTailoringResponse will be a dict type for now
 from ..services.llm_factory import get_llm_client
 from ..services.resume_sections import SectionProcessor
 from ..services.standardization import (
     EnglishStandardizer,
-    TraditionalChineseStandardizer,
+)
+from ..services.standardization import (
+    TraditionalChineseStandardizer as ChineseStandardizer,
 )
 from ..services.unified_prompt_service import UnifiedPromptService
 
@@ -41,448 +31,513 @@ logger = logging.getLogger(__name__)
 
 
 class ResumeTailoringService:
-    """Service for tailoring resumes based on gap analysis results"""
+    """
+    Resume Tailoring Service v2.0.0 - Three-Stage Pipeline Architecture.
+
+    This service implements a simplified, high-performance approach:
+    1. Gap Analysis (v2.1.0) - Identifies gaps with classification markers
+    2. Instruction Compiler - Converts gaps to structured instructions (GPT-4.1 mini)
+    3. Resume Writer - Executes instructions with simplified prompt (v2.0.0)
+    """
 
     def __init__(self):
+        """Initialize the Resume Tailoring v2.0.0 service."""
         self.settings = get_settings()
-        self.llm_client = get_llm_client(api_name="resume_tailor")
-        self.monitoring = monitoring_service
-        self.prompt_service = UnifiedPromptService(task_path="resume_tailoring")
 
-        # Initialize components
+        # LLM client for resume tailoring (GPT-4)
+        self.llm_client = get_llm_client(api_name="resume_tailor")
+
+        # Initialize monitoring
+        self.monitoring = MonitoringService()
+
+        # Initialize services
+        self.prompt_service = UnifiedPromptService()
         self.html_processor = HTMLProcessor()
         self.language_handler = LanguageHandler()
         self.star_formatter = STARFormatter()
         self.marker_fixer = MarkerFixer()
         self.section_processor = SectionProcessor()
 
-        # Initialize standardizers
+        # Initialize standardizers for different languages
         self.en_standardizer = EnglishStandardizer()
-        self.zh_tw_standardizer = TraditionalChineseStandardizer()
+        self.zh_tw_standardizer = ChineseStandardizer()
 
-        logger.info("ResumeTailoringService initialized")
+        # Initialize Instruction Compiler for v2.0.0
+        from src.services.instruction_compiler import InstructionCompiler
+        self.instruction_compiler = InstructionCompiler()
+
+        # Initialize Gap Analysis service
+        from src.services.gap_analysis_v2 import GapAnalysisServiceV2
+        self.gap_analysis_service = GapAnalysisServiceV2()
+
+        logger.info("ResumeTailoringService v2.0.0 initialized with three-stage pipeline")
 
     async def tailor_resume(
         self,
-        job_description: str,
         original_resume: str,
-        gap_analysis: GapAnalysisInput,
-        language: str = "en",
-        include_markers: bool = True
-    ) -> TailoringResult:
+        job_description: str,
+        covered_keywords: list[str] | None = None,
+        missing_keywords: list[str] | None = None,
+        output_language: str = "English",
+    ) -> dict[str, Any]:
         """
-        Main method to tailor a resume based on gap analysis results.
+        Tailor a resume using the three-stage pipeline architecture.
+
+        Stage 1: Gap Analysis with classification markers
+        Stage 2: Instruction Compilation with GPT-4.1 mini
+        Stage 3: Resume Writing with simplified prompt
 
         Args:
+            original_resume: HTML content of the original resume
             job_description: Target job description
-            original_resume: Original resume in HTML format
-            gap_analysis: Gap analysis results
-            language: Output language (en or zh-TW)
-            include_markers: Whether to include visual markers
+            covered_keywords: Keywords already covered in resume
+            missing_keywords: Keywords missing from resume
+            output_language: Output language for the tailored resume
 
         Returns:
-            TailoringResult with optimized resume and statistics
+            ResumeTailoringResponse with optimized resume and metrics
         """
-        start_time = time.time()
 
-        # Track start
-        self.monitoring.track_event("ResumeTailoringStarted", {
-            "language": language,
-            "resume_length": len(original_resume),
-            "strengths_count": len(gap_analysis.core_strengths),
-            "improvements_count": len(gap_analysis.quick_improvements)
-        })
+        start_time = time.time()
+        stage_timings = {}
 
         try:
             # Validate inputs
-            self._validate_inputs(job_description, original_resume, language)
-
-            # Build tailoring context
-            context = self._build_context(
-                job_description,
-                original_resume,
-                gap_analysis,
-                language,
-                include_markers
+            original_resume, job_description = self._validate_inputs(
+                original_resume, job_description
             )
 
-            # Call LLM to optimize resume
-            optimized_data = await self._optimize_with_llm(context)
+            # Clean up HTML whitespace
+            original_resume = original_resume.strip()
 
-            # Process the result
-            result = await self._process_optimization_result(
-                optimized_data,
+            # Default keyword lists
+            covered_keywords = covered_keywords or []
+            missing_keywords = missing_keywords or []
+
+            # Stage 1: Run Gap Analysis (v2.1.0 with classification markers)
+            stage1_start = time.time()
+            logger.info("Stage 1: Running Gap Analysis with classification markers")
+
+            gap_analysis_result = await self.gap_analysis_service.analyze_gap(
+                resume=original_resume,
+                job_description=job_description,
+                covered_keywords=covered_keywords,
+                missing_keywords=missing_keywords,
+            )
+
+            # Extract gap analysis data
+            gap_analysis_data = {
+                "CoreStrengths": gap_analysis_result.get("core_strengths", ""),
+                "KeyGaps": gap_analysis_result.get("key_gaps", ""),
+                "QuickImprovements": gap_analysis_result.get("quick_improvements", ""),
+            }
+
+            stage_timings["gap_analysis_ms"] = int((time.time() - stage1_start) * 1000)
+            logger.info(f"Stage 1 completed in {stage_timings['gap_analysis_ms']}ms")
+
+            # Stage 2: Compile Instructions using GPT-4.1 mini
+            stage2_start = time.time()
+            logger.info("Stage 2: Compiling instructions with GPT-4.1 mini")
+
+            instructions = await self.instruction_compiler.compile_instructions(
+                resume_html=original_resume,
+                job_description=job_description,
+                gap_analysis=gap_analysis_data,
+                covered_keywords=covered_keywords,
+                missing_keywords=missing_keywords,
+            )
+
+            stage_timings["instruction_compilation_ms"] = int((time.time() - stage2_start) * 1000)
+            logger.info(
+                f"Stage 2 completed in {stage_timings['instruction_compilation_ms']}ms. "
+                f"Found {instructions['metadata']['presentation_gaps_found']} presentation gaps, "
+                f"{instructions['metadata']['skill_gaps_found']} skill gaps"
+            )
+
+            # Stage 3: Execute Instructions with Simplified Prompt
+            stage3_start = time.time()
+            logger.info("Stage 3: Executing resume optimization with simplified prompt")
+
+            # Convert instructions to JSON string for the prompt
+            import json
+            instructions_json = json.dumps(instructions, indent=2)
+
+            # Build context with simplified prompt
+            context = self._build_context_v2(
+                original_resume=original_resume,
+                instructions_json=instructions_json,
+                output_language=output_language,
+            )
+
+            # Execute optimization with LLM
+            optimized_result = await self._optimize_with_llm_v2(context, output_language)
+
+            stage_timings["resume_writing_ms"] = int((time.time() - stage3_start) * 1000)
+            logger.info(f"Stage 3 completed in {stage_timings['resume_writing_ms']}ms")
+
+            # Process and validate the result
+            final_result = await self._process_optimization_result_v2(
+                optimized_result,
                 original_resume,
-                include_markers,
-                gap_analysis,
-                job_description,
-                language
+                output_language,
+                stage_timings,
+                instructions,
+            )
+
+            # Calculate total time
+            total_time_ms = int((time.time() - start_time) * 1000)
+
+            # Update response with timing metrics
+            final_result["processing_time_ms"] = total_time_ms
+            final_result["stage_timings"] = stage_timings
+
+            # Add gap analysis insights
+            final_result["gap_analysis_insights"] = {
+                "presentation_gaps_found": instructions['metadata']['presentation_gaps_found'],
+                "skill_gaps_found": instructions['metadata']['skill_gaps_found'],
+                "priority_keywords": instructions['optimization_strategy'].get('priority_keywords', []),
+                "overall_approach": instructions['optimization_strategy'].get('overall_approach', ''),
+            }
+
+            logger.info(
+                f"Resume tailoring v2.0.0 completed in {total_time_ms}ms "
+                f"(Gap: {stage_timings['gap_analysis_ms']}ms, "
+                f"Compile: {stage_timings['instruction_compilation_ms']}ms, "
+                f"Write: {stage_timings['resume_writing_ms']}ms)"
             )
 
             # Track metrics
-            duration = time.time() - start_time
-            self._track_metrics(result, duration, language)
+            self._track_metrics_v2(final_result, total_time_ms, stage_timings)
+
+            return final_result
+
+        except Exception as e:
+            logger.error(f"Error in resume tailoring v2.0.0: {e!s}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Resume tailoring failed: {e!s}"
+            ) from e
+
+    def _validate_inputs(self, original_resume: str, job_description: str) -> tuple[str, str]:
+        """Validate and clean input data."""
+        if not original_resume or not original_resume.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Original resume content is required"
+            )
+
+        if not job_description or not job_description.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Job description is required"
+            )
+
+        # Clean inputs
+        original_resume = original_resume.strip()
+        job_description = job_description.strip()
+
+        # Check minimum length
+        if len(job_description) < 200:
+            raise HTTPException(
+                status_code=400,
+                detail="Job description must be at least 200 characters"
+            )
+
+        return original_resume, job_description
+
+    def _build_context_v2(
+        self,
+        original_resume: str,
+        instructions_json: str,
+        output_language: str,
+    ) -> dict[str, Any]:
+        """
+        Build context for the simplified v2.0.0 prompt.
+
+        Args:
+            original_resume: Original resume HTML
+            instructions_json: Structured instructions from Instruction Compiler
+            output_language: Target language for output
+
+        Returns:
+            Context dictionary for the prompt
+        """
+        # Load the simplified v2.0.0 prompt directly
+        # Since UnifiedPromptService doesn't support resume_tailoring directly,
+        # we'll load the prompt inline for now
+        prompt_template = {
+            "prompts": {
+                "system": """You are a Professional Resume Writer executing optimization instructions
+with precision and creativity.
+## Your Role
+Transform resumes based on STRUCTURED INSTRUCTIONS provided. Focus on high-quality execution, not analysis.
+
+## Language Output
+**CRITICAL**: Generate ALL output in {output_language}
+- Traditional Chinese (繁體中文): Use professional Traditional Chinese
+- English: Use professional English
+- Keep HTML/CSS tags and placeholders in English
+""",
+                "user": """Execute the following resume optimization:
+
+## Original Resume
+{original_resume}
+
+## Optimization Instructions
+{instructions_json}
+
+## Output Language
+{output_language}
+
+Generate the optimized resume following the provided instructions precisely.
+
+Return JSON with these fields:
+{{
+  "optimized_resume": "[Complete HTML with optimization markers]",
+  "applied_improvements": [
+    "[Section: Summary] Created new summary based on instructions",
+    "[Section: Skills] Added 8 new skills from presentation gaps",
+    "[Section: Experience - Company X] Converted 3 bullets to STAR format"
+  ]
+}}""",
+            },
+            "llm_config": {
+                "model": "gpt4o-2",
+                "temperature": 0.3,
+                "max_tokens": 6000,
+                "top_p": 0.2,
+                "frequency_penalty": 0.0,
+                "presence_penalty": 0.0,
+            }
+        }
+
+        # Build the context
+        context = {
+            "system_prompt": prompt_template["prompts"]["system"].format(
+                output_language=output_language
+            ),
+            "user_prompt": prompt_template["prompts"]["user"].format(
+                original_resume=original_resume,
+                instructions_json=instructions_json,
+                output_language=output_language,
+            ),
+            "llm_config": prompt_template.get("llm_config", {})
+        }
+
+        return context
+
+    async def _optimize_with_llm_v2(
+        self,
+        context: dict[str, Any],
+        output_language: str,
+    ) -> dict[str, Any]:
+        """
+        Execute the resume optimization using the simplified v2.0.0 prompt.
+
+        Args:
+            context: Prompt context with instructions
+            output_language: Target language
+
+        Returns:
+            Optimized resume with improvements list
+        """
+
+        try:
+            # Prepare messages
+            messages = [
+                {"role": "system", "content": context["system_prompt"]},
+                {"role": "user", "content": context["user_prompt"]}
+            ]
+
+            # Get LLM config
+            llm_config = context.get("llm_config", {})
+
+            # Track LLM processing time
+            llm_start = time.time()
+
+            # Call LLM with simplified prompt - use proper method name
+            response = await self.llm_client.chat_completion(
+                messages=messages,
+                temperature=llm_config.get("temperature", 0.3),
+                max_tokens=llm_config.get("max_tokens", 6000),
+                top_p=llm_config.get("top_p", 0.2),
+                frequency_penalty=llm_config.get("frequency_penalty", 0.0),
+                presence_penalty=llm_config.get("presence_penalty", 0.0),
+            )
+
+            llm_time_ms = int((time.time() - llm_start) * 1000)
+
+            # Parse response - AzureOpenAIClient returns dict format
+            content = response["choices"][0]["message"]["content"].strip()
+
+            # Parse JSON response
+            result = self._parse_llm_response(content)
+
+            # Add timing metadata
+            result["llm_processing_time_ms"] = llm_time_ms
+
+            logger.info(f"LLM optimization completed in {llm_time_ms}ms")
 
             return result
 
         except Exception as e:
-            logger.error(f"Resume tailoring failed: {e!s}")
-            self.monitoring.track_event("ResumeTailoringFailed", {
-                "language": language,
-                "error": str(e)
-            })
+            logger.error(f"LLM optimization failed: {e!s}")
             raise
 
-    def _validate_inputs(self, job_description: str, original_resume: str, language: str):
-        """Validate input parameters"""
-        if not job_description or len(job_description) < 50:
-            raise ValueError("Job description too short")
+    def _parse_llm_response(self, content: str) -> dict[str, Any]:
+        """Parse the LLM response containing optimized resume."""
 
-        if not original_resume or len(original_resume) < 100:
-            raise ValueError("Resume too short")
-
-        if not self.language_handler.is_supported_language(language):
-            raise ValueError(f"Unsupported language: {language}")
-
-        # Validate both inputs can be processed as HTML/text
-        is_valid_jd, error_jd = self.html_processor.validate_html_structure(job_description)
-        if not is_valid_jd:
-            raise ValueError(f"Invalid job description: {error_jd}")
-
-        is_valid_resume, error_resume = self.html_processor.validate_html_structure(original_resume)
-        if not is_valid_resume:
-            raise ValueError(f"Invalid resume: {error_resume}")
-
-    def _build_context(
-        self,
-        job_description: str,
-        original_resume: str,
-        gap_analysis: GapAnalysisInput,
-        language: str,
-        include_markers: bool
-    ) -> TailoringContext:
-        """Build context for tailoring"""
-        # Normalize inputs to HTML format
-        job_description_html = self.html_processor.normalize_to_html(job_description)
-        original_resume_html = self.html_processor.normalize_to_html(original_resume)
-
-        # Standardize section titles to avoid duplication
-        original_resume_html = self.html_processor.standardize_section_titles(original_resume_html)
-        logger.info("Standardized section titles in original resume to avoid duplication")
-
-        # Standardize keywords based on language
-        standardizer = self.en_standardizer if language == "en" else self.zh_tw_standardizer
-
-        # Standardize covered keywords
-        covered_result = standardizer.standardize_keywords(gap_analysis.covered_keywords)
-        covered_keywords = covered_result.standardized_keywords
-
-        # Standardize missing keywords
-        missing_result = standardizer.standardize_keywords(gap_analysis.missing_keywords)
-        missing_keywords = missing_result.standardized_keywords
-
-        return TailoringContext(
-            job_description=job_description_html,
-            original_resume=original_resume_html,
-            core_strengths=gap_analysis.core_strengths if isinstance(gap_analysis.core_strengths, list) else [],
-            key_gaps=gap_analysis.key_gaps if isinstance(gap_analysis.key_gaps, list) else [],
-            quick_improvements=(
-                gap_analysis.quick_improvements
-                if isinstance(gap_analysis.quick_improvements, list) else []
-            ),
-            covered_keywords=covered_keywords,
-            missing_keywords=missing_keywords,
-            language=language,
-            include_markers=include_markers
-        )
-
-    async def _optimize_with_llm(self, context: TailoringContext) -> dict:
-        """Call LLM to optimize resume"""
-        # Get prompt template - we use the same prompt for all languages
-        # The prompt itself contains language output instructions
         try:
-            # First try to load language-specific prompt with v1.1.0
-            prompt_config = self.prompt_service.get_prompt_config(context.language, "1.1.0")
-        except FileNotFoundError:
-            # Fall back to language-agnostic prompt
-            # Load the v1.1.0.yaml file directly
-            prompt_config = self.prompt_service.simple_prompt_manager.load_prompt_config_by_filename(
-                "resume_tailoring", "v1.1.0.yaml"
-            )
+            # Try to extract JSON from the response
+            if "```json" in content:
+                json_str = content.split("```json")[1].split("```")[0].strip()
+            elif "{" in content and "}" in content:
+                # Find the JSON object
+                start_idx = content.index("{")
+                end_idx = content.rindex("}") + 1
+                json_str = content[start_idx:end_idx]
+            else:
+                raise ValueError("No JSON found in response")
 
-        # Build prompt with context
-        system_prompt = prompt_config.get_system_prompt()
+            # Parse the JSON
+            result = json.loads(json_str)
 
-        # Prepare prompt variables
-        output_language = self.language_handler.get_output_language(context.language)
+            # Validate required fields
+            if "optimized_resume" not in result:
+                raise ValueError("Missing 'optimized_resume' field in response")
 
-        prompt_vars = {
-            "output_language": output_language,
-            "job_description": context.job_description,
-            "original_resume": context.original_resume,
-            "core_strengths": "\n".join(f"- {s}" for s in context.core_strengths),
-            "key_gaps": "\n".join(f"- {g}" for g in context.key_gaps),
-            "quick_improvements": "\n".join(f"- {i}" for i in context.quick_improvements),
-            "covered_keywords": ", ".join(context.covered_keywords),
-            "missing_keywords": ", ".join(context.missing_keywords)
-        }
+            # Ensure applied_improvements exists
+            if "applied_improvements" not in result:
+                result["applied_improvements"] = []
 
-        # Format prompts
-        user_prompt = prompt_config.format_user_prompt(**prompt_vars)
+            return result
 
-        # Call LLM with retry
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"Calling LLM for resume optimization (attempt {attempt + 1})")
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Failed to parse LLM response: {e}")
+            logger.debug(f"Raw response: {content[:500]}...")
 
-                response = await self.llm_client.chat_completion(
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=prompt_config.llm_config.temperature,
-                    max_tokens=prompt_config.llm_config.max_tokens,
-                    top_p=prompt_config.llm_config.top_p
-                )
+            # Return a fallback response
+            return {
+                "optimized_resume": content,
+                "applied_improvements": ["Failed to parse structured response"],
+                "parse_error": str(e)
+            }
 
-                # Track token usage
-                if 'usage' in response:
-                    usage = response['usage']
-                    self.monitoring.track_event("LLMTokenUsage", {
-                        "service": "resume_tailoring",
-                        "input_tokens": usage.get('prompt_tokens', 0),
-                        "output_tokens": usage.get('completion_tokens', 0),
-                        "total_tokens": usage.get('total_tokens', 0),
-                        "model": "gpt-4o-2"
-                    })
-
-                # Parse response
-                choices = response.get('choices', [])
-                if choices:
-                    content = choices[0].get('message', {}).get('content', '')
-                    logger.info(f"LLM raw response length: {len(content)} chars")
-                    logger.info(f"LLM raw response preview: {content[:200]}...")
-                    return self._parse_llm_response(content)
-                else:
-                    raise ValueError("No response content from LLM")
-
-            except Exception as e:
-                logger.warning(f"LLM call attempt {attempt + 1} failed: {e!s}")
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
-                else:
-                    raise
-
-    def _parse_llm_response(self, content: str) -> dict:
-        """Parse LLM response to extract optimized resume and improvements"""
-        result = None
-
-        # First check if the content is wrapped in markdown code blocks
-        if content.strip().startswith('```json') and content.strip().endswith('```'):
-            # Extract JSON from markdown code block
-            json_str = content.strip()[7:-3].strip()  # Remove ```json and ```
-            try:
-                result = json.loads(json_str)
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse JSON from markdown block")
-
-        if not result:
-            try:
-                # Try to parse as JSON directly
-                result = json.loads(content)
-            except json.JSONDecodeError:
-                # If not valid JSON, try to extract from text
-                logger.warning("LLM response is not valid JSON, attempting text extraction")
-
-                # Extract optimized resume
-                resume_match = re.search(
-                    r'"optimized_resume":\s*"([^"]+)"',
-                    content,
-                    re.DOTALL
-                )
-
-                # Extract improvements
-                improvements_match = re.search(
-                    r'"applied_improvements":\s*\[(.*?)\]',
-                    content,
-                    re.DOTALL
-                )
-
-                if resume_match:
-                    optimized_resume = resume_match.group(1)
-                    improvements = []
-
-                    if improvements_match:
-                        improvements_text = improvements_match.group(1)
-                        # Extract individual improvements
-                        improvements = re.findall(r'"([^"]+)"', improvements_text)
-
-                    result = {
-                        "optimized_resume": optimized_resume,
-                        "applied_improvements": improvements
-                    }
-
-        # Validate extraction result
-        if not result:
-            logger.error(f"Failed to extract any data from LLM response: {content[:500]}...")
-            self.monitoring.track_event("ResumeTailoringExtractionFailed", {
-                "response_preview": content[:500],
-                "response_length": len(content)
-            })
-            raise ValueError("Could not parse LLM response")
-
-        if not result.get("optimized_resume"):
-            logger.error(f"Failed to extract optimized_resume from LLM response: {content[:500]}...")
-            self.monitoring.track_event("ResumeTailoringMissingField", {
-                "missing_field": "optimized_resume",
-                "response_preview": content[:500],
-                "extracted_fields": list(result.keys())
-            })
-            raise ValueError("Extracted data missing optimized_resume field")
-
-        # Log successful extraction
-        if not result.get("applied_improvements"):
-            logger.warning("No applied_improvements found in LLM response, using empty list")
-            result["applied_improvements"] = []
-
-        return result
-
-    async def _process_optimization_result(
+    async def _process_optimization_result_v2(
         self,
-        optimized_data: dict,
+        optimized_result: dict[str, Any],
         original_resume: str,
-        include_markers: bool,
-        gap_analysis: GapAnalysisInput,
-        job_description: str,
-        language: str
-    ) -> TailoringResult:
-        """Process optimization result from LLM"""
-        optimized_resume = optimized_data.get("optimized_resume", "")
-        applied_improvements = optimized_data.get("applied_improvements", [])
+        output_language: str,
+        stage_timings: dict[str, int],
+        instructions: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Process the optimization result and prepare the final response.
 
-        # Remove format markers
-        optimized_resume = self.star_formatter.remove_format_markers(optimized_resume)
+        Args:
+            optimized_result: Result from LLM optimization
+            original_resume: Original resume for comparison
+            output_language: Target language
+            stage_timings: Timing metrics from each stage
+            instructions: Instructions from the compiler
 
-        # Calculate original keyword coverage before optimization
-        all_keywords = gap_analysis.covered_keywords + gap_analysis.missing_keywords
-        original_coverage = analyze_keyword_coverage(original_resume, all_keywords)
+        Returns:
+            Final response with all metrics and improvements
+        """
+        try:
+            optimized_html = optimized_result.get("optimized_resume", "")
+            applied_improvements = optimized_result.get("applied_improvements", [])
 
-        # Fix incorrectly placed markers and apply keyword markers properly
-        if include_markers:
-            # Fix markers and apply keyword marking
-            optimized_resume = self.marker_fixer.fix_and_enhance_markers(
-                optimized_resume,
-                keywords=gap_analysis.missing_keywords,
-                original_keywords=gap_analysis.covered_keywords
+            # Post-process the HTML
+            # For v2.0.0, we'll skip post-processing for now
+            # This can be enhanced later with proper standardizers
+
+            # Calculate improvements count
+            total_improvements = len(applied_improvements)
+
+            # Format improvements as HTML list
+            improvements_html = self._format_improvements_as_html(applied_improvements)
+
+            # Build response
+            response = dict(
+                optimized_resume=optimized_html,
+                applied_improvements=improvements_html,
+                improvement_count=total_improvements,
+                output_language=output_language,
+                success=True,
+                message=f"Resume optimized successfully with {total_improvements} improvements using v2.0.0 pipeline",
+                processing_time_ms=sum(stage_timings.values()),
+                stage_timings=stage_timings,
+                gap_analysis_insights={
+                    "presentation_gaps_found": instructions['metadata']['presentation_gaps_found'],
+                    "skill_gaps_found": instructions['metadata']['skill_gaps_found'],
+                    "priority_keywords": instructions['optimization_strategy'].get('priority_keywords', []),
+                    "overall_approach": instructions['optimization_strategy'].get('overall_approach', ''),
+                },
+                metadata={
+                    "version": "v2.0.0",
+                    "pipeline": "three-stage",
+                    "models": {
+                        "gap_analysis": "gpt4o-2",
+                        "instruction_compiler": "gpt41-mini",
+                        "resume_writer": "gpt4o-2",
+                    },
+                    "llm_processing_time_ms": optimized_result.get("llm_processing_time_ms", 0),
+                }
             )
 
-        # Count markers if included
-        marker_counts = self.html_processor.count_markers(optimized_resume)
+            return response
 
-        # Statistics are now calculated via visual markers and coverage
-
-        visual_markers = VisualMarkerStats(
-            keyword_new=marker_counts.get("keyword", 0),
-            keyword_existing=marker_counts.get("keyword-existing", 0),
-            placeholder=marker_counts.get("placeholder", 0),
-            new_section=marker_counts.get("new", 0),
-            modified=marker_counts.get("modified", 0)
-        )
-
-        # Generate HTML formatted improvements list
-        applied_improvements_html = self._format_improvements_as_html(applied_improvements)
-
-        # Calculate index and similarity
-        index_calc_service = IndexCalculationService()
-
-        # Calculate similarity for original resume
-        from ..services.index_calculation import compute_similarity
-
-        original_raw, original_similarity = await compute_similarity(
-            original_resume,
-            job_description
-        )
-
-        # Calculate full index for optimized resume
-        optimized_index = await index_calc_service.calculate_index(
-            optimized_resume,
-            job_description,
-            all_keywords
-        )
-
-        # Build similarity stats
-        similarity = SimilarityStats(
-            before=original_similarity,
-            after=optimized_index["similarity_percentage"],
-            improvement=optimized_index["similarity_percentage"] - original_similarity
-        )
-
-        # Build coverage stats
-        coverage_before = CoverageDetails(
-            percentage=original_coverage["coverage_percentage"],
-            covered=original_coverage["covered_keywords"],
-            missed=[kw for kw in all_keywords if kw not in original_coverage["covered_keywords"]]
-        )
-
-        coverage_after = CoverageDetails(
-            percentage=optimized_index["keyword_coverage"]["coverage_percentage"],
-            covered=optimized_index["keyword_coverage"]["covered_keywords"],
-            missed=[kw for kw in all_keywords if kw not in optimized_index["keyword_coverage"]["covered_keywords"]]
-        )
-
-        coverage = CoverageStats(
-            before=coverage_before,
-            after=coverage_after,
-            improvement=(
-                optimized_index["keyword_coverage"]["coverage_percentage"] -
-                original_coverage["coverage_percentage"]
-            ),
-            newly_added=list(
-                set(optimized_index["keyword_coverage"]["covered_keywords"]) -
-                set(original_coverage["covered_keywords"])
-            )
-        )
-
-        # Remove markers if not requested
-        if not include_markers:
-            optimized_resume = self.html_processor.remove_markers(optimized_resume)
-
-        return TailoringResult(
-            resume=optimized_resume,
-            improvements=applied_improvements_html,
-            markers=visual_markers,
-            similarity=similarity,
-            coverage=coverage
-        )
+        except Exception as e:
+            logger.error(f"Error processing optimization result: {e!s}")
+            raise
 
     def _format_improvements_as_html(self, improvements: list[str]) -> str:
-        """Format improvements list as HTML for direct display"""
+        """Format improvements list as HTML."""
         if not improvements:
-            return "<p>No improvements applied.</p>"
+            return "<p>No specific improvements listed</p>"
 
-        # Create HTML list
-        html_parts = ["<ul>"]
+        html_items = []
         for improvement in improvements:
-            # Escape any HTML in the improvement text
-            escaped_improvement = improvement.replace("<", "&lt;").replace(">", "&gt;")
-            html_parts.append(f"  <li>{escaped_improvement}</li>")
-        html_parts.append("</ul>")
+            # Escape HTML characters
+            improvement = improvement.replace("<", "&lt;").replace(">", "&gt;")
+            html_items.append(f"<li>{improvement}</li>")
 
-        return "\n".join(html_parts)
+        return f"<ul>{''.join(html_items)}</ul>"
 
-    # Removed _calculate_optimization_stats - no longer needed in v2.1
+    def _track_metrics_v2(
+        self,
+        result: dict[str, Any],
+        total_time_ms: int,
+        stage_timings: dict[str, int],
+    ) -> None:
+        """Track performance metrics for the v2.0.0 pipeline."""
+        try:
+            # Track overall metrics
+            self.monitoring.track_event(
+                "resume_tailoring_v2_completed",
+                {
+                    "total_time_ms": total_time_ms,
+                    "improvement_count": result.get("improvement_count", 0),
+                    "output_language": result.get("output_language", "unknown"),
+                    "success": result.get("success", False),
+                    "presentation_gaps": result.get("gap_analysis_insights", {}).get("presentation_gaps_found", 0),
+                    "skill_gaps": result.get("gap_analysis_insights", {}).get("skill_gaps_found", 0),
+                }
+            )
 
-    def _track_metrics(self, result: TailoringResult, duration: float, language: str):
-        """Track optimization metrics"""
-        self.monitoring.track_event("ResumeTailoringCompleted", {
-            "duration_ms": duration * 1000,
-            "language": language,
-            "keywords_new": result.markers.keyword_new,
-            "keywords_existing": result.markers.keyword_existing,
-            "placeholders": result.markers.placeholder,
-            "new_sections": result.markers.new_section,
-            "modified_content": result.markers.modified,
-            "similarity_improvement": result.similarity.improvement,
-            "coverage_improvement": result.coverage.improvement
-        })
+            # Track stage-specific metrics
+            for stage, timing in stage_timings.items():
+                self.monitoring.track_metric(f"resume_tailoring_v2_{stage}", timing)
+
+            # Log performance summary
+            logger.info(
+                f"Resume Tailoring v2.0.0 Performance: "
+                f"Total={total_time_ms}ms, "
+                f"Gap Analysis={stage_timings.get('gap_analysis_ms', 0)}ms, "
+                f"Instruction Compilation={stage_timings.get('instruction_compilation_ms', 0)}ms, "
+                f"Resume Writing={stage_timings.get('resume_writing_ms', 0)}ms"
+            )
+
+        except Exception as e:
+            logger.error(f"Error tracking metrics: {e!s}")
