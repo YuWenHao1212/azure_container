@@ -270,6 +270,41 @@ class UnifiedPromptService:
         )
         return prompt
 
+    def load_prompt(self, feature: str, version: str = "v2.0.0") -> dict[str, any]:
+        """
+        Load prompt template for a specific feature and version.
+
+        Args:
+            feature: Feature name (e.g., "resume_tailoring", "gap_analysis")
+            version: Version string (e.g., "v2.0.0")
+
+        Returns:
+            Dictionary with prompt template data
+        """
+        try:
+            # Use SimplePromptManager to load the config
+            config = self.simple_prompt_manager.load_prompt_config(feature, version)
+
+            # Return the complete config as dictionary
+            return {
+                "prompts": config.prompts,
+                "llm_config": {
+                    "temperature": config.llm_config.temperature,
+                    "max_tokens": config.llm_config.max_tokens,
+                    "top_p": getattr(config.llm_config, 'top_p', 0.95),
+                    "frequency_penalty": getattr(config.llm_config, 'frequency_penalty', 0.0),
+                    "presence_penalty": getattr(config.llm_config, 'presence_penalty', 0.0),
+                },
+                "metadata": {
+                    "version": config.version,
+                    "status": config.metadata.status,
+                    "description": config.metadata.description
+                }
+            }
+        except Exception as e:
+            logger.error(f"Failed to load prompt for {feature} v{version}: {e}")
+            raise
+
 
 # Singleton instance
 _unified_prompt_service = None

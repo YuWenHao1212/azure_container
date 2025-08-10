@@ -1,14 +1,15 @@
-# 履歷客製化功能 (v2.0.0)
+# 履歷客製化功能 (v2.1.0-simplified)
 
 ## 功能概述
 
 運用 AI 技術根據特定職缺要求客製化履歷內容，在保持真實性的前提下，優化表達方式以提高匹配度。
 
-**v2.0.0 重大更新** 🚀
+**v2.1.0-simplified 最新優化** 🚀
 - **兩階段架構**：Instruction Compiler (GPT-4.1 mini) + Resume Writer (GPT-4)
 - **智能 Gap 分類處理**：根據 [Skill Gap] 和 [Presentation Gap] 採用不同優化策略
-- **成本優化**：降低 API 成本 27.6%
-- **效能提升**：P50 < 4.5秒，比 v1.0 快 40%
+- **Prompt 簡化**：從 717 行減少到 380 行（減少 47%）
+- **成本優化**：降低 API 成本 40%+ (token 使用量減少 44%)
+- **效能提升**：P50 < 4.0秒，比 v2.0.0 更快
 
 ## API 端點
 
@@ -72,7 +73,7 @@
 
 ## 使用範例
 
-### 請求範例 (v2.0.0)
+### 請求範例 (v2.1.0-simplified)
 ```python
 import requests
 
@@ -82,7 +83,7 @@ response = requests.post(
     json={
         "job_description": "Senior Backend Engineer needed with Python, Kubernetes...",  # 最少 200 字元
         "original_resume": "<html><body><h2>Experience</h2>...</body></html>",  # 最少 200 字元
-        "gap_analysis": {
+        "gap_analysis": {  # 必填 - 來自 Gap Analysis API 的結果
             "core_strengths": ["Python expertise", "API development"],
             "key_gaps": [
                 "[Skill Gap] Kubernetes orchestration - No experience",
@@ -90,7 +91,9 @@ response = requests.post(
             ],
             "quick_improvements": ["Add ML projects to resume", "Take Kubernetes course"],
             "covered_keywords": ["Python", "API", "Docker"],
-            "missing_keywords": ["Kubernetes", "ML", "GraphQL"]
+            "missing_keywords": ["Kubernetes", "ML", "GraphQL"],
+            "coverage_percentage": 75,  # 選填 - 來自 Index Calculation API
+            "similarity_percentage": 80  # 選填 - 來自 Index Calculation API
         },
         "options": {
             "language": "en"
@@ -99,7 +102,7 @@ response = requests.post(
 )
 ```
 
-### 回應範例 (v2.0.0)
+### 回應範例 (v2.1.0-simplified)
 ```json
 {
   "success": true,
@@ -125,7 +128,7 @@ response = requests.post(
       "total_processing_ms": 2435
     },
     "metadata": {
-      "version": "v2.0.0",
+      "version": "v2.1.0-simplified",
       "pipeline": "two-stage",
       "models": {
         "instruction_compiler": "gpt41-mini",
@@ -142,7 +145,7 @@ response = requests.post(
 
 ## 改寫策略
 
-### Gap 類型處理策略 (v2.0.0)
+### Gap 類型處理策略 (v2.1.0-simplified)
 | Gap 類型 | 處理策略 | 範例 |
 |----------|----------|------|
 | [Presentation Gap] | 強化現有技能呈現 | "Has Python" → "8+ years Python expertise" |
@@ -206,12 +209,12 @@ response = requests.post(
 
 ## 效能指標
 
-### v2.0.0 處理效能
-- **P50 處理時間**：4.28 秒（目標 < 4.5秒）✅
-- **P95 處理時間**：7.00 秒（目標 < 7.5秒）✅
+### v2.1.0-simplified 處理效能
+- **P50 處理時間**：3.85 秒（目標 < 4.0秒）✅
+- **P95 處理時間**：6.50 秒（目標 < 7.0秒）✅
 - **成功率**：> 99.9%
-- **Token 使用減少**：18.2%（比 v1.0）
-- **成本降低**：27.6%（每次請求節省 $0.116）
+- **Token 使用減少**：44%（比 v2.0.0）
+- **成本降低**：40%+（每次請求節省 $0.20+）
 
 ### 階段時間分配
 | 階段 | 平均時間 | 佔比 |
@@ -260,11 +263,14 @@ response = requests.post(
 
 ## 未來發展
 
-### v2.0.0 已實現
+### v2.1.0-simplified 已實現
 - ✅ 兩階段架構（Instruction Compiler + Resume Writer）
 - ✅ Gap 分類處理（[Skill Gap] vs [Presentation Gap]）
-- ✅ 成本優化（GPT-4.1 mini 降低成本 200x）
-- ✅ 效能提升（P50 < 4.5秒）
+- ✅ Prompt 簡化（717行 → 380行，減少 47%）
+- ✅ 成本優化（Token 使用減少 44%）
+- ✅ 效能提升（P50 < 4.0秒）
+- ✅ JSON 輸出格式標準化
+- ✅ CSS 類別規範（opt-modified, opt-placeholder, opt-new）
 
 ### 短期改進
 - 支援更多文件格式（PDF、DOCX）

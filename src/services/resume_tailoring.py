@@ -32,12 +32,13 @@ logger = logging.getLogger(__name__)
 
 class ResumeTailoringService:
     """
-    Resume Tailoring Service v2.0.0 - Three-Stage Pipeline Architecture.
+    Resume Tailoring Service v2.0.0 - Two-Stage Pipeline Architecture.
 
     This service implements a simplified, high-performance approach:
-    1. Gap Analysis (v2.1.0) - Identifies gaps with classification markers
-    2. Instruction Compiler - Converts gaps to structured instructions (GPT-4.1 mini)
-    3. Resume Writer - Executes instructions with simplified prompt (v2.0.0)
+    1. Instruction Compiler - Converts gap analysis to structured instructions (GPT-4.1 mini)
+    2. Resume Writer - Executes instructions with simplified prompt (v2.0.0)
+
+    Note: Gap Analysis results are provided as input parameters, not computed internally.
     """
 
     def __init__(self):
@@ -66,30 +67,30 @@ class ResumeTailoringService:
         from src.services.instruction_compiler import InstructionCompiler
         self.instruction_compiler = InstructionCompiler()
 
-        # Initialize Gap Analysis service
-        from src.services.gap_analysis_v2 import GapAnalysisServiceV2
-        self.gap_analysis_service = GapAnalysisServiceV2()
-
-        logger.info("ResumeTailoringService v2.0.0 initialized with three-stage pipeline")
+        logger.info("ResumeTailoringService v2.0.0 initialized with two-stage pipeline")
 
     async def tailor_resume(
         self,
         original_resume: str,
         job_description: str,
+        gap_analysis: dict[str, Any] | None = None,
         covered_keywords: list[str] | None = None,
         missing_keywords: list[str] | None = None,
         output_language: str = "English",
     ) -> dict[str, Any]:
         """
-        Tailor a resume using the three-stage pipeline architecture.
+        Tailor a resume using the two-stage pipeline architecture.
 
-        Stage 1: Gap Analysis with classification markers
-        Stage 2: Instruction Compilation with GPT-4.1 mini
-        Stage 3: Resume Writing with simplified prompt
+        Stage 1: Instruction Compilation with GPT-4.1 mini
+        Stage 2: Resume Writing with simplified prompt
 
         Args:
             original_resume: HTML content of the original resume
             job_description: Target job description
+            gap_analysis: Gap analysis results (required) containing:
+                - core_strengths or CoreStrengths
+                - key_gaps or KeyGaps (with [Skill Gap] and [Presentation Gap] markers)
+                - quick_improvements or QuickImprovements
             covered_keywords: Keywords already covered in resume
             missing_keywords: Keywords missing from resume
             output_language: Output language for the tailored resume
@@ -103,8 +104,8 @@ class ResumeTailoringService:
 
         try:
             # Validate inputs
-            original_resume, job_description = self._validate_inputs(
-                original_resume, job_description
+            original_resume, job_description, gap_analysis = self._validate_inputs(
+                original_resume, job_description, gap_analysis
             )
 
             # Clean up HTML whitespace
@@ -114,30 +115,12 @@ class ResumeTailoringService:
             covered_keywords = covered_keywords or []
             missing_keywords = missing_keywords or []
 
-            # Stage 1: Run Gap Analysis (v2.1.0 with classification markers)
+            # Normalize gap analysis data format
+            gap_analysis_data = self._normalize_gap_analysis(gap_analysis)
+
+            # Stage 1: Compile Instructions using GPT-4.1 mini
             stage1_start = time.time()
-            logger.info("Stage 1: Running Gap Analysis with classification markers")
-
-            gap_analysis_result = await self.gap_analysis_service.analyze_gap(
-                resume=original_resume,
-                job_description=job_description,
-                covered_keywords=covered_keywords,
-                missing_keywords=missing_keywords,
-            )
-
-            # Extract gap analysis data
-            gap_analysis_data = {
-                "CoreStrengths": gap_analysis_result.get("core_strengths", ""),
-                "KeyGaps": gap_analysis_result.get("key_gaps", ""),
-                "QuickImprovements": gap_analysis_result.get("quick_improvements", ""),
-            }
-
-            stage_timings["gap_analysis_ms"] = int((time.time() - stage1_start) * 1000)
-            logger.info(f"Stage 1 completed in {stage_timings['gap_analysis_ms']}ms")
-
-            # Stage 2: Compile Instructions using GPT-4.1 mini
-            stage2_start = time.time()
-            logger.info("Stage 2: Compiling instructions with GPT-4.1 mini")
+            logger.info("Stage 1: Compiling instructions with GPT-4.1 mini")
 
             instructions = await self.instruction_compiler.compile_instructions(
                 resume_html=original_resume,
@@ -147,33 +130,42 @@ class ResumeTailoringService:
                 missing_keywords=missing_keywords,
             )
 
-            stage_timings["instruction_compilation_ms"] = int((time.time() - stage2_start) * 1000)
+            stage_timings["instruction_compilation_ms"] = int((time.time() - stage1_start) * 1000)
+
+            # Extract structure info for logging
+            analysis = instructions.get('analysis', {})
+            sections_found = sum(1 for v in analysis.get('resume_sections', {}).values() if v is not None)
+
             logger.info(
-                f"Stage 2 completed in {stage_timings['instruction_compilation_ms']}ms. "
-                f"Found {instructions['metadata']['presentation_gaps_found']} presentation gaps, "
-                f"{instructions['metadata']['skill_gaps_found']} skill gaps"
+                f"Stage 1 completed in {stage_timings['instruction_compilation_ms']}ms. "
+                f"Found {sections_found} existing sections in resume"
             )
 
-            # Stage 3: Execute Instructions with Simplified Prompt
-            stage3_start = time.time()
-            logger.info("Stage 3: Executing resume optimization with simplified prompt")
+            # Stage 2: Execute Instructions with Simplified Prompt
+            stage2_start = time.time()
+            logger.info("Stage 2: Executing resume optimization with simplified prompt")
 
             # Convert instructions to JSON string for the prompt
             import json
             instructions_json = json.dumps(instructions, indent=2)
 
-            # Build context with simplified prompt
+            # Build context with simplified prompt and all necessary data
             context = self._build_context_v2(
                 original_resume=original_resume,
                 instructions_json=instructions_json,
                 output_language=output_language,
+                job_description=job_description,
+                covered_keywords=covered_keywords,
+                missing_keywords=missing_keywords,
+                gap_analysis_data=gap_analysis_data,
+                prompt_version="v2.1.0-simplified",  # Use simplified version
             )
 
             # Execute optimization with LLM
             optimized_result = await self._optimize_with_llm_v2(context, output_language)
 
-            stage_timings["resume_writing_ms"] = int((time.time() - stage3_start) * 1000)
-            logger.info(f"Stage 3 completed in {stage_timings['resume_writing_ms']}ms")
+            stage_timings["resume_writing_ms"] = int((time.time() - stage2_start) * 1000)
+            logger.info(f"Stage 2 completed in {stage_timings['resume_writing_ms']}ms")
 
             # Process and validate the result
             final_result = await self._process_optimization_result_v2(
@@ -191,18 +183,21 @@ class ResumeTailoringService:
             final_result["processing_time_ms"] = total_time_ms
             final_result["stage_timings"] = stage_timings
 
-            # Add gap analysis insights
+            # Add gap analysis insights from simplified format
+            analysis = instructions.get('analysis', {})
+            section_metadata = analysis.get('section_metadata', {})
+
             final_result["gap_analysis_insights"] = {
-                "presentation_gaps_found": instructions['metadata']['presentation_gaps_found'],
-                "skill_gaps_found": instructions['metadata']['skill_gaps_found'],
-                "priority_keywords": instructions['optimization_strategy'].get('priority_keywords', []),
-                "overall_approach": instructions['optimization_strategy'].get('overall_approach', ''),
+                "structure_found": {
+                    "sections": analysis.get('resume_sections', {}),
+                    "metadata": section_metadata
+                },
+                "improvements_needed": len(final_result.get("applied_improvements", [])),
             }
 
             logger.info(
-                f"Resume tailoring v2.0.0 completed in {total_time_ms}ms "
-                f"(Gap: {stage_timings['gap_analysis_ms']}ms, "
-                f"Compile: {stage_timings['instruction_compilation_ms']}ms, "
+                f"Resume tailoring v2.1.0-simplified completed in {total_time_ms}ms "
+                f"(Compile: {stage_timings['instruction_compilation_ms']}ms, "
                 f"Write: {stage_timings['resume_writing_ms']}ms)"
             )
 
@@ -212,13 +207,18 @@ class ResumeTailoringService:
             return final_result
 
         except Exception as e:
-            logger.error(f"Error in resume tailoring v2.0.0: {e!s}", exc_info=True)
+            logger.error(f"Error in resume tailoring v2.1.0-simplified: {e!s}", exc_info=True)
             raise HTTPException(
                 status_code=500,
                 detail=f"Resume tailoring failed: {e!s}"
             ) from e
 
-    def _validate_inputs(self, original_resume: str, job_description: str) -> tuple[str, str]:
+    def _validate_inputs(
+        self,
+        original_resume: str,
+        job_description: str,
+        gap_analysis: dict[str, Any] | None
+    ) -> tuple[str, str, dict[str, Any]]:
         """Validate and clean input data."""
         if not original_resume or not original_resume.strip():
             raise HTTPException(
@@ -232,6 +232,12 @@ class ResumeTailoringService:
                 detail="Job description is required"
             )
 
+        if not gap_analysis:
+            raise HTTPException(
+                status_code=400,
+                detail="Gap analysis results are required for Resume Tailoring v2.0.0"
+            )
+
         # Clean inputs
         original_resume = original_resume.strip()
         job_description = job_description.strip()
@@ -243,82 +249,136 @@ class ResumeTailoringService:
                 detail="Job description must be at least 200 characters"
             )
 
-        return original_resume, job_description
+        if len(original_resume) < 200:
+            raise HTTPException(
+                status_code=400,
+                detail="Resume must be at least 200 characters"
+            )
+
+        return original_resume, job_description, gap_analysis
+
+    def _normalize_gap_analysis(self, gap_analysis: dict[str, Any]) -> dict[str, Any]:
+        """
+        Normalize gap analysis data to handle different formats.
+
+        Accepts both formats:
+        - API format: {"core_strengths", "key_gaps", "quick_improvements"}
+        - Direct format: {"CoreStrengths", "KeyGaps", "QuickImprovements"}
+
+        Returns:
+        Normalized format with capitalized keys for backward compatibility
+        """
+        if not gap_analysis:
+            raise ValueError("Gap analysis data is required")
+
+        # Check which format we have and normalize
+        normalized = {}
+
+        # Handle core strengths
+        if "core_strengths" in gap_analysis:
+            normalized["CoreStrengths"] = gap_analysis["core_strengths"]
+        elif "CoreStrengths" in gap_analysis:
+            normalized["CoreStrengths"] = gap_analysis["CoreStrengths"]
+        else:
+            normalized["CoreStrengths"] = ""
+
+        # Handle key gaps (must contain classification markers)
+        if "key_gaps" in gap_analysis:
+            normalized["KeyGaps"] = gap_analysis["key_gaps"]
+        elif "KeyGaps" in gap_analysis:
+            normalized["KeyGaps"] = gap_analysis["KeyGaps"]
+        else:
+            normalized["KeyGaps"] = ""
+
+        # Handle quick improvements
+        if "quick_improvements" in gap_analysis:
+            normalized["QuickImprovements"] = gap_analysis["quick_improvements"]
+        elif "QuickImprovements" in gap_analysis:
+            normalized["QuickImprovements"] = gap_analysis["QuickImprovements"]
+        else:
+            normalized["QuickImprovements"] = ""
+
+        # Also preserve other fields if present
+        if "covered_keywords" in gap_analysis:
+            normalized["covered_keywords"] = gap_analysis["covered_keywords"]
+        if "missing_keywords" in gap_analysis:
+            normalized["missing_keywords"] = gap_analysis["missing_keywords"]
+        if "coverage_percentage" in gap_analysis:
+            normalized["coverage_percentage"] = gap_analysis["coverage_percentage"]
+        if "similarity_percentage" in gap_analysis:
+            normalized["similarity_percentage"] = gap_analysis["similarity_percentage"]
+
+        # Validate that we have the required gap classification markers
+        key_gaps = normalized.get("KeyGaps", "")
+        if key_gaps and not ("[Skill Gap]" in key_gaps or "[Presentation Gap]" in key_gaps):
+            logger.warning(
+                "Gap analysis KeyGaps does not contain classification markers "
+                "([Skill Gap] or [Presentation Gap]). This may affect optimization quality."
+            )
+
+        return normalized
 
     def _build_context_v2(
         self,
         original_resume: str,
         instructions_json: str,
         output_language: str,
+        job_description: str = "",
+        covered_keywords: list[str] | None = None,
+        missing_keywords: list[str] | None = None,
+        gap_analysis_data: dict[str, Any] | None = None,
+        prompt_version: str = "v2.1.0-simplified",  # Updated default to simplified version
     ) -> dict[str, Any]:
         """
-        Build context for the simplified v2.0.0 prompt.
+        Build context for the v2.x prompt versions.
 
         Args:
             original_resume: Original resume HTML
             instructions_json: Structured instructions from Instruction Compiler
             output_language: Target language for output
+            job_description: Target job description
+            covered_keywords: Keywords already covered
+            missing_keywords: Keywords missing
+            gap_analysis_data: Original gap analysis data
+            prompt_version: Prompt version to use (default: v2.1.0-simplified)
 
         Returns:
             Context dictionary for the prompt
         """
-        # Load the simplified v2.0.0 prompt directly
-        # Since UnifiedPromptService doesn't support resume_tailoring directly,
-        # we'll load the prompt inline for now
-        prompt_template = {
-            "prompts": {
-                "system": """You are a Professional Resume Writer executing optimization instructions
-with precision and creativity.
-## Your Role
-Transform resumes based on STRUCTURED INSTRUCTIONS provided. Focus on high-quality execution, not analysis.
+        # Extract gap analysis components for the main prompt
+        core_strengths = ""
+        key_gaps = ""
+        quick_improvements = ""
 
-## Language Output
-**CRITICAL**: Generate ALL output in {output_language}
-- Traditional Chinese (繁體中文): Use professional Traditional Chinese
-- English: Use professional English
-- Keep HTML/CSS tags and placeholders in English
-""",
-                "user": """Execute the following resume optimization:
+        if gap_analysis_data:
+            core_strengths = gap_analysis_data.get("CoreStrengths", "")
+            key_gaps = gap_analysis_data.get("KeyGaps", "")
+            quick_improvements = gap_analysis_data.get("QuickImprovements", "")
 
-## Original Resume
-{original_resume}
+        covered_keywords_str = ", ".join(covered_keywords) if covered_keywords else "None"
+        missing_keywords_str = ", ".join(missing_keywords) if missing_keywords else "None"
 
-## Optimization Instructions
-{instructions_json}
+        # Load prompt from YAML using UnifiedPromptService
+        # Support both v2.0.0 and v2.1.0-simplified versions
+        prompt_template = self.prompt_service.load_prompt(
+            feature="resume_tailoring",
+            version=prompt_version
+        )
 
-## Output Language
-{output_language}
-
-Generate the optimized resume following the provided instructions precisely.
-
-Return JSON with these fields:
-{{
-  "optimized_resume": "[Complete HTML with optimization markers]",
-  "applied_improvements": [
-    "[Section: Summary] Created new summary based on instructions",
-    "[Section: Skills] Added 8 new skills from presentation gaps",
-    "[Section: Experience - Company X] Converted 3 bullets to STAR format"
-  ]
-}}""",
-            },
-            "llm_config": {
-                "model": "gpt4o-2",
-                "temperature": 0.3,
-                "max_tokens": 6000,
-                "top_p": 0.2,
-                "frequency_penalty": 0.0,
-                "presence_penalty": 0.0,
-            }
-        }
-
-        # Build the context
+        # Build the context with all necessary information
         context = {
             "system_prompt": prompt_template["prompts"]["system"].format(
                 output_language=output_language
             ),
             "user_prompt": prompt_template["prompts"]["user"].format(
                 original_resume=original_resume,
+                job_description=job_description,
                 instructions_json=instructions_json,
+                covered_keywords=covered_keywords_str,
+                missing_keywords=missing_keywords_str,
+                core_strengths=core_strengths,
+                key_gaps=key_gaps,
+                quick_improvements=quick_improvements,
                 output_language=output_language,
             ),
             "llm_config": prompt_template.get("llm_config", {})
@@ -469,20 +529,21 @@ Return JSON with these fields:
                 processing_time_ms=sum(stage_timings.values()),
                 stage_timings=stage_timings,
                 gap_analysis_insights={
-                    "presentation_gaps_found": instructions['metadata']['presentation_gaps_found'],
-                    "skill_gaps_found": instructions['metadata']['skill_gaps_found'],
-                    "priority_keywords": instructions['optimization_strategy'].get('priority_keywords', []),
-                    "overall_approach": instructions['optimization_strategy'].get('overall_approach', ''),
+                    "structure_found": {
+                        "sections": instructions.get('analysis', {}).get('resume_sections', {}),
+                        "metadata": instructions.get('analysis', {}).get('section_metadata', {})
+                    },
+                    "improvements_applied": total_improvements,
                 },
                 metadata={
                     "version": "v2.0.0",
-                    "pipeline": "three-stage",
+                    "pipeline": "two-stage",
                     "models": {
-                        "gap_analysis": "gpt4o-2",
                         "instruction_compiler": "gpt41-mini",
                         "resume_writer": "gpt4o-2",
                     },
                     "llm_processing_time_ms": optimized_result.get("llm_processing_time_ms", 0),
+                    "gap_analysis_external": True,
                 }
             )
 
@@ -521,8 +582,12 @@ Return JSON with these fields:
                     "improvement_count": result.get("improvement_count", 0),
                     "output_language": result.get("output_language", "unknown"),
                     "success": result.get("success", False),
-                    "presentation_gaps": result.get("gap_analysis_insights", {}).get("presentation_gaps_found", 0),
-                    "skill_gaps": result.get("gap_analysis_insights", {}).get("skill_gaps_found", 0),
+                    "sections_found": len(
+                        result.get("gap_analysis_insights", {})
+                        .get("structure_found", {})
+                        .get("sections", {})
+                    ),
+                    "improvements_applied": result.get("gap_analysis_insights", {}).get("improvements_applied", 0),
                 }
             )
 
