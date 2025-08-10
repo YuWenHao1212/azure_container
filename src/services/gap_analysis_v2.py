@@ -199,7 +199,8 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
 
         # Load the prompt configuration
         try:
-            filename = "v2.0.0-zh-TW.yaml" if language == "zh-TW" else "v2.0.0.yaml"
+            # Use v2.1.0 prompt with gap classification markers
+            filename = "v2.1.0-zh-TW.yaml" if language == "zh-TW" else "v2.1.0.yaml"
             config = prompt_manager.load_prompt_config_by_filename("gap_analysis", filename)
 
             # Get system and user prompts
@@ -282,8 +283,8 @@ Please provide a comprehensive gap analysis.
         }
 
         try:
-            # Load from YAML configuration
-            filename = "v2.0.0-zh-TW.yaml" if language == "zh-TW" else "v2.0.0.yaml"
+            # Load from YAML configuration - use v2.1.0 with gap classification
+            filename = "v2.1.0-zh-TW.yaml" if language == "zh-TW" else "v2.1.0.yaml"
             prompt_config = prompt_manager.load_prompt_config_by_filename("gap_analysis", filename)
 
             if hasattr(prompt_config, 'llm_config'):
