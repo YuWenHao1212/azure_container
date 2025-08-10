@@ -212,7 +212,10 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
                 user_prompt = config.prompts.get('user', '')
                 logger.info(f"Loaded prompts - system length: {len(system_prompt)}, user length: {len(user_prompt)}")
             else:
-                logger.error(f"Config has no 'prompts' attribute. Config type: {type(config)}, attributes: {dir(config)}")
+                logger.error(
+                    f"Config has no 'prompts' attribute. "
+                    f"Config type: {type(config)}, attributes: {dir(config)}"
+                )
                 raise ValueError("Prompt config missing 'prompts' section")
 
             # Check if prompts are empty before replacement

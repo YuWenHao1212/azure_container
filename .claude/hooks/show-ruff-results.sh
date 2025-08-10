@@ -2,6 +2,9 @@
 # Stop hook: 顯示累積的 Ruff 檢查結果
 # 在對話結束時執行
 
+# 確保在專案根目錄執行
+cd "$(dirname "$0")/../.." 2>/dev/null || true
+
 # 檢查是否有 Ruff 檢查結果
 LAST_CHECK_FILE="/tmp/claude_last_ruff_check.txt"
 
