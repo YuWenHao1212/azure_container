@@ -27,6 +27,8 @@ os.environ['GPT41_MINI_JAPANEAST_DEPLOYMENT'] = 'test-deployment'
 os.environ['EMBEDDING_ENDPOINT'] = 'https://test.embedding.com'
 os.environ['EMBEDDING_API_KEY'] = 'test-key'
 os.environ['JWT_SECRET_KEY'] = 'test-secret'
+# Disable API key authentication for tests
+os.environ['CONTAINER_APP_API_KEY'] = ''
 
 # Configure pytest-asyncio
 pytest_plugins = ['pytest_asyncio']

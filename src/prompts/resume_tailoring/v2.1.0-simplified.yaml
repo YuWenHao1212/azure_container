@@ -46,6 +46,7 @@ prompts:
     - **Authenticity First**: Enhance truth, never fabricate
     - **Structure Aware**: Respect existing organization
     - **ATS Optimized**: Natural keyword integration (2-3% density)
+    - **Exact Keyword Format**: Use keywords EXACTLY as provided in covered_keywords and missing_keywords lists
 
   user: |
     Execute optimization using all available intelligence:
@@ -127,6 +128,8 @@ prompts:
     - Track: "[Skills: Item] Added to category" or "Enhanced in category"
     
     ### Keyword Integration
+    - **CRITICAL**: Use keywords EXACTLY as they appear in the provided lists
+    - Do NOT alter keyword format (e.g., if list has "CI/CD", don't write "CI-CD" or "CICD")
     - Top 3 keywords → Summary (if exists)
     - Technical keywords → Skills section
     - Remaining → Experience bullets naturally

@@ -94,6 +94,7 @@ class AdvancedPreCommitValidator:
             "health-keyword": {"name": "Health & Keyword 測試", "step": 3},
             "index-calculation": {"name": "Index Calculation 測試", "step": 4},
             "gap-analysis": {"name": "Gap Analysis 測試", "step": 5},
+            "resume-tailoring": {"name": "Resume Tailoring 測試", "step": 6},
             "full": {"name": "完整測試", "step": None}
         }
 
@@ -360,7 +361,7 @@ class AdvancedPreCommitValidator:
 
     def run_gap_analysis_tests(self) -> dict[str, TestResult]:
         """Run Gap Analysis tests with timeout handling"""
-        step_info = "Step 5/5: " if self.option == "full" else ""
+        step_info = "Step 5/6: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Gap Analysis tests...{Colors.RESET}")
 
         unit_files = ["test/unit/test_gap_analysis_v2.py"]
@@ -412,6 +413,43 @@ class AdvancedPreCommitValidator:
             self.overall_failed = True
         else:
             print(f"{Colors.GREEN}✅ Gap Analysis tests passed{Colors.RESET}")
+
+        return results
+
+    def run_resume_tailoring_tests(self) -> dict[str, TestResult]:
+        """Run Resume Tailoring tests (UT & IT only, no PT)"""
+        step_info = "Step 6/6: " if self.option == "full" else ""
+        print(f"\n{Colors.BLUE}📝 {step_info}Running Resume Tailoring tests...{Colors.RESET}")
+
+        unit_files = ["test/unit/services/test_resume_tailoring_metrics.py"]
+        integration_files = ["test/integration/test_resume_tailoring_api.py"]
+        # Performance tests removed - they require real API, not mocks
+
+        # Run unit tests
+        print("  Unit Tests: ", end="", flush=True)
+        unit_result = self.run_pytest_programmatically(unit_files, "resume_tailoring_unit")
+        if unit_result.total > 0:
+            status = "✅" if unit_result.failed == 0 else "❌"
+            print(f"collected {unit_result.total} items, {unit_result.passed} passed {status}")
+
+        # Run integration tests
+        print("  Integration Tests: ", end="", flush=True)
+        integration_result = self.run_pytest_programmatically(integration_files, "resume_tailoring_integration")
+        if integration_result.total > 0:
+            status = "✅" if integration_result.failed == 0 else "❌"
+            print(f"collected {integration_result.total} items, {integration_result.passed} passed {status}")
+
+        results = {
+            "unit": unit_result,
+            "integration": integration_result
+            # No performance results
+        }
+
+        if any(r.failed > 0 or r.errors > 0 for r in results.values()):
+            print(f"{Colors.RED}❌ Resume Tailoring tests FAILED{Colors.RESET}")
+            self.overall_failed = True
+        else:
+            print(f"{Colors.GREEN}✅ Resume Tailoring tests passed{Colors.RESET}")
 
         return results
 
@@ -487,7 +525,8 @@ class AdvancedPreCommitValidator:
         api_test_mapping = {
             "health_keyword": ("🩺 Health & Keyword", "health_keyword"),
             "index_calc": ("🧮 Index Calculation", "index_calc"),
-            "gap_analysis": ("📈 Gap Analysis", "gap_analysis")
+            "gap_analysis": ("📈 Gap Analysis", "gap_analysis"),
+            "resume_tailoring": ("📝 Resume Tailoring", "resume_tailoring")
         }
 
         for result_key, (display_name, _) in api_test_mapping.items():
@@ -495,12 +534,15 @@ class AdvancedPreCommitValidator:
                 print(f"| {display_name:<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
                 results = self.results[result_key]
 
+                # Only show UT and IT tests (no PT in pre-commit)
                 for test_type in ["unit", "integration"]:
                     if test_type in results:
                         result = results[test_type]
                         total_passed += result.passed
                         total_failed += result.failed
+
                         type_label = "單元測試 (UT)" if test_type == "unit" else "整合測試 (IT)"
+
                         print(f"|   ├─ {type_label:<22} | {result.passed:>5} | {result.failed:>5} | {result.total:>5} | {result.duration:.1f}s{' ':>2} | {result.status:>4} |")
 
                 print(f"| {'':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
@@ -512,7 +554,7 @@ class AdvancedPreCommitValidator:
         has_failures = False
 
         # Check for any failures
-        for key in ["service_modules", "health_keyword", "index_calc", "gap_analysis"]:
+        for key in ["service_modules", "health_keyword", "index_calc", "gap_analysis", "resume_tailoring"]:
             if key in self.results:
                 if isinstance(self.results[key], dict):
                     for result in self.results[key].values():
@@ -544,13 +586,15 @@ class AdvancedPreCommitValidator:
         for display_name, key in [
             ("🩺 Health & Keyword", "health_keyword"),
             ("🧮 Index Calculation", "index_calc"),
-            ("📈 Gap Analysis", "gap_analysis")
+            ("📈 Gap Analysis", "gap_analysis"),
+            ("📝 Resume Tailoring", "resume_tailoring")
         ]:
             if key in self.results:
                 results = self.results[key]
                 if isinstance(results, dict):
                     unit_failed = results.get("unit", TestResult()).failed
                     integration_failed = results.get("integration", TestResult()).failed
+                    # No performance tests in pre-commit
 
                     if unit_failed > 0 or integration_failed > 0:
                         print(f"\n{display_name} 失敗測試:")
@@ -611,6 +655,8 @@ class AdvancedPreCommitValidator:
                 print("• Health & Keyword: ./test/scripts/run_health_keyword_unit_integration.sh")
                 print("• Index Calc: ./test/scripts/run_index_calculation_unit_integration.sh")
                 print("• Gap Analysis: ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh")
+                print("• Resume Tailoring (UT&IT): pytest test/unit/services/test_resume_tailoring_metrics.py test/integration/test_resume_tailoring_api.py -v")
+                print("• Resume Tailoring (PT): pytest test/performance/test_resume_tailoring_performance.py -v  # Requires real API keys")
                 print("• Quick check: ruff check src/ test/ --line-length=120")
             sys.exit(0)
 
@@ -621,7 +667,8 @@ class AdvancedPreCommitValidator:
             ("service_modules", self.run_service_modules_tests),
             ("health_keyword", self.run_health_keyword_tests),
             ("index_calc", self.run_index_calculation_tests),
-            ("gap_analysis", self.run_gap_analysis_tests)
+            ("gap_analysis", self.run_gap_analysis_tests),
+            ("resume_tailoring", self.run_resume_tailoring_tests)
         ]
 
         option_mapping = {
@@ -630,6 +677,7 @@ class AdvancedPreCommitValidator:
             "health-keyword": [("health_keyword", self.run_health_keyword_tests)],
             "index-calculation": [("index_calc", self.run_index_calculation_tests)],
             "gap-analysis": [("gap_analysis", self.run_gap_analysis_tests)],
+            "resume-tailoring": [("resume_tailoring", self.run_resume_tailoring_tests)],
             "full": all_steps
         }
 
@@ -646,10 +694,12 @@ Available options:
   health-keyword    : Run only Health & Keyword tests
   index-calculation : Run only Index Calculation tests
   gap-analysis      : Run only Gap Analysis tests
+  resume-tailoring  : Run only Resume Tailoring tests
   full              : Run all tests (default)
 
 Examples:
   python test/scripts/pre_commit_check_advanced.py --option service
+  python test/scripts/pre_commit_check_advanced.py --option resume-tailoring
   python test/scripts/pre_commit_check_advanced.py --option ruff
   python test/scripts/pre_commit_check_advanced.py  # runs full by default
         """
@@ -657,7 +707,7 @@ Examples:
 
     parser.add_argument(
         "--option",
-        choices=["ruff", "service", "health-keyword", "index-calculation", "gap-analysis", "full"],
+        choices=["ruff", "service", "health-keyword", "index-calculation", "gap-analysis", "resume-tailoring", "full"],
         default="full",
         help="Select which tests to run (default: full)"
     )

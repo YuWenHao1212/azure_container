@@ -39,6 +39,18 @@ class GapAnalysisInput(BaseModel):
         default_factory=list,
         description="Keywords that need to be added (comma-separated or list)"
     )
+    coverage_percentage: int = Field(
+        default=0,
+        description="Keyword coverage percentage (0-100) from gap analysis",
+        ge=0,
+        le=100
+    )
+    similarity_percentage: int = Field(
+        default=0,
+        description="Resume similarity percentage (0-100) from gap analysis",
+        ge=0,
+        le=100
+    )
 
     @model_validator(mode='before')
     @classmethod
@@ -156,10 +168,77 @@ class CoverageStats(BaseModel):
         default_factory=list,
         description="List of new keywords successfully integrated"
     )
+    removed: list[str] = Field(
+        default_factory=list,
+        description="List of keywords that were removed during optimization"
+    )
 
 
 # KeywordsAnalysis removed in v2.1 - redundant with CoverageStats
 
+
+class KeywordTracking(BaseModel):
+    """Keyword tracking information for resume optimization"""
+    still_covered: list[str] = Field(
+        default_factory=list,
+        description="Keywords that were originally covered and remain in the optimized resume"
+    )
+    removed: list[str] = Field(
+        default_factory=list,
+        description="Keywords that were originally covered but removed during optimization"
+    )
+    newly_added: list[str] = Field(
+        default_factory=list,
+        description="Keywords that were originally missing and successfully added"
+    )
+    still_missing: list[str] = Field(
+        default_factory=list,
+        description="Keywords that were originally missing and remain missing"
+    )
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="Warning messages related to keyword changes"
+    )
+
+
+class ErrorInfo(BaseModel):
+    """Standard error information structure"""
+    has_error: bool = Field(
+        default=False,
+        description="Whether an error occurred"
+    )
+    code: str = Field(
+        default="",
+        description="Error code (e.g., VALIDATION_TOO_SHORT, EXTERNAL_RATE_LIMIT_EXCEEDED)"
+    )
+    message: str = Field(
+        default="",
+        description="Error message"
+    )
+    details: str = Field(
+        default="",
+        description="Additional error details"
+    )
+    field_errors: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Field-specific validation errors"
+    )
+
+
+class WarningInfo(BaseModel):
+    """Warning information structure"""
+    has_warning: bool = Field(
+        default=False,
+        description="Whether a warning exists"
+    )
+    message: str = Field(
+        default="",
+        description="Warning message"
+    )
+    details: list[str] = Field(
+        default_factory=list,
+        description="Detailed warning information (e.g., removed keywords)"
+    )
 
 class TailoringResult(BaseModel):
     """Result of resume tailoring"""
@@ -179,6 +258,10 @@ class TailoringResult(BaseModel):
     coverage: CoverageStats = Field(
         description="Keyword coverage statistics"
     )
+    keyword_tracking: KeywordTracking = Field(
+        default_factory=KeywordTracking,
+        description="Detailed keyword tracking information"
+    )
 
 
 class TailoringResponse(BaseModel):
@@ -190,9 +273,13 @@ class TailoringResponse(BaseModel):
         default=None,
         description="Tailoring result when successful"
     )
-    error: dict = Field(
-        default_factory=lambda: {"code": "", "message": "", "details": ""},
+    error: ErrorInfo = Field(
+        default_factory=ErrorInfo,
         description="Error information if request failed"
+    )
+    warning: WarningInfo = Field(
+        default_factory=WarningInfo,
+        description="Warning information (e.g., keywords removed)"
     )
 
 

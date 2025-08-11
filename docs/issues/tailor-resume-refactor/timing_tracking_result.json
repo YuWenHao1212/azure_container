@@ -1,0 +1,36 @@
+{
+  "processing_time_ms": 18212,
+  "stage_timings": {
+    "instruction_compilation_ms": 2715,
+    "resume_writing_ms": 13633
+  },
+  "metadata": {
+    "version": "v2.1.0-simplified",
+    "pipeline": "two-stage-hybrid",
+    "models": {
+      "instruction_compiler": "gpt-4.1-mini",
+      "resume_writer": "gpt-4.1"
+    },
+    "llm_processing_time_ms": 13627,
+    "gap_analysis_external": true,
+    "css_marking": {
+      "semantic": [
+        "opt-modified",
+        "opt-new",
+        "opt-placeholder"
+      ],
+      "keywords": [
+        "opt-keyword",
+        "opt-keyword-existing"
+      ]
+    },
+    "metrics_calculation": "IndexCalculationServiceV2"
+  },
+  "improvement_count": 18,
+  "keyword_tracking_stats": {
+    "still_covered": 5,
+    "newly_added": 7,
+    "removed": 0,
+    "still_missing": 0
+  }
+}

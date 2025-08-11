@@ -101,7 +101,8 @@ jobs:
         echo "  - Health & Keyword tests (19 tests)"
         echo "  - Index Calculation tests (24 tests)"
         echo "  - Gap Analysis tests (47 tests)"
-        echo "Total: 137 tests"
+        echo "  - Resume Tailoring tests (18 tests)"
+        echo "Total: 155 tests"
         echo ""
         
         # 優先使用 Python 版本
@@ -335,6 +336,7 @@ jobs:
           echo "  - Keyword Extraction: P95 < 4500ms SLA ✅" >> $GITHUB_STEP_SUMMARY
           echo "  - Index Calculation V2: P50 < 1000ms, P95 < 2000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
           echo "  - Gap Analysis V2: P50 < 25000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
+          echo "  - Resume Tailoring: Response < 25000ms SLA ✅" >> $GITHUB_STEP_SUMMARY
         else
           echo "## ❌ Deployment Failed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

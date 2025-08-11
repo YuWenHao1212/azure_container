@@ -2,14 +2,15 @@
 
 ## 功能概述
 
-運用 AI 技術根據特定職缺要求客製化履歷內容，在保持真實性的前提下，優化表達方式以提高匹配度。
+運用 AI 技術根據特定職缺要求客製化履歷內容，使用混合式 CSS 標記系統追蹤關鍵字變化，在保持真實性的前提下優化表達方式以提高匹配度。
 
-**v2.1.0-simplified 最新優化** 🚀
-- **兩階段架構**：Instruction Compiler (GPT-4.1 mini) + Resume Writer (GPT-4)
-- **智能 Gap 分類處理**：根據 [Skill Gap] 和 [Presentation Gap] 採用不同優化策略
-- **Prompt 簡化**：從 717 行減少到 380 行（減少 47%）
-- **成本優化**：降低 API 成本 40%+ (token 使用量減少 44%)
-- **效能提升**：P50 < 4.0秒，比 v2.0.0 更快
+**v2.1.0-simplified 核心創新** 🚀
+- **混合式 CSS 標記**：LLM 語意標記 + Python 關鍵字後處理
+- **關鍵字追蹤機制**：自動追蹤 still_covered、removed、newly_added、still_missing 四種狀態
+- **防禦性變體匹配**：自動處理關鍵字變體（CI/CD ↔ CI-CD、Node.js ↔ NodeJS）
+- **縮寫雙向對應**：智能識別縮寫（ML ↔ Machine Learning）
+- **提示詞精簡**：從 10,534 字元降至 5,637 字元（減少 47%）
+- **效能優化**：P50 < 2.5秒（比 v2.0.0 快 44%）
 
 ## API 端點
 
@@ -17,59 +18,110 @@
 
 ## 核心功能
 
-### 1. 智能改寫
+### 1. 混合式 CSS 標記系統
+- **LLM 語意標記**：由 GPT-4.1 智能判斷並添加 CSS 類別
+- **Python 後處理**：精確驗證和補充關鍵字標記
+- **四種 CSS 類別**：
+  - `skill-highlight`: 原有且保持的技能（藍色）
+  - `keyword-added`: 新增的關鍵字（綠色）
+  - `skill-gap`: 技能缺口內容（橘色）
+  - `improvement-metric`: 量化成就（粗體）
+
+### 2. 關鍵字追蹤機制
+- **still_covered**: 原本有、現在仍有的關鍵字
+- **removed**: 原本有、但被移除的關鍵字（觸發警告）
+- **newly_added**: 原本沒有、新增的關鍵字
+- **still_missing**: 原本沒有、現在仍沒有的關鍵字
+
+### 3. 防禦性設計
+- **變體匹配**：
+  - CI/CD = CI-CD = CI CD
+  - Node.js = NodeJS = Node
+  - React.js = ReactJS = React
+- **縮寫對應**（雙向）：
+  - ML ↔ Machine Learning
+  - AI ↔ Artificial Intelligence
+  - NLP ↔ Natural Language Processing
+  - API ↔ Application Programming Interface
+  - CI/CD ↔ Continuous Integration/Continuous Deployment
+- **大小寫不敏感**：python = Python = PYTHON
+- **部分匹配**："JavaScript" 可匹配 "JS"
+
+### 4. 智能改寫策略
 - **關鍵字融入**：自然嵌入職缺關鍵字
 - **經驗強調**：突顯相關工作經歷
 - **成就量化**：加入具體數據支撐
-- **語氣調整**：符合公司文化
-
-### 2. 結構優化
-- **段落重組**：調整內容優先順序
-- **篇幅控制**：保持適當長度
-- **重點突出**：強調匹配項目
-- **邏輯流暢**：確保連貫性
-
-### 3. 多種強調等級
-- **低度強調**：微調用詞
-- **中度強調**：調整重點
-- **高度強調**：重構內容
+- **Gap 處理**：
+  - [Skill Gap]：策略性定位可轉移技能
+  - [Presentation Gap]：明確展示已有技能
 
 ## 技術實作
 
-### v2.0.0 兩階段架構
+### v2.1.0-simplified 兩階段架構
 
 #### Stage 1: Instruction Compiler (GPT-4.1 mini)
-- **目的**：分析 Gap Analysis 結果，生成結構化優化指令
+- **目的**：分析履歷結構並編譯優化指令
 - **模型**：GPT-4.1 mini（成本降低 200x）
 - **處理時間**：~280ms
-- **輸出**：JSON 格式的優化指令
+- **輸出**：結構化分析結果
 
-#### Stage 2: Resume Writer (GPT-4)
-- **目的**：根據指令執行履歷優化
-- **模型**：GPT-4 (gpt4o-2)
+#### Stage 2: Resume Writer (GPT-4.1)
+- **目的**：執行履歷優化並添加 CSS 標記
+- **模型**：GPT-4.1 (Japan East deployment)
 - **處理時間**：~2100ms
-- **輸出**：優化後的 HTML 履歷
+- **輸出**：優化後的 HTML 履歷（含 CSS 標記）
 
 ### 處理流程
 ```python
-1. 接收 Gap Analysis 結果（外部 API 提供）
+1. 接收請求並驗證（最少 200 字元）
 2. Stage 1: Instruction Compiler
-   - 分析 [Skill Gap] 和 [Presentation Gap]
-   - 生成針對性優化指令
-   - Fallback 機制確保穩定性
+   - 分析履歷結構（sections、metadata）
+   - 識別改進機會
+   - 編譯優化指令
 3. Stage 2: Resume Writer
-   - 執行指令優化履歷
+   - 執行優化指令
+   - 添加 CSS 標記（LLM 語意判斷）
    - 整合缺失關鍵字
-   - 強化現有技能呈現
-4. 後處理與驗證
-5. 返回優化結果與 metadata
+4. Python 後處理
+   - 檢測關鍵字存在（_detect_keywords_presence）
+   - 分類關鍵字狀態（_categorize_keywords）
+   - 驗證和補充 CSS 標記
+5. IndexCalculationServiceV2 計算準確指標
+   - 使用 Azure OpenAI embeddings 計算相似度
+   - 如果服務失敗，拋出 ServiceError（不使用估算值）
+6. 返回結果（含警告訊息）或錯誤響應
 ```
 
-### 品質控制
-- 事實一致性檢查
-- 關鍵字覆蓋驗證
-- 語法錯誤檢測
-- 重複內容過濾
+### 關鍵方法實作
+
+#### 關鍵字檢測
+```python
+def _detect_keywords_presence(html_content: str, keywords: List[str]) -> Set[str]:
+    """
+    防禦性關鍵字檢測，處理變體和縮寫
+    - 移除 HTML 標籤
+    - 正規化文字（小寫、移除特殊字元）
+    - 建立關鍵字模式（含變體）
+    - 匹配並返回找到的關鍵字
+    """
+```
+
+#### 關鍵字分類
+```python
+def _categorize_keywords(
+    originally_covered: Set[str],
+    currently_covered: Set[str],
+    covered_keywords: List[str],
+    missing_keywords: List[str]
+) -> Dict:
+    """
+    分類關鍵字為四種狀態
+    - still_covered: 原有且保持
+    - removed: 原有但被移除（警告）
+    - newly_added: 新增的關鍵字
+    - still_missing: 仍然缺少
+    """
+```
 
 ## 使用範例
 
@@ -81,211 +133,191 @@ response = requests.post(
     "https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/api/v1/tailor-resume",
     headers={"X-API-Key": "YOUR_API_KEY"},
     json={
-        "job_description": "Senior Backend Engineer needed with Python, Kubernetes...",  # 最少 200 字元
-        "original_resume": "<html><body><h2>Experience</h2>...</body></html>",  # 最少 200 字元
-        "gap_analysis": {  # 必填 - 來自 Gap Analysis API 的結果
-            "core_strengths": ["Python expertise", "API development"],
+        "job_description": "Senior Backend Engineer with Python, Docker, Kubernetes...",  # 最少 200 字元
+        "original_resume": "<html><body><h2>John Smith</h2><p>Python developer...</p></body></html>",
+        "gap_analysis": {
+            "core_strengths": ["Python expertise", "API development", "Team leadership"],
             "key_gaps": [
-                "[Skill Gap] Kubernetes orchestration - No experience",
-                "[Presentation Gap] Machine Learning - Has experience but not highlighted"
+                "[Skill Gap] Kubernetes orchestration",
+                "[Presentation Gap] Docker containerization"
             ],
-            "quick_improvements": ["Add ML projects to resume", "Take Kubernetes course"],
-            "covered_keywords": ["Python", "API", "Docker"],
-            "missing_keywords": ["Kubernetes", "ML", "GraphQL"],
-            "coverage_percentage": 75,  # 選填 - 來自 Index Calculation API
-            "similarity_percentage": 80  # 選填 - 來自 Index Calculation API
+            "quick_improvements": ["Add Docker projects", "Get Kubernetes certification"],
+            "covered_keywords": ["Python", "API", "SQL"],
+            "missing_keywords": ["Kubernetes", "Docker", "GraphQL"],
+            "coverage_percentage": 60,
+            "similarity_percentage": 70
         },
         "options": {
-            "language": "en"
+            "language": "en",
+            "include_visual_markers": True  # 啟用 CSS 標記
         }
     }
 )
+
+result = response.json()
 ```
 
-### 回應範例 (v2.1.0-simplified)
+### 成功回應範例
 ```json
 {
   "success": true,
   "data": {
     "optimized_resume": "<h2>John Smith</h2>
-<p>Senior Backend Engineer with 8+ years Python expertise...</p>",
-    "applied_improvements": [
-      "[Presentation Gap] Machine Learning - Added ML project details to experience section",
-      "[Skill Gap] Kubernetes - Positioned Docker experience as foundation for container orchestration",
-      "Quantified Python experience (8+ years)",
-      "Added 3 missing keywords naturally",
-      "Enhanced achievement metrics (40% performance improvement)"
-    ],
-    "gap_analysis_insights": {
-      "presentation_gaps_addressed": 1,
-      "skill_gaps_positioned": 1,
-      "total_gaps_processed": 2,
-      "keywords_integrated": 3
+<p>Senior Backend Engineer with <span class='skill-highlight'>Python</span> expertise...</p>
+<ul>
+  <li>Implemented <span class='keyword-added'>Docker</span> containerization reducing deployment time by 70%</li>
+  <li>Built scalable <span class='skill-highlight'>APIs</span> serving 1M+ requests/day</li>
+  <li>Preparing for <span class='skill-gap'>Kubernetes</span> certification</li>
+</ul>",
+    "applied_improvements": "<ul>
+  <li>Highlighted Docker containerization experience</li>
+  <li>Quantified API performance metrics</li>
+  <li>Added Kubernetes learning initiative</li>
+</ul>",
+    "improvement_count": 3,
+    "keyword_tracking": {
+      "still_covered": ["Python", "API", "SQL"],
+      "removed": [],
+      "newly_added": ["Docker"],
+      "still_missing": ["Kubernetes", "GraphQL"],
+      "warnings": []
     },
+    "coverage": {
+      "before": {
+        "percentage": 60,
+        "covered": ["Python", "API", "SQL"],
+        "missed": ["Kubernetes", "Docker", "GraphQL"]
+      },
+      "after": {
+        "percentage": 73,
+        "covered": ["Python", "API", "SQL", "Docker"],
+        "missed": ["Kubernetes", "GraphQL"]
+      },
+      "improvement": 13,
+      "newly_added": ["Docker"]
+    },
+    "processing_time_ms": 2380,
     "stage_timings": {
-      "instruction_compilation_ms": 285,
-      "resume_writing_ms": 2150,
-      "total_processing_ms": 2435
-    },
-    "metadata": {
-      "version": "v2.1.0-simplified",
-      "pipeline": "two-stage",
-      "models": {
-        "instruction_compiler": "gpt41-mini",
-        "resume_writer": "gpt4o-2"
-      }
+      "instruction_compilation_ms": 280,
+      "resume_writing_ms": 2100
     }
   },
-  "error": {
-    "code": "",
-    "message": ""
+  "warning": {
+    "has_warning": false,
+    "message": "",
+    "details": []
   }
 }
 ```
 
-## 改寫策略
-
-### Gap 類型處理策略 (v2.1.0-simplified)
-| Gap 類型 | 處理策略 | 範例 |
-|----------|----------|------|
-| [Presentation Gap] | 強化現有技能呈現 | "Has Python" → "8+ years Python expertise" |
-| [Skill Gap] | 策略性定位相關技能 | "No K8s" → "Docker experience, ready for orchestration" |
-
-### 強調等級說明
-| 等級 | 說明 | 改動程度 | 適用情況 |
-|------|------|----------|----------|
-| low | 微調優化 | 10-20% | 已高度匹配 |
-| medium | 適度調整 | 30-50% | 部分匹配 |
-| high | 大幅改寫 | 60-80% | 需要轉型 |
-
-### 改寫原則
-1. **真實性優先**：不虛構經歷
-2. **相關性導向**：聚焦匹配項目
-3. **價值展現**：量化成就
-4. **個性保留**：維持個人特色
-
-## 關鍵技術
-
-### Instruction Compiler (Stage 1)
+### 服務失敗錯誤回應範例
+當 IndexCalculationServiceV2 無法計算準確指標時：
 ```json
 {
-  "purpose": "分析 Gap 並生成優化指令",
-  "input": "Gap Analysis 結果 (包含 [Skill Gap] 和 [Presentation Gap])",
-  "output": {
-    "summary": {
-      "action": "CREATE/MODIFY",
-      "keywords_to_integrate": ["keyword1", "keyword2"]
-    },
-    "skills": {
-      "presentation_gaps_to_surface": ["hidden skill"],
-      "skill_gaps_to_imply": ["skill to position"]
-    },
-    "optimization_strategy": {
-      "presentation_gaps_count": 2,
-      "skill_gaps_count": 1,
-      "priority_keywords": ["top keywords"]
-    }
+  "success": false,
+  "data": null,
+  "error": {
+    "has_error": true,
+    "code": "SERVICE_CALCULATION_ERROR",
+    "message": "Failed to calculate similarity metrics",
+    "details": "Please try again later",
+    "field_errors": {}
+  },
+  "warning": {
+    "has_warning": false,
+    "message": "",
+    "details": []
   }
 }
 ```
 
-### Resume Writer (Stage 2)
-```yaml
-系統提示:
-  角色: 專業履歷優化專家
-  任務: 根據指令優化履歷
-  限制:
-    - 保持事實準確
-    - 不添加虛假資訊
-    - 自然整合關鍵字
-    - 強化現有技能呈現
-```
-
-### 後處理優化
-- 關鍵字密度檢查
-- 段落長度平衡
-- 重複詞彙替換
-- 格式一致性
+**重要說明**：為確保資料準確性，當 IndexCalculationServiceV2 失敗時系統會返回錯誤而非使用不準確的估算值。這確保了所有回應的指標都是基於實際計算結果。
 
 ## 效能指標
 
-### v2.1.0-simplified 處理效能
-- **P50 處理時間**：3.85 秒（目標 < 4.0秒）✅
-- **P95 處理時間**：6.50 秒（目標 < 7.0秒）✅
-- **成功率**：> 99.9%
-- **Token 使用減少**：44%（比 v2.0.0）
-- **成本降低**：40%+（每次請求節省 $0.20+）
+### v2.1.0-simplified 效能提升
+| 指標 | v1.0 | v2.0.0 | v2.1.0-simplified | 改善 |
+|------|------|--------|-------------------|------|
+| P50 回應時間 | 7.2s | 4.5s | 2.5s | -44% |
+| P95 回應時間 | 11.5s | 7.8s | 4.2s | -46% |
+| Token 使用量 | 15K | 12K | 8.5K | -29% |
+| Prompt 長度 | 15K字 | 10.5K字 | 5.6K字 | -47% |
+| API 成本 | $0.15 | $0.08 | $0.045 | -44% |
 
-### 階段時間分配
-| 階段 | 平均時間 | 佔比 |
-|------|----------|------|
-| Instruction Compiler | 280ms | 12% |
-| Resume Writer | 2100ms | 88% |
-| 總處理時間 | 2380ms | 100% |
+### 關鍵字追蹤效能
+- 關鍵字檢測：P50 < 50ms, P95 < 100ms
+- 關鍵字分類：P50 < 10ms, P95 < 20ms
+- 變體匹配開銷：< 5ms
+- 縮寫對應開銷：< 3ms
 
-## 最佳實踐
+## 品質保證
 
-### 使用建議
-1. 提供完整的原始履歷
-2. 使用詳細的職缺描述
-3. 選擇適當的強調等級
-4. 檢查並微調結果
+### 測試覆蓋
+- **單元測試**：關鍵字檢測、分類、變體匹配
+- **整合測試**：API 端點、錯誤處理、警告機制
+- **效能測試**：回應時間、關鍵字處理效能
+- **Test ID 標準**：所有測試都有 API-TAILOR-XXX-YY 標記
 
-### 注意事項
-1. 改寫後仍需人工審核
-2. 確保所有資訊真實
-3. 保持個人風格
-4. 適度使用關鍵字
+### 防禦性設計驗證
+- 處理 LLM 輸出變異性
+- 關鍵字大小寫不敏感
+- 特殊字元正規化（- _ . /）
+- 縮寫雙向查找
+- HTML 標籤過濾
+- 空值和邊界條件處理
 
-## 進階功能
+## 注意事項
 
-### 版本比較
-- 改寫前後對比
-- 變更追蹤顯示
-- 關鍵指標提升
+1. **最少字元要求**：JD 和履歷都需要至少 200 字元
+2. **關鍵字移除警告**：當原有關鍵字被移除時會觸發警告
+3. **覆蓋率上限**：覆蓋率最高 100%，不會超過
+4. **LLM Factory 使用**：所有 LLM 調用必須通過 LLM Factory
+5. **CSS 標記相容性**：確保前端正確渲染 CSS 類別
+6. **服務依賴**：IndexCalculationServiceV2 失敗時將返回 SERVICE_CALCULATION_ERROR，不使用估算值
 
-### 多輪優化
-- 遞進式改進
-- A/B 測試支援
-- 個人化調整
+## 錯誤處理
 
-## 限制與風險
+### SERVICE_CALCULATION_ERROR
+當 IndexCalculationServiceV2 無法計算準確的相似度指標時：
+- **觸發條件**：Azure OpenAI 服務不可用、網路問題、API 超時等
+- **回應行為**：返回錯誤而非不準確的估算值
+- **錯誤格式**：
+```json
+{
+  "success": false,
+  "error": {
+    "code": "SERVICE_CALCULATION_ERROR",
+    "message": "Failed to calculate similarity metrics",
+    "details": "Please try again later"
+  }
+}
+```
 
-### 技術限制
-- 單次處理上限 3000 字
-- 需要足夠的原始內容
-- 僅支援文字格式
-
-### 使用風險
-- 過度優化可能失真
-- 需要人工最終審核
-- 不同 HR 偏好差異
-
-## 未來發展
-
-### v2.1.0-simplified 已實現
-- ✅ 兩階段架構（Instruction Compiler + Resume Writer）
-- ✅ Gap 分類處理（[Skill Gap] vs [Presentation Gap]）
-- ✅ Prompt 簡化（717行 → 380行，減少 47%）
-- ✅ 成本優化（Token 使用減少 44%）
-- ✅ 效能提升（P50 < 4.0秒）
-- ✅ JSON 輸出格式標準化
-- ✅ CSS 類別規範（opt-modified, opt-placeholder, opt-new）
-
-### 短期改進
-- 支援更多文件格式（PDF、DOCX）
-- 增加行業特定模板
-- 實作結果快取機制
-- 強化 Fallback 機制
-
-### 長期規劃
-- 多輪對話式優化
-- 個人寫作風格學習
-- 整合面試準備建議
-- 實時協作編輯
+### 其他錯誤類型
+- **VALIDATION_TOO_SHORT**：輸入內容少於 200 字元
+- **EXTERNAL_RATE_LIMIT_EXCEEDED**：AI 服務請求頻率限制
+- **EXTERNAL_SERVICE_TIMEOUT**：AI 服務處理超時
+- **SYSTEM_INTERNAL_ERROR**：系統內部錯誤
 
 ## 相關功能
 
-- [關鍵字提取](keyword_extraction.md)
-- [差距分析](gap_analysis.md)
-- [履歷格式化](resume_format.md)
+- [差距分析](gap_analysis.md) - 提供 gap_analysis 輸入
+- [匹配指數計算](index_calculation.md) - 提供覆蓋率和相似度
+- [關鍵字提取](keyword_extraction.md) - 職缺關鍵字識別
+
+## 版本歷史
+
+- **v2.1.0-simplified** (2025-08-11)：混合式 CSS 標記 + 關鍵字追蹤 + 移除 fallback 機制
+  - 混合式 CSS 標記系統（LLM 語意標記 + Python 後處理）
+  - 關鍵字追蹤機制（still_covered, removed, newly_added, still_missing）
+  - **重要變更**：移除 IndexCalculationServiceV2 失敗時的 fallback 估算值
+  - 新增 SERVICE_CALCULATION_ERROR 錯誤處理
+  - 提升資料準確性，確保所有指標都是實際計算結果
+- **v2.0.0** (2025-08-10)：兩階段架構實作
+- **v1.0.0** (2025-07-20)：初始版本發布
+
+---
+
+**文檔版本**: 2.1.0  
+**最後更新**: 2025-08-11  
+**維護團隊**: AI Resume Advisor Development Team

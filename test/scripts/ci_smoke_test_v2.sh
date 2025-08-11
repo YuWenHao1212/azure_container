@@ -44,6 +44,7 @@ START_TIME=$(date +%s)
 KEYWORD_TIME_MS=0
 INDEX_TIME_MS=0
 GAP_TIME_MS=0
+RESUME_TIME_MS=0
 
 # Function to log message
 log_message() {
@@ -238,12 +239,49 @@ main() {
         all_passed=false
     fi
     
+    # 4. Test Resume Tailoring (NEW)
+    log_message ""
+    log_message "Testing Resume Tailoring..."
+    log_message "Expected: API response test"
+    log_message "SLA: Response < 25000ms"
+    
+    test_start=$(date +%s)
+    test_log="$LOG_DIR/smoke_resume_tailor_${TIMESTAMP}.log"
+    
+    # Simple resume tailoring test - minimal viable test data
+    local tailor_response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
+        --max-time 30 \
+        -X POST "$API_URL/api/v1/tailor-resume" \
+        -H "Content-Type: application/json" \
+        -H "X-API-Key: $API_KEY" \
+        -d '{"original_resume":"<div class=\"resume\"><h1>Software Engineer</h1><section><h2>Skills</h2><p>Python, JavaScript, React, Node.js, Docker, Git</p></section><section><h2>Experience</h2><p>3 years as Full Stack Developer working with modern web technologies. Built several production applications using React and Node.js. Experience with containerization and CI/CD pipelines.</p></section></div>","job_description":"Seeking a Senior Full Stack Developer with expertise in Python, React, and cloud technologies. Must have experience with Docker, Kubernetes, and microservices architecture. Strong knowledge of test-driven development and agile methodologies required. AWS or Azure cloud platform experience is essential.","gap_analysis":{"core_strengths":["Python expertise","React frontend skills","Docker experience"],"key_gaps":["[Skill Gap] Kubernetes orchestration","[Skill Gap] Cloud platforms (AWS/Azure)","[Presentation Gap] Quantified achievements"],"quick_improvements":["Add Kubernetes projects","Include cloud platform experience","Add metrics to achievements"],"covered_keywords":["Python","React","Docker"],"missing_keywords":["Kubernetes","AWS","Azure","TDD","Microservices"],"coverage_percentage":40,"similarity_percentage":65},"output_language":"English"}' 2>&1 | tee "$test_log")
+    
+    http_code=$(echo "$tailor_response" | tail -2 | head -1)
+    response_time=$(echo "$tailor_response" | tail -1)
+    response_time_ms=$(echo "$response_time * 1000" | bc | cut -d. -f1)
+    
+    if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 25000 ]; then
+        test_end=$(date +%s)
+        duration=$((test_end - test_start))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+        RESUME_TIME_MS=$response_time_ms
+        log_message "  ✓ Resume Tailoring PASSED (${response_time_ms}ms < 25000ms)"
+    else
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+        log_message "  ✗ Resume Tailoring FAILED (HTTP $http_code, ${response_time_ms}ms)"
+        # Show actual error from API
+        log_message "  Error details: $(cat "$test_log" | grep -E "error|message" | head -2)"
+        all_passed=false
+    fi
+    
     # Calculate total time
     local end_time=$(date +%s)
     local total_duration=$((end_time - START_TIME))
     
     # Save performance metrics to JSON Lines file
-    if [ "$TOTAL_TESTS" -eq 3 ]; then
+    if [ "$TOTAL_TESTS" -eq 4 ]; then
         local commit_sha="${GITHUB_SHA:-unknown}"
         local github_run_id="${GITHUB_RUN_ID:-0}"
         local perf_json="{"
@@ -256,6 +294,7 @@ main() {
         perf_json+="\"keyword_extraction_ms\":$KEYWORD_TIME_MS,"
         perf_json+="\"index_calculation_ms\":$INDEX_TIME_MS,"
         perf_json+="\"gap_analysis_ms\":$GAP_TIME_MS,"
+        perf_json+="\"resume_tailoring_ms\":$RESUME_TIME_MS,"
         perf_json+="\"total_duration_s\":$total_duration"
         perf_json+="}"
         
@@ -279,20 +318,21 @@ main() {
     log_message "Total Time: ${total_duration}s"
     log_message ""
     
-    if [ "$FAILED_TESTS" -eq 0 ] && [ "$TOTAL_TESTS" -eq 3 ]; then
+    if [ "$FAILED_TESTS" -eq 0 ] && [ "$TOTAL_TESTS" -eq 4 ]; then
         log_message "✅ All smoke tests PASSED!"
         log_message ""
         log_message "Performance SLAs Met:"
         log_message "  • Keyword Extraction: ✓ (${KEYWORD_TIME_MS}ms < 4500ms)"
         log_message "  • Index Calculation: ✓ (${INDEX_TIME_MS}ms < 2000ms)"
         log_message "  • Gap Analysis: ✓ (${GAP_TIME_MS}ms < 25000ms)"
+        log_message "  • Resume Tailoring: ✓ (${RESUME_TIME_MS}ms < 25000ms)"
         log_message ""
         log_message "Performance metrics saved to: $PERF_LOG"
         exit 0
     else
         log_message "❌ Smoke tests FAILED!"
-        if [ "$TOTAL_TESTS" -ne 3 ]; then
-            log_message "  Warning: Expected 3 tests but ran $TOTAL_TESTS"
+        if [ "$TOTAL_TESTS" -ne 4 ]; then
+            log_message "  Warning: Expected 4 tests but ran $TOTAL_TESTS"
         fi
         if [ "$FAILED_TESTS" -gt 0 ]; then
             log_message "  $FAILED_TESTS out of $TOTAL_TESTS tests failed"

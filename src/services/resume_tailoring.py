@@ -174,6 +174,10 @@ class ResumeTailoringService:
                 output_language,
                 stage_timings,
                 instructions,
+                covered_keywords,
+                missing_keywords,
+                job_description,  # Pass for similarity calculation
+                gap_analysis,     # Pass for before metrics
             )
 
             # Calculate total time
@@ -492,12 +496,12 @@ class ResumeTailoringService:
         instructions: dict[str, Any],
         covered_keywords: list[str] | None = None,
         missing_keywords: list[str] | None = None,
+        job_description: str | None = None,
+        gap_analysis: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Process the optimization result and prepare the final response.
-        Implements hybrid CSS class approach:
-        1. LLM marks semantic changes (opt-modified, opt-new, opt-placeholder)
-        2. Python post-processing adds keyword markers (opt-keyword, opt-keyword-existing)
+        Now uses IndexCalculationServiceV2 for real similarity and coverage metrics.
 
         Args:
             optimized_result: Result from LLM optimization
@@ -507,6 +511,8 @@ class ResumeTailoringService:
             instructions: Instructions from the compiler
             covered_keywords: Keywords covered in original resume
             missing_keywords: Keywords missing from original resume
+            job_description: Job description for similarity calculation
+            gap_analysis: Gap analysis data for before metrics
 
         Returns:
             Final response with all metrics and improvements
@@ -519,29 +525,62 @@ class ResumeTailoringService:
             covered_keywords = covered_keywords or []
             missing_keywords = missing_keywords or []
 
-            # Phase 1: Detect which keywords are present in original and optimized resumes
-            # Detect keywords in original resume
-            originally_covered = self._detect_keywords_presence(
-                original_resume,
-                covered_keywords
-            )
+            # Use the new integrated metrics calculation if we have job_description
+            if job_description and gap_analysis:
+                # Calculate all metrics using IndexCalculationServiceV2
+                metrics = await self._calculate_metrics_after_optimization(
+                    job_description=job_description,
+                    original_resume=original_resume,
+                    optimized_resume=optimized_html,
+                    gap_analysis=gap_analysis,
+                    covered_keywords=covered_keywords,
+                    missing_keywords=missing_keywords
+                )
 
-            # Detect all keywords in optimized resume
-            all_keywords_to_check = list(set(covered_keywords + missing_keywords))
-            currently_covered = self._detect_keywords_presence(
-                optimized_html,
-                all_keywords_to_check
-            )
+                # Extract components from metrics
+                keyword_tracking = metrics['keyword_tracking']
+                similarity_stats = metrics['similarity']
+                coverage_stats = metrics['coverage']
+                warnings = metrics['warnings']
 
-            # Phase 2: Categorize keywords into 4 states
-            keyword_tracking = self._categorize_keywords(
-                originally_covered,
-                currently_covered,
-                covered_keywords,
-                missing_keywords
-            )
+            else:
+                # Fallback to old method if job_description not available
+                logger.warning("Job description not provided, using legacy keyword detection")
 
-            # Phase 3: Apply keyword marking using EnhancedMarker
+                # Phase 1: Detect which keywords are present in original and optimized resumes
+                originally_covered = self._detect_keywords_presence(
+                    original_resume,
+                    covered_keywords
+                )
+
+                # Detect all keywords in optimized resume
+                all_keywords_to_check = list(set(covered_keywords + missing_keywords))
+                currently_covered = self._detect_keywords_presence(
+                    optimized_html,
+                    all_keywords_to_check
+                )
+
+                # Phase 2: Categorize keywords into 4 states
+                keyword_tracking = self._categorize_keywords(
+                    originally_covered,
+                    currently_covered,
+                    covered_keywords,
+                    missing_keywords
+                )
+
+                # Generate warnings for removed keywords
+                warnings = []
+                if keyword_tracking["removed"]:
+                    warnings.append(
+                        f"Warning: {len(keyword_tracking['removed'])} originally covered keywords "
+                        f"were removed during optimization: {', '.join(keyword_tracking['removed'])}"
+                    )
+
+                # Use estimated similarity (legacy behavior)
+                similarity_stats = None
+                coverage_stats = None
+
+            # Apply keyword marking using EnhancedMarker
             if keyword_tracking["newly_added"] or keyword_tracking["still_covered"]:
                 from src.core.enhanced_marker import EnhancedMarker
                 marker = EnhancedMarker()
@@ -560,15 +599,6 @@ class ResumeTailoringService:
                     f"Newly added: {len(keyword_tracking['newly_added'])}"
                 )
 
-            # Phase 4: Generate warnings for removed keywords
-            warnings = []
-            if keyword_tracking["removed"]:
-                warnings.append(
-                    f"Warning: {len(keyword_tracking['removed'])} originally covered keywords "
-                    f"were removed during optimization: {', '.join(keyword_tracking['removed'])}"
-                )
-                logger.warning(f"Keywords removed during optimization: {keyword_tracking['removed']}")
-
             # Calculate improvements count
             total_improvements = len(applied_improvements)
 
@@ -582,7 +612,10 @@ class ResumeTailoringService:
                 improvement_count=total_improvements,
                 output_language=output_language,
                 success=True,
-                message=f"Resume optimized successfully with {total_improvements} improvements using v2.1.0-simplified pipeline",
+                message=(
+                    f"Resume optimized successfully with {total_improvements} improvements "
+                    f"using v2.1.0-simplified pipeline"
+                ),
                 processing_time_ms=sum(stage_timings.values()),
                 stage_timings=stage_timings,
                 # Add warning field if there are warnings
@@ -614,9 +647,16 @@ class ResumeTailoringService:
                     "css_marking": {
                         "semantic": ["opt-modified", "opt-new", "opt-placeholder"],
                         "keywords": ["opt-keyword", "opt-keyword-existing"]
-                    }
+                    },
+                    "metrics_calculation": "IndexCalculationServiceV2" if job_description else "legacy"
                 }
             )
+
+            # Add real metrics if calculated
+            if similarity_stats:
+                response['similarity_metrics'] = similarity_stats
+            if coverage_stats:
+                response['coverage_metrics'] = coverage_stats
 
             return response
 
@@ -636,6 +676,287 @@ class ResumeTailoringService:
             html_items.append(f"<li>{improvement}</li>")
 
         return f"<ul>{''.join(html_items)}</ul>"
+
+    def _detect_keywords_presence(
+        self,
+        html_content: str,
+        keywords_to_check: list[str]
+    ) -> list[str]:
+        """
+        Detect which keywords are actually present in HTML content.
+
+        Implements smart matching for variations:
+        - "CI/CD" can match "CI-CD", "CI CD", "CICD"
+        - "Node.js" can match "NodeJS", "nodejs", "Node JS"
+        - "Machine Learning" can match "ML"
+
+        Args:
+            html_content: HTML content to search in
+            keywords_to_check: List of keywords to check for
+
+        Returns:
+            List of keywords that were found in the content
+        """
+        import re
+
+        from bs4 import BeautifulSoup
+
+        # Extract plain text from HTML
+        soup = BeautifulSoup(html_content, 'html.parser')
+        text_content = soup.get_text(separator=' ', strip=True)
+
+        found_keywords = []
+        for keyword in keywords_to_check:
+            # Create multiple pattern variations for the keyword
+            patterns = self._create_keyword_patterns(keyword)
+
+            # Check if any pattern matches
+            for pattern in patterns:
+                try:
+                    if re.search(pattern, text_content, re.IGNORECASE):
+                        found_keywords.append(keyword)
+                        break
+                except re.error:
+                    # If pattern fails, try simple string matching as fallback
+                    if keyword.lower() in text_content.lower():
+                        found_keywords.append(keyword)
+                        break
+
+        return found_keywords
+
+    def _create_keyword_patterns(self, keyword: str) -> list[str]:
+        """
+        Create multiple matching patterns for a keyword to handle variations.
+
+        Args:
+            keyword: The keyword to create patterns for
+
+        Returns:
+            List of regex patterns that can match the keyword
+        """
+        import re
+
+        patterns = []
+
+        # Special handling for programming languages with special chars
+        special_langs = {
+            "C++": [r"C\+\+", r"Cpp", r"CPP"],
+            "C#": [r"C#", r"CSharp", r"C Sharp"],
+            ".NET": [r"\.NET", r"dotnet", r"dot net"],
+        }
+
+        if keyword in special_langs:
+            for pattern in special_langs[keyword]:
+                patterns.append(pattern)
+            return patterns
+
+        # Base pattern (exact match) - escape special characters
+        base = re.escape(keyword)
+        patterns.append(rf'\b{base}\b')
+
+        # Handle special cases
+        if "/" in keyword:  # e.g., CI/CD → CI-CD, CI CD, CICD
+            variants = [
+                keyword.replace("/", "-"),
+                keyword.replace("/", " "),
+                keyword.replace("/", "")
+            ]
+            for variant in variants:
+                escaped = re.escape(variant)
+                patterns.append(rf'\b{escaped}\b')
+
+        if "." in keyword and keyword not in special_langs:  # e.g., Node.js → NodeJS, Node JS
+            variants = [
+                keyword.replace(".", ""),
+                keyword.replace(".", " ")
+            ]
+            for variant in variants:
+                escaped = re.escape(variant)
+                patterns.append(rf'\b{escaped}\b')
+
+        # Common abbreviations mapping
+        abbreviations = {
+            "Machine Learning": ["ML"],
+            "Artificial Intelligence": ["AI"],
+            "Deep Learning": ["DL"],
+            "Natural Language Processing": ["NLP"],
+            "User Experience": ["UX"],
+            "User Interface": ["UI"],
+            "Application Programming Interface": ["API"],
+            "Software Development Kit": ["SDK"],
+            "Continuous Integration": ["CI"],
+            "Continuous Deployment": ["CD"],
+            "Continuous Delivery": ["CD"],
+        }
+
+        # Check if this keyword has known abbreviations
+        if keyword in abbreviations:
+            for abbr in abbreviations[keyword]:
+                patterns.append(rf'\b{re.escape(abbr)}\b')
+
+        # Also check if this keyword IS an abbreviation
+        for full_form, abbrs in abbreviations.items():
+            if keyword in abbrs:
+                patterns.append(rf'\b{re.escape(full_form.lower())}\b')
+
+        # Special handling for keywords like API that might appear as plural
+        # Match both singular and plural forms
+        if keyword.upper() == keyword and len(keyword) <= 4:  # Likely an acronym
+            patterns.append(rf'\b{re.escape(keyword)}s?\b')  # Match plural form
+
+        return patterns
+
+    def _categorize_keywords(
+        self,
+        originally_covered: list[str],
+        currently_covered: list[str],
+        covered_keywords: list[str],
+        missing_keywords: list[str]
+    ) -> dict[str, list[str]]:
+        """
+        Categorize keywords into four states based on before/after presence.
+
+        Args:
+            originally_covered: Keywords detected in original resume
+            currently_covered: Keywords detected in optimized resume
+            covered_keywords: Keywords that should be covered (from gap analysis)
+            missing_keywords: Keywords that were missing (from gap analysis)
+
+        Returns:
+            Dictionary with four keyword states:
+            - still_covered: Originally present and still present
+            - removed: Originally present but now missing
+            - newly_added: Originally missing but now present
+            - still_missing: Originally missing and still missing
+        """
+        # Ensure we're working with lists
+        covered_keywords = covered_keywords or []
+        missing_keywords = missing_keywords or []
+
+        # Categorize based on presence before and after
+        result = {
+            # Keywords that were originally covered
+            "still_covered": [
+                kw for kw in covered_keywords
+                if kw in originally_covered and kw in currently_covered
+            ],
+            "removed": [
+                kw for kw in covered_keywords
+                if kw in originally_covered and kw not in currently_covered
+            ],
+
+            # Keywords that were originally missing
+            "newly_added": [
+                kw for kw in missing_keywords
+                if kw in currently_covered
+            ],
+            "still_missing": [
+                kw for kw in missing_keywords
+                if kw not in currently_covered
+            ]
+        }
+
+        # Log warning if keywords were removed
+        if result["removed"]:
+            logger.warning(
+                f"⚠️ Keywords removed during optimization: {result['removed']}"
+            )
+
+        return result
+
+    async def _calculate_metrics_after_optimization(
+        self,
+        job_description: str,
+        original_resume: str,
+        optimized_resume: str,
+        gap_analysis: dict,
+        covered_keywords: list[str],
+        missing_keywords: list[str]
+    ) -> dict:
+        """
+        Calculate all metrics after optimization using IndexCalculationServiceV2.
+
+        This method:
+        1. Uses gap_analysis data for 'before' metrics (no recalculation)
+        2. Calls IndexCalculationServiceV2 once for 'after' metrics
+        3. Computes keyword state changes
+        4. Returns complete metrics including real similarity scores
+
+        Args:
+            job_description: Job description text
+            original_resume: Original resume HTML
+            optimized_resume: Optimized resume HTML
+            gap_analysis: Gap analysis results from input
+            covered_keywords: Keywords covered before optimization
+            missing_keywords: Keywords missing before optimization
+
+        Returns:
+            Dictionary with similarity, coverage, and keyword tracking
+        """
+        from src.services.index_calculation_v2 import get_index_calculation_service_v2
+
+        # 1. Before metrics - use gap_analysis input (no recalculation needed)
+        before_similarity = gap_analysis.get('similarity_percentage', 0)
+        before_coverage = gap_analysis.get('coverage_percentage', 0)
+
+        # 2. After metrics - one call to IndexCalculationServiceV2
+        index_service = get_index_calculation_service_v2()
+        all_keywords = list(set(covered_keywords + missing_keywords))
+
+        # Call IndexCalculationServiceV2 for real metrics calculation
+        # If this fails, let the exception propagate (no fallback)
+        after_result = await index_service.calculate_index(
+            resume=optimized_resume,
+            job_description=job_description,
+            keywords=all_keywords,
+            include_timing=False
+        )
+
+        # 3. Calculate keyword state changes
+        after_covered_set = set(after_result['keyword_coverage']['covered_keywords'])
+        before_covered_set = set(covered_keywords)
+        set(all_keywords)
+
+        keyword_tracking = {
+            'still_covered': list(before_covered_set & after_covered_set),
+            'removed': list(before_covered_set - after_covered_set),
+            'newly_added': list(after_covered_set - before_covered_set),
+            'still_missing': after_result['keyword_coverage']['missed_keywords']
+        }
+
+        # 4. Generate warnings if keywords were removed
+        warnings = []
+        if keyword_tracking['removed']:
+            warnings.append(
+                f"Warning: {len(keyword_tracking['removed'])} originally covered keywords "
+                f"were removed during optimization: {', '.join(keyword_tracking['removed'])}"
+            )
+
+        # 5. Return complete metrics
+        return {
+            'similarity': {
+                'before': before_similarity,
+                'after': after_result['similarity_percentage'],
+                'improvement': after_result['similarity_percentage'] - before_similarity
+            },
+            'coverage': {
+                'before': {
+                    'percentage': before_coverage,
+                    'covered': covered_keywords,
+                    'missed': missing_keywords
+                },
+                'after': {
+                    'percentage': after_result['keyword_coverage']['coverage_percentage'],
+                    'covered': after_result['keyword_coverage']['covered_keywords'],
+                    'missed': after_result['keyword_coverage']['missed_keywords']
+                },
+                'improvement': after_result['keyword_coverage']['coverage_percentage'] - before_coverage,
+                'newly_added': list(after_covered_set - before_covered_set),
+                'removed': list(before_covered_set - after_covered_set)
+            },
+            'keyword_tracking': keyword_tracking,
+            'warnings': warnings
+        }
 
     def _track_metrics_v2(
         self,
