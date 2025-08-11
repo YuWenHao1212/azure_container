@@ -20,14 +20,21 @@ from src.services.openai_client_gpt41 import (
 )
 
 # Type definitions
-LLMModel = Literal["gpt4o-2", "gpt41-mini"]
+LLMModel = Literal["gpt-4.1", "gpt-4.1-mini"]
+EmbeddingModel = Literal["embedding-3-large", "embedding-3-small"]
 LLMClient = AzureOpenAIClient | AzureOpenAIGPT41Client
 ModelSource = Literal["request", "header", "config", "default"]
 
 # Model to Azure deployment name mapping
 DEPLOYMENT_MAP = {
-    "gpt4o-2": "gpt-4.1-japan",
-    "gpt41-mini": "gpt-4-1-mini-japaneast"
+    "gpt-4.1": "gpt-4.1-japan",
+    "gpt-4.1-mini": "gpt-4-1-mini-japaneast"
+}
+
+# Embedding model to Azure deployment name mapping
+EMBEDDING_DEPLOYMENT_MAP = {
+    "embedding-3-large": "embedding-3-large-japan",
+    "embedding-3-small": "embedding-3-small-japan"
 }
 
 logger = logging.getLogger(__name__)
@@ -41,7 +48,7 @@ def get_llm_client(
     Get LLM client with dynamic model selection (Basic version).
 
     Args:
-        model: Direct model specification ("gpt4o-2" or "gpt41-mini")
+        model: Direct model specification ("gpt-4.1" or "gpt-4.1-mini")
         api_name: API name for environment-based configuration
                   (e.g., "keywords", "gap_analysis", "resume_format")
 
@@ -72,12 +79,12 @@ def get_llm_client(
             logger.info(f"Using model from env for {api_name}: {selected_model}")
         else:
             # Fallback to default
-            selected_model = getattr(settings, "llm_model_default", "gpt4o-2")
+            selected_model = getattr(settings, "llm_model_default", "gpt-4.1")
             source = "default"
             logger.info(f"No specific model for {api_name}, using default: {selected_model}")
     else:
         # Use default model
-        selected_model = getattr(settings, "llm_model_default", "gpt4o-2")
+        selected_model = getattr(settings, "llm_model_default", "gpt-4.1")
         source = "default"
         logger.info(f"Using default model: {selected_model}")
 
@@ -125,7 +132,7 @@ def get_llm_client_smart(
     # 2. HTTP Header is second priority
     elif headers and getattr(settings, "enable_llm_model_header", True):
         header_model = headers.get("X-LLM-Model")
-        if header_model and header_model in ["gpt4o-2", "gpt41-mini"]:
+        if header_model and header_model in ["gpt-4.1", "gpt-4.1-mini"]:
             selected_model = header_model
             source = "header"
             logger.info(f"Using model from HTTP header: {selected_model}")
@@ -141,7 +148,7 @@ def get_llm_client_smart(
 
     # 4. Default fallback
     if not selected_model:
-        selected_model = getattr(settings, "llm_model_default", "gpt4o-2")
+        selected_model = getattr(settings, "llm_model_default", "gpt-4.1")
         source = "default"
         logger.info(f"Using default model: {selected_model}")
 
@@ -174,7 +181,7 @@ def _create_client(model: str) -> LLMClient:
             )
             # Fallback to GPT-4o-2 using LLM Factory pattern
             # Use the correct deployment mapping from DEPLOYMENT_MAP
-            deployment_name = DEPLOYMENT_MAP.get("gpt4o-2", "gpt-4.1-japan")
+            deployment_name = DEPLOYMENT_MAP.get("gpt-4.1", "gpt-4.1-japan")
             # Use the proper Azure OpenAI client creation following LLM Factory pattern
             import os
 
@@ -212,6 +219,67 @@ def _create_client(model: str) -> LLMClient:
             api_key=api_key,
             deployment_name=deployment_name
         )
+
+def get_embedding_client(
+    model: EmbeddingModel | None = None,
+    api_name: str | None = None
+):
+    """
+    Get embedding client with model selection.
+
+    Args:
+        model: Direct model specification ("embedding-3-large" or "embedding-3-small")
+        api_name: API name for environment-based configuration
+                  (e.g., "course_search", "index_calculation")
+
+    Returns:
+        AzureEmbeddingClient instance configured for the selected model
+
+    Priority:
+        1. Direct model parameter
+        2. Environment variable (LLM_MODEL_EMBEDDING_{API_NAME})
+        3. Default embedding model from settings
+    """
+    from src.services.embedding_client import AzureEmbeddingClient
+
+    settings = get_settings()
+
+    # Determine which embedding model to use
+    if model:
+        # Direct specification takes priority
+        selected_model = model
+        logger.info(f"Using directly specified embedding model: {selected_model}")
+    elif api_name:
+        # Check for API-specific configuration
+        env_key = f"llm_model_embedding_{api_name.lower()}"
+        selected_model = getattr(settings, env_key, None)
+
+        if selected_model:
+            logger.info(f"Using embedding model from env for {api_name}: {selected_model}")
+        else:
+            # Fallback to default embedding model
+            selected_model = getattr(settings, "llm_model_embedding_default", "embedding-3-large")
+            logger.info(f"No specific embedding model for {api_name}, using default: {selected_model}")
+    else:
+        # Use default embedding model
+        selected_model = getattr(settings, "llm_model_embedding_default", "embedding-3-large")
+        logger.info(f"Using default embedding model: {selected_model}")
+
+    # Determine endpoint and API key based on model
+    if selected_model == "embedding-3-small":
+        # Course embedding uses small model
+        endpoint = getattr(settings, "course_embedding_endpoint", settings.embedding_endpoint)
+        api_key = getattr(settings, "course_embedding_api_key", settings.embedding_api_key)
+    else:
+        # Default to large model
+        endpoint = settings.embedding_endpoint
+        api_key = settings.embedding_api_key
+
+    # Create and return embedding client
+    return AzureEmbeddingClient(
+        endpoint=endpoint,
+        api_key=api_key
+    )
 
 
 def _track_model_selection(
@@ -262,7 +330,7 @@ def get_llm_info(client: LLMClient) -> dict:
         # AzureOpenAIClient
         settings = get_settings()
         return {
-            "model": "gpt4o-2",
+            "model": "gpt-4.1",
             "deployment": "gpt-4o-2",
             "endpoint": settings.azure_openai_endpoint,
             "region": "swedencentral",
@@ -272,7 +340,7 @@ def get_llm_info(client: LLMClient) -> dict:
 
 # Model cost information (per 1K tokens)
 MODEL_COSTS = {
-    "gpt4o-2": {
+    "gpt-4.1": {
         "input": 0.01,      # $0.01 per 1K input tokens
         "output": 0.03      # $0.03 per 1K output tokens
     },
@@ -292,7 +360,7 @@ def estimate_cost(
     Estimate the cost of using a specific model.
 
     Args:
-        model: Model name ("gpt4o-2" or "gpt41-mini")
+        model: Model name ("gpt-4.1" or "gpt41-mini")
         input_tokens: Number of input tokens
         output_tokens: Number of output tokens
 

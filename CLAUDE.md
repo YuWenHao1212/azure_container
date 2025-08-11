@@ -16,6 +16,20 @@
 
 > 基於原有 azure_fastapi 專案，從容器中還原並針對 Container Apps 最佳化
 
+
+### 🕐 時間處理規則 (TIME HANDLING RULE)
+
+**任何需要日期或時間時，必須先執行**：
+
+```bash
+TZ='Asia/Taipei' date '+%Y-%m-%d %H:%M:%S %Z'
+```
+
+- 文檔命名：`[TYPE]_[MODULE]_YYYYMMDD.md`
+- 日誌記錄：`YYYY-MM-DD HH:MM CST`
+- 絕不使用 <env> 中的日期或憑空推測！
+
+
 ## 專案概述
 
 本專案是從已部署的生產容器 `airesumeadvisor-api-production` (鏡像：`20250730-100726-3530cfd`) 中還原的完整 AI 履歷優化平台。
@@ -81,10 +95,10 @@ COURSE_EMBEDDING_ENDPOINT=https://airesumeadvisor.openai.azure.com/openai/deploy
 COURSE_EMBEDDING_API_KEY=${AZURE_OPENAI_API_KEY}
 
 # Model Selection
-LLM_MODEL_KEYWORDS=gpt41-mini     # 快速關鍵字提取
-LLM_MODEL_GAP_ANALYSIS=gpt4o-2    # 詳細分析
-LLM_MODEL_RESUME_FORMAT=gpt4o-2   # 高品質格式化
-LLM_MODEL_RESUME_TAILOR=gpt4o-2   # 履歷客製化
+LLM_MODEL_KEYWORDS=gpt-4.1-mini     # 快速關鍵字提取
+LLM_MODEL_GAP_ANALYSIS=gpt-4.1    # 詳細分析
+LLM_MODEL_RESUME_FORMAT=gpt-4.1   # 高品質格式化
+LLM_MODEL_RESUME_TAILOR=gpt-4.1   # 履歷客製化
 
 # Security
 JWT_SECRET_KEY=<secret>

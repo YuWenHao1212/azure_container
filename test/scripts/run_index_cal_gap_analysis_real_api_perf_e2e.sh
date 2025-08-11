@@ -120,7 +120,7 @@ log_environment_info() {
     # LLM Configuration
     log_message "LLM Configuration:"
     log_message "  - Keywords Extraction: ${LLM_MODEL_KEYWORDS:-gpt41-mini} @ ${GPT41_MINI_JAPANEAST_ENDPOINT:-Not Set}"
-    log_message "  - Gap Analysis: ${LLM_MODEL_GAP_ANALYSIS:-gpt4o-2} @ ${AZURE_OPENAI_ENDPOINT:-Not Set}"
+    log_message "  - Gap Analysis: ${LLM_MODEL_GAP_ANALYSIS:-gpt-4.1} @ ${AZURE_OPENAI_ENDPOINT:-Not Set}"
     log_message "  - Index Calculation: Uses Embedding API only (no LLM)"
     log_message "  - GPT-4.1 Deployment: ${AZURE_OPENAI_GPT4_DEPLOYMENT:-Not Set}"
     log_message "  - GPT-4.1 Mini Deployment: ${GPT41_MINI_JAPANEAST_DEPLOYMENT:-Not Set}"

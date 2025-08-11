@@ -77,7 +77,10 @@ if az containerapp show --name $CONTAINER_APP_NAME --resource-group $RESOURCE_GR
             CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \
             GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast \
             GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview \
-            LLM_MODEL_KEYWORDS=gpt41-mini \
+            LLM_MODEL_KEYWORDS=gpt-4.1-mini \
+            LLM_MODEL_GAP_ANALYSIS=gpt-4.1 \
+            LLM_MODEL_RESUME_FORMAT=gpt-4.1 \
+            LLM_MODEL_RESUME_TAILOR=gpt-4.1 \
             AZURE_OPENAI_API_KEY=secretref:azure-openai-key \
             EMBEDDING_API_KEY=secretref:embedding-api-key \
             GPT41_MINI_JAPANEAST_API_KEY=secretref:gpt41-mini-key \
@@ -118,7 +121,10 @@ else
             CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \
             GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast \
             GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview \
-            LLM_MODEL_KEYWORDS=gpt41-mini \
+            LLM_MODEL_KEYWORDS=gpt-4.1-mini \
+            LLM_MODEL_GAP_ANALYSIS=gpt-4.1 \
+            LLM_MODEL_RESUME_FORMAT=gpt-4.1 \
+            LLM_MODEL_RESUME_TAILOR=gpt-4.1 \
             AZURE_OPENAI_API_KEY=secretref:azure-openai-key \
             EMBEDDING_API_KEY=secretref:embedding-api-key \
             GPT41_MINI_JAPANEAST_API_KEY=secretref:gpt41-mini-key \

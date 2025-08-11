@@ -108,33 +108,43 @@ class Settings(BaseSettings):
 
     # LLM Model Selection Configuration (NEW)
     llm_model_default: str = Field(
-        default="gpt4o-2",
+        default="gpt-4.1",
         description="Default LLM model to use when not specified"
     )
     llm_model_keywords: str = Field(
         default="",
         validation_alias="LLM_MODEL_KEYWORDS",
-        description="LLM model for keyword extraction API (gpt4o-2 or gpt41-mini)"
+        description="LLM model for keyword extraction API (gpt-4.1 or gpt-4.1-mini)"
     )
     llm_model_gap_analysis: str = Field(
         default="",
         validation_alias="LLM_MODEL_GAP_ANALYSIS",
-        description="LLM model for gap analysis API (gpt4o-2 or gpt41-mini)"
+        description="LLM model for gap analysis API (gpt-4.1 or gpt-4.1-mini)"
     )
     llm_model_resume_format: str = Field(
         default="",
         validation_alias="LLM_MODEL_RESUME_FORMAT",
-        description="LLM model for resume format API (gpt4o-2 or gpt41-mini)"
+        description="LLM model for resume format API (gpt-4.1 or gpt-4.1-mini)"
     )
     llm_model_resume_tailor: str = Field(
         default="",
         validation_alias="LLM_MODEL_RESUME_TAILOR",
-        description="LLM model for resume tailoring API (gpt4o-2 or gpt41-mini)"
+        description="LLM model for resume tailoring API (gpt-4.1 or gpt-4.1-mini)"
     )
     llm_model_instruction_compiler: str = Field(
-        default="gpt41-mini",
+        default="gpt-4.1-mini",
         validation_alias="LLM_MODEL_INSTRUCTION_COMPILER",
-        description="LLM model for instruction compiler (default: gpt41-mini for fast processing)"
+        description="LLM model for instruction compiler (default: gpt-4.1-mini for fast processing)"
+    )
+    llm_model_embedding_default: str = Field(
+        default="embedding-3-large",
+        validation_alias="LLM_MODEL_EMBEDDING_DEFAULT",
+        description="Default embedding model (embedding-3-large or embedding-3-small)"
+    )
+    llm_model_course_embedding: str = Field(
+        default="embedding-3-small",
+        validation_alias="LLM_MODEL_COURSE_EMBEDDING",
+        description="Embedding model for course search (default: embedding-3-small for efficiency)"
     )
 
     # Feature flags for LLM model selection

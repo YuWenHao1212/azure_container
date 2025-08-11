@@ -69,9 +69,9 @@ jobs:
         
         # Model Selection
         LLM_MODEL_KEYWORDS=gpt41-mini
-        LLM_MODEL_GAP_ANALYSIS=gpt4o-2
-        LLM_MODEL_RESUME_FORMAT=gpt4o-2
-        LLM_MODEL_RESUME_TAILOR=gpt4o-2
+        LLM_MODEL_GAP_ANALYSIS=gpt-4.1
+        LLM_MODEL_RESUME_FORMAT=gpt-4.1
+        LLM_MODEL_RESUME_TAILOR=gpt-4.1
         
         # Security
         JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
@@ -277,9 +277,9 @@ jobs:
             COURSE_EMBEDDING_ENDPOINT=${{ secrets.COURSE_EMBEDDING_ENDPOINT }} \
             COURSE_EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
             LLM_MODEL_KEYWORDS=gpt41-mini \
-            LLM_MODEL_GAP_ANALYSIS=gpt4o-2 \
-            LLM_MODEL_RESUME_FORMAT=gpt4o-2 \
-            LLM_MODEL_RESUME_TAILOR=gpt4o-2 \
+            LLM_MODEL_GAP_ANALYSIS=gpt-4.1 \
+            LLM_MODEL_RESUME_FORMAT=gpt-4.1 \
+            LLM_MODEL_RESUME_TAILOR=gpt-4.1 \
             JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
             CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
             CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \
