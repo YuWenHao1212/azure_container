@@ -490,9 +490,14 @@ class ResumeTailoringService:
         output_language: str,
         stage_timings: dict[str, int],
         instructions: dict[str, Any],
+        covered_keywords: list[str] | None = None,
+        missing_keywords: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Process the optimization result and prepare the final response.
+        Implements hybrid CSS class approach:
+        1. LLM marks semantic changes (opt-modified, opt-new, opt-placeholder)
+        2. Python post-processing adds keyword markers (opt-keyword, opt-keyword-existing)
 
         Args:
             optimized_result: Result from LLM optimization
@@ -500,6 +505,8 @@ class ResumeTailoringService:
             output_language: Target language
             stage_timings: Timing metrics from each stage
             instructions: Instructions from the compiler
+            covered_keywords: Keywords covered in original resume
+            missing_keywords: Keywords missing from original resume
 
         Returns:
             Final response with all metrics and improvements
@@ -508,9 +515,59 @@ class ResumeTailoringService:
             optimized_html = optimized_result.get("optimized_resume", "")
             applied_improvements = optimized_result.get("applied_improvements", [])
 
-            # Post-process the HTML
-            # For v2.0.0, we'll skip post-processing for now
-            # This can be enhanced later with proper standardizers
+            # Initialize keyword lists
+            covered_keywords = covered_keywords or []
+            missing_keywords = missing_keywords or []
+
+            # Phase 1: Detect which keywords are present in original and optimized resumes
+            # Detect keywords in original resume
+            originally_covered = self._detect_keywords_presence(
+                original_resume,
+                covered_keywords
+            )
+
+            # Detect all keywords in optimized resume
+            all_keywords_to_check = list(set(covered_keywords + missing_keywords))
+            currently_covered = self._detect_keywords_presence(
+                optimized_html,
+                all_keywords_to_check
+            )
+
+            # Phase 2: Categorize keywords into 4 states
+            keyword_tracking = self._categorize_keywords(
+                originally_covered,
+                currently_covered,
+                covered_keywords,
+                missing_keywords
+            )
+
+            # Phase 3: Apply keyword marking using EnhancedMarker
+            if keyword_tracking["newly_added"] or keyword_tracking["still_covered"]:
+                from src.core.enhanced_marker import EnhancedMarker
+                marker = EnhancedMarker()
+
+                # Mark keywords in the optimized HTML
+                # still_covered → opt-keyword-existing (blue background)
+                # newly_added → opt-keyword (transparent bg, purple text)
+                optimized_html = marker.mark_keywords(
+                    html=optimized_html,
+                    original_keywords=keyword_tracking["still_covered"],
+                    new_keywords=keyword_tracking["newly_added"]
+                )
+
+                logger.info(
+                    f"Keyword marking applied - Still covered: {len(keyword_tracking['still_covered'])}, "
+                    f"Newly added: {len(keyword_tracking['newly_added'])}"
+                )
+
+            # Phase 4: Generate warnings for removed keywords
+            warnings = []
+            if keyword_tracking["removed"]:
+                warnings.append(
+                    f"Warning: {len(keyword_tracking['removed'])} originally covered keywords "
+                    f"were removed during optimization: {', '.join(keyword_tracking['removed'])}"
+                )
+                logger.warning(f"Keywords removed during optimization: {keyword_tracking['removed']}")
 
             # Calculate improvements count
             total_improvements = len(applied_improvements)
@@ -525,9 +582,19 @@ class ResumeTailoringService:
                 improvement_count=total_improvements,
                 output_language=output_language,
                 success=True,
-                message=f"Resume optimized successfully with {total_improvements} improvements using v2.0.0 pipeline",
+                message=f"Resume optimized successfully with {total_improvements} improvements using v2.1.0-simplified pipeline",
                 processing_time_ms=sum(stage_timings.values()),
                 stage_timings=stage_timings,
+                # Add warning field if there are warnings
+                warning=warnings[0] if warnings else None,
+                # Enhanced keyword tracking information
+                keyword_tracking={
+                    "still_covered": keyword_tracking["still_covered"],
+                    "removed": keyword_tracking["removed"],
+                    "newly_added": keyword_tracking["newly_added"],
+                    "still_missing": keyword_tracking["still_missing"],
+                    "warnings": warnings
+                },
                 gap_analysis_insights={
                     "structure_found": {
                         "sections": instructions.get('analysis', {}).get('resume_sections', {}),
@@ -536,14 +603,18 @@ class ResumeTailoringService:
                     "improvements_applied": total_improvements,
                 },
                 metadata={
-                    "version": "v2.0.0",
-                    "pipeline": "two-stage",
+                    "version": "v2.1.0-simplified",
+                    "pipeline": "two-stage-hybrid",
                     "models": {
-                        "instruction_compiler": "gpt41-mini",
-                        "resume_writer": "gpt4o-2",
+                        "instruction_compiler": "gpt-4.1-mini",
+                        "resume_writer": "gpt-4.1",
                     },
                     "llm_processing_time_ms": optimized_result.get("llm_processing_time_ms", 0),
                     "gap_analysis_external": True,
+                    "css_marking": {
+                        "semantic": ["opt-modified", "opt-new", "opt-placeholder"],
+                        "keywords": ["opt-keyword", "opt-keyword-existing"]
+                    }
                 }
             )
 

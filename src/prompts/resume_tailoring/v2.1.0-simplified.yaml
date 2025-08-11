@@ -21,10 +21,10 @@ metadata:
     - Clearer, more concise instructions
 
 llm_config:
-  temperature: 0.2
+  temperature: 0.3
   max_tokens: 6000
   seed: 42
-  top_p: 0.15
+  top_p: 0.2
   frequency_penalty: 0.0
   presence_penalty: 0.0
 
