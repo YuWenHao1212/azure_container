@@ -54,24 +54,15 @@ class InstructionCompiler:
             # Load the instruction compiler prompt directly
             prompt_template = self._load_prompt_template()
 
-            # Extract gap analysis components
-            core_strengths = gap_analysis.get("CoreStrengths", "")
+            # Extract only needed gap analysis components for simplified analysis
             key_gaps = gap_analysis.get("KeyGaps", "")
             quick_improvements = gap_analysis.get("QuickImprovements", "")
 
-            # Format keywords for better readability
-            covered_keywords_str = ", ".join(covered_keywords) if covered_keywords else "None"
-            missing_keywords_str = ", ".join(missing_keywords) if missing_keywords else "None"
-
-            # Prepare variables for prompt
+            # Prepare minimal variables for prompt
             prompt_vars = {
                 "resume_html": resume_html,
-                "job_description": job_description,
-                "core_strengths": core_strengths,
                 "key_gaps": key_gaps,
                 "quick_improvements": quick_improvements,
-                "covered_keywords": covered_keywords_str,
-                "missing_keywords": missing_keywords_str,
             }
 
             # Generate instructions using GPT-4.1 mini
@@ -107,8 +98,12 @@ class InstructionCompiler:
                 logger.error(f"Failed to parse JSON instructions: {e}")
                 logger.debug(f"Raw response: {instructions_text}")
                 # Return a basic instruction set as fallback
+                # Note: For simplified version, we don't need all the original parameters
                 instructions = self._create_fallback_instructions(
-                    core_strengths, key_gaps, quick_improvements, missing_keywords
+                    "",  # core_strengths not needed in simplified version
+                    key_gaps,
+                    quick_improvements,
+                    []  # missing_keywords not needed in simplified version
                 )
                 # Set llm_processing_time for fallback case
                 if 'llm_processing_time' not in locals():
@@ -124,17 +119,13 @@ class InstructionCompiler:
             instructions["metadata"] = {
                 "compiler_version": self.prompt_version,
                 "model": "gpt41-mini",
-                "presentation_gaps_found": self._count_gap_type(key_gaps, "[Presentation Gap]"),
-                "skill_gaps_found": self._count_gap_type(key_gaps, "[Skill Gap]"),
                 "processing_time_ms": total_processing_time,
                 "llm_processing_time_ms": llm_processing_time,
                 "overhead_ms": total_processing_time - llm_processing_time,
             }
 
             logger.info(
-                f"Instructions compiled successfully. "
-                f"Presentation gaps: {instructions['metadata']['presentation_gaps_found']}, "
-                f"Skill gaps: {instructions['metadata']['skill_gaps_found']}, "
+                f"Structure analysis completed successfully. "
                 f"Processing time: {total_processing_time}ms (LLM: {llm_processing_time}ms)"
             )
 
@@ -151,123 +142,60 @@ class InstructionCompiler:
         Returns:
             Dictionary with 'system' and 'user' prompts
         """
-        # For now, return the prompt directly embedded
-        # In production, this would load from YAML file
+        # Simplified prompt for minimal responsibility
         return {
-            "system": """You are an Instruction Compiler for resume optimization. Your role is to analyze gap analysis
-results and generate PRECISE, STRUCTURED instructions for resume enhancement.
+            "system": """You are a Resume Structure Analyzer. Your role is to quickly identify the resume structure.
 
 ## Your Task
-Convert gap analysis findings into actionable JSON instructions. You DO NOT write content - only instructions
-for what needs to be changed.
+Provide a SIMPLE structural analysis. Do NOT make content decisions or classify gaps.
 
-## Input Understanding
-
-### Gap Classification in KeyGaps
-- [Skill Gap]: Skills the candidate genuinely lacks - need creative positioning
-- [Presentation Gap]: Skills that exist but aren't visible - need surfacing
-
-### Core Strengths
-These are proven capabilities to emphasize and expand upon.
-
-### Quick Improvements
-Immediate changes that can improve match percentage.
+### Your Analysis Focus
+1. Identify which resume sections exist and their actual titles (e.g., "Work Experience" vs "Employment History")
+2. Count basic statistics (number of jobs, education entries, etc.)
+3. Note any structural observations
 
 ## Output Structure
 
-Generate a JSON object with precise instructions for each resume section:
+Return a simple JSON with this exact structure:
 
 {
-  "summary": {
-    "action": "CREATE" or "MODIFY",
-    "focus_areas": ["key area 1", "key area 2"],
-    "keywords_to_integrate": ["keyword1", "keyword2"],
-    "positioning_strategy": "Brief description of how to position candidate"
-  },
-  "skills": {
-    "add_skills": ["skill1", "skill2"],
-    "reorganize": true/false,
-    "categories": ["Category1", "Category2"],
-    "presentation_gaps_to_surface": ["skill from presentation gap"],
-    "skill_gaps_to_imply": ["skill to position through related experience"]
-  },
-  "experience": [
-    {
-      "company": "Company Name",
-      "role": "Job Title",
-      "priority": "HIGH/MEDIUM/LOW",
-      "bullet_improvements": [
-        {
-          "bullet_index": 0,
-          "improvement_type": "ADD_METRICS" | "ADD_KEYWORDS" | "CONVERT_TO_STAR" | "ADD_RESULT",
-          "keywords": ["keyword1", "keyword2"],
-          "focus": "What to emphasize"
-        }
-      ],
-      "new_bullets": [
-        {
-          "purpose": "Address specific gap or highlight strength",
-          "keywords": ["keyword1", "keyword2"],
-          "format": "STAR" or "PAR"
-        }
-      ]
+  "analysis": {
+    "resume_sections": {
+      "summary": "actual section title" or null,  // e.g., "Professional Summary", null if not exists
+      "skills": "actual section title" or null,  // e.g., "Technical Skills"
+      "experience": "actual section title" or null,  // e.g., "Work Experience"
+      "education": "actual section title" or null,  // e.g., "Education"
+      "certifications": "actual section title" or null,  // e.g., "Certifications"
+      "projects": "actual section title" or null  // e.g., "Projects"
+    },
+    "section_metadata": {
+      "total_experience_entries": number,
+      "total_education_entries": number,
+      "has_quantified_achievements": true/false,  // Are there metrics/numbers in achievements?
+      "estimated_length": "1 page" or "2 pages" or "3+ pages"
     }
-  ],
-  "education": {
-    "action": "NONE" | "ADD_COURSEWORK" | "ADD_PROJECTS",
-    "relevant_courses": ["course1", "course2"],
-    "keywords": ["keyword1", "keyword2"]
-  },
-  "optimization_strategy": {
-    "presentation_gaps_count": 0,
-    "skill_gaps_count": 0,
-    "priority_keywords": ["top 5 most important keywords"],
-    "overall_approach": "Brief strategy description"
   }
 }
 
-## Rules
-1. Be specific about which sections need changes
-2. Prioritize high-impact improvements
-3. Focus on keywords from job description
-4. Ensure instructions are actionable and clear
-5. Do NOT write actual content, only instructions
-6. Maintain realistic positioning (don't claim skills they don't have)""",
-            "user": """Analyze this gap analysis and generate optimization instructions:
+## Important Rules
+1. Only identify structure, don't make any content decisions
+2. For resume_sections, use the ACTUAL section title from the resume
+3. Use null if a section doesn't exist in the resume
+4. Keep the output minimal and focused
+5. Do NOT suggest improvements or actions - that's for the main LLM
+6. Count actual entries, not make judgments about quality""",
+            "user": """Analyze the resume structure:
 
-## Original Resume HTML
+## Resume HTML
 {resume_html}
 
-## Job Description
-{job_description}
-
-## Gap Analysis Results
-
-### Core Strengths
-{core_strengths}
-
-### Key Gaps (with classifications)
-{key_gaps}
-
-### Quick Improvements
-{quick_improvements}
-
-### Keywords
-Covered: {covered_keywords}
-Missing: {missing_keywords}
-
-Generate precise JSON instructions for optimizing this resume."""
+Provide a simple structural analysis following the exact JSON format specified."""
         }
 
-    def _count_gap_type(self, key_gaps: str, gap_type: str) -> int:
-        """Count occurrences of a specific gap type in the key gaps string."""
-        if not key_gaps:
-            return 0
-        return key_gaps.count(gap_type)
 
     def _validate_instructions(self, instructions: dict[str, Any]) -> dict[str, Any]:
         """
-        Validate and ensure all required fields exist in instructions.
+        Validate and ensure all required fields exist in simplified instructions.
 
         Args:
             instructions: Raw instructions from LLM
@@ -275,45 +203,44 @@ Generate precise JSON instructions for optimizing this resume."""
         Returns:
             Validated instructions with all required fields
         """
-        # Ensure all main sections exist
-        default_structure = {
-            "summary": {
-                "action": "MODIFY",
-                "focus_areas": [],
-                "keywords_to_integrate": [],
-                "positioning_strategy": "",
+        # Ensure the analysis structure exists
+        if "analysis" not in instructions:
+            instructions = {"analysis": instructions}
+
+        analysis = instructions["analysis"]
+
+        # Default structure for simplified format
+        default_analysis = {
+            "resume_sections": {
+                "summary": None,
+                "skills": None,
+                "experience": None,
+                "education": None,
+                "certifications": None,
+                "projects": None,
             },
-            "skills": {
-                "add_skills": [],
-                "reorganize": False,
-                "categories": [],
-                "presentation_gaps_to_surface": [],
-                "skill_gaps_to_imply": [],
-            },
-            "experience": [],
-            "education": {
-                "action": "NONE",
-                "relevant_courses": [],
-                "keywords": [],
-            },
-            "optimization_strategy": {
-                "presentation_gaps_count": 0,
-                "skill_gaps_count": 0,
-                "priority_keywords": [],
-                "overall_approach": "",
+            "section_metadata": {
+                "total_experience_entries": 0,
+                "total_education_entries": 0,
+                "has_quantified_achievements": False,
+                "estimated_length": "unknown",
             },
         }
 
         # Merge with defaults to ensure all fields exist
-        for key, default_value in default_structure.items():
-            if key not in instructions:
-                instructions[key] = default_value
+        for key, default_value in default_analysis.items():
+            if key not in analysis:
+                analysis[key] = default_value
             elif isinstance(default_value, dict):
                 # Merge nested dictionaries
-                for sub_key, sub_default in default_value.items():
-                    if sub_key not in instructions[key]:
-                        instructions[key][sub_key] = sub_default
+                if key not in analysis:
+                    analysis[key] = default_value
+                else:
+                    for sub_key, sub_default in default_value.items():
+                        if sub_key not in analysis[key]:
+                            analysis[key][sub_key] = sub_default
 
+        instructions["analysis"] = analysis
         return instructions
 
     def _create_fallback_instructions(
@@ -324,62 +251,37 @@ Generate precise JSON instructions for optimizing this resume."""
         missing_keywords: list[str],
     ) -> dict[str, Any]:
         """
-        Create basic fallback instructions if JSON parsing fails.
+        Create basic fallback structure if JSON parsing fails.
 
         Args:
-            core_strengths: Core strengths from gap analysis
-            key_gaps: Key gaps with classification markers
-            quick_improvements: Quick improvements suggestions
-            missing_keywords: Keywords missing from resume
+            core_strengths: Core strengths (unused in simplified version)
+            key_gaps: Key gaps (unused in simplified version)
+            quick_improvements: Quick improvements (unused in simplified version)
+            missing_keywords: Keywords (unused in simplified version)
 
         Returns:
-            Basic instruction set
+            Basic structure analysis in simplified format
         """
-        logger.warning("Using fallback instructions due to JSON parsing failure")
+        logger.warning("Using fallback structure due to JSON parsing failure")
 
-        # Count gap types
-        presentation_gaps = self._count_gap_type(key_gaps, "[Presentation Gap]")
-        skill_gaps = self._count_gap_type(key_gaps, "[Skill Gap]")
+        # Suppress unused variable warnings - these parameters are kept for interface compatibility
+        _ = (core_strengths, key_gaps, quick_improvements, missing_keywords)
 
         return {
-            "summary": {
-                "action": "CREATE" if "summary" in quick_improvements.lower() else "MODIFY",
-                "focus_areas": ["Professional expertise", "Key achievements"],
-                "keywords_to_integrate": missing_keywords[:5] if missing_keywords else [],
-                "positioning_strategy": "Highlight transferable skills and relevant experience",
-            },
-            "skills": {
-                "add_skills": missing_keywords[:10] if missing_keywords else [],
-                "reorganize": True,
-                "categories": ["Technical Skills", "Tools & Technologies", "Soft Skills"],
-                "presentation_gaps_to_surface": [],
-                "skill_gaps_to_imply": [],
-            },
-            "experience": [
-                {
-                    "company": "All Companies",
-                    "role": "All Roles",
-                    "priority": "HIGH",
-                    "bullet_improvements": [
-                        {
-                            "bullet_index": -1,  # Apply to all bullets
-                            "improvement_type": "CONVERT_TO_STAR",
-                            "keywords": missing_keywords[:3] if missing_keywords else [],
-                            "focus": "Add metrics and results",
-                        }
-                    ],
-                    "new_bullets": [],
-                }
-            ],
-            "education": {
-                "action": "NONE",
-                "relevant_courses": [],
-                "keywords": [],
-            },
-            "optimization_strategy": {
-                "presentation_gaps_count": presentation_gaps,
-                "skill_gaps_count": skill_gaps,
-                "priority_keywords": missing_keywords[:5] if missing_keywords else [],
-                "overall_approach": "Surface hidden skills and position transferable experience",
-            },
+            "analysis": {
+                "resume_sections": {
+                    "summary": "Professional Summary",
+                    "skills": "Skills",
+                    "experience": "Experience",
+                    "education": "Education",
+                    "certifications": None,
+                    "projects": None,
+                },
+                "section_metadata": {
+                    "total_experience_entries": 2,
+                    "total_education_entries": 1,
+                    "has_quantified_achievements": False,
+                    "estimated_length": "2 pages",
+                },
+            }
         }

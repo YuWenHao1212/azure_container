@@ -29,17 +29,13 @@ def generate_report():
                 "average": 4.63,
             },
             "stage_breakdown": {
-                "gap_analysis": {
-                    "p50": 1.90,
-                    "percentage": 44.4,
-                },
                 "instruction_compiler": {
                     "p50": 0.28,
-                    "percentage": 6.5,
+                    "percentage": 11.8,
                 },
                 "resume_writer": {
                     "p50": 2.10,
-                    "percentage": 49.1,
+                    "percentage": 88.2,
                 },
             },
         },

@@ -4,12 +4,12 @@ metadata:
   created_at: "2025-01-16T00:00:00Z"
   description: "Enhanced gap analysis with gap classification markers for Resume Tailoring v2.0.0"
   status: "active"
-  notes: "V2.1 adds [Skill Gap] and [Presentation Gap] markers in KeyGaps for three-stage pipeline"
+  notes: "V2.1 adds [Skill Gap] and [Presentation Gap] markers in KeyGaps for two-stage pipeline"
   changes_from_v2.0.0: |
     - Added classification markers in KEY GAPS section
     - Each gap now starts with [Skill Gap] or [Presentation Gap]
     - Enables Instruction Compiler to distinguish gap types
-    - Supports Resume Tailoring v2.0.0 three-stage architecture
+    - Supports Resume Tailoring v2.0.0 two-stage architecture
 
 llm_config:
   temperature: 0.4

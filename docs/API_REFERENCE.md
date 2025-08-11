@@ -365,12 +365,14 @@ X-API-Key: [YOUR_API_KEY]
 {
   "job_description": "string (200-10000 字元)",  // 最少 200 字元
   "original_resume": "string (200-50000 字元, HTML 格式)",  // 最少 200 字元
-  "gap_analysis": {
+  "gap_analysis": {  // 必填 - 來自 Gap Analysis API 的結果
     "core_strengths": ["string"],  // 3-5 項優勢
-    "key_gaps": ["string"],  // 3-5 項差距（應包含 [Skill Gap] 或 [Presentation Gap] 標記）
+    "key_gaps": ["string"],  // 3-5 項差距（必須包含 [Skill Gap] 或 [Presentation Gap] 標記）
     "quick_improvements": ["string"],  // 3-5 項改進建議
     "covered_keywords": ["string"],  // 已涵蓋關鍵字
-    "missing_keywords": ["string"]  // 缺少關鍵字
+    "missing_keywords": ["string"],  // 缺少關鍵字
+    "coverage_percentage": 75,  // 選填 - 關鍵字覆蓋率 (0-100)
+    "similarity_percentage": 80  // 選填 - 履歷相似度分數 (0-100)
   },
   "options": {  // 選填
     "include_visual_markers": true,  // 預設 true
@@ -822,10 +824,15 @@ tailored_data = client.tailor_resume(
     resume=original_resume,
     gap_analysis={
         "core_strengths": ["Python expertise", "API development"],
-        "key_gaps": ["Docker experience", "Kubernetes"],
-        "quick_improvements": ["Complete Docker course"],
+        "key_gaps": [
+            "[Skill Gap] Docker - No container experience",
+            "[Presentation Gap] Kubernetes - Has orchestration skills but not mentioned"
+        ],
+        "quick_improvements": ["Complete Docker course", "Add K8s experience to resume"],
         "covered_keywords": keywords_data["keywords"][:10],
-        "missing_keywords": keywords_data["keywords"][10:]
+        "missing_keywords": keywords_data["keywords"][10:],
+        "coverage_percentage": 75,  # 從 Index Calculation API 獲得
+        "similarity_percentage": 80  # 從 Index Calculation API 獲得
     }
 )
 print(f"履歷優化後匹配度提升: {tailored_data['similarity']['improvement']}%")

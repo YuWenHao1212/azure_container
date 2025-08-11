@@ -129,56 +129,32 @@ class AzureEmbeddingClient:
         await self.close()
 
 
-# Factory function for dependency injection
+# Factory function for dependency injection (deprecated - use llm_factory)
 def get_azure_embedding_client() -> AzureEmbeddingClient:
     """
     Factory function: Create AzureEmbedding client instance
-    Load configuration from settings (which reads from environment variables)
+
+    DEPRECATED: Use get_embedding_client from llm_factory instead
+    This function is kept for backward compatibility
 
     Returns:
         AzureEmbeddingClient: Configured client instance
-
-    Raises:
-        ValueError: Missing required configuration
     """
-    from src.core.config import get_settings
+    from src.services.llm_factory import get_embedding_client
 
-    settings = get_settings()
-
-    if not settings.embedding_endpoint:
-        raise ValueError("EMBEDDING_ENDPOINT configuration is required")
-
-    if not settings.embedding_api_key:
-        raise ValueError("EMBEDDING_API_KEY configuration is required")
-
-    return AzureEmbeddingClient(
-        endpoint=settings.embedding_endpoint,
-        api_key=settings.embedding_api_key
-    )
+    return get_embedding_client(model="embedding-3-large")
 
 
 def get_course_embedding_client() -> AzureEmbeddingClient:
     """
     Factory function: Create course embedding client instance
-    Uses text-embedding-3-small for course search (1536 dimensions)
+
+    DEPRECATED: Use get_embedding_client from llm_factory instead
+    This function is kept for backward compatibility
 
     Returns:
         AzureEmbeddingClient: Configured client instance for course embeddings
-
-    Raises:
-        ValueError: Missing required configuration
     """
-    from src.core.config import get_settings
+    from src.services.llm_factory import get_embedding_client
 
-    settings = get_settings()
-
-    if not settings.course_embedding_endpoint:
-        raise ValueError("COURSE_EMBEDDING_ENDPOINT configuration is required")
-
-    if not settings.course_embedding_api_key:
-        raise ValueError("COURSE_EMBEDDING_API_KEY configuration is required")
-
-    return AzureEmbeddingClient(
-        endpoint=settings.course_embedding_endpoint,
-        api_key=settings.course_embedding_api_key
-    )
+    return get_embedding_client(model="embedding-3-small", api_name="course_search")
