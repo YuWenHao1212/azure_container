@@ -158,7 +158,7 @@ class ResumeTailoringService:
                 covered_keywords=covered_keywords,
                 missing_keywords=missing_keywords,
                 gap_analysis_data=gap_analysis_data,
-                prompt_version="v2.1.1-selective",  # Use selective keyword version
+                prompt_version="v2.1.0-simplified",  # Use simplified version
             )
 
             # Execute optimization with LLM
@@ -331,7 +331,7 @@ class ResumeTailoringService:
         covered_keywords: list[str] | None = None,
         missing_keywords: list[str] | None = None,
         gap_analysis_data: dict[str, Any] | None = None,
-        prompt_version: str = "v2.1.1-selective",  # Updated to selective keyword integration
+        prompt_version: str = "v2.1.0-simplified",  # Updated default to simplified version
     ) -> dict[str, Any]:
         """
         Build context for the v2.x prompt versions.
