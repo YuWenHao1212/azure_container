@@ -552,6 +552,11 @@ class AdvancedPreCommitValidator:
             if ruff_result.skipped:
                 print(f"| {'🔍 Ruff 檢查':<26} | {'⏭️':>5} | {'-':>5} | {'-':>5} | {ruff_result.duration:.1f}s{' ':>2} | {'⏭️':>4} |")
             else:
+                # Count Ruff failures in total
+                if ruff_result.failed > 0:
+                    total_failed += 1  # Count as 1 failed check
+                elif ruff_result.passed > 0:
+                    total_passed += 1  # Count as 1 passed check
                 print(f"| {'🔍 Ruff 檢查':<26} | {ruff_result.status:>5} | {'-':>5} | {'-':>5} | {ruff_result.duration:.1f}s{' ':>2} | {ruff_result.status:>4} |")
             print(f"| {'':<26} | {'':<5} | {'':<5} | {'':<5} | {'':<6} | {'':<4} |")
 

@@ -6,7 +6,7 @@ In CI environment, it uses reduced delays for faster test execution.
 """
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 
 class TestConfig:

@@ -90,6 +90,11 @@ jobs:
         chmod +x test/scripts/pre_commit_check_advanced.py
         chmod +x .claude/hooks/pre-commit-check.sh
         
+        # Debug CI environment
+        echo "=== Debug CI Environment ==="
+        python test/scripts/debug_ci_env.py || true
+        echo ""
+        
         # 執行完整測試套件 (包含所有測試) - 使用 Python 版本
         echo "=== Running complete test suite with Python pre-commit check ==="
         echo "This includes:"

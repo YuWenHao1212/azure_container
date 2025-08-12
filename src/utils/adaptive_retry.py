@@ -6,6 +6,7 @@ Key component for Index Cal and Gap Analysis V2 reliability improvement.
 """
 import asyncio
 import logging
+import os
 import secrets
 from collections.abc import Callable
 from typing import Any
@@ -23,6 +24,9 @@ class AdaptiveRetryStrategy:
 
     def __init__(self):
         """Initialize adaptive retry strategy with error-specific configurations."""
+        # Check if running in CI environment for optimized delays
+        is_ci = os.environ.get('CI') == 'true' or os.environ.get('GITHUB_ACTIONS') == 'true'
+
         # Error type specific retry configurations
         self.retry_configs = {
             "validation": {
@@ -34,29 +38,29 @@ class AdaptiveRetryStrategy:
             },
             "empty_fields": {
                 "max_attempts": 2,
-                "base_delay": 1.0,
-                "max_delay": 3.0,
+                "base_delay": 0.1 if is_ci else 1.0,  # CI: 100ms, Prod: 1s
+                "max_delay": 0.3 if is_ci else 3.0,   # CI: 300ms, Prod: 3s
                 "backoff": "linear",
                 "jitter": True
             },
             "timeout": {
                 "max_attempts": 2,      # Initial + 1 retry for timeout errors
-                "base_delay": 0.5,      # 0.5s delay as per requirement
-                "max_delay": 0.5,       # Fixed delay
+                "base_delay": 0.05 if is_ci else 0.5,  # CI: 50ms, Prod: 0.5s
+                "max_delay": 0.05 if is_ci else 0.5,   # Fixed delay
                 "backoff": "linear",    # No backoff needed for single retry
                 "jitter": False         # No jitter for quick retry
             },
             "rate_limit": {
                 "max_attempts": 3,
-                "base_delay": 3.0,      # 3s → 6s → 12s as per requirement
-                "max_delay": 20.0,      # Max 20s wait time limit
+                "base_delay": 0.1 if is_ci else 3.0,   # CI: 0.1s → 0.2s → 0.4s, Prod: 3s → 6s → 12s
+                "max_delay": 0.5 if is_ci else 20.0,   # CI: 0.5s, Prod: 20s
                 "backoff": "exponential",
                 "jitter": False
             },
             "general": {
                 "max_attempts": 2,      # 2 retries for general errors
-                "base_delay": 1.0,      # 1s delay
-                "max_delay": 1.0,       # Linear backoff with 1s
+                "base_delay": 0.1 if is_ci else 1.0,   # CI: 100ms, Prod: 1s
+                "max_delay": 0.2 if is_ci else 1.0,    # CI: 200ms, Prod: 1s
                 "backoff": "linear",    # Linear backoff as per requirement
                 "jitter": False         # No jitter for predictable behavior
             }
