@@ -159,7 +159,7 @@ temp/
 temp_*.txt
 temp_*.log
 debug_*.py
-test_*.py
+/test_*.py
 *_output.txt
 *_report.txt
 
