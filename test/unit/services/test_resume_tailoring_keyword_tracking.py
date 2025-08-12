@@ -5,7 +5,7 @@ Following Gap Analysis V2 pattern with Test ID markers.
 Implements defensive testing approach for LLM output variability.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -21,7 +21,7 @@ class TestKeywordDetection:
         """
         Test ID: API-TAILOR-001-UT
         Test exact keyword detection in HTML content.
-        
+
         測試原因: 確保系統能準確檢測關鍵字是否存在於履歷中
         """
         service = ResumeTailoringService()
@@ -48,7 +48,7 @@ class TestKeywordDetection:
         """
         Test ID: API-TAILOR-002-UT
         Test keyword variant detection (CI/CD → CI-CD, Node.js → NodeJS).
-        
+
         測試原因: 驗證系統能處理關鍵字的常見變體寫法
         實際案例: LLM 可能將 "CI/CD" 寫成 "CI-CD" 或 "CICD"
         """
@@ -78,7 +78,7 @@ class TestKeywordDetection:
         """
         Test ID: API-TAILOR-003-UT
         Test abbreviation bidirectional matching (ML ↔ Machine Learning).
-        
+
         測試原因: 確保縮寫和全稱都能被正確識別
         實作細節: 使用內建字典進行雙向映射
         """
@@ -119,7 +119,7 @@ class TestKeywordCategorization:
         """
         Test ID: API-TAILOR-005-UT
         Test categorization into four states: still_covered, removed, newly_added, still_missing.
-        
+
         測試原因: 核心功能 - 追蹤關鍵字在優化前後的狀態變化
         """
         service = ResumeTailoringService()

@@ -45,17 +45,17 @@ class TestResumeTailoringV2Integration:
         - Cloud platforms (AWS, GCP, or Azure)
         - Building scalable microservices
         - Team leadership and mentoring
-        
+
         The ideal candidate will have experience with Python frameworks like Django or Flask,
         and a deep understanding of ML/AI principles. Experience with Kubernetes is essential
         for our cloud-native architecture. You should be comfortable leading technical teams
         and driving architectural decisions.
-        
+
         Required Skills:
         - Python, Machine Learning, Kubernetes, Docker
         - Cloud Architecture, Microservices
         - Team Leadership, Agile methodologies
-        
+
         This is a great opportunity to work on cutting-edge AI products at scale.
         """
 
@@ -152,7 +152,7 @@ class TestResumeTailoringV2Integration:
                 <body>
                     <h2 class="opt-new">Professional Summary</h2>
                     <p class="opt-new">Senior Python Developer with expertise in Machine Learning and scalable backend systems</p>
-                    
+
                     <h2>Experience</h2>
                     <h3>Software Engineer - TechCorp (2020-2023)</h3>
                     <ul>
@@ -161,7 +161,7 @@ class TestResumeTailoringV2Integration:
                         <li>Optimized database queries improving performance</li>
                         <li>Worked with cross-functional teams</li>
                     </ul>
-                    
+
                     <h2>Skills</h2>
                     <h3>Languages</h3>
                     <p><span class="opt-modified">Python (3+ years)</span></p>

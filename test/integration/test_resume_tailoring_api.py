@@ -20,7 +20,7 @@ class TestResumeTailoringAPI:
         """
         Test ID: API-TLR-521-IT
         Test successful resume tailoring with keyword tracking.
-        
+
         測試原因: 驗證完整的履歷優化流程包含關鍵字追蹤功能
         """
         request_data = {
@@ -53,7 +53,7 @@ class TestResumeTailoringAPI:
                 "still_missing": ["Kubernetes"],
                 "warnings": ["Warning: 1 originally covered keywords were removed during optimization: Django"]
             },
-            # 新增：真實計算的 metrics（使用 IndexCalculationServiceV2）
+            # 新增: 真實計算的 metrics (使用 IndexCalculationServiceV2)
             "similarity_metrics": {
                 "before": 60,
                 "after": 85,
@@ -116,7 +116,7 @@ class TestResumeTailoringAPI:
         # Check real metrics calculation (IndexCalculationServiceV2)
         similarity = data["data"]["similarity"]
         assert similarity["before"] == 60
-        assert similarity["after"] == 85  # 真實計算，不是簡單的 +20
+        assert similarity["after"] == 85  # 真實計算, 不是簡單的 +20
         assert similarity["improvement"] == 25
 
         coverage = data["data"]["coverage"]
@@ -132,7 +132,7 @@ class TestResumeTailoringAPI:
         """
         Test ID: API-TLR-522-IT
         Test that no warning is generated when no keywords are removed.
-        
+
         測試原因: 確保沒有關鍵字被移除時不會產生誤報警告
         """
         request_data = {
@@ -188,7 +188,7 @@ class TestResumeTailoringAPI:
         """
         Test ID: API-TLR-523-IT
         Test validation error when input is too short.
-        
+
         測試原因: 驗證 API 最小長度要求
         """
         request_data = {
@@ -227,7 +227,7 @@ class TestResumeTailoringAPI:
         """
         Test ID: API-TLR-524-IT
         Test handling of external service errors.
-        
+
         測試原因: 確保外部服務錯誤有適當的錯誤處理
         """
         from fastapi import HTTPException
@@ -266,7 +266,7 @@ class TestResumeTailoringAPI:
         """
         Test ID: API-TLR-525-IT
         Test handling of unexpected internal errors.
-        
+
         測試原因: 防禦性編程 - 處理未預期的系統錯誤
         """
         request_data = {
@@ -303,7 +303,7 @@ class TestResumeTailoringAPI:
         """
         Test ID: API-TLR-526-IT
         測試 IndexCalculationServiceV2 服務錯誤處理
-        
+
         測試原因: 驗證服務失敗時正確返回錯誤（不使用 fallback）
         """
         request_data = {

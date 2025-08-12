@@ -249,7 +249,7 @@ class TestResumeTailoringPerformance:
         if missing_keys:
             pytest.skip(f"效能測試需要真實 API keys。缺少: {', '.join(missing_keys)}")
 
-        # 準備測試資料（較短但仍符合 > 200 字元要求）
+        # 準備測試資料 (較短但仍符合 > 200 字元要求)
         job_description = """
         We are seeking a Senior Full Stack Developer with expertise in modern web technologies.
         The ideal candidate should have strong experience in Python, JavaScript, and cloud technologies.
@@ -312,7 +312,7 @@ class TestResumeTailoringPerformance:
         response_times = []
         successful_requests = 0
 
-        # 使用真實 API - 執行 5 個請求（減少 API 成本）
+        # 使用真實 API - 執行 5 個請求 (減少 API 成本)
         num_requests = 5
         print(f"\n開始執行 {num_requests} 個真實 API 請求...")
 
@@ -320,7 +320,7 @@ class TestResumeTailoringPerformance:
             start_time = time.perf_counter()
 
             try:
-                # 執行完整的履歷優化流程（使用真實 LLM API）
+                # 執行完整的履歷優化流程 (使用真實 LLM API)
                 result = await real_service.tailor_resume(
                     original_resume=original_resume,
                     job_description=job_description,
@@ -351,8 +351,8 @@ class TestResumeTailoringPerformance:
 
             except Exception as e:
                 print(f"Request {i+1}/{num_requests} failed: {e} ❌")
-                # 對於失敗的請求，記錄但不計入統計
-                # 如果所有請求都失敗，測試會在後面失敗
+                # 對於失敗的請求, 記錄但不計入統計
+                # 如果所有請求都失敗, 測試會在後面失敗
 
         # 確保至少有 3 個成功的請求才進行統計
         if successful_requests < 3:
@@ -361,7 +361,7 @@ class TestResumeTailoringPerformance:
         # 計算統計數據
         if response_times:
             p50 = statistics.median(response_times)
-            # 對於小樣本，使用不同的百分位數計算方法
+            # 對於小樣本, 使用不同的百分位數計算方法
             if len(response_times) >= 5:
                 sorted_times = sorted(response_times)
                 p95_index = int(len(sorted_times) * 0.95)
@@ -369,7 +369,7 @@ class TestResumeTailoringPerformance:
                 p95 = sorted_times[p95_index]
                 p99 = sorted_times[p99_index]
             else:
-                # 樣本太小，使用最大值
+                # 樣本太小, 使用最大值
                 p95 = max(response_times)
                 p99 = max(response_times)
 
@@ -382,8 +382,8 @@ class TestResumeTailoringPerformance:
             print(f"最小回應時間: {min(response_times):.0f}ms")
             print(f"最大回應時間: {max(response_times):.0f}ms")
 
-            # SLA 驗證（根據真實 API 調整閾值）
-            # 注意：真實 API 可能比 Mock 慢，但仍應在合理範圍內
+            # SLA 驗證 (根據真實 API 調整閾值)
+            # 注意: 真實 API 可能比 Mock 慢, 但仍應在合理範圍內
             # 實際測試顯示 GPT-4.1 + GPT-4.1-mini 兩階段處理需要較長時間
             assert p50 < 20000, f"P50 回應時間 {p50:.0f}ms 超過目標 20000ms（真實 API）"
             assert p95 < 40000, f"P95 回應時間 {p95:.0f}ms 超過目標 40000ms（真實 API）"
@@ -410,7 +410,7 @@ class TestKeywordProcessingBenchmarks:
         for _ in range(50):
             start_time = time.perf_counter()
 
-            # 模擬正則表達式編譯（實際在 _detect_keywords_presence 中）
+            # 模擬正則表達式編譯 (實際在 _detect_keywords_presence 中)
             import re
             patterns = [re.escape(keyword) for keyword in keywords]
             combined_pattern = r'\b(?:' + '|'.join(patterns) + r')\b'

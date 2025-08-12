@@ -182,9 +182,7 @@ class TestErrorHandlingV2:
         )
 
         # Mock the adaptive retry strategy to capture retry attempts
-        original_execute_with_retry = None
         if service.retry_strategy:
-            original_execute_with_retry = service.retry_strategy.execute_with_retry
 
             async def mock_execute_with_retry(func, error_classifier=None, get_retry_after=None):
                 # First call - capture the retry-after value
@@ -195,7 +193,7 @@ class TestErrorHandlingV2:
                     retry_after = get_retry_after(e) if get_retry_after else None
                     if retry_after:
                         retry_delays.append(min(retry_after, 20))  # Cap at 20s
-                    raise RuntimeError("Max retries exceeded")
+                    raise RuntimeError("Max retries exceeded") from None
 
             service.retry_strategy.execute_with_retry = mock_execute_with_retry
 

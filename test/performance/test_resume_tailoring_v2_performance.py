@@ -33,10 +33,10 @@ class TestResumeTailoringV2Performance:
         <body>
             <h1>John Smith</h1>
             <p>Email: john.smith@email.com | Phone: (555) 123-4567</p>
-            
+
             <h2>Professional Summary</h2>
             <p>Experienced software engineer with 5+ years developing scalable web applications.</p>
-            
+
             <h2>Experience</h2>
             <h3>Senior Software Engineer - TechCorp (2020-2023)</h3>
             <ul>
@@ -46,7 +46,7 @@ class TestResumeTailoringV2Performance:
                 <li>Led team of 4 engineers in agile development environment</li>
                 <li>Implemented CI/CD pipelines using Jenkins and Docker</li>
             </ul>
-            
+
             <h3>Software Engineer - StartupXYZ (2018-2020)</h3>
             <ul>
                 <li>Developed RESTful APIs using Django REST Framework</li>
@@ -54,10 +54,10 @@ class TestResumeTailoringV2Performance:
                 <li>Worked with PostgreSQL and MongoDB databases</li>
                 <li>Participated in code reviews and mentored junior developers</li>
             </ul>
-            
+
             <h2>Education</h2>
             <p>Bachelor of Science in Computer Science - State University (2018)</p>
-            
+
             <h2>Skills</h2>
             <p>Python, JavaScript, Flask, Django, React, PostgreSQL, MongoDB, Docker, AWS, Git, Agile, Machine Learning</p>
         </body>
@@ -69,7 +69,7 @@ class TestResumeTailoringV2Performance:
         """Realistic job description (~1000 chars)."""
         return """
         We are seeking a Senior Python Developer to join our AI/ML team.
-        
+
         Required Qualifications:
         - 5+ years of Python development experience
         - Strong experience with machine learning frameworks (TensorFlow, PyTorch, scikit-learn)
@@ -79,7 +79,7 @@ class TestResumeTailoringV2Performance:
         - Experience with data processing pipelines
         - Strong understanding of software design patterns
         - Excellent problem-solving and communication skills
-        
+
         Responsibilities:
         - Design and implement machine learning models for production
         - Build scalable data processing pipelines
@@ -87,7 +87,7 @@ class TestResumeTailoringV2Performance:
         - Collaborate with cross-functional teams
         - Mentor junior team members
         - Participate in architectural decisions
-        
+
         Nice to have:
         - Experience with deep learning and NLP
         - Knowledge of streaming technologies (Kafka, Spark)
@@ -237,17 +237,17 @@ class TestResumeTailoringV2Performance:
 
                 # Setup Gap Analysis mock with delay
                 mock_gap_service = AsyncMock()
-                async def delayed_gap_analysis(*args, **kwargs):
-                    await asyncio.sleep(delay_config["gap_analysis"])
-                    return gap_response
+                async def delayed_gap_analysis(*args, delay=delay_config["gap_analysis"], response=gap_response, **kwargs):
+                    await asyncio.sleep(delay)
+                    return response
                 mock_gap_service.analyze_gap = delayed_gap_analysis
                 MockGapAnalysis.return_value = mock_gap_service
 
                 # Setup Instruction Compiler mock with delay
                 mock_compiler = AsyncMock()
-                async def delayed_compiler(*args, **kwargs):
-                    await asyncio.sleep(delay_config["instruction_compiler"])
-                    return instruction_response
+                async def delayed_compiler(*args, delay=delay_config["instruction_compiler"], response=instruction_response, **kwargs):
+                    await asyncio.sleep(delay)
+                    return response
                 mock_compiler.compile_instructions = delayed_compiler
                 MockCompiler.return_value = mock_compiler
 
@@ -255,12 +255,12 @@ class TestResumeTailoringV2Performance:
                 service = ResumeTailoringService()
 
                 # Mock LLM for Resume Writer with delay
-                async def delayed_llm(*args, **kwargs):
-                    await asyncio.sleep(delay_config["resume_writer"])
+                async def delayed_llm(*args, delay=delay_config["resume_writer"], response=tailoring_response, **kwargs):
+                    await asyncio.sleep(delay)
                     return {
                         "choices": [{
                             "message": {
-                                "content": json.dumps(tailoring_response)
+                                "content": json.dumps(response)
                             }
                         }]
                     }
@@ -515,7 +515,9 @@ class TestResumeTailoringV2Performance:
         }
 
         # Save report to file
-        report_path = "/tmp/resume_tailoring_v2_performance_report.json"
+        import tempfile
+        fd, report_path = tempfile.mkstemp(suffix="_resume_tailoring_v2_performance_report.json")
+        os.close(fd)
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
 

@@ -129,7 +129,7 @@ class TestKeywordDetection:
         missing_keywords = ["Docker"]
 
         with patch('src.services.resume_tailoring.logger') as mock_logger:
-            result = self.service._categorize_keywords(
+            self.service._categorize_keywords(
                 originally_covered,
                 currently_covered,
                 covered_keywords,
