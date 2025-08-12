@@ -188,14 +188,36 @@ class AdvancedPreCommitValidator:
             args.append("-s")  # No capture for unit tests
 
         # Add test paths
+        test_files_found = []
         for path in test_paths:
             test_file = project_root / path
             if test_file.exists():
                 args.append(str(test_file))
+                test_files_found.append(str(test_file))
+            else:
+                # Debug output for CI/CD
+                if os.environ.get('CI'):
+                    print(f"\n    [DEBUG] Test file not found: {test_file}")
+                    print(f"    [DEBUG] Current directory: {os.getcwd()}")
+                    print(f"    [DEBUG] Project root: {project_root}")
+                    # Check if the file exists with alternative paths
+                    alternative_path = Path(path)
+                    if alternative_path.exists():
+                        print(f"    [DEBUG] File exists at: {alternative_path.absolute()}")
+                    # Check common paths
+                    from_cwd = Path(os.getcwd()) / path
+                    if from_cwd.exists():
+                        print(f"    [DEBUG] File exists from CWD: {from_cwd}")
+                        args.append(str(from_cwd))
+                        test_files_found.append(str(from_cwd))
 
         # Check if we have any test files (args has base options + capture option + test files)
         base_args_count = 7 if "-s" in args or "--capture=sys" in args else 6
         if len(args) == base_args_count:  # No test files found
+            # Debug output for CI/CD when no files found
+            if os.environ.get('CI'):
+                print(f"    [WARNING] No test files found for {test_name}")
+                print(f"    [WARNING] Searched paths: {test_paths}")
             return TestResult(skipped=1)
 
         # Redirect pytest output to suppress it
@@ -431,6 +453,11 @@ class AdvancedPreCommitValidator:
         if unit_result.total > 0:
             status = "✅" if unit_result.failed == 0 else "❌"
             print(f"collected {unit_result.total} items, {unit_result.passed} passed {status}")
+        elif unit_result.skipped > 0:
+            # File not found - show warning
+            print("file not found, skipped ⚠️")
+        else:
+            print("collected 0 items")
 
         # Run integration tests
         print("  Integration Tests: ", end="", flush=True)
@@ -438,6 +465,11 @@ class AdvancedPreCommitValidator:
         if integration_result.total > 0:
             status = "✅" if integration_result.failed == 0 else "❌"
             print(f"collected {integration_result.total} items, {integration_result.passed} passed {status}")
+        elif integration_result.skipped > 0:
+            # File not found - show warning
+            print("file not found, skipped ⚠️")
+        else:
+            print("collected 0 items")
 
         results = {
             "unit": unit_result,
