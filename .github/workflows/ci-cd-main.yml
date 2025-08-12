@@ -38,11 +38,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Run Ruff check
-      run: |
-        pip install ruff
-        ruff check src/ --line-length=120
-        
     - name: Create .env file for tests
       run: |
         cat > .env << EOF
@@ -86,8 +81,8 @@ jobs:
         
     - name: Run tests
       run: |
-        # 安裝測試依賴
-        pip install pytest pytest-json-report
+        # 安裝測試依賴（包含 Ruff）
+        pip install pytest pytest-json-report ruff
         
         # 確保測試腳本有執行權限
         chmod +x test/scripts/pre_commit_check_advanced.py
@@ -96,13 +91,13 @@ jobs:
         # 執行完整測試套件 (包含所有測試) - 使用 Python 版本
         echo "=== Running complete test suite with Python pre-commit check ==="
         echo "This includes:"
-        echo "  - Ruff code style check"
+        echo "  - Ruff code style check (src/ and test/ directories)"
         echo "  - Service modules tests (47 tests)"
         echo "  - Health & Keyword tests (19 tests)"
         echo "  - Index Calculation tests (24 tests)"
         echo "  - Gap Analysis tests (47 tests)"
         echo "  - Resume Tailoring tests (18 tests)"
-        echo "Total: 155 tests"
+        echo "Total: 155 tests + Ruff check"
         echo ""
         
         # 優先使用 Python 版本
