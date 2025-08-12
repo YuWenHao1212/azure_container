@@ -8,6 +8,7 @@ Tests verify:
 - Correct retry timings
 """
 import asyncio
+import os
 import time
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -148,8 +149,17 @@ class TestErrorHandlingV2:
             delay1 = call_times[1] - call_times[0]
             delay2 = call_times[2] - call_times[1]
 
-            assert 2.5 <= delay1 <= 3.5, f"First retry delay should be ~3s, got {delay1}"
-            assert 5.5 <= delay2 <= 6.5, f"Second retry delay should be ~6s, got {delay2}"
+            # Check if running in CI environment
+            is_ci = os.environ.get('CI') == 'true' or os.environ.get('GITHUB_ACTIONS') == 'true'
+
+            if is_ci:
+                # CI environment uses faster delays
+                assert 0.05 <= delay1 <= 0.15, f"CI: First retry delay should be ~0.1s, got {delay1}"
+                assert 0.15 <= delay2 <= 0.25, f"CI: Second retry delay should be ~0.2s, got {delay2}"
+            else:
+                # Local/production uses normal delays
+                assert 2.5 <= delay1 <= 3.5, f"First retry delay should be ~3s, got {delay1}"
+                assert 5.5 <= delay2 <= 6.5, f"Second retry delay should be ~6s, got {delay2}"
 
     @pytest.mark.asyncio
     async def test_API_GAP_022_IT_retry_after_header_handling(self, mock_services):
@@ -267,10 +277,19 @@ class TestErrorHandlingV2:
         # Verify retry happened
         assert call_count == 2  # Initial + 1 retry
 
-        # Verify delay was ~0.5s
+        # Verify delay was appropriate for environment
         if len(call_times) >= 2:
             delay = call_times[1] - call_times[0]
-            assert 0.4 <= delay <= 0.6, f"Timeout retry delay should be ~0.5s, got {delay}"
+
+            # Check if running in CI environment
+            is_ci = os.environ.get('CI') == 'true' or os.environ.get('GITHUB_ACTIONS') == 'true'
+
+            if is_ci:
+                # CI environment uses faster delay
+                assert 0.03 <= delay <= 0.07, f"CI: Timeout retry delay should be ~0.05s, got {delay}"
+            else:
+                # Local/production uses normal delay
+                assert 0.4 <= delay <= 0.6, f"Timeout retry delay should be ~0.5s, got {delay}"
 
     @pytest.mark.asyncio
     async def test_API_GAP_020_IT_general_error_retry(self, mock_services):
@@ -323,10 +342,19 @@ class TestErrorHandlingV2:
         assert "General processing error" in str(exc_info.value)
         assert call_count == 2  # Initial + 1 retry (max_attempts=2)
 
-        # Verify delay was ~1s
+        # Verify delay was appropriate for environment
         if len(call_times) >= 2:
             delay = call_times[1] - call_times[0]
-            assert 0.8 <= delay <= 1.2, f"General error retry delay should be ~1s, got {delay}"
+
+            # Check if running in CI environment
+            is_ci = os.environ.get('CI') == 'true' or os.environ.get('GITHUB_ACTIONS') == 'true'
+
+            if is_ci:
+                # CI environment uses faster delay
+                assert 0.08 <= delay <= 0.12, f"CI: General error retry delay should be ~0.1s, got {delay}"
+            else:
+                # Local/production uses normal delay
+                assert 0.8 <= delay <= 1.2, f"General error retry delay should be ~1s, got {delay}"
 
     @pytest.mark.asyncio
     async def test_API_GAP_025_IT_no_partial_results_on_failure(self, mock_services):
@@ -430,24 +458,27 @@ class TestAdaptiveRetryStrategy:
         """
         strategy = AdaptiveRetryStrategy()
 
+        # Check if running in CI environment
+        is_ci = os.environ.get('CI') == 'true' or os.environ.get('GITHUB_ACTIONS') == 'true'
+
         # Verify rate limit config
         rate_limit_config = strategy.retry_configs['rate_limit']
         assert rate_limit_config['max_attempts'] == 3
-        assert rate_limit_config['base_delay'] == 3.0
-        assert rate_limit_config['max_delay'] == 20.0
+        assert rate_limit_config['base_delay'] == (0.1 if is_ci else 3.0)
+        assert rate_limit_config['max_delay'] == (0.5 if is_ci else 20.0)
         assert rate_limit_config['backoff'] == 'exponential'
 
         # Verify timeout config
         timeout_config = strategy.retry_configs['timeout']
         assert timeout_config['max_attempts'] == 2  # Initial + 1 retry
-        assert timeout_config['base_delay'] == 0.5
-        assert timeout_config['max_delay'] == 0.5
+        assert timeout_config['base_delay'] == (0.05 if is_ci else 0.5)
+        assert timeout_config['max_delay'] == (0.05 if is_ci else 0.5)
 
         # Verify general config
         general_config = strategy.retry_configs['general']
         assert general_config['max_attempts'] == 2
-        assert general_config['base_delay'] == 1.0
-        assert general_config['max_delay'] == 1.0
+        assert general_config['base_delay'] == (0.1 if is_ci else 1.0)
+        assert general_config['max_delay'] == (0.2 if is_ci else 1.0)
         assert general_config['backoff'] == 'linear'
 
     @pytest.mark.asyncio
@@ -463,14 +494,24 @@ class TestAdaptiveRetryStrategy:
         strategy = AdaptiveRetryStrategy()
         config = strategy.retry_configs['rate_limit']
 
-        # Test exponential backoff: 3s → 6s → 12s
+        # Check if running in CI environment
+        is_ci = os.environ.get('CI') == 'true' or os.environ.get('GITHUB_ACTIONS') == 'true'
+
+        # Test exponential backoff
         delay0 = strategy._calculate_delay(config, 0)
         delay1 = strategy._calculate_delay(config, 1)
         delay2 = strategy._calculate_delay(config, 2)
 
-        assert delay0 == 3.0  # 3 * (2^0) = 3
-        assert delay1 == 6.0  # 3 * (2^1) = 6
-        assert delay2 == 12.0  # 3 * (2^2) = 12
+        if is_ci:
+            # CI: 0.1s → 0.2s → 0.4s
+            assert delay0 == 0.1  # 0.1 * (2^0) = 0.1
+            assert delay1 == 0.2  # 0.1 * (2^1) = 0.2
+            assert delay2 == 0.4  # 0.1 * (2^2) = 0.4
+        else:
+            # Local/prod: 3s → 6s → 12s
+            assert delay0 == 3.0  # 3 * (2^0) = 3
+            assert delay1 == 6.0  # 3 * (2^1) = 6
+            assert delay2 == 12.0  # 3 * (2^2) = 12
 
     @pytest.mark.asyncio
     async def test_API_GAP_026_IT_value_error_classification(self):
@@ -485,12 +526,17 @@ class TestAdaptiveRetryStrategy:
         strategy = AdaptiveRetryStrategy()
         config = strategy.retry_configs['rate_limit']
 
-        # Test that delay is capped at 20s
-        delay3 = strategy._calculate_delay(config, 3)  # Would be 24s
-        delay4 = strategy._calculate_delay(config, 4)  # Would be 48s
+        # Check if running in CI environment
+        is_ci = os.environ.get('CI') == 'true' or os.environ.get('GITHUB_ACTIONS') == 'true'
 
-        assert delay3 == 20.0  # Capped at max_delay
-        assert delay4 == 20.0  # Capped at max_delay
+        # Test that delay is capped at max_delay
+        delay3 = strategy._calculate_delay(config, 3)  # Would be 24s (prod) or 0.8s (CI)
+        delay4 = strategy._calculate_delay(config, 4)  # Would be 48s (prod) or 1.6s (CI)
+
+        # In CI: capped at 0.5s, in prod: capped at 20s
+        expected_max = 0.5 if is_ci else 20.0
+        assert delay3 == expected_max, f"delay3 should be capped at {expected_max}, got {delay3}"
+        assert delay4 == expected_max, f"delay4 should be capped at {expected_max}, got {delay4}"
 
     def test_API_GAP_027_IT_timeout_error_classification(self):
         """

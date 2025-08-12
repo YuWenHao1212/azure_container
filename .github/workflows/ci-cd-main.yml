@@ -111,12 +111,34 @@ jobs:
         
         # 優先使用 Python 版本
         if [ -f "test/scripts/pre_commit_check_advanced.py" ]; then
+            # 執行測試並同時寫入日誌，保留退出碼
             python test/scripts/pre_commit_check_advanced.py | tee test_output.log
+            # 捕獲 Python 腳本的退出碼 (PIPESTATUS[0] 是管道中第一個命令的退出碼)
+            TEST_EXIT_CODE=${PIPESTATUS[0]}
+            
+            # 如果測試失敗，明確退出
+            if [ $TEST_EXIT_CODE -ne 0 ]; then
+                echo ""
+                echo "❌ Tests failed with exit code: $TEST_EXIT_CODE"
+                echo "Pipeline will be blocked."
+                exit $TEST_EXIT_CODE
+            fi
         else
             # Fallback to shell version
             set -o pipefail
             ./.claude/hooks/pre-commit-check.sh | tee test_output.log
+            TEST_EXIT_CODE=$?
+            
+            if [ $TEST_EXIT_CODE -ne 0 ]; then
+                echo ""
+                echo "❌ Tests failed with exit code: $TEST_EXIT_CODE"
+                echo "Pipeline will be blocked."
+                exit $TEST_EXIT_CODE
+            fi
         fi
+        
+        echo ""
+        echo "✅ All tests passed successfully!"
         
     - name: Upload test results
       if: always()
