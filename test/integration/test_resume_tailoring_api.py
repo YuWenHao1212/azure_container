@@ -97,7 +97,8 @@ class TestResumeTailoringAPI:
         # Check success response structure
         assert data["success"] is True
         assert data["data"] is not None
-        assert data["error"]["has_error"] is False
+        # When success=True, error field should not be present (Bubble.io compatibility)
+        assert "error" not in data or data.get("error") is None
         assert data["warning"]["has_warning"] is True  # Django was removed
 
         # Check keyword tracking

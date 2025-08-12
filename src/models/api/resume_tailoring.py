@@ -240,27 +240,57 @@ class WarningInfo(BaseModel):
         description="Detailed warning information (e.g., removed keywords)"
     )
 
-class TailoringResult(BaseModel):
-    """Result of resume tailoring"""
-    resume: str = Field(
-        description="Optimized resume HTML with visual markers"
-    )
-    improvements: str = Field(
-        default="",
-        description="HTML formatted list of improvements for direct display"
-    )
+class TailoringStatistics(BaseModel):
+    """Additional statistics for resume tailoring (optional)"""
     markers: VisualMarkerStats = Field(
         description="Statistics about visual markers"
     )
     similarity: SimilarityStats = Field(
         description="Similarity statistics"
     )
-    coverage: CoverageStats = Field(
-        description="Keyword coverage statistics"
+
+
+class TailoringResult(BaseModel):
+    """Result of resume tailoring - Bubble.io compatible format"""
+    # Core fields required by Bubble.io
+    optimized_resume: str = Field(
+        description="Optimized resume HTML with visual markers"
+    )
+    applied_improvements: str = Field(
+        default="",
+        description="HTML formatted list of improvements for direct display"
+    )
+    improvement_count: int = Field(
+        default=0,
+        description="Number of improvements applied"
     )
     keyword_tracking: KeywordTracking = Field(
         default_factory=KeywordTracking,
         description="Detailed keyword tracking information"
+    )
+    coverage: CoverageStats = Field(
+        description="Keyword coverage statistics"
+    )
+    processing_time_ms: int = Field(
+        default=0,
+        description="Total processing time in milliseconds"
+    )
+    stage_timings: dict[str, int] = Field(
+        default_factory=lambda: {
+            "instruction_compilation_ms": 0,
+            "resume_writing_ms": 0
+        },
+        description="Timing breakdown by processing stage (milliseconds)"
+    )
+
+    # Keep these at root level for backward compatibility
+    markers: VisualMarkerStats = Field(
+        default_factory=VisualMarkerStats,
+        description="Statistics about visual markers"
+    )
+    similarity: SimilarityStats = Field(
+        default_factory=lambda: SimilarityStats(before=0, after=0, improvement=0),
+        description="Similarity statistics"
     )
 
 
@@ -273,14 +303,22 @@ class TailoringResponse(BaseModel):
         default=None,
         description="Tailoring result when successful"
     )
-    error: ErrorInfo = Field(
-        default_factory=ErrorInfo,
-        description="Error information if request failed"
-    )
     warning: WarningInfo = Field(
         default_factory=WarningInfo,
         description="Warning information (e.g., keywords removed)"
     )
+    # Error field only included when success=False
+    error: ErrorInfo | None = Field(
+        default=None,
+        description="Error information if request failed",
+        exclude_none=True  # Don't include in response when None
+    )
+
+    class Config:
+        # Ensure empty arrays are preserved, not converted to null
+        json_encoders = {
+            list: lambda v: v if v is not None else []
+        }
 
 
 class TailoringError(BaseModel):
