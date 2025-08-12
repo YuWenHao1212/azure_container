@@ -45,23 +45,23 @@ class TestErrorHandlingV2:
 
                         # Configure ResourcePoolManager mock directly to avoid import pollution
                         mock_pool_instance = Mock()
-                        
+
                         # Create a proper async context manager for get_client
                         class AsyncContextManagerMock:
                             def __init__(self, return_value):
                                 self.return_value = return_value
-                                
+
                             async def __aenter__(self):
                                 return self.return_value
-                                
+
                             async def __aexit__(self, exc_type, exc_val, exc_tb):
                                 return None
-                        
+
                         # Create mock LLM client
                         mock_llm_client = AsyncMock()
                         mock_llm_client.chat_completion = AsyncMock()
                         mock_llm_client.close = AsyncMock()
-                        
+
                         # Configure get_client to return proper async context manager
                         mock_pool_instance.get_client = lambda: AsyncContextManagerMock(mock_llm_client)
                         mock_pool_instance.get_stats = Mock(return_value={
@@ -71,7 +71,7 @@ class TestErrorHandlingV2:
                             "pool_hits": 0,
                             "pool_misses": 1
                         })
-                        
+
                         mock_resource_pool.return_value = mock_pool_instance
 
                         mock_index.return_value = mock_index_instance
