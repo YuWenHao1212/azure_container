@@ -181,8 +181,9 @@ class TestIndexCalculationV2Integration:
         print("Cache behavior integration verified")
 
     # TEST: API-IC-103-IT
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-016-UT")
     def test_input_validation(self, test_client):
-        """TEST: API-IC-103-IT - 輸入驗證測試.
+        """TEST: API-IC-103-IT - 輸入驗證測試. [已合併至 ERROR_HANDLER]
 
         驗證各種無效輸入的錯誤處理。
         """
@@ -216,10 +217,11 @@ class TestIndexCalculationV2Integration:
         print("Input validation tests verified")
 
     # TEST: API-IC-104-IT
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-017-UT")
     def test_azure_openai_rate_limit_error(
         self, test_client, mock_embedding_client, valid_index_calc_request
     ):
-        """TEST: API-IC-104-IT - Azure OpenAI 速率限制錯誤測試."""
+        """TEST: API-IC-104-IT - Azure OpenAI 速率限制錯誤測試. [已合併至 ERROR_HANDLER]"""
         with patch('src.services.index_calculation_v2.IndexCalculationServiceV2._compute_embeddings_parallel') as mock_compute:
             # Mock rate limit error
             mock_compute.side_effect = AzureOpenAIRateLimitError("Rate limit exceeded")
@@ -234,10 +236,11 @@ class TestIndexCalculationV2Integration:
         print("Azure OpenAI rate limit error handling verified")
 
     # TEST: API-IC-105-IT
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-017-UT")
     def test_azure_openai_auth_error(
         self, test_client, mock_embedding_client, valid_index_calc_request
     ):
-        """TEST: API-IC-105-IT - Azure OpenAI 認證錯誤測試."""
+        """TEST: API-IC-105-IT - Azure OpenAI 認證錯誤測試. [已合併至 ERROR_HANDLER]"""
         with patch('src.services.index_calculation_v2.IndexCalculationServiceV2._compute_embeddings_parallel') as mock_compute:
             # Mock authentication error - raise our custom AuthenticationError
             from src.services.exceptions import AuthenticationError
@@ -253,10 +256,11 @@ class TestIndexCalculationV2Integration:
         print("Azure OpenAI authentication error handling verified")
 
     # TEST: API-IC-106-IT
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-017-UT")
     def test_azure_openai_server_error(
         self, test_client, mock_embedding_client, valid_index_calc_request
     ):
-        """TEST: API-IC-106-IT - Azure OpenAI 伺服器錯誤測試."""
+        """TEST: API-IC-106-IT - Azure OpenAI 伺服器錯誤測試. [已合併至 ERROR_HANDLER]"""
         with patch('src.services.index_calculation_v2.IndexCalculationServiceV2._compute_embeddings_parallel') as mock_compute:
             # Mock server error - raise our custom ExternalServiceError
             from src.services.exceptions import ExternalServiceError

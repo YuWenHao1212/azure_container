@@ -12,11 +12,12 @@ from pydantic import BaseModel, Field
 
 from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
+from src.decorators.error_handler import handle_api_errors
 from src.models.response import (
     UnifiedResponse,
-    create_error_response,
     create_success_response,
 )
+from src.services.exceptions import ExternalServiceError, RateLimitError, ValidationError
 
 
 # Request/Response Models
@@ -53,6 +54,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@handle_api_errors(api_name="index_calculation")
 async def calculate_index(
     request: IndexCalculationRequest,
     req: Request,
@@ -141,8 +143,7 @@ async def calculate_index(
         return create_success_response(data=final_result)
 
     except TimeoutError as e:
-        # Timeout errors (408 Request Timeout)
-        logger.error(f"Timeout error in index calculation V2: {e}")
+        # Track and re-raise for decorator to handle
         monitoring_service.track_event(
             "IndexCalculationV2TimeoutError",
             {
@@ -151,17 +152,10 @@ async def calculate_index(
                 "service_version": "v2"
             }
         )
-        raise HTTPException(
-            status_code=status.HTTP_408_REQUEST_TIMEOUT,
-            detail=create_error_response(
-                code="TIMEOUT_ERROR",
-                message="Request processing timeout",
-                details="The request took too long to process"
-            ).model_dump()
-        ) from e
+        raise
 
     except ValueError as e:
-        logger.error(f"Validation error in index calculation V2: {e}")
+        # Track and convert to ValidationError
         monitoring_service.track_event(
             "IndexCalculationV2ValidationError",
             {
@@ -170,119 +164,72 @@ async def calculate_index(
                 "service_version": "v2"
             }
         )
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=create_error_response(
-                code="VALIDATION_ERROR",
-                message="Invalid request data",
-                details=str(e)
-            ).model_dump()
-        ) from e
+        raise ValidationError(str(e)) from e
 
     except Exception as e:
-        # Import specific exception types
-        from src.services.exceptions import AuthenticationError, ExternalServiceError, RateLimitError, ServiceError
+        # Import specific exception types for checking
+        from src.services.exceptions import AuthenticationError, ServiceError
 
-        # Check for specific error types
+        # Track basic error info
+        processing_time_ms = round((time.time() - start_time) * 1000, 2)
+
+        # Check for specific error types and convert appropriately
         if isinstance(e, RateLimitError) or "rate limit" in str(e).lower():
-            # Rate limit errors (429 Too Many Requests)
-            logger.error(f"Rate limit error in index calculation V2: {e}")
             monitoring_service.track_event(
                 "IndexCalculationV2RateLimitError",
                 {
                     "error_message": str(e),
-                    "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                    "processing_time_ms": processing_time_ms,
                     "service_version": "v2"
                 }
             )
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=create_error_response(
-                    code="RATE_LIMIT_ERROR",
-                    message="Rate limit exceeded",
-                    details="Please try again later"
-                ).model_dump()
-            ) from e
+            raise RateLimitError(str(e)) from e
 
         elif isinstance(e, AuthenticationError):
-            # Authentication errors (401/403)
-            logger.error(f"Authentication error in index calculation V2: {e}")
             monitoring_service.track_event(
                 "IndexCalculationV2AuthenticationError",
                 {
                     "error_message": str(e),
-                    "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                    "processing_time_ms": processing_time_ms,
                     "service_version": "v2"
                 }
             )
-            # Use the status code from the AuthenticationError
-            auth_status_code = getattr(e, 'status_code', 401)
-            raise HTTPException(
-                status_code=auth_status_code,
-                detail=create_error_response(
-                    code="AUTHENTICATION_ERROR" if auth_status_code == 401 else "FORBIDDEN",
-                    message=str(e),
-                    details="Authentication failed"
-                ).model_dump()
-            ) from e
+            raise
 
         elif isinstance(e, ExternalServiceError):
-            # External service errors (502 Bad Gateway)
-            logger.error(f"External service error in index calculation V2: {e}")
             monitoring_service.track_event(
                 "IndexCalculationV2ExternalServiceError",
                 {
                     "error_message": str(e),
-                    "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                    "processing_time_ms": processing_time_ms,
                     "service_version": "v2"
                 }
             )
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=create_error_response(
-                    code="EXTERNAL_SERVICE_ERROR",
-                    message="External service error",
-                    details=str(e)
-                ).model_dump()
-            ) from e
+            raise
 
         elif isinstance(e, ServiceError):
-            # General service errors (503 Service Unavailable)
-            logger.error(f"Service error in index calculation V2: {e}")
             monitoring_service.track_event(
                 "IndexCalculationV2ServiceError",
                 {
                     "error_message": str(e),
-                    "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                    "processing_time_ms": processing_time_ms,
                     "service_version": "v2"
                 }
             )
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=create_error_response(
-                    code="SERVICE_ERROR",
-                    message="Service temporarily unavailable",
-                    details=str(e)
-                ).model_dump()
-            ) from e
+            raise
+
+        # Unexpected errors
         logger.error(f"Unexpected error in index calculation V2: {e}", exc_info=True)
         monitoring_service.track_event(
             "IndexCalculationV2UnexpectedError",
             {
                 "error_message": str(e),
                 "error_type": type(e).__name__,
-                "processing_time_ms": round((time.time() - start_time) * 1000, 2),
+                "processing_time_ms": processing_time_ms,
                 "service_version": "v2"
             }
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=create_error_response(
-                code="INTERNAL_ERROR",
-                message="An unexpected error occurred",
-                details="Please try again later"
-            ).model_dump()
-        ) from e
+        raise
 
 @router.post(
     "/index-calculation",
@@ -291,6 +238,7 @@ async def calculate_index(
     summary="Calculate Resume-Job Similarity Index",
     description="Calculate similarity percentage and keyword coverage between resume and job description"
 )
+@handle_api_errors(api_name="index_calculation_endpoint")
 async def index_calculation_endpoint(
     request: IndexCalculationRequest,
     req: Request,

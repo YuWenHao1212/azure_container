@@ -1,0 +1,211 @@
+"""
+Error handling decorator for API endpoints.
+
+This decorator provides automatic error handling using the ErrorHandlerFactory,
+simplifying error management across all API endpoints.
+"""
+
+import functools
+import logging
+from collections.abc import Callable
+from typing import Any
+
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
+
+from src.services.error_handler_factory import get_error_handler_factory
+
+logger = logging.getLogger(__name__)
+
+
+def handle_tailor_resume_errors(api_name: str | None = None):
+    """
+    Special decorator for tailor-resume endpoint that returns TailoringResponse format.
+
+    This decorator handles errors but returns them in the TailoringResponse format
+    instead of the standard UnifiedResponse format.
+
+    Args:
+        api_name: Name of the API for monitoring and logging
+
+    Returns:
+        Decorated function with TailoringResponse error handling
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs) -> Any:
+            # Import here to avoid circular imports
+            from src.models.api.resume_tailoring import ErrorInfo, TailoringResponse, WarningInfo
+
+            # Get error handler factory singleton
+            error_handler = get_error_handler_factory()
+
+            # Extract endpoint name from function
+            endpoint = func.__name__
+
+            # Create error context
+            context = {
+                "api_name": api_name or endpoint,
+                "endpoint": f"/api/v1/{endpoint}",
+                "debug": False,  # Can be made configurable
+            }
+
+            try:
+                # Execute the actual endpoint function
+                result = await func(*args, **kwargs)
+                return result
+
+            except HTTPException:
+                # Let FastAPI handle HTTP exceptions normally
+                raise
+
+            except Exception as e:
+                # Handle all other exceptions with factory
+                logger.error(
+                    f"Error in {api_name or endpoint}: {e!s}",
+                    exc_info=True
+                )
+
+                # Generate error response using factory
+                error_response = error_handler.handle_exception(e, context)
+
+                # Convert to TailoringResponse format
+                return TailoringResponse(
+                    success=False,
+                    data=None,
+                    error=ErrorInfo(
+                        has_error=True,
+                        code=error_response.get("error", {}).get("code", "SYSTEM_INTERNAL_ERROR"),
+                        message=error_response.get("error", {}).get("message", "An unexpected error occurred"),
+                        details=error_response.get("error", {}).get("details", ""),
+                        field_errors=error_response.get("error", {}).get("field_errors", {})
+                    ),
+                    warning=WarningInfo()
+                )
+
+        return wrapper
+    return decorator
+
+
+def handle_api_errors(api_name: str | None = None):
+    """
+    Decorator to handle API errors automatically.
+
+    Args:
+        api_name: Name of the API for monitoring and logging
+
+    Returns:
+        Decorated function with automatic error handling
+
+    Example:
+        @handle_api_errors(api_name="keyword_extraction")
+        async def extract_keywords(request: ExtractKeywordsRequest):
+            # API implementation
+            pass
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs) -> Any:
+            # Get error handler factory singleton
+            error_handler = get_error_handler_factory()
+
+            # Extract endpoint name from function
+            endpoint = func.__name__
+
+            # Create error context
+            context = {
+                "api_name": api_name or endpoint,
+                "endpoint": f"/api/v1/{endpoint}",
+                "debug": False,  # Can be made configurable
+            }
+
+            try:
+                # Execute the actual endpoint function
+                result = await func(*args, **kwargs)
+                return result
+
+            except HTTPException:
+                # Let FastAPI handle HTTP exceptions normally
+                raise
+
+            except Exception as e:
+                # Handle all other exceptions with factory
+                logger.error(
+                    f"Error in {api_name or endpoint}: {e!s}",
+                    exc_info=True
+                )
+
+                # Generate error response using factory
+                error_response = error_handler.handle_exception(e, context)
+
+                # Extract status code from response
+                status_code = error_response.pop("_status_code", 500)
+
+                # Return JSON response with appropriate status code
+                return JSONResponse(
+                    status_code=status_code,
+                    content=error_response
+                )
+
+        return wrapper
+    return decorator
+
+
+def handle_sync_api_errors(api_name: str | None = None):
+    """
+    Decorator to handle synchronous API errors automatically.
+
+    Similar to handle_api_errors but for synchronous endpoints.
+
+    Args:
+        api_name: Name of the API for monitoring and logging
+
+    Returns:
+        Decorated function with automatic error handling
+    """
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            # Get error handler factory singleton
+            error_handler = get_error_handler_factory()
+
+            # Extract endpoint name from function
+            endpoint = func.__name__
+
+            # Create error context
+            context = {
+                "api_name": api_name or endpoint,
+                "endpoint": f"/api/v1/{endpoint}",
+                "debug": False,  # Can be made configurable
+            }
+
+            try:
+                # Execute the actual endpoint function
+                result = func(*args, **kwargs)
+                return result
+
+            except HTTPException:
+                # Let FastAPI handle HTTP exceptions normally
+                raise
+
+            except Exception as e:
+                # Handle all other exceptions with factory
+                logger.error(
+                    f"Error in {api_name or endpoint}: {e!s}",
+                    exc_info=True
+                )
+
+                # Generate error response using factory
+                error_response = error_handler.handle_exception(e, context)
+
+                # Extract status code from response
+                status_code = error_response.pop("_status_code", 500)
+
+                # Return JSON response with appropriate status code
+                return JSONResponse(
+                    status_code=status_code,
+                    content=error_response
+                )
+
+        return wrapper
+    return decorator

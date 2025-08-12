@@ -8,29 +8,7 @@ from typing import Any
 
 class ServiceError(Exception):
     """Base exception for all service errors."""
-
-    def __init__(self, message: str | None = None, error_code: str | None = None, status_code: int | None = None):
-        """Initialize service error with optional error code and status code."""
-        super().__init__(message)
-        self.message = message
-        self.error_code = error_code
-        self.status_code = status_code
-
-    def to_response(self) -> dict:
-        """Convert exception to response format."""
-        from src.constants.error_codes import ERROR_CODE_MAPPING, ErrorCodes
-
-        if not self.error_code:
-            self.error_code = ErrorCodes.SYSTEM_INTERNAL_ERROR
-
-        if not self.status_code:
-            self.status_code = ERROR_CODE_MAPPING.get(self.error_code, {}).get("status_code", 500)
-
-        return {
-            "error_code": self.error_code,
-            "message": self.message or ERROR_CODE_MAPPING.get(self.error_code, {}).get("message", "Unknown error"),
-            "status_code": self.status_code
-        }
+    pass
 
 
 class BilingualServiceError(Exception):
@@ -391,30 +369,12 @@ class LLMServiceError(ServiceError):
 
 class RateLimitError(ServiceError):
     """Exception raised when rate limit is exceeded."""
-
-    def __init__(self, message: str | None = None):
-        """Initialize rate limit error."""
-        from src.constants.error_codes import ErrorCodes
-
-        super().__init__(
-            message=message or "API rate limit exceeded",
-            error_code=ErrorCodes.EXTERNAL_RATE_LIMIT_EXCEEDED,
-            status_code=429
-        )
+    pass
 
 
 class ExternalServiceError(ServiceError):
     """Exception raised when external service (e.g., Azure OpenAI) fails."""
-
-    def __init__(self, message: str | None = None):
-        """Initialize external service error."""
-        from src.constants.error_codes import ErrorCodes
-
-        super().__init__(
-            message=message or "External service unavailable",
-            error_code=ErrorCodes.EXTERNAL_SERVICE_UNAVAILABLE,
-            status_code=503
-        )
+    pass
 
 
 class AuthenticationError(ServiceError):
@@ -425,31 +385,13 @@ class AuthenticationError(ServiceError):
     """
 
     def __init__(self, message: str, status_code: int = 401):
-        """Initialize authentication error with flexible status code."""
-        from src.constants.error_codes import ErrorCodes
-
-        error_code = ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS if status_code == 403 else ErrorCodes.AUTH_TOKEN_INVALID
-
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            status_code=status_code
-        )
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class ValidationError(ServiceError):
     """Exception raised when input validation fails."""
-
-    def __init__(self, message: str | None = None, field_errors: dict | None = None):
-        """Initialize validation error with optional field errors."""
-        from src.constants.error_codes import ErrorCodes
-
-        super().__init__(
-            message=message,
-            error_code=ErrorCodes.VALIDATION_ERROR,
-            status_code=422
-        )
-        self.field_errors = field_errors or {}
+    pass
 
 
 class ProcessingError(ServiceError):
