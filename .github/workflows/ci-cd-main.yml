@@ -80,6 +80,8 @@ jobs:
         EOF
         
     - name: Run tests
+      env:
+        CI: 'true'  # Ensure CI environment variable is set
       run: |
         # 安裝測試依賴（包含 Ruff）
         pip install pytest pytest-json-report ruff
@@ -98,6 +100,8 @@ jobs:
         echo "  - Gap Analysis tests (47 tests)"
         echo "  - Resume Tailoring tests (18 tests)"
         echo "Total: 155 tests + Ruff check"
+        echo ""
+        echo "📌 CI Mode: Using optimized test delays for faster execution"
         echo ""
         
         # 優先使用 Python 版本

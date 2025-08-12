@@ -14,6 +14,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+try:
+    from test.config import TestConfig
+except ImportError:
+    # Fallback if config not available
+    class TestConfig:
+        @staticmethod
+        def get_test_timeout():
+            return 30  # Default timeout
+
 import pytest
 from _pytest.config import ExitCode
 from _pytest.terminal import TerminalReporter
@@ -409,9 +420,10 @@ class AdvancedPreCommitValidator:
         def timeout_handler(signum, frame):
             raise TimeoutError("Integration tests timed out")
 
-        # Set timeout for 30 seconds
+        # Set timeout based on environment
+        timeout_seconds = TestConfig.get_test_timeout()
         signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(30)
+        signal.alarm(timeout_seconds)
 
         try:
             integration_result = self.run_pytest_programmatically(integration_files, "gap_analysis_integration")
@@ -422,7 +434,7 @@ class AdvancedPreCommitValidator:
         except TimeoutError:
             print(f"{Colors.YELLOW}timed out (27 tests skipped) ⚠️{Colors.RESET}")
             integration_result.skipped = 27  # Expected 27 integration tests
-            integration_result.duration = 30.0
+            integration_result.duration = float(timeout_seconds)
             signal.alarm(0)  # Cancel alarm
 
         results = {
