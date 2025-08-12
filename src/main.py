@@ -97,6 +97,10 @@ def create_app() -> FastAPI:
     # Include API routers
     app.include_router(v1_router, prefix=settings.api_v1_prefix)
 
+    # Include monitoring endpoints (lightweight dashboard)
+    from src.api.monitoring import error_dashboard_router
+    app.include_router(error_dashboard_router, prefix="/api/v1")
+
     # Root endpoint
     @app.get("/")
     async def root():

@@ -437,6 +437,7 @@ class TestGapAnalysisV2Unit:
 
     # TEST: API-GAP-009-UT
     @pytest.mark.asyncio
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-019-UT")
     async def test_empty_fields_error_retry(self, mock_adaptive_retry_strategy):
         """TEST: API-GAP-009-UT - empty_fields 錯誤類型重試行為.
 
@@ -481,6 +482,7 @@ class TestGapAnalysisV2Unit:
 
     # TEST: API-GAP-010-UT
     @pytest.mark.asyncio
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-017-UT")
     async def test_timeout_error_retry(self):
         """TEST: API-GAP-010-UT - timeout 錯誤類型重試行為.
 
@@ -528,6 +530,7 @@ class TestGapAnalysisV2Unit:
 
     # TEST: API-GAP-011-UT
     @pytest.mark.asyncio
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-017-UT")
     async def test_rate_limit_error_retry(self):
         """TEST: API-GAP-011-UT - rate_limit 錯誤類型重試行為.
 

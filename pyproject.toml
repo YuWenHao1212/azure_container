@@ -30,6 +30,8 @@ ignore = [
 "tests/**/*.py" = ["E501", "F401", "SIM117", "S101", "RUF001", "RUF002", "S105"]
 # Pydantic models Config class doesn't need ClassVar and validators use cls
 "src/models/*.py" = ["RUF012", "N805"]
+# Production alerts config contains long Azure CLI commands in multiline strings
+"src/config/production_error_alerts.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]

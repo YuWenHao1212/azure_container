@@ -17,8 +17,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from src.core.config import get_settings
 from src.core.monitoring.storage.failure_storage import failure_storage
 from src.core.monitoring_service import monitoring_service
+from src.decorators.error_handler import handle_api_errors
 from src.models.keyword_extraction import (
-    KeywordExtractionData,
     KeywordExtractionRequest,
 )
 from src.models.response import (
@@ -28,7 +28,13 @@ from src.models.response import (
     create_error_response,
     create_success_response,
 )
-from src.services.exceptions import UnsupportedLanguageError
+from src.services.exceptions import (
+    ExternalServiceError,
+    ProcessingError,
+    RateLimitError,
+    UnsupportedLanguageError,
+    ValidationError,
+)
 from src.services.keyword_extraction_v2 import (
     get_keyword_extraction_service_v2,
 )
@@ -166,6 +172,7 @@ router = APIRouter()
     },
     tags=["Keyword Extraction"]
 )
+@handle_api_errors(api_name="keyword_extraction")
 async def extract_jd_keywords(
     request: KeywordExtractionRequest,
     settings = Depends(get_settings),
@@ -357,174 +364,78 @@ async def extract_jd_keywords(
         )
 
     except UnsupportedLanguageError as e:
-        # Unsupported language errors (422 Unprocessable Entity - as per specification)
-        error_msg = f"Unsupported language: {e.detected_language}"
-        logger.warning(f"Unsupported language error: {error_msg}")
-
         # Store failure for analysis
         await failure_storage.store_failure(
             category="unsupported_language",
             job_description=request.job_description,
-            failure_reason=error_msg,
+            failure_reason=str(e),
             additional_info={
                 "detected_language": e.detected_language,
                 "supported_languages": e.supported_languages,
                 "confidence": getattr(e, 'confidence', None)
             }
         )
-
-        # Return error response
-        error_response = create_error_response(
-            code="UNSUPPORTED_LANGUAGE",
-            message=f"不支援的語言: {e.detected_language}",
-            details=(
-                f"Only English and Traditional Chinese are supported. "
-                f"Detected language: {e.detected_language}"
-            ),
-            data=KeywordExtractionData().dict()
-        )
-
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=error_response.dict()
-        ) from None
+        # Re-raise for decorator to handle
+        raise
 
     except ValueError as e:
-        # Input validation errors (400 Bad Request)
-        error_msg = str(e)
-        logger.warning(f"Validation error: {error_msg}")
-
         # Store failure for analysis
         await failure_storage.store_failure(
             category="validation_error",
             job_description=request.job_description,
-            failure_reason=error_msg,
+            failure_reason=str(e),
             additional_info={
                 "max_keywords": request.max_keywords,
                 "prompt_version": request.prompt_version
             }
         )
-
-        # Return Bubble.io compatible error response
-        # Note: JD preview tracking is handled in main.py validation_exception_handler
-        error_response = create_error_response(
-            code="VALIDATION_ERROR",
-            message="輸入參數驗證失敗",
-            details=error_msg,
-            data=KeywordExtractionData().dict()  # Empty but consistent data structure
-        )
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_response.dict()
-        ) from None
+        # Convert to ValidationError for consistent handling
+        raise ValidationError(str(e)) from e
 
     except AzureOpenAIRateLimitError as e:
-        # Rate limit errors (429 Too Many Requests)
-        error_msg = f"Rate limit exceeded: {e!s}"
-        logger.error(error_msg)
-
         # Store API failure
         await failure_storage.store_failure(
             category="rate_limit_error",
             job_description=request.job_description,
-            failure_reason=error_msg,
+            failure_reason=str(e),
             additional_info={
                 "error_type": type(e).__name__
             }
         )
-
-        error_response = create_error_response(
-            code="RATE_LIMIT_ERROR",
-            message="請求速率超過限制",
-            details="請稍後再試或降低請求頻率",
-            data=KeywordExtractionData().dict()
-        )
-
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=error_response.dict()
-        ) from None
+        # Convert to RateLimitError for decorator to handle
+        raise RateLimitError(str(e)) from e
 
     except (AzureOpenAIAuthError, AzureOpenAIServerError) as e:
-        # Azure OpenAI service errors (503 Service Unavailable)
-        error_msg = f"Azure OpenAI service error: {e!s}"
-        logger.error(error_msg)
-
         # Store API failure
         await failure_storage.store_failure(
             category="api_error",
             job_description=request.job_description,
-            failure_reason=error_msg,
+            failure_reason=str(e),
             additional_info={
                 "error_type": type(e).__name__
             }
         )
-
-        error_response = create_error_response(
-            code="SERVICE_UNAVAILABLE",
-            message="Azure OpenAI 服務暫時無法使用",
-            details="請稍後再試,或聯繫系統管理員",
-            data=KeywordExtractionData().dict()
-        )
-
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=error_response.dict()
-        ) from None
+        # Convert to ExternalServiceError for decorator to handle
+        raise ExternalServiceError(f"Azure OpenAI service error: {e}") from e
 
     except AzureOpenAIError as e:
-        # General Azure OpenAI errors (500 Internal Server Error)
-        error_msg = f"OpenAI processing error: {e!s}"
-        logger.error(error_msg)
-
-        error_response = create_error_response(
-            code="OPENAI_ERROR",
-            message="關鍵字提取服務處理失敗",
-            details="AI 服務處理時發生錯誤,請稍後再試",
-            data=KeywordExtractionData().dict()
+        # Store failure and re-raise as ProcessingError
+        await failure_storage.store_failure(
+            category="openai_error",
+            job_description=request.job_description,
+            failure_reason=str(e),
+            additional_info={"error_type": type(e).__name__}
         )
-
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_response.dict()
-        ) from None
+        raise ProcessingError(f"OpenAI processing error: {e}") from e
 
     except TimeoutError:
-        # Request timeout (408 Request Timeout)
-        logger.error("Request timeout during keyword extraction")
-
-        error_response = create_error_response(
-            code="TIMEOUT_ERROR",
-            message="請求處理超時",
-            details="處理時間超過 7 秒限制,請簡化職位描述或稍後再試",
-            data=KeywordExtractionData().dict()
-        )
-
-        raise HTTPException(
-            status_code=status.HTTP_408_REQUEST_TIMEOUT,
-            detail=error_response.dict()
-        ) from None
+        # Re-raise TimeoutError for decorator to handle (504)
+        raise
 
     except Exception as e:
-        # Unexpected errors (500 Internal Server Error)
-        error_msg = f"Unexpected error during keyword extraction: {e!s}"
-        logger.error(error_msg, exc_info=True)
-
-        # Don't expose internal error details in production
-        details = str(e) if settings.debug else "請聯繫系統管理員"
-
-        error_response = create_error_response(
-            code="INTERNAL_SERVER_ERROR",
-            message="系統發生未預期錯誤",
-            details=details,
-            data=KeywordExtractionData().dict()
-        )
-
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_response.dict()
-        ) from None
+        # Log unexpected errors but let decorator handle response
+        logger.error(f"Unexpected error during keyword extraction: {e}", exc_info=True)
+        raise
 
     finally:
         # Cleanup - close service if needed

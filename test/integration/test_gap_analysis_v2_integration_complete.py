@@ -61,12 +61,26 @@ class TestGapAnalysisV2IntegrationComplete:
     """Complete integration tests for Index Calculation and Gap Analysis V2."""
 
     @pytest.fixture
+    def mock_keyword_service(self):
+        """Mock KeywordExtractionServiceV2 for all tests."""
+        with patch('src.services.keyword_extraction_v2.KeywordExtractionServiceV2') as mock_kw_service:
+            mock_kw_instance = Mock()
+            mock_kw_instance.process = AsyncMock(return_value={
+                "keywords": ["Python", "FastAPI", "Docker", "Backend", "API", "Microservices"],
+                "detected_language": "en",
+                "prompt_version": "v1.0.0-en"
+            })
+            mock_kw_service.return_value = mock_kw_instance
+            yield mock_kw_service
+
+    @pytest.fixture
     def test_client(self):
         """Create test client for integration testing."""
         # Mock all dependencies at import time
         with (
             patch('src.services.llm_factory.get_llm_client') as mock_get_llm,
             patch('src.services.embedding_client.get_azure_embedding_client') as mock_get_embedding,
+            patch('src.services.keyword_extraction_v2.KeywordExtractionServiceV2') as mock_keyword_service_class,
             patch('src.core.config.get_settings') as mock_settings,
             patch('src.main.monitoring_service', Mock()),
             patch.dict(os.environ, {
@@ -121,8 +135,21 @@ class TestGapAnalysisV2IntegrationComplete:
                     }
                 }]
             })
+            # Mock complete_text method for keyword extraction - must return string, not coroutine
+            mock_llm_instance.complete_text = AsyncMock(return_value=json.dumps({
+                "keywords": ["Python", "FastAPI", "Docker", "Backend", "API", "Microservices"]
+            }))
             mock_llm_instance.close = AsyncMock()
             mock_get_llm.return_value = mock_llm_instance
+
+            # Setup mock KeywordExtractionServiceV2
+            mock_keyword_instance = Mock()
+            mock_keyword_instance.process = AsyncMock(return_value={
+                "keywords": ["Python", "FastAPI", "Docker", "Backend", "API", "Microservices"],
+                "detected_language": "en",
+                "prompt_version": "v1.0.0-en"
+            })
+            mock_keyword_service_class.return_value = mock_keyword_instance
 
             # Setup mock embedding client
             mock_embedding_instance = AsyncMock()
@@ -163,7 +190,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-001-IT
     @pytest.mark.integration
     def test_API_GAP_001_IT_api_endpoint_basic_functionality(
-        self, test_client, test_data
+        self, test_client, test_data, mock_keyword_service
     ):
         """TEST: API-GAP-001-IT - API 端點基本功能測試.
 
@@ -185,6 +212,9 @@ class TestGapAnalysisV2IntegrationComplete:
         )
 
         # Verify basic response structure
+        if response.status_code != 200:
+            print(f"Response status: {response.status_code}")
+            print(f"Response body: {response.json()}")
         assert response.status_code == 200
         data = response.json()
 
@@ -265,7 +295,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-004-IT
     @pytest.mark.integration
     def test_API_GAP_004_IT_boundary_length_test(
-        self, test_client, test_data
+        self, test_client, test_data, mock_keyword_service
     ):
         """TEST: API-GAP-004-IT - 邊界長度測試.
 
@@ -292,7 +322,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-005-IT
     @pytest.mark.integration
     def test_API_GAP_005_IT_keywords_parameter_validation(
-        self, test_client, test_data
+        self, test_client, test_data, mock_keyword_service
     ):
         """TEST: API-GAP-005-IT - 關鍵字參數驗證測試.
 
@@ -373,7 +403,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-007-IT
     @pytest.mark.integration
     def test_API_GAP_007_IT_bubble_response_format(
-        self, test_client, test_data
+        self, test_client, test_data, mock_keyword_service
     ):
         """TEST: API-GAP-007-IT - Bubble.io 回應格式驗證.
 
@@ -418,7 +448,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-008-IT
     @pytest.mark.integration
     def test_API_GAP_008_IT_feature_flag_test(
-        self, test_client, test_data
+        self, test_client, test_data, mock_keyword_service
     ):
         """TEST: API-GAP-008-IT - Feature Flag 測試.
 
@@ -616,7 +646,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-012-IT
     @pytest.mark.integration
     def test_API_GAP_012_IT_processing_time_metadata(
-        self, test_client, test_data
+        self, test_client, test_data, mock_keyword_service
     ):
         """TEST: API-GAP-012-IT - 處理時間元數據測試.
 
@@ -662,7 +692,7 @@ class TestGapAnalysisV2IntegrationComplete:
     # TEST: API-GAP-013-IT
     @pytest.mark.integration
     def test_API_GAP_013_IT_large_document_processing(
-        self, test_client, test_data
+        self, test_client, test_data, mock_keyword_service
     ):
         """TEST: API-GAP-013-IT - 大文檔處理測試.
 
@@ -757,7 +787,7 @@ class TestGapAnalysisV2IntegrationComplete:
                "unauthorized" in str(data3["error"]).lower()
 
     # TEST: API-GAP-015-IT
-    def test_API_GAP_015_IT_resource_pool_reuse_rate(self, test_client, test_data):
+    def test_API_GAP_015_IT_resource_pool_reuse_rate(self, test_client, test_data, mock_keyword_service):
         """TEST: API-GAP-015-IT - 資源池重用率測試.
 
         驗證資源池客戶端重用率 > 80%。
@@ -830,7 +860,7 @@ class TestGapAnalysisV2IntegrationComplete:
                 print(f"Pool stats: created={pool_stats['created']}, reused={pool_stats['reused']}, total={pool_stats['total_requests']}")
 
     # TEST: API-GAP-016-IT
-    def test_API_GAP_016_IT_resource_pool_scaling(self, test_client, test_data):
+    def test_API_GAP_016_IT_resource_pool_scaling(self, test_client, test_data, mock_keyword_service):
         """TEST: API-GAP-016-IT - 資源池動態擴展測試.
 
         驗證資源池在高負載時能動態擴展。
@@ -915,7 +945,7 @@ class TestGapAnalysisV2IntegrationComplete:
                     assert "data" in data, f"Request {i+1} should have data field"
 
     # TEST: API-GAP-017-IT
-    def test_API_GAP_017_IT_api_call_reduction(self, test_client, test_data):
+    def test_API_GAP_017_IT_api_call_reduction(self, test_client, test_data, mock_keyword_service):
         """TEST: API-GAP-017-IT - API 呼叫減少驗證.
 
         驗證相同輸入重複請求時 API 呼叫次數減少。

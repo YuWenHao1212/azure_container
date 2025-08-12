@@ -6,17 +6,15 @@ import logging
 import time
 from typing import Any, ClassVar
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field, ValidationError, validator
+from fastapi import APIRouter, Depends, Request, status
+from pydantic import BaseModel, Field, validator
 
 from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
+from src.decorators.error_handler import handle_api_errors
 from src.models.response import (
-    ErrorCodes,
     UnifiedResponse,
-    create_error_response,
     create_success_response,
-    create_validation_error_response,
 )
 
 
@@ -253,247 +251,45 @@ async def _execute_v2_analysis(
         return create_success_response(data=response_data.model_dump())
 
     except Exception as e:
-        # Handle V2 specific errors, potentially with partial results
-        if hasattr(e, 'partial_data') and e.partial_data:
-            # Partial failure with some results
-            logger.warning(f"V2 analysis returned partial results: {e}")
-
-            partial_data = e.partial_data
-            if partial_data.get('index_calculation'):
-                # Create response with partial data
-                response_data = IndexCalAndGapAnalysisData(
-                    raw_similarity_percentage=partial_data['index_calculation']['raw_similarity_percentage'],
-                    similarity_percentage=partial_data['index_calculation']['similarity_percentage'],
-                    keyword_coverage=KeywordCoverageData(**partial_data['index_calculation']['keyword_coverage']),
-                    gap_analysis=GapAnalysisData()  # Empty gap analysis
-                )
-
-                response = create_success_response(data=response_data.model_dump())
-                response.data["partial_failure"] = True
-                response.data["error_details"] = partial_data.get("error_details", {})
-                return response
-
-        # Complete failure - re-raise for main error handler
+        # Log the error with context for lightweight monitoring
+        processing_time = time.time() - start_time
+        logger.error(
+            f"Index cal and gap analysis V2 error: {e}",
+            extra={
+                "processing_time_ms": round(processing_time * 1000, 2),
+                "error_type": type(e).__name__,
+                "language": request.language,
+                "resume_length": len(request.resume),
+                "jd_length": len(request.job_description)
+            }
+        )
+        # Let unified error handler manage the response
         raise
 
 
-
-
-async def calculate_index_and_analyze_gap(
-    request: IndexCalAndGapAnalysisRequest,
-    req: Request,
-    settings=Depends(get_settings)
-) -> UnifiedResponse:
-    """
-    Calculate similarity index and perform gap analysis with enhanced error handling.
-
-    Uses V2 implementation (V1 has been removed for code simplification).
-
-    Args:
-        request: Combined calculation and analysis request data
-        req: FastAPI request object
-        settings: Application settings
-
-    Returns:
-        UnifiedResponse with calculation and analysis results
-    """
-    start_time = time.time()
-
-    try:
-        # Validate and normalize language (case-insensitive)
-        if request.language.lower() == "zh-tw":
-            request.language = "zh-TW"
-        elif request.language.lower() != "en":
-            request.language = "en"
-
-        # Convert keywords to list if string
-        keywords_list = (
-            request.keywords if isinstance(request.keywords, list)
-            else [k.strip() for k in request.keywords.split(",") if k.strip()]
-        )
-
-        # Log request
-        logger.info(
-            f"Index calculation and gap analysis request: "
-            f"resume_length={len(request.resume)}, "
-            f"job_desc_length={len(request.job_description)}, "
-            f"keywords_count={len(keywords_list)}, "
-            f"language={request.language}"
-        )
-
-        # Execute V2 analysis (V1 has been removed)
-        result = await _execute_v2_analysis(
-            request, keywords_list, start_time
-        )
-
-        return result
-
-    except ValidationError as e:
-        # Handle Pydantic validation errors
-        error_details = []
-        for error in e.errors():
-            field = error['loc'][-1] if error['loc'] else 'unknown'
-            message = error['msg']
-            error_details.append(f"{field}: {message}")
-
-        processing_time = time.time() - start_time
-        logger.warning(f"Validation error after {processing_time:.2f}s: {'; '.join(error_details)}")
-
-        monitoring_service.track_event("APIValidationError", {
-            "error_fields": [error['loc'][-1] if error['loc'] else 'unknown' for error in e.errors()],
-            "processing_time_ms": round(processing_time * 1000, 2),
-            "error_count": len(e.errors())
-        })
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=create_validation_error_response(
-                field="request",
-                message="; ".join(error_details)
-            ).model_dump()
-        ) from e
-
-    except TimeoutError as e:
-        # Handle both TimeoutError and asyncio.TimeoutError
-        processing_time = time.time() - start_time
-        logger.error(f"Request timeout after {processing_time:.2f}s: {e}")
-
-        monitoring_service.track_event("APITimeoutError", {
-            "processing_time_ms": round(processing_time * 1000, 2),
-            "error_type": "timeout"
-        })
-
-        raise HTTPException(
-            status_code=status.HTTP_408_REQUEST_TIMEOUT,
-            detail=create_error_response(
-                code=ErrorCodes.TIMEOUT_ERROR,
-                message="Request timed out",
-                details="The request took too long to process. Please try again."
-            ).model_dump()
-        ) from e
-
-    except Exception as e:
-        # Check for timeout errors in error message (when asyncio.TimeoutError is wrapped)
-        error_message = str(e).lower()
-        if "timeout" in error_message or "timed out" in error_message:
-            processing_time = time.time() - start_time
-            logger.error(f"Request timeout after {processing_time:.2f}s: {e}")
-
-            monitoring_service.track_event("APITimeoutError", {
-                "processing_time_ms": round(processing_time * 1000, 2),
-                "error_type": "timeout"
-            })
-
-            raise HTTPException(
-                status_code=status.HTTP_408_REQUEST_TIMEOUT,
-                detail=create_error_response(
-                    code=ErrorCodes.TIMEOUT_ERROR,
-                    message="Request timed out",
-                    details="The request took too long to process. Please try again."
-                ).model_dump()
-            ) from e
-
-        # Handle rate limit errors specifically
-        if hasattr(e, 'status_code') and e.status_code == 429:
-            processing_time = time.time() - start_time
-            logger.warning(f"Rate limit exceeded after {processing_time:.2f}s: {e}")
-
-            monitoring_service.track_event("APIRateLimitError", {
-                "processing_time_ms": round(processing_time * 1000, 2),
-                "error_type": "rate_limit"
-            })
-
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=create_error_response(
-                    code=ErrorCodes.RATE_LIMIT_ERROR,
-                    message="Rate limit exceeded",
-                    details="Too many requests. Please wait and try again."
-                ).model_dump()
-            ) from e
-
-        # General error handling (simplified without version checking)
-        processing_time = time.time() - start_time
-
-        # Log and track error
-        logger.error(f"Index cal and gap analysis error: {e}")
-        monitoring_service.track_event(
-            "IndexCalAndGapAnalysisV2Error",
-            {
-                "error_message": str(e),
-                "error_type": type(e).__name__,
-                "processing_time_ms": round(processing_time * 1000, 2)
-            }
-        )
-
-        # Return appropriate HTTP error
-        if isinstance(e, ValueError):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=create_error_response(
-                    code=ErrorCodes.VALIDATION_ERROR,
-                    message="Invalid request data",
-                    details=str(e)
-                ).model_dump()
-            ) from e
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=create_error_response(
-                    code=ErrorCodes.INTERNAL_ERROR,
-                    message="An unexpected error occurred",
-                    details="Please try again later"
-                ).model_dump()
-            ) from e
-
-
-# Add the actual route endpoint
 @router.post(
     "/index-cal-and-gap-analysis",
     response_model=UnifiedResponse,
     status_code=status.HTTP_200_OK,
-    summary="Calculate similarity index and perform gap analysis",
+    summary="Calculate Index and Perform Gap Analysis",
     description=(
-        "Calculate similarity index between resume and job description, "
-        "then perform comprehensive gap analysis with improvement recommendations. "
-        "Supports both V1 and V2 implementations with feature flags."
+        "Combined endpoint for calculating similarity index and performing gap analysis. "
+        "Uses V2 implementation with parallel processing for optimal performance."
     ),
     responses={
         200: {
             "description": "Analysis completed successfully",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": True,
-                        "data": {
-                            "raw_similarity_percentage": 68,
-                            "similarity_percentage": 78,
-                            "keyword_coverage": {
-                                "total_keywords": 8,
-                                "covered_count": 3,
-                                "coverage_percentage": 38,
-                                "covered_keywords": ["Python", "FastAPI", "Docker"],
-                                "missed_keywords": ["React", "Kubernetes", "AWS"]
-                            },
-                            "gap_analysis": {
-                                "CoreStrengths": "<ol><li>Strong Python expertise</li></ol>",
-                                "KeyGaps": "<ol><li>Missing React experience</li></ol>",
-                                "QuickImprovements": "<ol><li>Add React projects</li></ol>",
-                                "OverallAssessment": "<p>Strong backend developer</p>",
-                                "SkillSearchQueries": []
-                            },
-
-                        },
-                        "error": {"code": "", "message": "", "details": ""},
-                        "timestamp": "2025-08-03T10:30:00.000Z"
-                    }
-                }
-            }
+            "model": UnifiedResponse
         },
         400: {"description": "Invalid request data"},
-        500: {"description": "Internal server error"}
-    }
+        422: {"description": "Validation error"},
+        429: {"description": "Rate limit exceeded"},
+        500: {"description": "Internal server error"},
+        503: {"description": "External service unavailable"}
+    },
+    tags=["Index Calculation", "Gap Analysis"]
 )
+@handle_api_errors(api_name="index_cal_and_gap_analysis")
 async def index_cal_and_gap_analysis_endpoint(
     request: IndexCalAndGapAnalysisRequest,
     req: Request,
@@ -514,4 +310,19 @@ async def index_cal_and_gap_analysis_endpoint(
     Returns:
         UnifiedResponse with calculation and analysis results
     """
-    return await calculate_index_and_analyze_gap(request, req, settings)
+    start_time = time.time()
+
+    # Log request start
+    logger.info(f"Index cal and gap analysis request started for language: {request.language}")
+
+    # Process keywords from job description
+    from src.services.keyword_extraction_v2 import KeywordExtractionServiceV2
+    keyword_service = KeywordExtractionServiceV2()
+    keywords_result = await keyword_service.process({
+        "job_description": request.job_description,
+        "language": request.language
+    })
+    keywords_list = keywords_result.get("keywords", [])
+
+    # Use V2 implementation (optimized path)
+    return await _execute_v2_analysis(request, keywords_list, start_time)

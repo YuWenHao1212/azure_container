@@ -9,7 +9,7 @@ from typing import Any
 class ServiceError(Exception):
     """Base exception for all service errors."""
 
-    def __init__(self, message: str = None, error_code: str = None, status_code: int = None):
+    def __init__(self, message: str | None = None, error_code: str | None = None, status_code: int | None = None):
         """Initialize service error with optional error code and status code."""
         super().__init__(message)
         self.message = message
@@ -392,7 +392,7 @@ class LLMServiceError(ServiceError):
 class RateLimitError(ServiceError):
     """Exception raised when rate limit is exceeded."""
 
-    def __init__(self, message: str = None):
+    def __init__(self, message: str | None = None):
         """Initialize rate limit error."""
         from src.constants.error_codes import ErrorCodes
 
@@ -406,7 +406,7 @@ class RateLimitError(ServiceError):
 class ExternalServiceError(ServiceError):
     """Exception raised when external service (e.g., Azure OpenAI) fails."""
 
-    def __init__(self, message: str = None):
+    def __init__(self, message: str | None = None):
         """Initialize external service error."""
         from src.constants.error_codes import ErrorCodes
 
@@ -428,10 +428,7 @@ class AuthenticationError(ServiceError):
         """Initialize authentication error with flexible status code."""
         from src.constants.error_codes import ErrorCodes
 
-        if status_code == 403:
-            error_code = ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS
-        else:
-            error_code = ErrorCodes.AUTH_TOKEN_INVALID
+        error_code = ErrorCodes.AUTH_INSUFFICIENT_PERMISSIONS if status_code == 403 else ErrorCodes.AUTH_TOKEN_INVALID
 
         super().__init__(
             message=message,
@@ -443,7 +440,7 @@ class AuthenticationError(ServiceError):
 class ValidationError(ServiceError):
     """Exception raised when input validation fails."""
 
-    def __init__(self, message: str = None, field_errors: dict = None):
+    def __init__(self, message: str | None = None, field_errors: dict | None = None):
         """Initialize validation error with optional field errors."""
         from src.constants.error_codes import ErrorCodes
 

@@ -253,9 +253,10 @@ class TestKeywordExtraction:
 
     @pytest.mark.precommit
     @pytest.mark.timeout(3)
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-016-UT")
     def test_API_KW_002_UT_validation_error_short_description(self, test_client, sample_short_jd):
         """
-        TEST ID: API-KW-002-UT
+        TEST ID: API-KW-002-UT [已合併至 ERROR_HANDLER]
         測試名稱: JD 過短驗證錯誤
         優先級: P0
         類型: 單元測試
@@ -292,9 +293,10 @@ class TestKeywordExtraction:
 
     @pytest.mark.precommit
     @pytest.mark.timeout(3)
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-016-UT")
     def test_API_KW_003_UT_invalid_max_keywords_parameter(self, test_client, valid_english_jd_request):
         """
-        TEST ID: API-KW-003-UT
+        TEST ID: API-KW-003-UT [已合併至 ERROR_HANDLER]
         測試名稱: max_keywords 參數驗證
         優先級: P0
         類型: 單元測試
@@ -333,12 +335,13 @@ class TestKeywordExtraction:
 
     @pytest.mark.precommit
     @pytest.mark.timeout(5)
+    @pytest.mark.skip(reason="CONSOLIDATED: Moved to ERROR_HANDLER test suite - ERR-017-UT")
     def test_API_KW_004_UT_external_service_error_handling(self, test_client,
                                                            mock_keyword_service,
                                                            mock_llm_client,
                                                            valid_english_jd_request):
         """
-        TEST ID: API-KW-004-UT
+        TEST ID: API-KW-004-UT [已合併至 ERROR_HANDLER]
         測試名稱: Azure OpenAI 服務錯誤處理
         優先級: P0
         類型: 單元測試

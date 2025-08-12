@@ -42,7 +42,7 @@ async def search_courses(request: CourseSearchRequest) -> CourseSearchResponse:
             "search_context": request.search_context
         })
 
-        # Bubble.io 相容: 總是回傳 200 狀態碼
+        # Bubble.io 相容: 總是回傳 200 狀態碼, 使用自定義錯誤格式
         return CourseSearchResponse(
             success=False,
             data=CourseSearchData(),

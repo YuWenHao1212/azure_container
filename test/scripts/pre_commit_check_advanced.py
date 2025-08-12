@@ -52,6 +52,7 @@ class TestResult:
     errors: int = 0
     duration: float = 0.0
     failed_tests: list[str] = field(default_factory=list)
+    error_logs: list[str] = field(default_factory=list)  # Store detailed error logs
 
     @property
     def total(self):
@@ -81,6 +82,13 @@ class CustomPlugin:
             elif report.failed:
                 self.results.failed += 1
                 self.results.failed_tests.append(report.nodeid)
+                # Capture error details
+                if hasattr(report, 'longrepr') and report.longrepr:
+                    error_msg = str(report.longrepr)
+                    # Truncate very long error messages
+                    if len(error_msg) > 500:
+                        error_msg = error_msg[:500] + "... [truncated]"
+                    self.results.error_logs.append(f"{report.nodeid}: {error_msg}")
             elif report.skipped:
                 self.results.skipped += 1
 
@@ -102,16 +110,17 @@ class AdvancedPreCommitValidator:
         self.available_options = {
             "ruff": {"name": "Ruff 檢查", "step": 1},
             "service": {"name": "服務模組測試", "step": 2},
-            "health-keyword": {"name": "Health & Keyword 測試", "step": 3},
-            "index-calculation": {"name": "Index Calculation 測試", "step": 4},
-            "gap-analysis": {"name": "Gap Analysis 測試", "step": 5},
-            "resume-tailoring": {"name": "Resume Tailoring 測試", "step": 6},
+            "error-handler": {"name": "錯誤處理系統測試", "step": 3},
+            "health-keyword": {"name": "Health & Keyword 測試", "step": 4},
+            "index-calculation": {"name": "Index Calculation 測試", "step": 5},
+            "gap-analysis": {"name": "Gap Analysis 測試", "step": 6},
+            "resume-tailoring": {"name": "Resume Tailoring 測試", "step": 7},
             "full": {"name": "完整測試", "step": None}
         }
 
     def run_ruff_check(self) -> TestResult:
         """Run Ruff code quality check"""
-        step_info = "Step 1/5: " if self.option == "full" else ""
+        step_info = "Step 1/7: " if self.option == "full" else ""
         print(f"{Colors.BLUE}📝 {step_info}Running Ruff check...{Colors.RESET}")
         print("Checking src/ and test/ directories")
 
@@ -243,8 +252,8 @@ class AdvancedPreCommitValidator:
             with contextlib.redirect_stdout(output_buffer), contextlib.redirect_stderr(output_buffer):
                 exit_code = pytest.main(args, plugins=[plugin])
 
-            # Handle exit codes
-            if exit_code == ExitCode.TESTS_FAILED:
+            # Handle exit codes - only set overall_failed for actual test failures
+            if exit_code == ExitCode.TESTS_FAILED and plugin.results.failed > 0:
                 self.overall_failed = True
             elif exit_code == ExitCode.INTERNAL_ERROR:
                 plugin.results.errors += 1
@@ -259,7 +268,7 @@ class AdvancedPreCommitValidator:
 
     def run_service_modules_tests(self) -> dict[str, TestResult]:
         """Run service module tests"""
-        step_info = "Step 2/5: " if self.option == "full" else ""
+        step_info = "Step 2/7: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Service Modules tests...{Colors.RESET}")
 
         # Based on the actual test files in test/unit/services/
@@ -315,9 +324,52 @@ class AdvancedPreCommitValidator:
 
         return results
 
+    def run_error_handler_tests(self) -> dict[str, TestResult]:
+        """Run Error Handler System tests (UT & IT)"""
+        step_info = "Step 3/6: " if self.option == "full" else ""
+        print(f"\n{Colors.BLUE}📝 {step_info}Running Error Handler System tests...{Colors.RESET}")
+
+        unit_files = [
+            "test/unit/test_error_handler/test_error_handler_factory.py",
+            "test/unit/test_error_handler/test_error_handler_decorator.py",
+            "test/unit/test_error_handler/test_error_codes.py",
+            "test/unit/test_error_handler/test_consolidated_error_handling.py"  # New: ERR-016 to ERR-020
+        ]
+
+        integration_files = [
+            "test/integration/test_error_handler_integration/test_error_handler_api.py"
+        ]
+
+        # Run unit tests
+        print("  Unit Tests: ", end="", flush=True)
+        unit_result = self.run_pytest_programmatically(unit_files, "error_handler_unit")
+        if unit_result.total > 0:
+            status = "✅" if unit_result.failed == 0 else "❌"
+            print(f"collected {unit_result.total} items, {unit_result.passed} passed {status}")
+
+        # Run integration tests
+        print("  Integration Tests: ", end="", flush=True)
+        integration_result = self.run_pytest_programmatically(integration_files, "error_handler_integration")
+        if integration_result.total > 0:
+            status = "✅" if integration_result.failed == 0 else "❌"
+            print(f"collected {integration_result.total} items, {integration_result.passed} passed {status}")
+
+        results = {
+            "unit": unit_result,
+            "integration": integration_result
+        }
+
+        if any(r.failed > 0 or r.errors > 0 for r in results.values()):
+            print(f"{Colors.RED}❌ Error Handler System tests FAILED{Colors.RESET}")
+            self.overall_failed = True
+        else:
+            print(f"{Colors.GREEN}✅ Error Handler System tests passed{Colors.RESET}")
+
+        return results
+
     def run_health_keyword_tests(self) -> dict[str, TestResult]:
         """Run Health & Keyword tests"""
-        step_info = "Step 3/5: " if self.option == "full" else ""
+        step_info = "Step 4/7: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Health & Keyword tests...{Colors.RESET}")
 
         unit_files = [
@@ -359,7 +411,7 @@ class AdvancedPreCommitValidator:
 
     def run_index_calculation_tests(self) -> dict[str, TestResult]:
         """Run Index Calculation tests"""
-        step_info = "Step 4/5: " if self.option == "full" else ""
+        step_info = "Step 5/7: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Index Calculation tests...{Colors.RESET}")
 
         unit_files = ["test/unit/test_index_calculation_v2.py"]
@@ -394,7 +446,7 @@ class AdvancedPreCommitValidator:
 
     def run_gap_analysis_tests(self) -> dict[str, TestResult]:
         """Run Gap Analysis tests with timeout handling"""
-        step_info = "Step 5/6: " if self.option == "full" else ""
+        step_info = "Step 6/7: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Gap Analysis tests...{Colors.RESET}")
 
         unit_files = ["test/unit/test_gap_analysis_v2.py"]
@@ -452,7 +504,7 @@ class AdvancedPreCommitValidator:
 
     def run_resume_tailoring_tests(self) -> dict[str, TestResult]:
         """Run Resume Tailoring tests (UT & IT only, no PT)"""
-        step_info = "Step 6/6: " if self.option == "full" else ""
+        step_info = "Step 7/7: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Resume Tailoring tests...{Colors.RESET}")
 
         unit_files = ["test/unit/services/test_resume_tailoring_metrics.py"]
@@ -572,6 +624,7 @@ class AdvancedPreCommitValidator:
 
         # API tests - only show executed ones
         api_test_mapping = {
+            "error_handler": ("🛡️ Error Handler System", "error_handler"),
             "health_keyword": ("🩺 Health & Keyword", "health_keyword"),
             "index_calc": ("🧮 Index Calculation", "index_calc"),
             "gap_analysis": ("📈 Gap Analysis", "gap_analysis"),
@@ -603,7 +656,7 @@ class AdvancedPreCommitValidator:
         has_failures = False
 
         # Check for any failures
-        for key in ["service_modules", "health_keyword", "index_calc", "gap_analysis", "resume_tailoring"]:
+        for key in ["service_modules", "error_handler", "health_keyword", "index_calc", "gap_analysis", "resume_tailoring"]:
             if key in self.results:
                 if isinstance(self.results[key], dict):
                     for result in self.results[key].values():
@@ -633,6 +686,7 @@ class AdvancedPreCommitValidator:
 
         # API test failures
         for display_name, key in [
+            ("🛡️ Error Handler System", "error_handler"),
             ("🩺 Health & Keyword", "health_keyword"),
             ("🧮 Index Calculation", "index_calc"),
             ("📈 Gap Analysis", "gap_analysis"),
@@ -651,10 +705,18 @@ class AdvancedPreCommitValidator:
                             failed_tests = results["unit"].failed_tests[:3]
                             test_names = [t.split("::")[-1] for t in failed_tests]
                             print(f"   ├─ 單元測試: {', '.join(test_names)}")
+                            # Show error logs for first failed test
+                            if results["unit"].error_logs:
+                                first_error = results["unit"].error_logs[0]
+                                print(f"      └─ 錯誤詳情: {first_error[:100]}...")
                         if integration_failed > 0:
                             failed_tests = results["integration"].failed_tests[:3]
                             test_names = [t.split("::")[-1] for t in failed_tests]
                             print(f"   ├─ 整合測試: {', '.join(test_names)}")
+                            # Show error logs for first failed test
+                            if results["integration"].error_logs:
+                                first_error = results["integration"].error_logs[0]
+                                print(f"      └─ 錯誤詳情: {first_error[:100]}...")
 
         print(f"\n{Colors.YELLOW}📋 建議修復步驟:{Colors.RESET}")
         print("1. 查看詳細測試輸出")
@@ -714,6 +776,7 @@ class AdvancedPreCommitValidator:
         all_steps = [
             ("ruff", self.run_ruff_check),
             ("service_modules", self.run_service_modules_tests),
+            ("error_handler", self.run_error_handler_tests),
             ("health_keyword", self.run_health_keyword_tests),
             ("index_calc", self.run_index_calculation_tests),
             ("gap_analysis", self.run_gap_analysis_tests),
@@ -723,6 +786,7 @@ class AdvancedPreCommitValidator:
         option_mapping = {
             "ruff": [("ruff", self.run_ruff_check)],
             "service": [("service_modules", self.run_service_modules_tests)],
+            "error-handler": [("error_handler", self.run_error_handler_tests)],
             "health-keyword": [("health_keyword", self.run_health_keyword_tests)],
             "index-calculation": [("index_calc", self.run_index_calculation_tests)],
             "gap-analysis": [("gap_analysis", self.run_gap_analysis_tests)],
@@ -740,6 +804,7 @@ if __name__ == "__main__":
 Available options:
   ruff              : Run only Ruff code quality check
   service           : Run only Service Modules tests
+  error-handler     : Run only Error Handler System tests
   health-keyword    : Run only Health & Keyword tests
   index-calculation : Run only Index Calculation tests
   gap-analysis      : Run only Gap Analysis tests
@@ -756,7 +821,7 @@ Examples:
 
     parser.add_argument(
         "--option",
-        choices=["ruff", "service", "health-keyword", "index-calculation", "gap-analysis", "resume-tailoring", "full"],
+        choices=["ruff", "service", "error-handler", "health-keyword", "index-calculation", "gap-analysis", "resume-tailoring", "full"],
         default="full",
         help="Select which tests to run (default: full)"
     )

@@ -12,13 +12,14 @@ from typing import Any
 from fastapi import status
 
 from src.constants.error_codes import ERROR_CODE_MAPPING, ErrorCodes
-from src.core.monitoring_service import monitoring_service
+from src.core.monitoring_logger import get_business_logger
 from src.services.exceptions import (
     AuthenticationError,
     ExternalServiceError,
     ProcessingError,
     RateLimitError,
     ServiceError,
+    UnsupportedLanguageError,
     ValidationError,
 )
 
@@ -38,7 +39,7 @@ class ErrorHandlerFactory:
 
     def __init__(self):
         """Initialize error handling factory."""
-        self.monitoring_service = monitoring_service
+        self.business_logger = get_business_logger()
         self._init_error_mappings()
 
     def _init_error_mappings(self):
@@ -52,6 +53,12 @@ class ErrorHandlerFactory:
             ValueError: {
                 "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY,
                 "error_code": ErrorCodes.VALIDATION_ERROR,
+            },
+
+            # Unsupported language errors -> 422
+            UnsupportedLanguageError: {
+                "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY,
+                "error_code": ErrorCodes.UNSUPPORTED_LANGUAGE,
             },
 
             # Authentication errors -> 401/403
@@ -190,21 +197,20 @@ class ErrorHandlerFactory:
             exc_info=True
         )
 
-        # Send monitoring event
-        if self.monitoring_service:
-            try:
-                self.monitoring_service.track_error(
-                    error_type=type(exc).__name__,
-                    error_message=str(exc),
-                    endpoint=context.get("endpoint"),
-                    custom_properties={
-                        "error_code": error_info["error_code"],
-                        "status_code": error_info["status_code"],
-                        "api_name": context.get("api_name"),
-                    }
-                )
-            except Exception as e:
-                logger.warning(f"Failed to track error in monitoring: {e}")
+        # Send lightweight monitoring event
+        try:
+            self.business_logger.error(
+                f"API Error: {error_info['error_code']} - {type(exc).__name__}: {exc}",
+                extra={
+                    "error_code": error_info["error_code"],
+                    "status_code": error_info["status_code"],
+                    "api_name": context.get("api_name"),
+                    "endpoint": context.get("endpoint"),
+                    "exception_type": type(exc).__name__,
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log error in business logger: {e}")
 
     def _create_error_response(
         self,

@@ -89,9 +89,10 @@
 
 ### 2.1 總覽統計
 - **健康檢查模組**: 3個測試（2個單元 + 1個整合）
-- **關鍵字提取API**: 16個測試（6個單元 + 10個整合）
-- **總計API層測試**: 19個測試 (用於日常單元整合測試套件)
-- **效能測試**: 1個測試 (獨立執行，不包含在日常測試中)
+- **關鍵字提取API**: 13個測試（3個單元 + 10個整合）**[原16個，移除3個]**
+- **總計Mock測試**: 16個測試 (5 UT + 11 IT) **[原19個]**
+- **效能測試**: 1個測試 (獨立執行，Real API)
+- **移除測試**: API-KW-002/003/004-UT（合併至ERROR_HANDLER）
 
 **註**: 服務層74個測試已移至 [TEST_SPEC_SERVICE_MODULES.md](../service-module-refactor/TEST_SPEC_SERVICE_MODULES.md)
 
@@ -175,7 +176,8 @@
   - ✅ 每個關鍵字為非空字串
   - ✅ warning.has_warning = false (正常情況)
 
-#### API-KW-002-UT: 驗證錯誤處理 - 描述過短
+#### API-KW-002-UT: 驗證錯誤處理 - 描述過短 [已合併至ERROR_HANDLER]
+- **狀態**: ⚠️ **已移除** - 合併至 ERR-016-UT (通用驗證錯誤處理)
 - **名稱**: JD 過短驗證錯誤
 - **優先級**: P0
 - **類型**: 單元測試
@@ -187,7 +189,8 @@
   - ✅ error.message 包含 "輸入參數驗證失敗"
   - ✅ error.details 包含 "Job description must be at least 200 characters"
 
-#### API-KW-003-UT: 驗證錯誤處理 - max_keywords 無效
+#### API-KW-003-UT: 驗證錯誤處理 - max_keywords 無效 [已合併至ERROR_HANDLER]
+- **狀態**: ⚠️ **已移除** - 合併至 ERR-016-UT (通用驗證錯誤處理)
 - **名稱**: max_keywords 參數驗證
 - **優先級**: P0
 - **類型**: 單元測試
@@ -202,7 +205,8 @@
   - API 實際限制為 25，不是文檔中的 30 (見 `src/models/keyword_extraction.py:23`)
   - 使用 Pydantic V2 驗證訊息格式，支援部分字串匹配而非完整訊息匹配
 
-#### API-KW-004-UT: 外部服務錯誤處理
+#### API-KW-004-UT: 外部服務錯誤處理 [已合併至ERROR_HANDLER]
+- **狀態**: ⚠️ **已移除** - 合併至 ERR-017-UT (通用外部服務錯誤分類)
 - **名稱**: Azure OpenAI 服務錯誤處理
 - **優先級**: P0
 - **類型**: 單元測試
