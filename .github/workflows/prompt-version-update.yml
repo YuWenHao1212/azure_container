@@ -1,7 +1,7 @@
 name: Update Prompt Version
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 只能手動觸發
     inputs:
       task:
         description: 'Task name (e.g., gap_analysis, keyword_extraction)'
