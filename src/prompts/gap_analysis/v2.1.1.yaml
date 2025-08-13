@@ -3,7 +3,7 @@ metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-08-13T00:00:00Z"
   description: "Refined Overall Assessment section with stricter guidelines and synthesis-based approach"
-  status: "active"
+  status: "stable"
   notes: "V2.1.1 refines Overall Assessment to be more concise, eliminate numerical predictions, and synthesize from previous sections"
   changes_from_v2.1.0: |
     - Overall Assessment limited to MAX 150 words (stricter than previous 150-250)
