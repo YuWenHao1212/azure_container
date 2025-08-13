@@ -2,9 +2,10 @@ version: "2.1.1"
 metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-08-13T00:00:00Z"
-  description: "Refined Overall Assessment with 100-word limit and synthesis-based approach"
-  status: "stable"
-  notes: "V2.1.1 refines Overall Assessment to be more concise, eliminate numerical predictions, and synthesize from previous sections"
+  updated_at: "2025-08-13T15:00:00Z"
+  description: "Refined Overall Assessment with 100-word limit, narrative flow, and honest match assessment"
+  status: "active"
+  notes: "V2.1.1 provides cohesive narrative assessment with realistic expectations for all match levels"
   changes_from_v2.1.0: |
     - Overall Assessment limited to MAX 100 words (much stricter than previous 150-250)
     - Removed numerical predictions and percentages from assessment
@@ -12,6 +13,9 @@ metadata:
     - Added structured format: Position & Strengths, Improvement Roadmap, Action Priority
     - Prioritizes Presentation Gaps (quick fixes) before Skill Gaps in improvement roadmap
     - Uses qualitative terms instead of numerical probabilities
+    - Enhanced narrative flow with connecting phrases and transitions
+    - Added honest assessment for poor matches with constructive guidance
+    - Provides realistic timelines and expectations based on match level
 
 llm_config:
   temperature: 0.4
@@ -123,19 +127,31 @@ prompts:
     STRUCTURE (100 words total, flowing as connected paragraphs):
     
     Opening (30-35 words): Position Assessment
-    - Begin with overall match level: "You're a strong candidate" / "You show good potential" / "You have moderate alignment"
-    - Connect with "with" or "given your" to list 2-3 key strengths
-    - Use natural language: "particularly your [strength] and [strength]"
+    - Begin with HONEST match level based on gap severity:
+      * Strong match (few gaps): "You're a strong candidate"
+      * Good potential (some gaps): "You show good potential" 
+      * Moderate alignment (several gaps): "You have moderate alignment"
+      * Limited match (many critical gaps): "While you have foundational skills"
+      * Poor match (most requirements missing): "This role requires significant development"
+    - For strong/good: Connect with "with" or "given your" to list 2-3 key strengths
+    - For weak matches: Acknowledge the challenge honestly but constructively
+    - Use natural language: "particularly your [strength]" or "however, you'll need..."
     
     Transition (30-35 words): Gap Analysis & Path Forward
-    - Use transition: "To strengthen your application," / "For better positioning," / "To maximize your chances,"
-    - Sequence actions: "first [presentation fixes], then [skill development]"
-    - Connect gaps naturally: "while your resume shows X, adding Y would..."
+    - Match transition to assessment level:
+      * Strong/Good: "To strengthen your application," / "For even better positioning,"
+      * Moderate: "To improve your chances," / "To bridge the gaps,"
+      * Limited/Poor: "To work toward this role," / "For future consideration,"
+    - Sequence actions realistically: "first [presentation fixes], then [skill development]"
+    - Be honest about effort required: "substantial learning" for poor matches
     
     Conclusion (30-35 words): Next Steps & Outcome
-    - Start with time frame: "With 1-2 days of resume optimization,"
-    - Connect to outcome: "you'll immediately appear more qualified"
-    - End with growth path: "Following this, 4-6 weeks of [specific skill] development would position you as..."
+    - Adjust expectations based on match level:
+      * Strong/Good: "With 1-2 days of resume optimization, you'll be well-positioned"
+      * Moderate: "After addressing these gaps over 4-6 weeks, you'll be competitive"
+      * Limited: "This role may be a stretch goal; consider building experience first"
+      * Poor: "Consider intermediate roles while developing these critical skills"
+    - Always end constructively with a realistic path forward
     
     WRITING STYLE REQUIREMENTS:
     - Use connecting phrases: "with", "given", "particularly", "while", "however", "additionally"
@@ -156,10 +172,19 @@ prompts:
     - Must read as a cohesive narrative, not disconnected sentences
     </strict_requirements>
     
-    <good_example>
+    <good_examples>
+    <!-- Strong Match Example -->
     [V2.1.1-100W]
     You're a strong candidate with solid Python expertise and cloud deployment experience, particularly your 5 years building scalable web applications. To strengthen your application, first address the presentation gaps by explicitly mentioning "Machine Learning" and "Microservices" in your skills section, as your projects already demonstrate these capabilities. With 1-2 days of resume optimization, you'll immediately appear more qualified for this role. Following this, dedicating 4-6 weeks to Kubernetes certification and hands-on container orchestration practice would transform you from a strong candidate to an ideal match for this senior position.
-    </good_example>
+    
+    <!-- Moderate Match Example -->
+    [V2.1.1-100W]
+    You have moderate alignment with this role, bringing valuable frontend experience but lacking the backend depth required. To improve your chances, first highlight any API or database work in your current projects, then focus on developing Python and FastAPI skills through hands-on projects. After 2-3 months of dedicated backend development practice and building a portfolio of relevant projects, you'll be better positioned to compete for this full-stack position, though considering junior backend roles initially might accelerate your transition.
+    
+    <!-- Poor Match Example -->
+    [V2.1.1-100W]
+    This role requires significant development beyond your current junior-level experience, particularly in cloud architecture and DevOps practices that are critical for the position. To work toward this opportunity, start by gaining proficiency in Python and basic web development, which could take 6-12 months of dedicated learning. Consider pursuing entry-level developer positions first to build fundamental experience, as the senior-level requirements represent a substantial gap that practical experience will help bridge more effectively than self-study alone.
+    </good_examples>
     
     <bad_example>
     [V2.1.1-100W]
