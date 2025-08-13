@@ -117,22 +117,33 @@ prompts:
     Your task is to SYNTHESIZE findings from the previous three sections, NOT re-analyze the resume.
     Reference the specific gaps and strengths already identified.
     
-    Structure your 100-word assessment in exactly 3 paragraphs:
+    Write a cohesive 100-word assessment that flows naturally as a single narrative:
     START WITH: "[V2.1.1-100W]" (this marker doesn't count toward word limit)
     
-    Paragraph 1 (33 words): Overall Position & Strengths
-    - Start with qualitative assessment: "strong candidate", "good fit", "moderate match"
-    - Briefly summarize the top 2-3 strengths from CORE STRENGTHS section
+    STRUCTURE (100 words total, flowing as connected paragraphs):
     
-    Paragraph 2 (33 words): Improvement Roadmap  
-    - FIRST mention Presentation Gaps (quick wins from resume fixes)
-    - THEN mention Skill Gaps (skills requiring learning/development)
-    - Reference specific gaps identified in KEY GAPS section
+    Opening (30-35 words): Position Assessment
+    - Begin with overall match level: "You're a strong candidate" / "You show good potential" / "You have moderate alignment"
+    - Connect with "with" or "given your" to list 2-3 key strengths
+    - Use natural language: "particularly your [strength] and [strength]"
     
-    Paragraph 3 (33 words): Action Priority
-    - Immediate next steps (focus on quick improvements first)
-    - Expected position after addressing presentation gaps
-    - Use qualitative language only (strong candidate, better positioned, etc.)
+    Transition (30-35 words): Gap Analysis & Path Forward
+    - Use transition: "To strengthen your application," / "For better positioning," / "To maximize your chances,"
+    - Sequence actions: "first [presentation fixes], then [skill development]"
+    - Connect gaps naturally: "while your resume shows X, adding Y would..."
+    
+    Conclusion (30-35 words): Next Steps & Outcome
+    - Start with time frame: "With 1-2 days of resume optimization,"
+    - Connect to outcome: "you'll immediately appear more qualified"
+    - End with growth path: "Following this, 4-6 weeks of [specific skill] development would position you as..."
+    
+    WRITING STYLE REQUIREMENTS:
+    - Use connecting phrases: "with", "given", "particularly", "while", "however", "additionally"
+    - Employ transitional words: "first", "then", "following this", "moreover", "furthermore"
+    - Write in second person ("you/your") for personal connection
+    - Maintain flow between sentences using conjunctions and relative clauses
+    - Avoid choppy, isolated statements - each sentence should flow into the next
+    - Use semicolons or commas to connect related ideas within sentences
     </synthesis_instructions>
     
     <strict_requirements>
@@ -142,7 +153,18 @@ prompts:
     - Use ONLY qualitative terms: strong candidate, good fit, moderate match, well-positioned
     - SYNTHESIZE from previous sections - don't re-analyze
     - Prioritize Presentation Gaps (quick fixes) before Skill Gaps in improvement roadmap
+    - Must read as a cohesive narrative, not disconnected sentences
     </strict_requirements>
+    
+    <good_example>
+    [V2.1.1-100W]
+    You're a strong candidate with solid Python expertise and cloud deployment experience, particularly your 5 years building scalable web applications. To strengthen your application, first address the presentation gaps by explicitly mentioning "Machine Learning" and "Microservices" in your skills section, as your projects already demonstrate these capabilities. With 1-2 days of resume optimization, you'll immediately appear more qualified for this role. Following this, dedicating 4-6 weeks to Kubernetes certification and hands-on container orchestration practice would transform you from a strong candidate to an ideal match for this senior position.
+    </good_example>
+    
+    <bad_example>
+    [V2.1.1-100W]
+    Strong candidate with Python experience. Fix resume presentation gaps first. Then learn Kubernetes. This will improve chances. You have good cloud skills. Machine learning needs to be highlighted. After improvements you'll be better positioned. Focus on quick wins initially. Skills development takes longer. Good potential overall.
+    </bad_example>
 
     ## 5. SKILL DEVELOPMENT PRIORITIES
     <reasoning_steps>

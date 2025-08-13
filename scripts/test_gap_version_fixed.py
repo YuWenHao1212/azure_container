@@ -104,27 +104,31 @@ def test_gap_analysis():
                 print("Keys in gap_analysis:", list(gap_data.keys()))
             else:
                 gap_data = None
-                
+                print("❌ No gap_analysis field found in expected locations")
+                return None, 0
+            
+            # Now process gap_data if we found it
+            if gap_data:
                 # Check different possible field names
                 assessment_key = None
                 for key in ["OverallAssessment", "overall_assessment", "Overall Assessment"]:
-                    if key in data["gap_analysis"]:
+                    if key in gap_data:
                         assessment_key = key
                         break
                 
                 if assessment_key:
-                    assessment = data["gap_analysis"][assessment_key]
+                    assessment = gap_data[assessment_key]
                     version, word_count = analyze_overall_assessment(assessment)
                     
                     # Check other sections for version clues
                     gaps_key = None
                     for key in ["KeyGaps", "key_gaps", "Key Gaps"]:
-                        if key in data["gap_analysis"]:
+                        if key in gap_data:
                             gaps_key = key
                             break
                     
                     if gaps_key:
-                        gaps = data["gap_analysis"][gaps_key]
+                        gaps = gap_data[gaps_key]
                         has_markers = any("[Skill Gap]" in gap or "[Presentation Gap]" in gap for gap in gaps)
                         print(f"\nHas gap classification markers: {has_markers}")
                         if has_markers:
@@ -133,11 +137,8 @@ def test_gap_analysis():
                     return version, word_count
                 else:
                     print("❌ No OverallAssessment found in gap_analysis")
-                    print("Available fields:", list(data["gap_analysis"].keys())[:10])  # Show first 10 fields
+                    print("Available fields:", list(gap_data.keys())[:10])  # Show first 10 fields
                     return None, 0
-            else:
-                print("❌ No gap_analysis field in response")
-                return None, 0
                 
         else:
             print(f"❌ Error: {response.status_code}")
