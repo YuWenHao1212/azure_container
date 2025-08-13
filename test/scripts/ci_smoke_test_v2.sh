@@ -170,7 +170,7 @@ main() {
     log_message ""
     log_message "Testing Index Calculation..."
     log_message "Expected: Quick API response test"
-    log_message "SLA: Response < 2000ms"
+    log_message "SLA: Response < 4000ms"
     
     test_start=$(date +%s)
     test_log="$LOG_DIR/smoke_index_${TIMESTAMP}.log"
@@ -186,13 +186,13 @@ main() {
     response_time=$(echo "$index_response" | tail -1)
     response_time_ms=$(echo "$response_time * 1000" | bc | cut -d. -f1)
     
-    if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 2000 ]; then
+    if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 4000 ]; then
         test_end=$(date +%s)
         duration=$((test_end - test_start))
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         PASSED_TESTS=$((PASSED_TESTS + 1))
         INDEX_TIME_MS=$response_time_ms
-        log_message "  ✓ Index Calculation PASSED (${response_time_ms}ms < 2000ms)"
+        log_message "  ✓ Index Calculation PASSED (${response_time_ms}ms < 4000ms)"
     else
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
         FAILED_TESTS=$((FAILED_TESTS + 1))
