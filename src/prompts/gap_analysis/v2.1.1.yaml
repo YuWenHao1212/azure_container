@@ -2,11 +2,11 @@ version: "2.1.1"
 metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-08-13T00:00:00Z"
-  description: "Refined Overall Assessment section with stricter guidelines and synthesis-based approach"
+  description: "Refined Overall Assessment with 100-word limit and synthesis-based approach"
   status: "stable"
   notes: "V2.1.1 refines Overall Assessment to be more concise, eliminate numerical predictions, and synthesize from previous sections"
   changes_from_v2.1.0: |
-    - Overall Assessment limited to MAX 150 words (stricter than previous 150-250)
+    - Overall Assessment limited to MAX 100 words (much stricter than previous 150-250)
     - Removed numerical predictions and percentages from assessment
     - Changed assessment to synthesize from previous sections rather than re-analyze
     - Added structured format: Position & Strengths, Improvement Roadmap, Action Priority
@@ -117,7 +117,7 @@ prompts:
     Your task is to SYNTHESIZE findings from the previous three sections, NOT re-analyze the resume.
     Reference the specific gaps and strengths already identified.
     
-    Structure your 99-word assessment in exactly 3 paragraphs:
+    Structure your 100-word assessment in exactly 3 paragraphs:
     
     Paragraph 1 (33 words): Overall Position & Strengths
     - Start with qualitative assessment: "strong candidate", "good fit", "moderate match"
@@ -189,7 +189,7 @@ prompts:
     </quick_improvements>
 
     <overall_assessment>
-    [Write a concise 150-word assessment in exactly 3 paragraphs (50 words each):
+    [Write a concise 100-word assessment in exactly 3 paragraphs (33 words each):
     1. Overall Position & Strengths - qualitative assessment + top strengths summary
     2. Improvement Roadmap - Presentation Gaps first, then Skill Gaps
     3. Action Priority - immediate steps and expected positioning]
@@ -214,7 +214,7 @@ prompts:
     - Every gap in key_gaps MUST start with [Skill Gap] or [Presentation Gap]
     - Look beyond keyword matching to find actual capabilities
     - Distinguish between "can't do" ([Skill Gap]) vs "didn't mention" ([Presentation Gap])
-    - overall_assessment: MAXIMUM 150 words, NO numerical predictions, synthesize from previous sections
+    - overall_assessment: MAXIMUM 100 words, NO numerical predictions, synthesize from previous sections
     - skill_development_priorities: Include ONLY [Skill Gap] items requiring learning
     - Use format "SKILL_N::SkillName::CATEGORY::DetailedDescription"
     - Categories: Tech or Non-Tech only
