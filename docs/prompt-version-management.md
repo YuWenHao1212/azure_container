@@ -119,12 +119,12 @@ def test_env_var_override():
     assert version == "2.1.0"
 ```
 
-### A/B 測試比較
+### 版本比較測試
 
 ```bash
-# 比較兩個版本效能
-GAP_ANALYSIS_PROMPT_VERSION=2.1.0 python test_performance.py
-GAP_ANALYSIS_PROMPT_VERSION=2.1.1 python test_performance.py
+# 測試不同版本
+GAP_ANALYSIS_PROMPT_VERSION=2.1.0 pytest test/integration/test_gap_analysis_v2_integration_complete.py -v
+GAP_ANALYSIS_PROMPT_VERSION=2.1.1 pytest test/integration/test_gap_analysis_v2_integration_complete.py -v
 ```
 
 ## 📈 程式碼整合
@@ -255,7 +255,7 @@ print(f"Current version: {version}")
 
 ### 提高靈活性
 - 所有 API 支援版本切換
-- 支援 A/B 測試
+- 支援快速版本比較
 - 無需重新部署即可調整
 
 ### 簡化維護

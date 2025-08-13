@@ -40,23 +40,8 @@
 - 快速回滾到先前版本
 - 在 production 前先在 development 測試
 
-### 3. Prompt A/B 測試 (`prompt-ab-testing.yml`)
 
-**用途**: 比較兩個 prompt 版本的效能
-**觸發**: 手動 workflow dispatch
-
-**主要功能**：
-- 平行執行不同版本測試
-- 測量回應時間與品質指標
-- 產生比較報告
-- 協助資料驅動決策
-
-**使用場景**：
-- 比較 Gap Analysis v2.1.0 vs v2.1.1
-- 測試 prompt 變更的效能影響
-- 驗證品質改進
-
-### 4. 回滾部署 (`rollback.yml`)
+### 3. 回滾部署 (`rollback.yml`)
 
 **用途**: 快速回滾到先前的容器版本
 **觸發**: 手動 workflow dispatch
@@ -103,15 +88,8 @@
 4. 更新 Container Apps 環境變數
 5. 無需 Docker 重建
 
-### 場景 3：A/B 測試新 Prompt
 
-1. 建立新 prompt 版本（如 v2.1.1）
-2. 執行 `prompt-ab-testing.yml` workflow
-3. 與當前版本比較（如 v2.1.0）
-4. 檢視效能指標
-5. 如果較佳，使用 `prompt-version-update.yml` 更新
-
-### 場景 4：緊急回滾
+### 場景 3：緊急回滾
 
 1. 部署後發現問題
 2. 執行 `rollback.yml` workflow
@@ -165,12 +143,6 @@ gh workflow run prompt-version-update.yml \
   -f version=2.1.1 \
   -f environment=production
 
-# 執行 A/B 測試
-gh workflow run prompt-ab-testing.yml \
-  -f task=gap_analysis \
-  -f version_a=2.1.0 \
-  -f version_b=2.1.1 \
-  -f test_samples=20
 
 # 緊急回滾
 gh workflow run rollback.yml \
@@ -252,7 +224,7 @@ az containerapp show \
 
 ### 測試策略
 - 使用真實資料測試 prompt 變更
-- 重大變更使用 A/B 測試
+- 本地測試後再部署
 - 監控回應時間與品質指標
 - 保留可用的回滾版本
 
@@ -291,7 +263,6 @@ az containerapp show \
 
 - v1.0.0 - 初始 GitHub Actions 設定
 - v1.1.0 - 新增 prompt 版本偵測
-- v1.2.0 - 實作 A/B 測試 workflow
 - v1.3.0 - 增強自動版本偵測
 
 ---
