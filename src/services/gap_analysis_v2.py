@@ -199,9 +199,9 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
 
         # Load the prompt configuration
         try:
-            # Use v2.1.0 prompt with gap classification markers
-            filename = "v2.1.0-zh-TW.yaml" if language == "zh-TW" else "v2.1.0.yaml"
-            config = prompt_manager.load_prompt_config_by_filename("gap_analysis", filename)
+            # Use prompt manager to load the correct version (env var -> active -> latest)
+            config = prompt_manager.load_prompt_config("gap_analysis", version="latest")
+            logger.info(f"Loaded gap_analysis prompt version: {getattr(config, 'version', 'unknown')}")
 
             # Get system and user prompts
             system_prompt = ""
