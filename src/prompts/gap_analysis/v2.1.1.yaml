@@ -2,10 +2,10 @@ version: "2.1.1"
 metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-08-13T00:00:00Z"
-  updated_at: "2025-08-13T16:30:00Z"
+  updated_at: "2025-08-13T17:00:00Z"
   description: "Refined Overall Assessment with 100-word limit, narrative flow, and similarity-based assessment"
   status: "active"
-  notes: "V2.1.1 uses real similarity score for accurate match assessment with cohesive narrative"
+  notes: "V2.1.1 uses real similarity score with refined thresholds for accurate match assessment"
   changes_from_v2.1.0: |
     - Overall Assessment limited to MAX 100 words (much stricter than previous 150-250)
     - Removed numerical predictions and percentages from assessment
@@ -16,7 +16,12 @@ metadata:
     - Enhanced narrative flow with connecting phrases and transitions
     - Added honest assessment for poor matches with constructive guidance
     - Provides realistic timelines and expectations based on match level
-    - Now uses real similarity score (80%+/65-79%/50-64%/35-49%/<35%) for accurate assessment
+    - Refined similarity score thresholds:
+      * 80%+: Strong match (1-2 days optimization)
+      * 70-79%: Good potential (1-2 weeks improvement)
+      * 50-70%: Moderate alignment (1-3 months development)
+      * 40-50%: Limited match (3-6 months learning)
+      * <40%: Poor match (different career area)
     - Sequential execution: Index Calculation → Gap Analysis for better accuracy
 
 llm_config:
@@ -131,10 +136,12 @@ prompts:
     Opening (30-35 words): Position Assessment
     - Determine match level based on similarity score and gap types:
       * Strong match (80%+ similarity, mostly [Presentation Gap]): "You're a strong candidate"
-      * Good potential (65-79% similarity, mix of gap types): "You show good potential" 
-      * Moderate alignment (50-64% similarity, several [Skill Gap]): "You have moderate alignment"
-      * Limited match (35-49% similarity, many [Skill Gap]): "While you have foundational skills"
-      * Poor match (<35% similarity, mostly [Skill Gap]): "This role requires significant development"
+      * Good potential (70-79% similarity, mix of gap types): "You show good potential" 
+      * Moderate alignment (50-70% similarity, balance of gaps): "You have moderate alignment" or "good alignment"
+        - 60-70%: "good alignment" (more Presentation Gaps)
+        - 50-60%: "moderate alignment" (more Skill Gaps)
+      * Limited match (40-50% similarity, many [Skill Gap]): "While you have foundational skills"
+      * Poor match (<40% similarity, mostly [Skill Gap]): "This role requires significant development"
     - Note: [Presentation Gap] = skills exist but not visible (positive sign)
     - Note: [Skill Gap] = actual learning needed (requires time investment)
     - For strong/good: Connect with "with" or "given your" to list 2-3 key strengths
@@ -151,10 +158,11 @@ prompts:
     
     Conclusion (30-35 words): Next Steps & Outcome
     - Adjust expectations based on match level:
-      * Strong/Good: "With 1-2 days of resume optimization, you'll be well-positioned"
-      * Moderate: "After addressing these gaps over 4-6 weeks, you'll be competitive"
-      * Limited: "This role may be a stretch goal; consider building experience first"
-      * Poor: "Consider intermediate roles while developing these critical skills"
+      * Strong (80%+): "With 1-2 days of resume optimization, you'll be well-positioned"
+      * Good (70-79%): "After 1-2 weeks of targeted improvements, you'll be competitive"
+      * Moderate (50-70%): "With 1-3 months of skill development, you'll strengthen your candidacy"
+      * Limited (40-50%): "Consider 3-6 months of systematic learning to bridge the gaps"
+      * Poor (<40%): "This role may be a longer-term goal; consider related entry-level positions"
     - Always end constructively with a realistic path forward
     
     WRITING STYLE REQUIREMENTS:
@@ -181,13 +189,17 @@ prompts:
     [V2.1.1-100W]
     You're a strong candidate with solid Python expertise and cloud deployment experience, particularly your 5 years building scalable web applications. To strengthen your application, first address the presentation gaps by explicitly mentioning "Machine Learning" and "Microservices" in your skills section, as your projects already demonstrate these capabilities. With 1-2 days of resume optimization, you'll immediately appear more qualified for this role. Following this, dedicating 4-6 weeks to Kubernetes certification and hands-on container orchestration practice would transform you from a strong candidate to an ideal match for this senior position.
     
-    <!-- Moderate Match Example -->
+    <!-- Moderate Match Example (55% similarity) -->
     [V2.1.1-100W]
-    You have moderate alignment with this role, bringing valuable frontend experience but lacking the backend depth required. To improve your chances, first highlight any API or database work in your current projects, then focus on developing Python and FastAPI skills through hands-on projects. After 2-3 months of dedicated backend development practice and building a portfolio of relevant projects, you'll be better positioned to compete for this full-stack position, though considering junior backend roles initially might accelerate your transition.
+    You have moderate alignment with this role, bringing valuable frontend experience but lacking the backend depth required. To improve your chances, first highlight any API or database work in your current projects, then focus on developing Python and FastAPI skills through hands-on projects. With 2-3 months of dedicated backend development practice and building a portfolio of relevant projects, you'll strengthen your candidacy significantly, positioning yourself as a viable candidate for this full-stack position.
     
-    <!-- Poor Match Example -->
+    <!-- Limited Match Example (45% similarity) -->
     [V2.1.1-100W]
-    This role requires significant development beyond your current junior-level experience, particularly in cloud architecture and DevOps practices that are critical for the position. To work toward this opportunity, start by gaining proficiency in Python and basic web development, which could take 6-12 months of dedicated learning. Consider pursuing entry-level developer positions first to build fundamental experience, as the senior-level requirements represent a substantial gap that practical experience will help bridge more effectively than self-study alone.
+    While you have foundational skills in web development, substantial gaps exist in the cloud and DevOps requirements critical for this role. To bridge these gaps, first optimize your resume to highlight any infrastructure or deployment experience, then embark on 3-6 months of systematic learning in AWS and containerization. Consider intermediate positions that blend your current skills with these new areas, as this stepping-stone approach will make the transition more achievable than jumping directly to this senior role.
+    
+    <!-- Poor Match Example (35% similarity) -->
+    [V2.1.1-100W]
+    This role requires significant development beyond your current experience, as the technical stack and seniority level represent a different career area. To work toward this field, consider starting with entry-level positions in web development while building fundamental skills in programming and cloud basics over the next 6-12 months. Your current background provides transferable soft skills, but the technical requirements suggest exploring junior developer or IT support roles as more immediate opportunities that align with your current capabilities.
     </good_examples>
     
     <bad_example>
