@@ -224,6 +224,63 @@ main() {
     # Debug output removed for cleaner CI logs
     
     if [ "$http_code" = "200" ] && [ "$response_time_ms" -lt 25000 ]; then
+        # Extract keyword consistency check from response
+        log_message "  → Checking keyword consistency..."
+        
+        # Extract response body (all lines except the last 2 which are http_code and time)
+        local gap_body=$(head -n -2 "$test_log")
+        
+        # Extract keywords using python3 if available
+        local input_keywords='["React","Node.js","MongoDB","GraphQL","Docker","Microservices","TDD","CI/CD","Git","REST APIs"]'
+        local expected_count=10
+        
+        if command -v python3 >/dev/null 2>&1; then
+            # Extract covered and missed keywords from JSON response
+            local covered_keywords=$(echo "$gap_body" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    covered = data.get('data', {}).get('keyword_coverage', {}).get('covered_keywords', [])
+    print(','.join(covered))
+except:
+    print('')
+" 2>/dev/null || echo "")
+            
+            local missed_keywords=$(echo "$gap_body" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    missed = data.get('data', {}).get('keyword_coverage', {}).get('missed_keywords', [])
+    print(','.join(missed))
+except:
+    print('')
+" 2>/dev/null || echo "")
+            
+            # Count total output keywords
+            local total_output=$(echo "$gap_body" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    covered = data.get('data', {}).get('keyword_coverage', {}).get('covered_keywords', [])
+    missed = data.get('data', {}).get('keyword_coverage', {}).get('missed_keywords', [])
+    print(len(covered) + len(missed))
+except:
+    print('0')
+" 2>/dev/null || echo "0")
+            
+            # Check keyword consistency
+            if [ "$expected_count" -eq "$total_output" ]; then
+                log_message "    ✓ Keyword consistency verified ($expected_count input = $total_output output)"
+                log_message "    → Covered: $covered_keywords"
+                log_message "    → Missed: $missed_keywords"
+            else
+                log_message "    ⚠ Keyword count mismatch: $expected_count input ≠ $total_output output"
+                log_message "    → This suggests keyword re-extraction occurred"
+            fi
+        else
+            log_message "    ⚠ python3 not available, skipping keyword consistency check"
+        fi
+        
         test_end=$(date +%s)
         duration=$((test_end - test_start))
         TOTAL_TESTS=$((TOTAL_TESTS + 1))

@@ -385,12 +385,12 @@ jobs:
           exit 1
         fi
         
-    - name: Smoke test with performance check
+    - name: Smoke test with keyword consistency check
       run: |
         # 確保測試腳本有執行權限
         chmod +x test/scripts/ci_smoke_test_v2.sh
         
-        # 執行 smoke test v2 (使用真實 API 效能測試)
+        # 執行 smoke test v2 (包含關鍵字一致性測試)
         CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
         API_URL=https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io \
         ./test/scripts/ci_smoke_test_v2.sh

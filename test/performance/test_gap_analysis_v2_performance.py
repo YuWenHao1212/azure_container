@@ -210,6 +210,7 @@ class TestGapAnalysisV2Performance:
 
         response_times = []
         failed_responses = []
+        keyword_check_failures = []
         # Need 20 samples for accurate P50/P95 calculation (merged test)
         total_requests = 20  # Sufficient sample size for reliable P50 and P95 statistics
 
@@ -241,15 +242,49 @@ class TestGapAnalysisV2Performance:
                 )
                 request_time = time.time() - request_start
 
+                # Check keyword consistency for each successful request
+                keyword_check_passed = False
+                if response.status_code == 200:
+                    try:
+                        response_data = response.json()
+                        if response_data.get('success'):
+                            data = response_data.get('data', {})
+                            keyword_coverage = data.get('keyword_coverage', {})
+                            covered = keyword_coverage.get('covered_keywords', [])
+                            missed = keyword_coverage.get('missed_keywords', [])
+
+                            # Get input keywords from the request
+                            input_keywords = unique_data.get('keywords', [])
+
+                            # Check keyword consistency
+                            total_input = len(input_keywords)
+                            total_output = len(covered) + len(missed)
+
+                            # Check 1: Total count consistency
+                            count_match = total_input == total_output
+
+                            # Check 2: Set equality (case-insensitive)
+                            input_set = {k.lower() for k in input_keywords}
+                            output_set = {k.lower() for k in covered} | {k.lower() for k in missed}
+                            set_match = input_set == output_set
+
+                            keyword_check_passed = count_match and set_match
+
+                            if not keyword_check_passed:
+                                print(f"  ⚠️ Request {request_id+1}: Keyword mismatch! Input={total_input}, Output={total_output}")
+                    except Exception as e:
+                        print(f"  ⚠️ Request {request_id+1}: Failed to check keywords: {e}")
+
                 result = {
                     'request_id': request_id,
                     'status_code': response.status_code,
                     'request_time': request_time,
-                    'response': response.text[:200] if hasattr(response, 'text') else str(response.content)[:200]
+                    'response': response.text[:200] if hasattr(response, 'text') else str(response.content)[:200],
+                    'keyword_check_passed': keyword_check_passed
                 }
 
                 if response.status_code == 200:
-                    print(f"  ✅ Request {request_id+1}: Success in {request_time:.3f}s")
+                    print(f"  ✅ Request {request_id+1}: Success in {request_time:.3f}s (Keywords: {'✅' if keyword_check_passed else '❌'})")
                 else:
                     print(f"  ❌ Request {request_id+1}: Failed with {response.status_code} in {request_time:.3f}s")
 
@@ -276,6 +311,12 @@ class TestGapAnalysisV2Performance:
                 result = future.result()
                 if result['status_code'] == 200:
                     response_times.append(result['request_time'])
+                    # Track keyword consistency failures
+                    if not result.get('keyword_check_passed', False):
+                        keyword_check_failures.append({
+                            'request_id': result['request_id'],
+                            'message': 'Keyword input/output mismatch'
+                        })
                 else:
                     failed_responses.append({
                         'request_id': result['request_id'],
@@ -289,6 +330,7 @@ class TestGapAnalysisV2Performance:
         print(f"\nTest completed in {actual_duration:.1f}s")
         print(f"Successful requests: {len(response_times)}")
         print(f"Failed requests: {len(failed_responses)}")
+        print(f"Keyword check failures: {len(keyword_check_failures)}")
 
         # Show all failures for debugging
         for failure in failed_responses:
@@ -304,6 +346,13 @@ class TestGapAnalysisV2Performance:
 
         # Verify P50 < 20 seconds as per updated test spec (realistic for real LLM APIs)
         assert p50 < 20.0, f"P50 response time {p50:.3f}s exceeds 20.0s target"
+
+        # Verify keyword consistency (integrated from API-IC-001-PT)
+        if keyword_check_failures:
+            print(f"\n⚠️ Keyword consistency check failures: {len(keyword_check_failures)}")
+            for failure in keyword_check_failures[:5]:  # Show first 5 failures
+                print(f"  - Request {failure['request_id']}: {failure['message']}")
+            pytest.fail(f"Keyword consistency check failed for {len(keyword_check_failures)} requests")
 
         # Additional metrics for debugging
         print("\n✅ REAL API Performance Results:")

@@ -50,7 +50,7 @@ API-GAP-[序號]-[類型]
 |----------|----------|------|------|
 | 001-020 | 單元測試(UT) | 20 | 服務層單元測試 |
 | 001-027 | 整合測試(IT) | 27 | API 端點整合測試（含錯誤處理） |
-| 001 | 效能測試(PT) | 1 | 真實 Azure 服務效能測試 (P50/P95) |
+| 001-001 | 效能測試(PT) | 1 | 真實 Azure 服務效能測試 |
 | 001-002 | 端對端測試(E2E) | 2 | 完整流程測試 |
 
 **重要變更說明**:
@@ -703,20 +703,35 @@ API-GAP-[序號]-[類型]
   - 最大延遲 20 秒限制
   - 計算結果準確
 
-### 2.3 效能測試 (1個，合併後)
+### 2.3 效能測試 (1個)
 
-#### API-GAP-001-PT: 響應時間效能測試 (P50/P95)
-- **名稱**: 驗證 P50 和 P95 響應時間符合 SLA 目標
+#### API-GAP-001-PT: 響應時間效能測試 + 關鍵字一致性驗證 (P50/P95)
+- **名稱**: 驗證響應時間 SLA 並同時檢查關鍵字處理正確性
 - **優先級**: P0
-- **類型**: 效能測試
-- **測試目標**: 同時驗證 P50 < 20秒 和 P95 < 30秒 的 SLA 要求
-- **測試內容**: 使用唯一測試資料執行 20 個平行請求，關閉資源池快取，計算完整響應時間分布
-- **合併理由**: 原 API-GAP-001-PT 和 API-GAP-002-PT 邏輯相同，合併後更有效率
+- **類型**: 效能測試（整合功能驗證）
+- **測試目標**: 
+  - 驗證 P50 < 20秒 和 P95 < 30秒 的 SLA 要求
+  - 確保每個請求的關鍵字輸入輸出一致性
+- **測試內容**: 
+  - 使用唯一測試資料執行 20 個平行請求
+  - 關閉資源池快取以測試真實效能
+  - 計算完整響應時間分布
+  - **新增**：每個請求同時驗證 `len(input_keywords) == len(covered) + len(missed)`
+  - **新增**：確保 `set(input_keywords) == set(covered) ∪ set(missed)`
+- **合併理由**: 
+  - 整合原 API-GAP-001-PT、API-GAP-002-PT 和 API-IC-001-PT
+  - 避免重複 API 調用，提高測試效率
+  - 同時驗證效能和功能正確性
 - **判斷標準**: 
-  - **P50 < 20 秒** (中位數響應時間)
-  - **P95 < 30 秒** (95百分位響應時間) 
-  - 成功率 > 95%
-  - 無 timeout 錯誤
+  - **效能標準**：
+    - P50 < 20 秒 (中位數響應時間)
+    - P95 < 30 秒 (95百分位響應時間) 
+    - 成功率 > 95%
+    - 無 timeout 錯誤
+  - **功能標準**：
+    - 所有 20 個請求都滿足：輸出關鍵字 (covered + missed) = 輸入關鍵字列表
+    - 無額外或遺失的關鍵字
+    - 大小寫處理正確
   - 預估執行時間 < 80 秒
 
 #### ~~API-GAP-002-PT: P95 響應時間測試~~ [已合併]
@@ -950,7 +965,7 @@ for i in range(600):
 # 執行所有 3 個真實 API 測試（1 PT + 2 E2E）
 ./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh
 
-# 只執行效能測試 (2 個)
+# 只執行效能測試 (1 個)
 ./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --stage performance
 
 # 只執行 E2E 測試 (3 個)
@@ -968,11 +983,10 @@ for i in range(600):
 ./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test p50
 ./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test API-GAP-001-PT
 
-# P95 測試 (95百分位響應時間) 
-./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test p95
-./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test API-GAP-002-PT
+# API-GAP-001-PT 整合測試 (P50/P95 + 關鍵字一致性)
+./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test API-GAP-001-PT
 
-# 同時執行 P50 和 P95
+# 同時執行 P50 和 P95 (已整合到 API-GAP-001-PT)
 ./test/scripts/run_index_cal_gap_analysis_real_api_perf_e2e.sh --perf-test "p50,p95"
 ```
 
@@ -1073,8 +1087,7 @@ grep "p50_time_s" test/logs/performance_API-GAP-001-PT_*.json
    - 適合頻繁執行和 CI/CD
 
 2. **真實 API 測試注意事項**：
-   - P50 測試：5 個請求平行執行，約 20-30 秒
-   - P95 測試：20 个請求平行執行，約 80-90 秒
+   - API-GAP-001-PT：20 個請求平行執行，同時計算 P50/P95 並驗證關鍵字，約 80-90 秒
    - 使用真實 Azure OpenAI API，會產生費用
 
 3. **資源池功能測試**：
@@ -1237,8 +1250,7 @@ P2 (Nice to have): 3/3 (100%)
 實作狀態: 已完成實作
 測試範圍: 3 個測試 (1 Performance + 2 E2E)
 支援功能:
-- ✅ P50 效能測試 (API-GAP-001-PT)
-- ✅ P95 效能測試 (API-GAP-002-PT)  
+- ✅ P50/P95 + 關鍵字一致性整合測試 (API-GAP-001-PT)  
 - ✅ E2E 完整流程測試 (API-GAP-001-E2E)
 - ✅ 輕量級監控測試 (API-GAP-002-E2E)
 - ❌ ~~部分結果支援測試 (API-GAP-003-E2E)~~ - 已刪除，與產品策略矛盾

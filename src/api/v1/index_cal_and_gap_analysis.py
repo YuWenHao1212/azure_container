@@ -315,14 +315,12 @@ async def index_cal_and_gap_analysis_endpoint(
     # Log request start
     logger.info(f"Index cal and gap analysis request started for language: {request.language}")
 
-    # Process keywords from job description
-    from src.services.keyword_extraction_v2 import KeywordExtractionServiceV2
-    keyword_service = KeywordExtractionServiceV2()
-    keywords_result = await keyword_service.process({
-        "job_description": request.job_description,
-        "language": request.language
-    })
-    keywords_list = keywords_result.get("keywords", [])
+    # Use keywords from request (already validated and processed)
+    # The validator in IndexCalAndGapAnalysisRequest already handles:
+    # - Converting string to list if needed
+    # - Stripping whitespace
+    # - Ensuring non-empty
+    keywords_list = request.keywords if isinstance(request.keywords, list) else request.keywords
 
     # Use V2 implementation (optimized path)
     return await _execute_v2_analysis(request, keywords_list, start_time)
