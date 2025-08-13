@@ -254,6 +254,57 @@ jobs:
           --query "properties.latestRevisionName" -o tsv)
         echo "current-revision=$CURRENT_REVISION" >> $GITHUB_OUTPUT
         
+    - name: Detect prompt versions
+      id: prompt-versions
+      run: |
+        echo "🔍 Detecting active prompt versions..."
+        
+        # Function to find active version for a task
+        find_active_version() {
+          local task=$1
+          local dir="src/prompts/$task"
+          
+          if [ ! -d "$dir" ]; then
+            echo ""
+            return
+          fi
+          
+          # Look for files with status: active in metadata
+          for file in $dir/v*.yaml; do
+            if [ -f "$file" ]; then
+              if grep -q "status: active" "$file" 2>/dev/null; then
+                # Extract version from filename
+                basename "$file" .yaml | sed 's/^v//'
+                return
+              fi
+            fi
+          done
+          
+          echo ""
+        }
+        
+        # Detect versions for each task
+        GAP_VERSION=$(find_active_version "gap_analysis")
+        KEYWORD_VERSION=$(find_active_version "keyword_extraction")
+        INDEX_VERSION=$(find_active_version "index_calculation")
+        FORMAT_VERSION=$(find_active_version "resume_format")
+        TAILOR_VERSION=$(find_active_version "resume_tailor")
+        
+        # Set outputs
+        echo "gap-analysis-version=${GAP_VERSION:-2.1.1}" >> $GITHUB_OUTPUT
+        echo "keyword-extraction-version=${KEYWORD_VERSION:-latest}" >> $GITHUB_OUTPUT
+        echo "index-calculation-version=${INDEX_VERSION:-latest}" >> $GITHUB_OUTPUT
+        echo "resume-format-version=${FORMAT_VERSION:-latest}" >> $GITHUB_OUTPUT
+        echo "resume-tailor-version=${TAILOR_VERSION:-latest}" >> $GITHUB_OUTPUT
+        
+        # Log detected versions
+        echo "Detected prompt versions:"
+        echo "  - Gap Analysis: ${GAP_VERSION:-2.1.1}"
+        echo "  - Keyword Extraction: ${KEYWORD_VERSION:-latest}"
+        echo "  - Index Calculation: ${INDEX_VERSION:-latest}"
+        echo "  - Resume Format: ${FORMAT_VERSION:-latest}"
+        echo "  - Resume Tailor: ${TAILOR_VERSION:-latest}"
+        
     - name: Deploy to Container App
       run: |
         # 使用 build job 輸出的映像
@@ -304,10 +355,15 @@ jobs:
             EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
             COURSE_EMBEDDING_ENDPOINT=${{ secrets.COURSE_EMBEDDING_ENDPOINT }} \
             COURSE_EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }} \
-            LLM_MODEL_KEYWORDS=gpt41-mini \
+            LLM_MODEL_KEYWORDS=gpt-4.1-mini \
             LLM_MODEL_GAP_ANALYSIS=gpt-4.1 \
             LLM_MODEL_RESUME_FORMAT=gpt-4.1 \
             LLM_MODEL_RESUME_TAILOR=gpt-4.1 \
+            GAP_ANALYSIS_PROMPT_VERSION="${{ steps.prompt-versions.outputs.gap-analysis-version }}" \
+            KEYWORD_EXTRACTION_PROMPT_VERSION="${{ steps.prompt-versions.outputs.keyword-extraction-version }}" \
+            INDEX_CALCULATION_PROMPT_VERSION="${{ steps.prompt-versions.outputs.index-calculation-version }}" \
+            RESUME_FORMAT_PROMPT_VERSION="${{ steps.prompt-versions.outputs.resume-format-version }}" \
+            RESUME_TAILOR_PROMPT_VERSION="${{ steps.prompt-versions.outputs.resume-tailor-version }}" \
             JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
             CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
             CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \

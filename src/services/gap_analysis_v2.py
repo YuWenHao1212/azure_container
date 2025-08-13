@@ -295,9 +295,9 @@ Please provide a comprehensive gap analysis.
         }
 
         try:
-            # Load from YAML configuration - use v2.1.0 with gap classification
-            filename = "v2.1.0-zh-TW.yaml" if language == "zh-TW" else "v2.1.0.yaml"
-            prompt_config = prompt_manager.load_prompt_config_by_filename("gap_analysis", filename)
+            # Load from YAML configuration using SimplePromptManager with env var support
+            # Priority: env var → active → latest
+            prompt_config = prompt_manager.load_prompt_config("gap_analysis", version="latest")
 
             if hasattr(prompt_config, 'llm_config'):
                 llm_config_obj = prompt_config.llm_config
@@ -311,7 +311,7 @@ Please provide a comprehensive gap analysis.
                     if hasattr(llm_config_obj, attr):
                         config["additional_params"][attr] = getattr(llm_config_obj, attr)
 
-                logger.info(f"Loaded LLM config from YAML: {filename}")
+                logger.info("Loaded LLM config from YAML for gap_analysis")
         except Exception as e:
             logger.warning(f"Failed to load LLM config from YAML: {e}, using defaults")
 

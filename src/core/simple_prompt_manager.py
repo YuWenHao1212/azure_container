@@ -34,16 +34,40 @@ class SimplePromptManager:
         """
         Load prompt configuration for a specific task and version.
 
+        Version selection priority:
+        1. Explicit version parameter (if not "latest")
+        2. Environment variable (TASK_PROMPT_VERSION format)
+        3. Active version from metadata
+        4. Latest version
+
         Args:
             task: Task identifier (e.g., 'keyword_extraction')
-            version: Version string or 'latest'
+            version: Version string, 'latest', or 'active'
 
         Returns:
             PromptConfig instance
         """
-        # Resolve version
-        if version == "latest":
-            version = self._get_latest_version(task)
+        import os
+
+        # Check for environment variable override
+        # Format: TASK_PROMPT_VERSION (e.g., GAP_ANALYSIS_PROMPT_VERSION)
+        env_key = f"{task.upper().replace('-', '_')}_PROMPT_VERSION"
+        env_version = os.getenv(env_key)
+
+        if env_version and version == "latest":
+            # Environment variable takes precedence over "latest"
+            self.logger.info(f"Using version from environment: {env_key}={env_version}")
+            version = env_version
+        elif version == "latest" or version == "active":
+            # Try to find active version first
+            active_version = self.get_active_version(task)
+            if active_version:
+                self.logger.info(f"Using active version: {active_version}")
+                version = active_version
+            else:
+                # Fall back to latest version
+                version = self._get_latest_version(task)
+                self.logger.info(f"Using latest version: {version}")
 
         # Check cache
         cache_key = f"{task}:{version}"
@@ -137,11 +161,25 @@ class SimplePromptManager:
         versions = []
         for file in task_dir.glob("v*.yaml"):
             # Extract version from filename (v1.0.0.yaml -> 1.0.0)
-            version = file.stem[1:]
-            versions.append(version)
+            # Handle language-specific files (v1.0.0-zh-TW.yaml -> 1.0.0)
+            filename = file.stem
+            if filename.startswith('v'):
+                # Remove 'v' prefix and language suffix if present
+                version_str = filename[1:]
+                # Remove language suffix (e.g., -zh-TW)
+                if '-' in version_str:
+                    version_str = version_str.split('-')[0]
+                versions.append(version_str)
+
+        # Remove duplicates (same version may have multiple language files)
+        versions = list(set(versions))
 
         # Sort versions in descending order
-        versions.sort(reverse=True, key=lambda v: tuple(map(int, v.split('.'))))
+        try:
+            versions.sort(reverse=True, key=lambda v: tuple(map(int, v.split('.'))))
+        except ValueError:
+            # Fallback to string sorting if version format is unexpected
+            versions.sort(reverse=True)
 
         return versions
 
@@ -159,6 +197,40 @@ class SimplePromptManager:
                 continue
 
         return None
+
+    def get_resolved_version(self, task: str, requested_version: str = "latest") -> str:
+        """
+        Get the resolved version that will be used for a task.
+
+        This method shows what version will actually be loaded,
+        considering all priority rules (env var, active, latest).
+
+        Args:
+            task: Task identifier
+            requested_version: Requested version (default: "latest")
+
+        Returns:
+            The actual version string that will be used
+        """
+        import os
+
+        # If specific version requested, use it
+        if requested_version not in ["latest", "active"]:
+            return requested_version
+
+        # Check environment variable
+        env_key = f"{task.upper().replace('-', '_')}_PROMPT_VERSION"
+        env_version = os.getenv(env_key)
+        if env_version:
+            return env_version
+
+        # Check active version
+        active_version = self.get_active_version(task)
+        if active_version:
+            return active_version
+
+        # Fall back to latest
+        return self._get_latest_version(task)
 
     def save_prompt_config(self, task: str, config: PromptConfig) -> Path:
         """Save a prompt configuration to file."""

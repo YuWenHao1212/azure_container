@@ -147,6 +147,15 @@ class Settings(BaseSettings):
         description="Embedding model for course search (default: embedding-3-small for efficiency)"
     )
 
+    # Prompt version configuration
+    # Use environment variables in format: TASK_PROMPT_VERSION
+    # Examples: GAP_ANALYSIS_PROMPT_VERSION, KEYWORD_EXTRACTION_PROMPT_VERSION
+    prompt_version_override: bool = Field(
+        default=True,
+        validation_alias="ENABLE_PROMPT_VERSION_OVERRIDE",
+        description="Allow environment variables to override prompt versions"
+    )
+
     # Feature flags for LLM model selection
     enable_llm_model_override: bool = Field(
         default=True,

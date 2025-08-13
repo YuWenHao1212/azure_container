@@ -1,0 +1,267 @@
+name: Update Prompt Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task name (e.g., gap_analysis, keyword_extraction)'
+        required: true
+        type: choice
+        options:
+          - gap_analysis
+          - keyword_extraction
+          - index_calculation
+          - resume_format
+          - resume_tailor
+      version:
+        description: 'Prompt version (e.g., 2.1.1)'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - production
+          - development
+        default: production
+
+env:
+  CONTAINER_APP_NAME_PROD: airesumeadvisor-api-production
+  CONTAINER_APP_NAME_DEV: airesumeadvisor-api-dev
+  RESOURCE_GROUP: airesumeadvisorfastapi
+
+jobs:
+  detect-and-validate:
+    name: Detect and Validate Prompt Files
+    runs-on: ubuntu-latest
+    outputs:
+      prompt-exists: ${{ steps.check.outputs.exists }}
+      env-var-name: ${{ steps.check.outputs.env-var }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check prompt file exists
+      id: check
+      run: |
+        # Convert task name to uppercase for env var
+        ENV_VAR_NAME=$(echo "${{ github.event.inputs.task }}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')_PROMPT_VERSION
+        echo "env-var=$ENV_VAR_NAME" >> $GITHUB_OUTPUT
+        
+        # Check if prompt file exists
+        PROMPT_FILE="src/prompts/${{ github.event.inputs.task }}/v${{ github.event.inputs.version }}.yaml"
+        if [ -f "$PROMPT_FILE" ]; then
+          echo "✅ Prompt file found: $PROMPT_FILE"
+          echo "exists=true" >> $GITHUB_OUTPUT
+          
+          # Validate YAML syntax
+          python -c "import yaml; yaml.safe_load(open('$PROMPT_FILE'))" || {
+            echo "❌ Invalid YAML syntax in $PROMPT_FILE"
+            exit 1
+          }
+        else
+          echo "❌ Prompt file not found: $PROMPT_FILE"
+          echo "exists=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+        
+  test-with-new-version:
+    name: Test with New Prompt Version
+    needs: detect-and-validate
+    runs-on: ubuntu-latest
+    if: needs.detect-and-validate.outputs.prompt-exists == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11.8'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest ruff
+        
+    - name: Create test .env with new prompt version
+      run: |
+        cat > .env << EOF
+        ENVIRONMENT=test
+        LOG_LEVEL=INFO
+        
+        # Prompt version override
+        ${{ needs.detect-and-validate.outputs.env-var-name }}=${{ github.event.inputs.version }}
+        
+        # Azure OpenAI
+        AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        AZURE_OPENAI_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+        AZURE_OPENAI_API_VERSION=2025-01-01-preview
+        AZURE_OPENAI_GPT4_DEPLOYMENT=gpt-4.1-japan
+        GPT41_MINI_JAPANEAST_DEPLOYMENT=gpt-4-1-mini-japaneast
+        GPT41_MINI_JAPANEAST_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        GPT41_MINI_JAPANEAST_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+        GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview
+        
+        # Embedding
+        EMBEDDING_ENDPOINT=${{ secrets.EMBEDDING_ENDPOINT }}
+        EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+        COURSE_EMBEDDING_ENDPOINT=${{ secrets.COURSE_EMBEDDING_ENDPOINT }}
+        COURSE_EMBEDDING_API_KEY=${{ secrets.AZURE_OPENAI_API_KEY }}
+        
+        # Model Selection
+        LLM_MODEL_KEYWORDS=gpt-4.1-mini
+        LLM_MODEL_GAP_ANALYSIS=gpt-4.1
+        LLM_MODEL_RESUME_FORMAT=gpt-4.1
+        LLM_MODEL_RESUME_TAILOR=gpt-4.1
+        
+        # Security
+        JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+        CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }}
+        EOF
+        
+    - name: Run targeted tests
+      run: |
+        echo "Testing with ${{ needs.detect-and-validate.outputs.env-var-name }}=${{ github.event.inputs.version }}"
+        
+        # Map task to test directory
+        case "${{ github.event.inputs.task }}" in
+          gap_analysis)
+            TEST_PATH="test/unit/test_gap_analysis_v2.py test/integration/test_gap_analysis_v2_integration_complete.py"
+            ;;
+          keyword_extraction)
+            TEST_PATH="test/unit/test_keyword_extraction.py test/integration/test_keyword_extraction_language.py"
+            ;;
+          index_calculation)
+            TEST_PATH="test/unit/test_index_calculation_v2_unit.py test/integration/test_index_calculation_v2_integration.py"
+            ;;
+          resume_format)
+            TEST_PATH="test/unit/test_resume_format.py test/integration/test_resume_format_integration.py"
+            ;;
+          resume_tailor)
+            TEST_PATH="test/unit/test_resume_tailor_agent.py test/integration/test_resume_tailor_agent_integration.py"
+            ;;
+          *)
+            TEST_PATH="test/"
+            ;;
+        esac
+        
+        # Run tests with the new prompt version
+        pytest $TEST_PATH -v --tb=short || {
+          echo "❌ Tests failed with new prompt version"
+          exit 1
+        }
+        
+        echo "✅ All tests passed with new prompt version"
+        
+  update-container-app:
+    name: Update Container App
+    needs: [detect-and-validate, test-with-new-version]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: |
+          {
+            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+          }
+          
+    - name: Determine target container app
+      id: target
+      run: |
+        if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+          echo "app-name=${{ env.CONTAINER_APP_NAME_PROD }}" >> $GITHUB_OUTPUT
+        else
+          echo "app-name=${{ env.CONTAINER_APP_NAME_DEV }}" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Update environment variable
+      run: |
+        echo "🔄 Updating ${{ needs.detect-and-validate.outputs.env-var-name }} to ${{ github.event.inputs.version }}"
+        
+        az containerapp update \
+          --name ${{ steps.target.outputs.app-name }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --set-env-vars ${{ needs.detect-and-validate.outputs.env-var-name }}="${{ github.event.inputs.version }}" \
+          --output none
+          
+        echo "✅ Environment variable updated"
+        
+    - name: Verify update
+      run: |
+        CURRENT_VERSION=$(az containerapp show \
+          --name ${{ steps.target.outputs.app-name }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --query "properties.template.containers[0].env[?name=='${{ needs.detect-and-validate.outputs.env-var-name }}'].value | [0]" \
+          -o tsv)
+          
+        if [ "$CURRENT_VERSION" == "${{ github.event.inputs.version }}" ]; then
+          echo "✅ Version confirmed: $CURRENT_VERSION"
+        else
+          echo "❌ Version mismatch! Expected: ${{ github.event.inputs.version }}, Got: $CURRENT_VERSION"
+          exit 1
+        fi
+        
+    - name: Wait for container restart
+      run: |
+        echo "⏳ Waiting for container to restart with new configuration..."
+        sleep 30
+        
+    - name: Health check
+      run: |
+        if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+          URL="https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io"
+        else
+          URL="https://airesumeadvisor-api-dev.calmisland-ea7fe91e.japaneast.azurecontainerapps.io"
+        fi
+        
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" $URL/health)
+        if [ $RESPONSE -eq 200 ]; then
+          echo "✅ Health check passed!"
+        else
+          echo "❌ Health check failed with status code: $RESPONSE"
+          exit 1
+        fi
+        
+  create-summary:
+    name: Create Summary
+    needs: [update-container-app]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Create deployment summary
+      run: |
+        echo "## 📝 Prompt Version Update Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "- **Task**: ${{ github.event.inputs.task }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.update-container-app.result }}" == "success" ]; then
+          echo "### ✅ Update Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The prompt version has been updated and the container app has been restarted." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Monitor application metrics" >> $GITHUB_STEP_SUMMARY
+          echo "2. Verify prompt responses" >> $GITHUB_STEP_SUMMARY
+          echo "3. Check error rates" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### ❌ Update Failed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
+        fi
