@@ -117,25 +117,25 @@ prompts:
     Your task is to SYNTHESIZE findings from the previous three sections, NOT re-analyze the resume.
     Reference the specific gaps and strengths already identified.
     
-    Structure your 150-word assessment in exactly 3 paragraphs:
+    Structure your 99-word assessment in exactly 3 paragraphs:
     
-    Paragraph 1 (50 words): Overall Position & Strengths
+    Paragraph 1 (33 words): Overall Position & Strengths
     - Start with qualitative assessment: "strong candidate", "good fit", "moderate match"
     - Briefly summarize the top 2-3 strengths from CORE STRENGTHS section
     
-    Paragraph 2 (50 words): Improvement Roadmap  
+    Paragraph 2 (33 words): Improvement Roadmap  
     - FIRST mention Presentation Gaps (quick wins from resume fixes)
     - THEN mention Skill Gaps (skills requiring learning/development)
     - Reference specific gaps identified in KEY GAPS section
     
-    Paragraph 3 (50 words): Action Priority
+    Paragraph 3 (33 words): Action Priority
     - Immediate next steps (focus on quick improvements first)
     - Expected position after addressing presentation gaps
     - Use qualitative language only (strong candidate, better positioned, etc.)
     </synthesis_instructions>
     
     <strict_requirements>
-    - MAXIMUM 150 words total (strictly enforced)
+    - MAXIMUM 100 words total (strictly enforced)
     - NO percentage predictions or numerical probabilities
     - NO statements like "80% match" or "70% success rate"
     - Use ONLY qualitative terms: strong candidate, good fit, moderate match, well-positioned
