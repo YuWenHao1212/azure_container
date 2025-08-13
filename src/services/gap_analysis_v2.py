@@ -235,7 +235,11 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
             # Replace placeholders in user prompt
             user_prompt = user_prompt.replace("{job_description}", job_description)
             user_prompt = user_prompt.replace("{resume}", resume)
+            user_prompt = user_prompt.replace("{similarity_score}",
+                                             str(index_result.get('similarity_percentage', 0)))
             user_prompt = user_prompt.replace("{keyword_coverage_percentage}",
+                                             str(keyword_coverage.get('coverage_percentage', 0)))
+            user_prompt = user_prompt.replace("{coverage_percentage}",
                                              str(keyword_coverage.get('coverage_percentage', 0)))
             user_prompt = user_prompt.replace("{covered_keywords}",
                                              ', '.join(covered_keywords[:10]) if covered_keywords else "None")

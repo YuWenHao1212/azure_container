@@ -226,84 +226,62 @@ class CombinedAnalysisServiceV2(BaseService):
         keyword_coverage = await keyword_task
         detailed_timings["keyword_match_end"] = time.time()
 
-        # V3 KEY OPTIMIZATION: Start Gap Analysis immediately with just keywords
-        gap_start = time.time()
-        detailed_timings["gap_context_start"] = gap_start
-        detailed_timings["gap_llm_start"] = gap_start
-
-        # Build minimal index_result with just keywords (no similarity_score needed)
-        minimal_index_result = {
-            "keyword_coverage": keyword_coverage,
-            "similarity_percentage": 0,  # Default value to avoid errors
-            "raw_similarity_percentage": 0,
-            "processing_time_ms": 0
-        }
-
-        # Start Gap Analysis immediately (not waiting for embeddings or full index)
-        if self.retry_strategy:
-            gap_task = asyncio.create_task(
-                self.retry_strategy.execute_with_retry(
-                    lambda: self.gap_service.analyze_with_context(
-                        resume=resume,
-                        job_description=job_description,
-                        index_result=minimal_index_result,
-                        language=language,
-                        options=analysis_options
-                    ),
-                    error_classifier=self._classify_gap_error,
-                    get_retry_after=self._get_retry_after_from_error
-                )
-            )
-        else:
-            gap_task = asyncio.create_task(
-                self.gap_service.analyze_with_context(
-                    resume=resume,
-                    job_description=job_description,
-                    index_result=minimal_index_result,
-                    language=language,
-                    options=analysis_options
-                )
-            )
-
-        # Wait for embeddings to complete (background task)
+        # Wait for embeddings to complete for Index Calculation
         await embedding_task
         detailed_timings["embedding_end"] = time.time()
         phase_timings["embedding_generation"] = detailed_timings["embedding_end"] - phase1_start
 
-        # Calculate full Index in background (not blocking Gap Analysis)
+        # Start Index Calculation after embeddings are ready
         index_start = time.time()
         detailed_timings["index_llm_start"] = index_start
 
         if self.retry_strategy:
-            index_task = asyncio.create_task(
-                self.retry_strategy.execute_with_retry(
-                    lambda: self.index_service.calculate_index(
-                        resume=resume,
-                        job_description=job_description,
-                        keywords=keywords
-                    ),
-                    error_classifier=self._classify_index_error,
-                    get_retry_after=self._get_retry_after_from_error
-                )
-            )
-        else:
-            index_task = asyncio.create_task(
-                self.index_service.calculate_index(
+            index_result = await self.retry_strategy.execute_with_retry(
+                lambda: self.index_service.calculate_index(
                     resume=resume,
                     job_description=job_description,
                     keywords=keywords
-                )
+                ),
+                error_classifier=self._classify_index_error,
+                get_retry_after=self._get_retry_after_from_error
+            )
+        else:
+            index_result = await self.index_service.calculate_index(
+                resume=resume,
+                job_description=job_description,
+                keywords=keywords
             )
 
-        # Wait for Gap Analysis to complete (critical path)
-        gap_result = await gap_task
-        detailed_timings["gap_llm_end"] = time.time()
-        phase_timings["gap_analysis"] = detailed_timings["gap_llm_end"] - gap_start
-
-        # Wait for Index to complete (background)
-        index_result = await index_task
         detailed_timings["index_llm_end"] = time.time()
         phase_timings["index_calculation"] = detailed_timings["index_llm_end"] - index_start
+
+        # Now start Gap Analysis with complete index_result including real similarity_score
+        gap_start = time.time()
+        detailed_timings["gap_context_start"] = gap_start
+        detailed_timings["gap_llm_start"] = gap_start
+
+        if self.retry_strategy:
+            gap_result = await self.retry_strategy.execute_with_retry(
+                lambda: self.gap_service.analyze_with_context(
+                    resume=resume,
+                    job_description=job_description,
+                    index_result=index_result,  # Full index result with real similarity_score
+                    language=language,
+                    options=analysis_options
+                ),
+                error_classifier=self._classify_gap_error,
+                get_retry_after=self._get_retry_after_from_error
+            )
+        else:
+            gap_result = await self.gap_service.analyze_with_context(
+                resume=resume,
+                job_description=job_description,
+                index_result=index_result,  # Full index result with real similarity_score
+                language=language,
+                options=analysis_options
+            )
+        detailed_timings["gap_llm_end"] = time.time()
+        phase_timings["gap_analysis"] = detailed_timings["gap_llm_end"] - gap_start
 
         detailed_timings["end"] = time.time()
 
