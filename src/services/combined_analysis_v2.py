@@ -223,7 +223,7 @@ class CombinedAnalysisServiceV2(BaseService):
             embedding_task = asyncio.create_task(_generate_with_pool())
 
         # Wait for keywords to complete (should be ~50ms)
-        keyword_coverage = await keyword_task
+        await keyword_task
         detailed_timings["keyword_match_end"] = time.time()
 
         # Wait for embeddings to complete for Index Calculation
