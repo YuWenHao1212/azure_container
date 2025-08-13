@@ -118,6 +118,7 @@ prompts:
     Reference the specific gaps and strengths already identified.
     
     Structure your 100-word assessment in exactly 3 paragraphs:
+    START WITH: "[V2.1.1-100W]" (this marker doesn't count toward word limit)
     
     Paragraph 1 (33 words): Overall Position & Strengths
     - Start with qualitative assessment: "strong candidate", "good fit", "moderate match"
