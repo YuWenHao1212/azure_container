@@ -135,22 +135,21 @@ response = requests.post(
       ]
     },
     "resume_structure": {
-      "total_sections": 5,
-      "sections": {
-        "contact": true,
-        "summary": true,
-        "experience": true,
-        "education": true,
-        "skills": true,
-        "projects": false,
-        "certifications": false
+      "standard_sections": {
+        "summary": "Professional Summary",
+        "skills": "Technical Skills",
+        "experience": "Work Experience",
+        "education": "Education",
+        "certifications": null,
+        "projects": null
       },
-      "completeness_score": 71.43,
-      "missing_sections": ["projects", "certifications"],
-      "recommendations": [
-        "Add a Projects section to showcase practical experience",
-        "Include Certifications section for professional credentials"
-      ]
+      "custom_sections": ["Languages", "Publications"],
+      "metadata": {
+        "total_experience_entries": 3,
+        "total_education_entries": 1,
+        "has_quantified_achievements": true,
+        "estimated_length": "2 pages"
+      }
     }
   },
   "error": {
@@ -203,19 +202,22 @@ response = requests.post(
 - 考慮候選人當前水平和學習路徑
 
 ### 6. 履歷結構分析（Resume Structure）- V4 新增功能
-評估履歷的結構完整性和專業性：
-- **總區塊數量**：計算履歷中包含的主要區塊
-- **區塊檢測**：識別標準履歷區塊的存在
-  - 聯絡資訊（contact）
-  - 個人摘要（summary）
-  - 工作經歷（experience）
-  - 教育背景（education）
-  - 技能列表（skills）
-  - 專案經驗（projects）
-  - 專業證照（certifications）
-- **完整性評分**：基於區塊存在性的百分比評分
-- **缺失區塊**：列出建議添加的重要區塊
-- **改進建議**：提供具體的結構優化建議
+使用 GPT-4.1 mini 快速分析履歷結構，識別區塊組織和內容特徵：
+
+**standard_sections（標準區塊映射）**：
+- 偵測六個標準履歷區塊的標題
+- 每個欄位的值為實際區塊標題（如 "Professional Summary"）或 null（表示不存在）
+- 包含：summary、skills、experience、education、certifications、projects
+
+**custom_sections（自定義區塊）**：
+- 識別非標準但常見的履歷區塊
+- 例如：Languages（語言能力）、Publications（出版物）、Awards（獎項）
+
+**metadata（結構元數據）**：
+- `total_experience_entries`：工作經歷項目數量
+- `total_education_entries`：教育背景項目數量
+- `has_quantified_achievements`：是否包含量化成就（數字、百分比、指標）
+- `estimated_length`：預估頁數（"1 page"、"2 pages" 等）
 
 ## 效能指標
 

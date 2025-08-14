@@ -381,7 +381,7 @@ prompts:
     SYNTHESIZE findings from previous sections (don't re-analyze).
     Write a cohesive 100-word assessment as a single narrative.
     
-    START WITH: "[V2.1.7-100W]"
+    START WITH: "[V2.1.8-100W]"
     
     STRUCTURE (100 words total):
     
@@ -573,7 +573,7 @@ prompts:
     </quick_improvements>
 
     <overall_assessment>
-    [100-word synthesis starting with [V2.1.7-100W]]
+    [100-word synthesis starting with [V2.1.8-100W]]
     </overall_assessment>
 
     <skill_development_priorities>

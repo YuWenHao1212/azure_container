@@ -253,8 +253,9 @@ X-API-Key: [YOUR_API_KEY]
 
 **版本更新 (v4 - 2025-08-14)** 🚀
 - 新增 `resume_structure` 欄位，提供履歷結構分析
-- 自動檢測履歷完整性並提供改進建議
-- 計算結構完整性分數（0-100）
+- 使用 GPT-4.1 mini 快速識別履歷區塊結構
+- 偵測標準區塊、自定義區塊及結構元數據
+- 透過環境變數 `ENABLE_RESUME_STRUCTURE_ANALYSIS` 控制（預設啟用）
 
 **請求參數**
 ```json
@@ -297,22 +298,21 @@ X-API-Key: [YOUR_API_KEY]
       ]
     },
     "resume_structure": {
-      "total_sections": 5,
-      "sections": {
-        "contact": true,
-        "summary": true,
-        "experience": true,
-        "education": true,
-        "skills": true,
-        "projects": false,
-        "certifications": false
+      "standard_sections": {
+        "summary": "Professional Summary",
+        "skills": "Technical Skills",
+        "experience": "Work Experience",
+        "education": "Education",
+        "certifications": null,
+        "projects": null
       },
-      "completeness_score": 71.43,
-      "missing_sections": ["projects", "certifications"],
-      "recommendations": [
-        "Add a Projects section to showcase practical experience",
-        "Include Certifications section for professional credentials"
-      ]
+      "custom_sections": ["Languages", "Publications"],
+      "metadata": {
+        "total_experience_entries": 3,
+        "total_education_entries": 1,
+        "has_quantified_achievements": true,
+        "estimated_length": "2 pages"
+      }
     }
   },
   "error": {
