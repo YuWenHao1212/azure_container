@@ -111,6 +111,13 @@ prompts:
     
     For each Missing Keyword, follow this decision tree:
     
+    FIRST CHECK - Is this a Soft Skill/Personal Attribute?
+    (Self-Starter, Growth Mindset, Leadership, Communication, etc.)
+    ├─ YES → Almost always Presentation Gap (→ Quick Improvements)
+    │   └─ Reason: Everyone has experiences that demonstrate these
+    └─ NO → Continue to standard decision tree
+    
+    Standard Decision Tree (for technical/hard skills):
     Question 1: Does resume show related experience?
     ├─ YES → Question 2: Is it just terminology difference?
     │   ├─ YES → Presentation Gap (→ Quick Improvements)
@@ -126,22 +133,29 @@ prompts:
     SKILL CLASSIFICATION GUIDE:
     
     🔧 Technical/Hard Skills (learnable through courses):
-    - Specific tools and software (Figma, Photoshop, Git, Docker)
+    - Specific tools and software (Figma, Photoshop, Git, Docker, Sketch, Adobe XD)
     - Programming languages and frameworks (Python, React, Node.js)
     - Concrete methodologies (Agile, Scrum, Test-Driven Development)
     - Quantifiable techniques (A/B Testing, SQL queries, API design)
-    - Technical processes (CI/CD, Database optimization, Prototyping)
+    - Technical processes (CI/CD, Database optimization)
+    - Design techniques (Wireframing, Prototyping methods, Component libraries)
     
-    💼 Soft Skills/Domain Knowledge/Roles (developed through practice):
+    💼 Non-Technical Skills (developed through practice/experience):
     - Professional roles/identities (Designer, Developer, Manager)
+    - Design disciplines (Visual Design, Interaction Design, UX Design, Mobile Design)
     - Personal attributes (Self-Starter, Creative, Detail-oriented)
     - Interpersonal skills (Leadership, Communication, Teamwork)
     - Mindsets and approaches (Growth Mindset, Critical Thinking)
-    - Domain expertise (Industry Knowledge, Business Acumen)
-    - Design sensibilities (Visual Design sense, UX intuition)
+    - Domain expertise (Industry Knowledge, Business Acumen, Design Strategy)
     
-    CRITICAL: "Designer" is a role (💼), while "Figma" is a tool (🔧)
-    CRITICAL: "UX Design" as a discipline is domain knowledge (💼), while "Wireframing" is a technique (🔧)
+    CRITICAL DISTINCTIONS:
+    - "Figma" is a tool (🔧), "Visual Design" is a discipline (💼)
+    - "Prototyping" as technique is (🔧), "Mobile Product Design" as role is (💼)
+    - "Wireframing" is a technique (🔧), "UX Design" as field is (💼)
+    
+    SOFT SKILLS SPECIAL RULE:
+    Personal attributes (Self-Starter, Growth Mindset, Leadership) should almost ALWAYS be 
+    Presentation Gaps, not Skill Gaps, because everyone has relevant experiences to demonstrate these
     
     INTERNAL TRACKING (for your use only - do not output):
     Create four lists from your Phase 2 classification:
@@ -151,6 +165,18 @@ prompts:
     - Non-Technical Presentation Gaps: [soft skills/roles needing better expression → Quick Improvements with 💼]
     
     Use only 🔧 for technical and 💼 for non-technical in both sections.
+    
+    GAP CONSOLIDATION RULES:
+    1. Maximum 5-6 gaps total (quality over quantity)
+    2. Combine related skills (e.g., "Visual Design + Interaction Design" → "UI/UX Design")
+    3. Exclude irrelevant skills for the role (e.g., Data Scientist for Designer role)
+    4. Prioritize gaps by actual job impact
+    5. If >6 critical gaps exist, select the TOP 5-6 most important
+    
+    RELEVANCE CHECK:
+    - Is this skill actually mentioned in the JD? If not, exclude it
+    - Is this skill critical for success in THIS role? If not, deprioritize
+    - Can multiple related gaps be combined? If yes, consolidate them
     </internal_gap_classification>
     
     <format_requirements>
@@ -185,7 +211,21 @@ prompts:
     1. This section ONLY contains Presentation Gaps identified from {missing_keywords} in Phase 2 Classification
     2. NEVER create suggestions for skills NOT in the {missing_keywords} list (e.g., if Python/SQL are not in missing_keywords, don't mention them)
     3. NEVER include skills classified as Skill Gaps (those belong in Key Gaps section)
-    4. If no Presentation Gaps were identified, explicitly state "No presentation improvements needed - all gaps require learning"
+    4. Apply similarity-based output strategy (see below)
+    
+    **SIMILARITY-BASED OUTPUT STRATEGY**:
+    
+    If similarity_score < 40%:
+      Output: "Given the significant skill gap (similarity < 40%), this role requires substantial skill development rather than resume optimization. Focus on the learning priorities outlined in the Key Gaps section above. Resume wording improvements would have minimal impact at this stage of career transition."
+      STOP HERE - do not provide any other suggestions
+    
+    If similarity_score 40-60%:
+      Provide 2-3 most important Presentation Gaps only
+      Focus on soft skills and transferable experiences
+    
+    If similarity_score > 60%:
+      Provide all identified Presentation Gaps (up to 5-6)
+      Include both technical and soft skill optimizations
     
     **FOCUS**: Provide specific resume rewriting suggestions ONLY for skills that:
     - Were in the {missing_keywords} list AND
@@ -422,39 +462,31 @@ prompts:
     <example_poor_match_35_percent>
     Context:
     - Similarity: 35%
-    - Missing Keywords: ["Python", "Data Scientist", "Machine Learning", "TensorFlow", "SQL", "Statistics", "Technical Leadership", "Self-Starter", "Designer"]
+    - Missing Keywords: ["Figma", "Visual Design", "Interaction Design", "Mobile Product Design", "Prototyping", "User Research", "Self-Starter", "Growth Mindset", "Designer"]
     - Resume highlights: "Product Manager", "Business Analysis", "Excel", "Stakeholder Management", "Team coordination", "Created wireframes"
     
-    Classification thinking:
-    - "Python" → No programming experience → Skill Gap (technical)
-    - "Data Scientist" → Career role change needed → Skill Gap (role/domain)
-    - "Machine Learning" → No ML background → Skill Gap (technical)
-    - "TensorFlow" → No framework experience → Skill Gap (technical)
-    - "SQL" → Possibly used but not mentioned → Could be Presentation Gap
-    - "Statistics" → Excel implies some stats → Presentation Gap
-    - "Technical Leadership" → No technical background → Skill Gap (soft)
-    - "Self-Starter" → PM role shows initiative → Presentation Gap (soft)
-    - "Designer" → Has wireframes but not design role → Presentation Gap (role)
+    Classification thinking (with new soft skill rule):
+    - "Self-Starter" → Soft skill, everyone has examples → Presentation Gap
+    - "Growth Mindset" → Soft skill, can demonstrate through learning → Presentation Gap
+    - "User Research" → PM likely did user interviews → Presentation Gap
+    - "Figma" → No tool experience → Skill Gap (technical tool)
+    - "Prototyping" → No prototyping techniques → Skill Gap (technical)
+    - "Visual Design" → Design discipline, no experience → Skill Gap (domain)
+    - "Interaction Design" → Design discipline, no experience → Skill Gap (domain)
+    - "Mobile Product Design" → Role transition needed → Skill Gap (role)
+    - "Designer" → Career change from PM → Skill Gap (role)
     
-    KEY GAPS output:
-    🔧 <b>Python</b>: Programming fundamentals needed from scratch. Plan 6-9 months for job-ready Python skills.
-    🔧 <b>Machine Learning</b>: Requires strong math and programming foundation. Budget 12+ months after Python proficiency.
-    🔧 <b>TensorFlow</b>: Deep learning framework requiring Python and ML knowledge first. Additional 3-4 months after ML foundation.
-    💼 <b>Data Scientist</b>: This is a career transition from Product Manager. Building credibility as a Data Scientist requires 18-24 months of technical skill development plus portfolio building.
-    💼 <b>Technical Leadership</b>: Leading technical teams requires building technical credibility first. This develops naturally as you gain technical expertise over 1-2 years.
+    KEY GAPS output (consolidated to 5):
+    🔧 <b>Design Tools (Figma & Prototyping)</b>: No experience with modern design tools or prototyping methods. With focused learning, expect 3-4 months to reach professional competency.
+    💼 <b>UI/UX Design Fundamentals</b>: Lacks comprehensive understanding of visual design, interaction patterns, and mobile design principles. Plan 6-8 months of structured learning and portfolio development.
+    💼 <b>Designer Role Transition</b>: Shifting from Product Manager to Designer requires building design identity and portfolio. Expect 12-18 months to establish credibility through real projects.
     
-    QUICK IMPROVEMENTS output:
-    🔧 <b>Statistical Analysis</b>: Highlight any Excel modeling as "Statistical Analysis with Excel including regression, forecasting, and hypothesis testing" to show quantitative foundation.
-    🔧 <b>SQL Experience</b>: If you've queried databases, add "SQL data extraction and analysis" to your skills - many PMs use SQL but don't list it.
-    💼 <b>Self-Starter Initiative</b>: Transform "Product Manager" to "Self-driven Product Manager who independently launched 3 features from concept to deployment" to showcase initiative.
-    💼 <b>Designer Perspective</b>: Position as "Product Manager with UX sensibility" and highlight "Created wireframes that reduced user friction by 25%" to bridge toward design thinking.
+    QUICK IMPROVEMENTS output (similarity < 40%):
+    Given the significant skill gap (similarity < 40%), this role requires substantial skill development rather than resume optimization. Focus on the learning priorities outlined in the Key Gaps section above. Resume wording improvements would have minimal impact at this stage of career transition.
     
     SKILL DEVELOPMENT PRIORITIES output:
-    SKILL_1::Python Programming::Tech::Master Python syntax, data structures, and programming fundamentals for data science applications
-    SKILL_2::SQL Database Skills::Tech::Learn complex queries, joins, and database optimization for data analysis
-    SKILL_3::Statistics and Probability::Tech::Build mathematical foundation for data science including distributions, hypothesis testing, and regression
-    SKILL_4::Data Science Fundamentals::Tech::Understand data cleaning, exploration, visualization, and basic modeling techniques
-    SKILL_5::Machine Learning Basics::Tech::Learn supervised and unsupervised learning algorithms with scikit-learn
+    SKILL_1::Design Tools Mastery::Tech::Master Figma for UI design and prototyping tools for mobile app creation
+    SKILL_2::Prototyping Methods::Tech::Learn interactive prototyping techniques for mobile experiences
     </example_poor_match_35_percent>
 
     # VALIDATION CHECKLIST
