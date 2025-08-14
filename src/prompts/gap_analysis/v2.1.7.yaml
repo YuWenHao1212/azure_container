@@ -109,44 +109,56 @@ prompts:
     <internal_gap_classification>
     IMPORTANT: Use this decision tree internally. DO NOT output this reasoning process.
     
-    For each Missing Keyword, follow this decision tree:
+    For each Missing Keyword, follow this enhanced decision tree:
     
     FIRST CHECK - Is this a Soft Skill/Personal Attribute?
     (Self-Starter, Growth Mindset, Leadership, Communication, etc.)
     ├─ YES → Almost always Presentation Gap (→ Quick Improvements)
     │   └─ Reason: Everyone has experiences that demonstrate these
-    └─ NO → Continue to standard decision tree
+    └─ NO → Continue to Evidence Level Assessment
     
-    Standard Decision Tree (for technical/hard skills):
-    Question 1: Does resume show related experience?
-    ├─ YES → Question 2: Is it just terminology difference?
-    │   ├─ YES → Presentation Gap (→ Quick Improvements)
-    │   └─ NO → Question 3: Can it be inferred from other work?
-    │       ├─ YES → Presentation Gap (→ Quick Improvements)
-    │       └─ NO → Skill Gap but with foundation (→ Key Gaps)
-    └─ NO → Question 4: Any transferable skills?
-        ├─ YES → Skill Gap with some base (→ Key Gaps)
-        └─ NO → Skill Gap from scratch (→ Key Gaps)
+    EVIDENCE LEVEL ASSESSMENT (for all non-soft skills):
+    Evaluate the strength of evidence in resume:
+    
+    Level 0: NO EVIDENCE
+    └─ Absolutely no trace → Skill Gap from scratch (→ Key Gaps)
+    
+    Level 1: WEAK/LIMITED EVIDENCE  
+    └─ Vague hints, limited traces → Presentation Gap (needs highlighting)
+    └─ Example: Has data work but "Computer Science" not mentioned
+    
+    Level 2: IMPLICIT EVIDENCE
+    └─ Can be inferred but not stated → Presentation Gap (needs explicit mention)
+    └─ Example: Built APIs implies programming knowledge
+    
+    Level 3: PARTIAL EVIDENCE
+    └─ Some foundation but incomplete → Skill Gap with foundation (→ Key Gaps)
+    └─ Example: Basic Excel but role needs advanced modeling
+    
+    Level 4: STRONG EVIDENCE
+    └─ Clearly present → Not a gap (exclude from both sections)
+    
+    CRITICAL: "Limited evidence" usually means Presentation Gap, not Skill Gap!
     
     After classification, output ONLY the formatted gaps with appropriate markers.
     
     SKILL CLASSIFICATION GUIDE:
     
-    🔧 Technical/Hard Skills (learnable through courses):
-    - Specific tools and software (Figma, Photoshop, Git, Docker, Sketch, Adobe XD)
-    - Programming languages and frameworks (Python, React, Node.js)
-    - Concrete methodologies (Agile, Scrum, Test-Driven Development)
-    - Quantifiable techniques (A/B Testing, SQL queries, API design)
-    - Technical processes (CI/CD, Database optimization)
-    - Design techniques (Wireframing, Prototyping methods, Component libraries)
+    🔧 Technical/Hard Skills (specific tools and techniques):
+    - Concrete tools/software: SQL, Excel, Figma, Git, Docker, Tableau
+    - Programming languages: Python, JavaScript, Java, C++
+    - Specific frameworks/libraries: React, Django, TensorFlow
+    - Quantifiable techniques: A/B Testing methods, Statistical analysis
+    - Technical processes: CI/CD pipelines, Database queries
+    - EXCLUDE: Broad fields like "Computer Science", "Marketing", "Data Science"
     
-    💼 Non-Technical Skills (developed through practice/experience):
-    - Professional roles/identities (Designer, Developer, Manager)
-    - Design disciplines (Visual Design, Interaction Design, UX Design, Mobile Design)
-    - Personal attributes (Self-Starter, Creative, Detail-oriented)
-    - Interpersonal skills (Leadership, Communication, Teamwork)
-    - Mindsets and approaches (Growth Mindset, Critical Thinking)
-    - Domain expertise (Industry Knowledge, Business Acumen, Design Strategy)
+    💼 Non-Technical Skills (fields, domains, and soft skills):
+    - Academic disciplines: Computer Science, Marketing, Finance, Psychology
+    - Professional domains: Product Management, Data Science, UX Design
+    - Industry knowledge: Consumer Electronics, Healthcare, E-commerce
+    - Business capabilities: Product Planning, Market Analysis, Strategy
+    - Personal attributes: Self-Starter, Leadership, Communication
+    - INCLUDE: Any term with "Knowledge", "Science", "Management", "Strategy"
     
     CRITICAL DISTINCTIONS:
     - "Figma" is a tool (🔧), "Visual Design" is a discipline (💼)
@@ -182,17 +194,27 @@ prompts:
     <format_requirements>
     FORMAT for each skill gap based on type:
     
-    For Technical/Hard Skills (tools, languages, frameworks, methodologies):
-    🔧 <b>{Skill Name}</b>: {Description of what's missing} + {Realistic learning timeline}
+    For Technical/Hard Skills (tools, languages, frameworks):
+    🔧 <b>{Skill Name}</b>: {Clear statement of absence} + {Realistic timeline}
     
-    For Soft Skills/Domain Knowledge (leadership, communication, industry knowledge):
-    💼 <b>{Skill Name}</b>: {Description of what's missing} + {Development approach/timeline}
+    For Non-Technical Skills (domains, fields, soft skills):
+    💼 <b>{Skill Name}</b>: {Clear statement of need} + {Development approach}
     
-    CRITICAL: Differentiate skill types using appropriate emoji markers
-    CRITICAL: Only include skills that truly need learning/development
-    CRITICAL: Be honest about timelines (months for technical skills, ongoing for soft skills)
-    CRITICAL: Use varied sentence patterns
-    CRITICAL: List technical skills first, then soft skills/domain knowledge
+    OUTPUT LANGUAGE CLARITY RULES:
+    AVOID ambiguous phrases:
+    ❌ "limited evidence of..."
+    ❌ "not explicitly shown..."
+    ❌ "could be strengthened..."
+    ❌ "While you have X, there is limited Y..."
+    
+    USE clear, direct language:
+    ✅ "No X experience found. Plan Y months..."
+    ✅ "Lacks X expertise. Requires Y months..."
+    ✅ "X foundation exists but needs deepening. Budget Y months..."
+    
+    CRITICAL: Be direct and concise - state what's missing without lengthy preambles
+    CRITICAL: Maximum 5-6 gaps total regardless of how many missing keywords
+    CRITICAL: Vary time estimates (avoid all being "2-3 months")
     </format_requirements>
     
     <timeline_guidelines>
@@ -387,68 +409,65 @@ prompts:
     <example_strong_match_85_percent>
     Context: 
     - Similarity: 85%
-    - Missing Keywords: ["Kubernetes", "GraphQL", "Microservices", "ML", "Python", "Team Leadership", "Agile", "Designer", "Figma"]
-    - Resume highlights: "5 years building Django REST APIs", "Docker containerization", "Deployed services to AWS", "Led projects", "Created UI mockups"
+    - Missing Keywords: ["Computer Science", "Product Planning", "Marketing", "SQL", "Python", "Team Leadership", "Self-Starter", "Growth Mindset", "Market Analysis"]
+    - Resume highlights: "5 years data analysis", "Django development", "Product launches", "Led teams", "Built dashboards"
     
-    Classification thinking:
-    - "Python" → Django implies Python → Presentation Gap (technical)
-    - "Kubernetes" → Has Docker but not K8s → Skill Gap (technical)
-    - "GraphQL" → Only REST experience → Skill Gap (technical)
-    - "Microservices" → Has "deployed services" → Presentation Gap (technical)
-    - "ML" → No evidence → Skill Gap (technical)
-    - "Team Leadership" → Has "Led projects" → Presentation Gap (soft)
-    - "Agile" → No evidence → Skill Gap (methodology - technical)
-    - "Designer" → Has "Created UI mockups" but not design role → Presentation Gap (role)
-    - "Figma" → No evidence of this tool → Skill Gap (technical tool)
+    Classification using Evidence Levels:
+    - "Computer Science" → Has programming but not mentioned → Level 1 (Weak) → Presentation Gap
+    - "Python" → Django implies Python → Level 2 (Implicit) → Presentation Gap
+    - "SQL" → Data analysis likely uses SQL → Level 2 (Implicit) → Presentation Gap
+    - "Team Leadership" → "Led teams" present → Level 2 (Implicit) → Presentation Gap
+    - "Self-Starter" → Soft skill → Presentation Gap
+    - "Growth Mindset" → Soft skill → Presentation Gap
+    - "Product Planning" → Product launches but no planning details → Level 3 (Partial) → Skill Gap
+    - "Marketing" → Launches but no marketing strategy → Level 0 (None) → Skill Gap
+    - "Market Analysis" → Basic analysis but not market-specific → Level 3 (Partial) → Skill Gap
     
-    KEY GAPS output:
-    🔧 <b>Kubernetes</b>: Container orchestration expertise is missing. With your Docker foundation, expect 3-4 months to reach production proficiency.
-    🔧 <b>GraphQL</b>: This API paradigm differs from REST. Budget 4-6 weeks to become proficient given your API experience.
-    🔧 <b>Machine Learning</b>: No ML experience evident. Consider 6-9 months for practical ML skills development.
-    🔧 <b>Figma</b>: No experience with this specific design tool. With your UI mockup background, 4-6 weeks to gain proficiency.
-    🔧 <b>Agile/Scrum</b>: Formal Agile methodology not evident. Requires 2-3 months to master ceremonies and artifacts.
+    KEY GAPS output (only 3 based on classification):
+    💼 <b>Marketing</b>: No marketing strategy expertise found. Requires 4-6 months to develop competency.
+    💼 <b>Product Planning</b>: Partial experience exists but needs formal framework knowledge. Plan 2 months.
+    💼 <b>Market Analysis</b>: Basic analysis skills present but market-specific techniques lacking. Budget 3 months.
     
     QUICK IMPROVEMENTS output:
-    🔧 <b>Python Visibility</b>: Add "Python" prominently to skills section and change "Django developer" to "Python/Django developer" throughout.
-    🔧 <b>Microservices Architecture</b>: Reframe "deployed services to AWS" as "deployed microservices architecture on AWS" to align with JD terminology.
-    💼 <b>Team Leadership</b>: Transform "Led projects" to "Led cross-functional teams of 5-8 engineers, delivering 3 major features on schedule" to showcase leadership impact.
-    💼 <b>Designer Identity</b>: Position yourself as "Full-Stack Developer with Design Thinking" and highlight "Created intuitive UI mockups that improved user engagement by 30%" to bridge the designer gap.
+    💼 <b>Computer Science Background</b>: Add your CS education or mention "Strong CS fundamentals including algorithms and data structures" based on your programming experience.
+    🔧 <b>Python Visibility</b>: Django implies Python - add "Python" prominently to skills section and retitle as "Python/Django Developer".
+    🔧 <b>SQL Skills</b>: Your data analysis work likely uses SQL - explicitly add "SQL querying and optimization" to skills.
+    💼 <b>Team Leadership</b>: Expand "Led teams" to "Led cross-functional teams of 5+ members, driving project delivery and mentoring junior developers".
+    💼 <b>Self-Starter & Growth Mindset</b>: Add a bullet showing initiative: "Self-directed learning of new technologies, independently mastering Django in 2 months to meet project needs".
     
     SKILL DEVELOPMENT PRIORITIES output:
-    SKILL_1::Kubernetes Container Orchestration::Tech::Master K8s for production-ready container deployment and scaling
-    SKILL_2::GraphQL API Development::Tech::Learn GraphQL schema design and resolver implementation for modern API architecture
-    SKILL_3::Machine Learning Fundamentals::Tech::Build foundation in ML algorithms and practical implementation with Python libraries
+    (Note: No technical skills in Key Gaps - all were domains/fields marked with 💼. Marketing, Product Planning, and Market Analysis are professional competencies that develop through experience rather than technical courses.)
     </example_strong_match_85_percent>
 
     <example_moderate_match_65_percent>
     Context:
     - Similarity: 65%
-    - Missing Keywords: ["React", "Node.js", "MongoDB", "AWS", "TypeScript", "Docker", "Product Management", "Customer Focus"]
-    - Resume highlights: "Frontend development with Vue.js", "PHP backend", "MySQL databases", "Worked with product team"
+    - Missing Keywords: ["React", "Node.js", "MongoDB", "AWS", "TypeScript", "Docker", "Product Management", "Customer Focus", "Self-Starter"]
+    - Resume highlights: "Frontend development with Vue.js", "PHP backend", "MySQL databases", "Worked with product team", "Led initiative to refactor codebase"
     
-    Classification thinking:
-    - "React" → Has Vue but not React → Skill Gap (technical)
-    - "Node.js" → PHP backend only → Skill Gap (technical)
-    - "MongoDB" → SQL only → Skill Gap (technical)
-    - "AWS" → No cloud mentioned → Skill Gap (technical)
-    - "TypeScript" → No evidence → Skill Gap (technical)
-    - "Docker" → No containerization → Skill Gap (technical)
-    - "Product Management" → Has "Worked with product team" → Presentation Gap (soft)
-    - "Customer Focus" → No evidence → Skill Gap (soft)
+    Classification using Evidence Levels:
+    - "React" → Vue.js present but not React → Level 0 (None) → Skill Gap
+    - "Node.js" → PHP backend, no JS backend → Level 0 (None) → Skill Gap
+    - "MongoDB" → MySQL only, no NoSQL → Level 0 (None) → Skill Gap
+    - "AWS" → No cloud platform mentioned → Level 0 (None) → Skill Gap
+    - "TypeScript" → JavaScript but no TS → Level 0 (None) → Skill Gap
+    - "Docker" → No containerization evidence → Level 0 (None) → Skill Gap
+    - "Product Management" → "Worked with product team" → Level 1 (Weak) → Presentation Gap
+    - "Customer Focus" → No direct evidence → Level 0 (None) → Skill Gap (soft skill)
+    - "Self-Starter" → "Led initiative" shows this → Level 2 (Implicit) → Presentation Gap
     
-    KEY GAPS output:
-    🔧 <b>React</b>: While you know Vue.js, React requires different patterns. Plan 2-3 months for proficiency.
-    🔧 <b>Node.js</b>: Backend JavaScript differs from PHP. Expect 3-4 months to become job-ready.
-    🔧 <b>MongoDB</b>: NoSQL paradigm differs from MySQL. Budget 6-8 weeks for competency.
-    🔧 <b>AWS</b>: Cloud platform expertise needed. Plan 3-4 months for AWS fundamentals and services.
-    🔧 <b>TypeScript</b>: Adds typing to JavaScript. With your Vue experience, expect 4-6 weeks to adopt.
-    🔧 <b>Docker</b>: Containerization is essential. Plan 6-8 weeks for Docker proficiency.
-    💼 <b>Customer Focus</b>: Direct customer interaction experience not evident. Developing customer-centric mindset requires ongoing practice through user research and feedback loops.
+    KEY GAPS output (consolidated to 5-6):
+    🔧 <b>React</b>: No React experience found. With Vue.js foundation, plan 2-3 months for proficiency.
+    🔧 <b>Node.js</b>: Lacks server-side JavaScript expertise. Budget 3-4 months transitioning from PHP.
+    🔧 <b>AWS Cloud Platform</b>: No cloud deployment experience evident. Requires 3-4 months for AWS fundamentals.
+    🔧 <b>MongoDB & NoSQL</b>: Currently SQL-only. NoSQL paradigm needs 2-3 months to master.
+    🔧 <b>Docker & TypeScript</b>: Missing containerization and type safety. Combined learning path: 3 months.
+    💼 <b>Customer-Centric Approach</b>: No evidence of direct customer engagement. Develop through user research practices over 3-6 months.
     
     QUICK IMPROVEMENTS output:
-    🔧 <b>JavaScript Emphasis</b>: Highlight your Vue.js work as "Modern JavaScript (ES6+)" to show JS proficiency.
-    🔧 <b>Database Skills</b>: Mention any JSON handling in MySQL as "Document-style data modeling" to show adaptability.
-    💼 <b>Product Collaboration</b>: Expand "Worked with product team" to "Collaborated with Product Managers to translate business requirements into technical solutions, participating in sprint planning and feature prioritization".
+    💼 <b>Product Management Visibility</b>: Transform "Worked with product team" to "Collaborated with Product Managers on feature prioritization, user story refinement, and sprint planning - contributing to 3 successful product launches".
+    💼 <b>Self-Starter Evidence</b>: Highlight "Led initiative to refactor codebase" more prominently: "Self-initiated and led complete codebase refactoring, reducing technical debt by 40% without management request".
+    🔧 <b>JavaScript Proficiency</b>: Add "Modern JavaScript (ES6+)" to skills since Vue.js demonstrates strong JS foundation.
     
     SKILL DEVELOPMENT PRIORITIES output:
     SKILL_1::React Framework::Tech::Master React hooks, state management, and component lifecycle for modern frontend development
@@ -456,37 +475,43 @@ prompts:
     SKILL_3::AWS Cloud Services::Tech::Gain proficiency in EC2, S3, Lambda, and core AWS services for cloud deployment
     SKILL_4::MongoDB NoSQL Database::Tech::Understand document databases, aggregation pipelines, and NoSQL data modeling
     SKILL_5::Docker Containerization::Tech::Learn container creation, orchestration basics, and deployment workflows
-    SKILL_6::TypeScript::Tech::Add type safety to JavaScript projects with interfaces, generics, and advanced types
     </example_moderate_match_65_percent>
 
     <example_poor_match_35_percent>
     Context:
     - Similarity: 35%
-    - Missing Keywords: ["Figma", "Visual Design", "Interaction Design", "Mobile Product Design", "Prototyping", "User Research", "Self-Starter", "Growth Mindset", "Designer"]
-    - Resume highlights: "Product Manager", "Business Analysis", "Excel", "Stakeholder Management", "Team coordination", "Created wireframes"
+    - Missing Keywords: ["Figma", "Visual Design", "Interaction Design", "Mobile Product Design", "Prototyping", "User Research", "Self-Starter", "Growth Mindset", "Designer", "Design Systems"]
+    - Resume highlights: "Product Manager", "Business Analysis", "Excel", "Stakeholder Management", "Team coordination", "Created wireframes", "User interviews for requirements"
     
-    Classification thinking (with new soft skill rule):
-    - "Self-Starter" → Soft skill, everyone has examples → Presentation Gap
-    - "Growth Mindset" → Soft skill, can demonstrate through learning → Presentation Gap
-    - "User Research" → PM likely did user interviews → Presentation Gap
-    - "Figma" → No tool experience → Skill Gap (technical tool)
-    - "Prototyping" → No prototyping techniques → Skill Gap (technical)
-    - "Visual Design" → Design discipline, no experience → Skill Gap (domain)
-    - "Interaction Design" → Design discipline, no experience → Skill Gap (domain)
-    - "Mobile Product Design" → Role transition needed → Skill Gap (role)
-    - "Designer" → Career change from PM → Skill Gap (role)
+    Classification using Evidence Levels:
+    - "Self-Starter" → PM role implies this → Level 2 (Implicit) → Presentation Gap
+    - "Growth Mindset" → Career in tech shows this → Level 1 (Weak) → Presentation Gap
+    - "User Research" → "User interviews" present → Level 3 (Partial) → Presentation Gap (has foundation but different context)
+    - "Figma" → No design tool experience → Level 0 (None) → Skill Gap
+    - "Prototyping" → "Wireframes" but not interactive → Level 1 (Weak) → Skill Gap (needs significant development)
+    - "Visual Design" → No design training → Level 0 (None) → Skill Gap
+    - "Interaction Design" → No UX experience → Level 0 (None) → Skill Gap
+    - "Mobile Product Design" → PM but not design role → Level 0 (None) → Skill Gap
+    - "Designer" → Career change needed → Level 0 (None) → Skill Gap
+    - "Design Systems" → No evidence → Level 0 (None) → Skill Gap
     
-    KEY GAPS output (consolidated to 5):
-    🔧 <b>Design Tools (Figma & Prototyping)</b>: No experience with modern design tools or prototyping methods. With focused learning, expect 3-4 months to reach professional competency.
-    💼 <b>UI/UX Design Fundamentals</b>: Lacks comprehensive understanding of visual design, interaction patterns, and mobile design principles. Plan 6-8 months of structured learning and portfolio development.
-    💼 <b>Designer Role Transition</b>: Shifting from Product Manager to Designer requires building design identity and portfolio. Expect 12-18 months to establish credibility through real projects.
+    KEY GAPS output (consolidated to 5 maximum for clarity):
+    🔧 <b>Figma & Design Tools</b>: No design software experience. Requires 3-4 months intensive training for professional competency.
+    🔧 <b>Prototyping Techniques</b>: Limited to static wireframes. Interactive prototyping needs 2-3 months to develop.
+    💼 <b>Visual & Interaction Design</b>: Lacks formal design training. Budget 6-9 months for fundamentals and portfolio creation.
+    💼 <b>Mobile Product Design Expertise</b>: No mobile-specific design experience. Plan 4-6 months focused on iOS/Android patterns.
+    💼 <b>Designer Identity</b>: Career pivot from PM requires 12-18 months building credible design portfolio and reputation.
     
-    QUICK IMPROVEMENTS output (similarity < 40%):
+    QUICK IMPROVEMENTS output (applying similarity < 40% rule):
     Given the significant skill gap (similarity < 40%), this role requires substantial skill development rather than resume optimization. Focus on the learning priorities outlined in the Key Gaps section above. Resume wording improvements would have minimal impact at this stage of career transition.
     
+    OVERALL ASSESSMENT output:
+    [V2.1.7-100W]
+    This represents a career change from Product Management to Design, though your user research and wireframing provide minimal foundation. To transition into this role, you'll need comprehensive design education starting with visual fundamentals, then progressing through interaction design and tool mastery. Plan 12-18 months of dedicated learning including formal courses, personal projects, and portfolio development. Consider transitional roles like UX Researcher or Product Designer that leverage your PM background while you build core design skills through bootcamps or certification programs.
+    
     SKILL DEVELOPMENT PRIORITIES output:
-    SKILL_1::Design Tools Mastery::Tech::Master Figma for UI design and prototyping tools for mobile app creation
-    SKILL_2::Prototyping Methods::Tech::Learn interactive prototyping techniques for mobile experiences
+    SKILL_1::Figma Design Tool::Tech::Master interface design, components, and collaborative features for professional UI work
+    SKILL_2::Interactive Prototyping::Tech::Learn Figma prototyping, Principle, or ProtoPie for creating realistic app interactions
     </example_poor_match_35_percent>
 
     # VALIDATION CHECKLIST
