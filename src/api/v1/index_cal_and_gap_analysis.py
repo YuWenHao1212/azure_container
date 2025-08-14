@@ -101,7 +101,7 @@ class SkillQuery(BaseModel):
     """Skill development query model."""
     skill_name: str = Field(default="", description="Skill name")
     skill_category: str = Field(
-        default="", description="Category: TECHNICAL or NON_TECHNICAL"
+        default="", description="Category: SKILL (single course, 1-3 months) or FIELD (specialization/certification, 6+ months)"
     )
     description: str = Field(default="", description="Skill description")
 

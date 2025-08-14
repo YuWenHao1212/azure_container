@@ -280,10 +280,13 @@ X-API-Key: [YOUR_API_KEY]
       "KeyGaps": "<ul><li>[Skill Gap] Container orchestration (Docker/Kubernetes) - No orchestration experience found</li><li>[Presentation Gap] Cloud deployment - Has AWS experience but not explicitly mentioned</li></ul>",
       "QuickImprovements": "<ul><li>Add 'AWS' explicitly to skills section</li><li>Complete Docker fundamentals course</li></ul>",
       "OverallAssessment": "<p>Good foundation with 75% match. Focus on DevOps skills to reach 90%+.</p>",
+      // Skill categories explanation (v2.1.8+):
+      // - SKILL: Quick-learn skills via single course (1-3 months)
+      // - FIELD: Requires specialization/certification (6+ months)
       "SkillSearchQueries": [
         {
           "skill_name": "Docker",
-          "skill_category": "TECHNICAL",
+          "skill_category": "SKILL",
           "description": "Container technology"
         }
       ]

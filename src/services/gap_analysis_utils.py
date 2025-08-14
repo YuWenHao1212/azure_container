@@ -63,10 +63,22 @@ def parse_skill_development_priorities(skill_content: str) -> list[dict[str, str
             if not skill_name.strip():
                 continue
 
-            # Validate category
+            # Validate and map category to user-friendly names
             category = category.upper()
-            if category not in ['TECHNICAL', 'NON_TECHNICAL']:
-                category = 'TECHNICAL'  # Default
+
+            # Map v2.1.8 categories to skill/field classification
+            if category == 'TECH':
+                category = 'SKILL'  # Single course learnable (1-3 months)
+            elif category == 'DOMAIN':
+                category = 'FIELD'  # Requires specialization/certification (6+ months)
+            # Keep backward compatibility with old format
+            elif category == 'TECHNICAL':
+                category = 'SKILL'
+            elif category == 'NON_TECHNICAL':
+                category = 'FIELD'
+            # Validate final category
+            elif category not in ['SKILL', 'FIELD']:
+                category = 'SKILL'  # Default to skill
 
             skills.append({
                 "skill_name": skill_name.strip(),
