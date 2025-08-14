@@ -121,16 +121,36 @@ prompts:
         ├─ YES → Skill Gap with some base (→ Key Gaps)
         └─ NO → Skill Gap from scratch (→ Key Gaps)
     
-    After classification, output ONLY the formatted gaps with 🚨 markers.
+    After classification, output ONLY the formatted gaps with appropriate markers.
+    
+    SKILL CLASSIFICATION GUIDE:
+    
+    🔧 Technical/Hard Skills (learnable through courses):
+    - Specific tools and software (Figma, Photoshop, Git, Docker)
+    - Programming languages and frameworks (Python, React, Node.js)
+    - Concrete methodologies (Agile, Scrum, Test-Driven Development)
+    - Quantifiable techniques (A/B Testing, SQL queries, API design)
+    - Technical processes (CI/CD, Database optimization, Prototyping)
+    
+    💼 Soft Skills/Domain Knowledge/Roles (developed through practice):
+    - Professional roles/identities (Designer, Developer, Manager)
+    - Personal attributes (Self-Starter, Creative, Detail-oriented)
+    - Interpersonal skills (Leadership, Communication, Teamwork)
+    - Mindsets and approaches (Growth Mindset, Critical Thinking)
+    - Domain expertise (Industry Knowledge, Business Acumen)
+    - Design sensibilities (Visual Design sense, UX intuition)
+    
+    CRITICAL: "Designer" is a role (💼), while "Figma" is a tool (🔧)
+    CRITICAL: "UX Design" as a discipline is domain knowledge (💼), while "Wireframing" is a technique (🔧)
     
     INTERNAL TRACKING (for your use only - do not output):
     Create four lists from your Phase 2 classification:
-    - Tech/Hard Skill Gaps: [technical skills needing learning → Key Gaps with 🔧]
-    - Soft/Domain Skill Gaps: [soft skills/domain knowledge needing development → Key Gaps with 💼]
-    - Tech/Hard Presentation Gaps: [technical skills needing visibility → Quick Improvements with 🔧]
-    - Soft Presentation Gaps: [soft skills needing better expression → Quick Improvements with 💬]
+    - Technical Skill Gaps: [technical skills needing learning → Key Gaps with 🔧]
+    - Non-Technical Skill Gaps: [soft skills/roles/domain knowledge needing development → Key Gaps with 💼]
+    - Technical Presentation Gaps: [technical skills needing visibility → Quick Improvements with 🔧]
+    - Non-Technical Presentation Gaps: [soft skills/roles needing better expression → Quick Improvements with 💼]
     
-    Use appropriate emoji markers based on skill type in each section.
+    Use only 🔧 for technical and 💼 for non-technical in both sections.
     </internal_gap_classification>
     
     <format_requirements>
@@ -206,22 +226,41 @@ prompts:
     
     FORMAT: 🔧 <b>[Short Action Title]</b>: [Detailed explanation in regular text]
     
+    STRATEGY FOR TECHNICAL PRESENTATION GAPS:
+    - If you know the tool: Add it explicitly to skills section
+    - If you've used similar tools: Mention "or equivalent" (e.g., "Figma or similar design tools")
+    - If you have the underlying skill: Highlight the capability (e.g., "Prototyping" instead of specific tool)
+    
     Example (assuming "Docker" is in {missing_keywords} and classified as Presentation Gap):
     🔧 <b>Add "Docker" to Skills Section</b>: Your containerization work mentioned in project 2 proves Docker expertise, but the keyword is missing. Add "Docker: Container deployment and orchestration" to your skills section.
     
     WRONG example (Python NOT in {missing_keywords}):
     ❌ 🔧 <b>Add "Python" to Skills Section</b>: [This is WRONG - never suggest keywords not in missing_keywords list]
     
-    SOFT SKILLS (communication, leadership, mindset, collaboration):
-    Use 💬 emoji - these need story-based evidence, not just keywords
+    NON-TECHNICAL SKILLS (soft skills, roles, domain knowledge):
+    Use 💼 emoji for all non-technical presentation gaps
     
-    FORMAT: 💬 <b>[Short Action Title]</b>: [Detailed explanation in regular text]
+    FORMAT: 💼 <b>[Title]</b>: [Improvement suggestion]
+    
+    STRATEGY FOR NON-TECHNICAL PRESENTATION GAPS:
+    For Soft Skills:
+    - Transform actions into stories: "managed team" → "Led 5-person team through crisis, maintaining morale"
+    - Quantify impact: "improved process" → "Streamlined workflow, saving 10 hours weekly"
+    - Show growth: "learned quickly" → "Self-taught React in 2 months to meet project needs"
+    
+    For Roles/Domain Knowledge:
+    - Frame existing work through the lens: "Developer with design sensibility"
+    - Bridge identities: "Engineer transitioning to Product Design"
+    - Highlight relevant aspects: "Technical background brings unique perspective to UX"
     
     Example (assuming "Growth Mindset" is in {missing_keywords} and classified as Presentation Gap):
-    💬 <b>Demonstrate "Growth Mindset" Through Learning Stories</b>: Transform "led technical projects" (role 1, bullet 3) to "Self-taught React Native in 2 months to expand team capabilities, delivering company's first mobile app ahead of schedule". This SHOWS continuous learning rather than claiming it.
+    💼 <b>Demonstrate "Growth Mindset" Through Learning Stories</b>: Transform "led technical projects" (role 1, bullet 3) to "Self-taught React Native in 2 months to expand team capabilities, delivering company's first mobile app ahead of schedule". This SHOWS continuous learning rather than claiming it.
+    
+    Example (assuming "Designer" is in {missing_keywords} and classified as Presentation Gap):
+    💼 <b>Frame Design Identity</b>: Position yourself as "Full-Stack Developer with Design Thinking" and highlight "Created intuitive UI mockups that improved user engagement by 30%" to bridge the designer gap.
     
     WRONG example (Communication NOT in {missing_keywords}):
-    ❌ 💬 <b>Show "Communication Skills"...</b>: [This is WRONG - never suggest keywords not in missing_keywords list]
+    ❌ 💼 <b>Show "Communication Skills"...</b>: [This is WRONG - never suggest keywords not in missing_keywords list]
     
     WHEN SOFT SKILL LACKS EVIDENCE:
     Use ⚠️ emoji - be honest about what's missing
@@ -308,8 +347,8 @@ prompts:
     <example_strong_match_85_percent>
     Context: 
     - Similarity: 85%
-    - Missing Keywords: ["Kubernetes", "GraphQL", "Microservices", "ML", "Python", "Team Leadership", "Agile"]
-    - Resume highlights: "5 years building Django REST APIs", "Docker containerization", "Deployed services to AWS", "Led projects"
+    - Missing Keywords: ["Kubernetes", "GraphQL", "Microservices", "ML", "Python", "Team Leadership", "Agile", "Designer", "Figma"]
+    - Resume highlights: "5 years building Django REST APIs", "Docker containerization", "Deployed services to AWS", "Led projects", "Created UI mockups"
     
     Classification thinking:
     - "Python" → Django implies Python → Presentation Gap (technical)
@@ -318,18 +357,22 @@ prompts:
     - "Microservices" → Has "deployed services" → Presentation Gap (technical)
     - "ML" → No evidence → Skill Gap (technical)
     - "Team Leadership" → Has "Led projects" → Presentation Gap (soft)
-    - "Agile" → No evidence → Skill Gap (soft/methodology)
+    - "Agile" → No evidence → Skill Gap (methodology - technical)
+    - "Designer" → Has "Created UI mockups" but not design role → Presentation Gap (role)
+    - "Figma" → No evidence of this tool → Skill Gap (technical tool)
     
     KEY GAPS output:
     🔧 <b>Kubernetes</b>: Container orchestration expertise is missing. With your Docker foundation, expect 3-4 months to reach production proficiency.
     🔧 <b>GraphQL</b>: This API paradigm differs from REST. Budget 4-6 weeks to become proficient given your API experience.
     🔧 <b>Machine Learning</b>: No ML experience evident. Consider 6-9 months for practical ML skills development.
-    💼 <b>Agile Methodology</b>: Formal Agile/Scrum experience not evident. While you have project experience, structured Agile practices require 2-3 months of hands-on practice.
+    🔧 <b>Figma</b>: No experience with this specific design tool. With your UI mockup background, 4-6 weeks to gain proficiency.
+    🔧 <b>Agile/Scrum</b>: Formal Agile methodology not evident. Requires 2-3 months to master ceremonies and artifacts.
     
     QUICK IMPROVEMENTS output:
     🔧 <b>Python Visibility</b>: Add "Python" prominently to skills section and change "Django developer" to "Python/Django developer" throughout.
     🔧 <b>Microservices Architecture</b>: Reframe "deployed services to AWS" as "deployed microservices architecture on AWS" to align with JD terminology.
-    💬 <b>Team Leadership</b>: Transform "Led projects" to "Led cross-functional teams of 5-8 engineers, delivering 3 major features on schedule" to showcase leadership impact.
+    💼 <b>Team Leadership</b>: Transform "Led projects" to "Led cross-functional teams of 5-8 engineers, delivering 3 major features on schedule" to showcase leadership impact.
+    💼 <b>Designer Identity</b>: Position yourself as "Full-Stack Developer with Design Thinking" and highlight "Created intuitive UI mockups that improved user engagement by 30%" to bridge the designer gap.
     
     SKILL DEVELOPMENT PRIORITIES output:
     SKILL_1::Kubernetes Container Orchestration::Tech::Master K8s for production-ready container deployment and scaling
@@ -365,7 +408,7 @@ prompts:
     QUICK IMPROVEMENTS output:
     🔧 <b>JavaScript Emphasis</b>: Highlight your Vue.js work as "Modern JavaScript (ES6+)" to show JS proficiency.
     🔧 <b>Database Skills</b>: Mention any JSON handling in MySQL as "Document-style data modeling" to show adaptability.
-    💬 <b>Product Collaboration</b>: Expand "Worked with product team" to "Collaborated with Product Managers to translate business requirements into technical solutions, participating in sprint planning and feature prioritization".
+    💼 <b>Product Collaboration</b>: Expand "Worked with product team" to "Collaborated with Product Managers to translate business requirements into technical solutions, participating in sprint planning and feature prioritization".
     
     SKILL DEVELOPMENT PRIORITIES output:
     SKILL_1::React Framework::Tech::Master React hooks, state management, and component lifecycle for modern frontend development
@@ -379,32 +422,32 @@ prompts:
     <example_poor_match_35_percent>
     Context:
     - Similarity: 35%
-    - Missing Keywords: ["Python", "Data Science", "Machine Learning", "TensorFlow", "SQL", "Statistics", "Technical Leadership", "Innovation"]
-    - Resume highlights: "Product Manager", "Business Analysis", "Excel", "Stakeholder Management", "Team coordination"
+    - Missing Keywords: ["Python", "Data Scientist", "Machine Learning", "TensorFlow", "SQL", "Statistics", "Technical Leadership", "Self-Starter", "Designer"]
+    - Resume highlights: "Product Manager", "Business Analysis", "Excel", "Stakeholder Management", "Team coordination", "Created wireframes"
     
     Classification thinking:
     - "Python" → No programming experience → Skill Gap (technical)
-    - "Data Science" → No technical data work → Skill Gap (technical)
+    - "Data Scientist" → Career role change needed → Skill Gap (role/domain)
     - "Machine Learning" → No ML background → Skill Gap (technical)
     - "TensorFlow" → No framework experience → Skill Gap (technical)
     - "SQL" → Possibly used but not mentioned → Could be Presentation Gap
     - "Statistics" → Excel implies some stats → Presentation Gap
     - "Technical Leadership" → No technical background → Skill Gap (soft)
-    - "Innovation" → Product role implies innovation → Presentation Gap (soft)
+    - "Self-Starter" → PM role shows initiative → Presentation Gap (soft)
+    - "Designer" → Has wireframes but not design role → Presentation Gap (role)
     
     KEY GAPS output:
     🔧 <b>Python</b>: Programming fundamentals needed from scratch. Plan 6-9 months for job-ready Python skills.
-    🔧 <b>Data Science</b>: Comprehensive field requiring statistics, programming, and domain knowledge. Expect 12-18 months of structured learning.
     🔧 <b>Machine Learning</b>: Requires strong math and programming foundation. Budget 12+ months after Python proficiency.
     🔧 <b>TensorFlow</b>: Deep learning framework requiring Python and ML knowledge first. Additional 3-4 months after ML foundation.
-    🔧 <b>SQL</b>: Database querying essential for data roles. Plan 2-3 months for solid SQL skills if not already familiar.
+    💼 <b>Data Scientist</b>: This is a career transition from Product Manager. Building credibility as a Data Scientist requires 18-24 months of technical skill development plus portfolio building.
     💼 <b>Technical Leadership</b>: Leading technical teams requires building technical credibility first. This develops naturally as you gain technical expertise over 1-2 years.
     
     QUICK IMPROVEMENTS output:
     🔧 <b>Statistical Analysis</b>: Highlight any Excel modeling as "Statistical Analysis with Excel including regression, forecasting, and hypothesis testing" to show quantitative foundation.
     🔧 <b>SQL Experience</b>: If you've queried databases, add "SQL data extraction and analysis" to your skills - many PMs use SQL but don't list it.
-    💬 <b>Innovation Track Record</b>: Transform "Product Manager" to "Product Manager driving innovation - launched 3 new features increasing user engagement 40%" to showcase innovative thinking.
-    💬 <b>Analytical Approach</b>: Reframe "Business Analysis" as "Data-Driven Business Analysis using metrics and A/B testing" to emphasize analytical mindset.
+    💼 <b>Self-Starter Initiative</b>: Transform "Product Manager" to "Self-driven Product Manager who independently launched 3 features from concept to deployment" to showcase initiative.
+    💼 <b>Designer Perspective</b>: Position as "Product Manager with UX sensibility" and highlight "Created wireframes that reduced user friction by 25%" to bridge toward design thinking.
     
     SKILL DEVELOPMENT PRIORITIES output:
     SKILL_1::Python Programming::Tech::Master Python syntax, data structures, and programming fundamentals for data science applications
@@ -418,10 +461,11 @@ prompts:
     
     Before finalizing output, verify:
     ✓ Key Gaps contains ONLY skills needing learning/development
-    ✓ Key Gaps uses 🔧 for technical skills, 💼 for soft skills/domain knowledge
+    ✓ Key Gaps uses 🔧 for technical skills, 💼 for soft skills/domain knowledge/roles
     ✓ Quick Improvements contains ONLY presentation optimizations
-    ✓ Quick Improvements uses 🔧 for technical, 💬 for soft skill improvements
+    ✓ Quick Improvements uses 🔧 for technical, 💼 for non-technical
     ✓ Skill Development Priorities extracts ONLY 🔧 marked technical skills from Key Gaps
+    ✓ "Designer" and similar role titles use 💼 in both Key Gaps and Quick Improvements
     ✓ No skill appears in both Key Gaps and Quick Improvements sections
     ✓ Strengths count matches similarity score guidelines
     ✓ Overall Assessment references actual findings
