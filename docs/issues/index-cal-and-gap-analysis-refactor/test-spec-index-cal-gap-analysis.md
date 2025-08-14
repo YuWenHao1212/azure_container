@@ -327,7 +327,7 @@ API-GAP-[序號]-[類型]
   - 無資源洩漏
   - 資源池狀態正常
 
-### 2.2 整合測試 (17個)
+### 2.2 整合測試 (31個)
 
 #### API-GAP-001-IT: API 端點基本功能測試
 - **名稱**: POST /api/v1/index-cal-and-gap-analysis 正常流程
@@ -1320,6 +1320,140 @@ P2 (Nice to have): 3/3 (100%)
    - 建議：返回 502 Bad Gateway
    - 原因：明確區分內部錯誤和外部依賴錯誤
 
+## 6. Resume Structure Analysis 測試案例 (V4)
+
+### 6.1 單元測試 (RS-xxx-UT)
+
+#### RS-001-UT: 基本結構分析測試
+- **名稱**: Resume Structure Analyzer 基本功能驗證
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證履歷結構識別的核心功能
+- **測試內容**: 測試識別標準履歷區段（Summary、Skills、Experience、Education等）
+- **判斷標準**: 
+  - 正確識別存在的區段標題
+  - 不存在的區段返回 null
+  - 自訂區段列表正確
+
+#### RS-002-UT: Prompt 模板驗證測試
+- **名稱**: Prompt 配置載入和格式驗證
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 驗證 prompt 模板正確載入和格式化
+- **測試內容**: 測試 prompt 模板結構、佔位符、fallback 機制
+- **判斷標準**: 
+  - system prompt 存在且格式正確
+  - user prompt 包含 {resume_html} 佔位符
+  - fallback prompt 可正常使用
+
+#### RS-003-UT: JSON 解析驗證測試
+- **名稱**: LLM 回應 JSON 解析和錯誤處理
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證 JSON 解析邏輯和錯誤處理
+- **測試內容**: 測試不同格式的 JSON 回應（含 markdown code block）
+- **判斷標準**: 
+  - 正確解析標準 JSON
+  - 處理 ```json 包裝的內容
+  - 格式錯誤時拋出 JSONDecodeError
+
+#### RS-004-UT: 重試機制測試
+- **名稱**: 3 次重試機制與延遲策略驗證
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證失敗時的重試邏輯
+- **測試內容**: 模擬失敗場景，驗證重試次數和延遲
+- **判斷標準**: 
+  - 最多重試 3 次
+  - 重試延遲 500ms
+  - 第 3 次成功時返回結果
+
+#### RS-005-UT: Fallback 結構測試
+- **名稱**: 完全失敗時的 fallback 結構生成
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證所有重試失敗後的 fallback 機制
+- **測試內容**: 模擬持續失敗，驗證 fallback 結構
+- **判斷標準**: 
+  - 3 次重試都失敗後啟動 fallback
+  - 返回預設結構（基本區段）
+  - metadata 顯示 unknown/0 值
+
+### 6.2 整合測試 (RS-xxx-IT)
+
+#### RS-001-IT: 並行執行時間測試
+- **名稱**: Parallel Execution Timing 驗證
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 驗證並行任務執行時間，確保結構分析不增加延遲
+- **測試內容**: 模擬不同服務執行時間，驗證並行執行
+- **判斷標準**: 
+  - 總時間不超過最長任務時間 + 額外開銷
+  - 結構分析（2s）與 Keywords/Embeddings 並行
+  - resume_structure 欄位正確返回
+
+#### RS-002-IT: API 回應格式測試
+- **名稱**: API Response Format 驗證
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 驗證 API 回應包含正確的結構欄位
+- **測試內容**: 測試有/無結構資料的回應格式
+- **判斷標準**: 
+  - IndexCalAndGapAnalysisData 模型接受 resume_structure
+  - standard_sections 包含所有標準區段
+  - 向後相容：無結構時仍可正常回應
+
+#### RS-003-IT: 錯誤處理流程測試
+- **名稱**: Error Handling and Fallback 驗證
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 測試錯誤恢復和 fallback 機制
+- **測試內容**: 模擬結構分析服務失敗，驗證 fallback
+- **判斷標準**: 
+  - 服務失敗時使用 fallback 結構
+  - 其他服務正常運作不受影響
+  - fallback 結構包含基本欄位
+
+#### RS-004-IT: 功能開關行為測試
+- **名稱**: Feature Flag Enable/Disable 驗證
+- **優先級**: P1
+- **類型**: 整合測試
+- **測試目標**: 測試 ENABLE_RESUME_STRUCTURE_ANALYSIS 功能開關
+- **測試內容**: 測試開啟/關閉功能的不同行為
+- **判斷標準**: 
+  - 開啟時：回應包含 resume_structure
+  - 關閉時：回應不包含 resume_structure
+  - 開關狀態不影響其他功能
+
+#### RS-005-IT: 端對端 Mock 流程測試
+- **名稱**: End-to-End Mock Flow 完整驗證
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 完整流程與 mock 服務測試
+- **測試內容**: 使用完整 mock 資料驗證所有元件整合
+- **判斷標準**: 
+  - 所有服務回應正確整合
+  - metadata 包含 structure_analysis_enabled
+  - 完整回應結構包含所有必要欄位
+
+### 6.3 測試實作位置
+
+- **單元測試**: `test/unit/test_resume_structure_analyzer.py`
+- **整合測試**: `test/integration/test_resume_structure_integration.py`
+
+### 6.4 測試執行指令
+
+```bash
+# 執行單元測試
+pytest test/unit/test_resume_structure_analyzer.py -v
+
+# 執行整合測試  
+pytest test/integration/test_resume_structure_integration.py -v
+
+# 執行特定測試
+pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer::test_RS_001_UT_basic_structure_analysis -v
+```
+
 ---
 
-**文檔結束** - 版本 1.0.7 | 所有測試已完成驗證 ✅ | 錯誤碼對照表已新增
+**文檔結束** - 版本 1.0.10 | 所有測試已完成驗證 ✅ | 錯誤碼對照表已新增

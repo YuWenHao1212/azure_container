@@ -133,6 +133,24 @@ response = requests.post(
           "description": "Cloud platform knowledge required for deploying and managing applications"
         }
       ]
+    },
+    "resume_structure": {
+      "total_sections": 5,
+      "sections": {
+        "contact": true,
+        "summary": true,
+        "experience": true,
+        "education": true,
+        "skills": true,
+        "projects": false,
+        "certifications": false
+      },
+      "completeness_score": 71.43,
+      "missing_sections": ["projects", "certifications"],
+      "recommendations": [
+        "Add a Projects section to showcase practical experience",
+        "Include Certifications section for professional credentials"
+      ]
     }
   },
   "error": {
@@ -183,6 +201,21 @@ response = requests.post(
 - 技術和非技術技能的混合
 - 足夠具體以便課程匹配
 - 考慮候選人當前水平和學習路徑
+
+### 6. 履歷結構分析（Resume Structure）- V4 新增功能
+評估履歷的結構完整性和專業性：
+- **總區塊數量**：計算履歷中包含的主要區塊
+- **區塊檢測**：識別標準履歷區塊的存在
+  - 聯絡資訊（contact）
+  - 個人摘要（summary）
+  - 工作經歷（experience）
+  - 教育背景（education）
+  - 技能列表（skills）
+  - 專案經驗（projects）
+  - 專業證照（certifications）
+- **完整性評分**：基於區塊存在性的百分比評分
+- **缺失區塊**：列出建議添加的重要區塊
+- **改進建議**：提供具體的結構優化建議
 
 ## 效能指標
 

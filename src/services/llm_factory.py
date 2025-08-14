@@ -49,15 +49,21 @@ def get_llm_client(
 
     Args:
         model: Direct model specification ("gpt-4.1" or "gpt-4.1-mini")
-        api_name: API name for environment-based configuration
-                  (e.g., "keywords", "gap_analysis", "resume_format")
+        api_name: API endpoint name for config-based selection
+            Supported values:
+            - "keywords": Keyword extraction (uses gpt-4.1-mini)
+            - "gap_analysis": Gap analysis (uses gpt-4.1)
+            - "resume_format": Resume formatting (uses gpt-4.1)
+            - "resume_tailor": Resume tailoring (uses gpt-4.1)
+            - "resume_structure": Resume structure analysis (uses gpt-4.1-mini)
+            - "instruction_compiler": Instruction compilation (uses gpt-4.1-mini)
 
     Returns:
-        LLM client instance (AzureOpenAIClient or AzureOpenAIGPT41Client)
+        LLM client instance
 
     Priority:
         1. Direct model parameter
-        2. Environment variable (LLM_MODEL_{API_NAME})
+        2. API-specific configuration
         3. Default model from settings
     """
     settings = get_settings()
@@ -78,10 +84,25 @@ def get_llm_client(
             source = "config"
             logger.info(f"Using model from env for {api_name}: {selected_model}")
         else:
-            # Fallback to default
-            selected_model = getattr(settings, "llm_model_default", "gpt-4.1")
-            source = "default"
-            logger.info(f"No specific model for {api_name}, using default: {selected_model}")
+            # API-specific defaults
+            api_defaults = {
+                "keywords": "gpt-4.1-mini",
+                "instruction_compiler": "gpt-4.1-mini",
+                "resume_structure": "gpt-4.1-mini",  # Fast structure analysis
+                "gap_analysis": "gpt-4.1",
+                "resume_format": "gpt-4.1",
+                "resume_tailor": "gpt-4.1"
+            }
+
+            if api_name in api_defaults:
+                selected_model = api_defaults[api_name]
+                source = "api_default"
+                logger.info(f"Using API default for {api_name}: {selected_model}")
+            else:
+                # Fallback to default
+                selected_model = getattr(settings, "llm_model_default", "gpt-4.1")
+                source = "default"
+                logger.info(f"No specific model for {api_name}, using default: {selected_model}")
     else:
         # Use default model
         selected_model = getattr(settings, "llm_model_default", "gpt-4.1")
