@@ -166,34 +166,55 @@ prompts:
     TECHNICAL/HARD SKILLS (tools, languages, frameworks, methodologies):
     Use 🔧 emoji - these are simple keyword additions that take seconds
     
-    🔧 <b>Add "Python" to Skills Section</b>
-    Your 5 years of Django development proves Python expertise, but the keyword is missing. Add "Python (5+ years): Django, FastAPI, pandas" to your skills section immediately. This single addition could unlock ATS screening since Python is a required skill.
+    FORMAT: 🔧 <b>[Short Action Title]</b>: [Detailed explanation in regular text]
     
-    🔧 <b>Specify "PostgreSQL" Instead of "Database"</b>
-    Change "database management" (experience section, line 4) to "PostgreSQL optimization and query tuning". The JD specifically requires PostgreSQL - name the exact technology you use.
+    Example:
+    🔧 <b>Add "Python" to Skills Section</b>: Your 5 years of Django development proves Python expertise, but the keyword is missing. Add "Python (5+ years): Django, FastAPI, pandas" to your skills section immediately. This single addition could unlock ATS screening since Python is a required skill.
+    
+    Another example:
+    🔧 <b>Specify "PostgreSQL" Instead of "Database"</b>: Change "database management" (experience section, line 4) to "PostgreSQL optimization and query tuning". The JD specifically requires PostgreSQL - name the exact technology you use.
     
     SOFT SKILLS (communication, leadership, mindset, collaboration):
     Use 💬 emoji - these need story-based evidence, not just keywords
     
-    💬 <b>Demonstrate "Growth Mindset" Through Learning Stories</b>
-    Transform "led technical projects" (role 1, bullet 3) to "Self-taught React Native in 2 months to expand team capabilities, delivering company's first mobile app ahead of schedule". This SHOWS continuous learning rather than claiming it.
+    FORMAT: 💬 <b>[Short Action Title]</b>: [Detailed explanation in regular text]
     
-    💬 <b>Show "Communication Skills" with Stakeholder Examples</b>
-    Change "worked with team" to "Presented weekly data insights to C-level executives, translating complex technical metrics into actionable business strategies that increased revenue 15%". Specific audience + outcome = proven communication.
+    Example:
+    💬 <b>Demonstrate "Growth Mindset" Through Learning Stories</b>: Transform "led technical projects" (role 1, bullet 3) to "Self-taught React Native in 2 months to expand team capabilities, delivering company's first mobile app ahead of schedule". This SHOWS continuous learning rather than claiming it.
+    
+    Another example:
+    💬 <b>Show "Communication Skills" with Stakeholder Examples</b>: Change "worked with team" to "Presented weekly data insights to C-level executives, translating complex technical metrics into actionable business strategies that increased revenue 15%". Specific audience + outcome = proven communication.
     
     WHEN SOFT SKILL LACKS EVIDENCE:
     Use ⚠️ emoji - be honest about what's missing
     
-    ⚠️ <b>"Self-Starter" - Needs Supporting Evidence</b>
-    No clear examples of initiating projects found in your resume. In your next role, track projects you start without being asked. For now, this remains a gap that can't be fixed with keywords alone.
+    FORMAT: ⚠️ <b>[Skill Name] - Needs Supporting Evidence</b>: [Honest explanation in regular text]
+    
+    Example:
+    ⚠️ <b>"Self-Starter" - Needs Supporting Evidence</b>: No clear examples of initiating projects found in your resume. In your next role, track projects you start without being asked. For now, this remains a gap that can't be fixed with keywords alone.
     
     FORMATTING GUIDELINES:
+    - CRITICAL: Use colon (:) to separate title from explanation, all on ONE LINE
+    - Only the title goes in <b> tags, explanation follows after the colon
     - Technical skills: Focus on WHERE to add the exact keyword
     - Soft skills: Focus on HOW to tell a compelling story
     - Always specify location (section name, line number, or bullet point)
     - Provide exact text to copy/paste
     - Keep each suggestion concise but complete
     - Order by ease of implementation: 🔧 first (quick fixes), then 💬 (rewrites), then ⚠️ (future work)
+    
+    CRITICAL OUTPUT FORMAT:
+    🔧 <b>Short Title</b>: Explanation text on same line after colon.
+    
+    NOT THIS (wrong):
+    🔧 <b>Short Title and all the explanation text inside bold tags which is incorrect</b>
+    
+    NOT THIS (wrong either):
+    🔧 <b>Short Title</b>
+    Explanation on separate line.
+    
+    BUT THIS (correct):
+    🔧 <b>Short Title</b>: Explanation immediately after colon on same line.
     </format_requirements>
 
     ## 4. OVERALL ASSESSMENT
