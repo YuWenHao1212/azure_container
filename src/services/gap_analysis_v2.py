@@ -201,11 +201,14 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
         # Load the prompt configuration
         try:
             # Use prompt manager to load the correct version (env var -> active -> latest)
-            # Check for v2.1.7 override via environment variable
+            # Check for v2.1.7 or v2.1.8 override via environment variable
             gap_analysis_version = os.environ.get('GAP_ANALYSIS_PROMPT_VERSION', 'latest')
             if gap_analysis_version == '2.1.7':
                 # Load v2.1.7 specifically
                 config = prompt_manager.load_prompt_config_by_filename("gap_analysis", "v2.1.7.yaml")
+            elif gap_analysis_version == '2.1.8':
+                # Load v2.1.8 specifically
+                config = prompt_manager.load_prompt_config_by_filename("gap_analysis", "v2.1.8.yaml")
             else:
                 config = prompt_manager.load_prompt_config("gap_analysis", version="latest")
             logger.info(f"Loaded gap_analysis prompt version: {getattr(config, 'version', 'unknown')}")
@@ -311,6 +314,9 @@ Please provide a comprehensive gap analysis.
             if gap_analysis_version == '2.1.7':
                 # Load v2.1.7 specifically
                 prompt_config = prompt_manager.load_prompt_config_by_filename("gap_analysis", "v2.1.7.yaml")
+            elif gap_analysis_version == '2.1.8':
+                # Load v2.1.8 specifically
+                prompt_config = prompt_manager.load_prompt_config_by_filename("gap_analysis", "v2.1.8.yaml")
             else:
                 prompt_config = prompt_manager.load_prompt_config("gap_analysis", version="latest")
 
