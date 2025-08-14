@@ -14,6 +14,7 @@ from src.services.base import BaseService
 from src.services.gap_analysis_v2 import GapAnalysisServiceV2
 from src.services.index_calculation_v2 import IndexCalculationServiceV2
 from src.services.resource_pool_manager import ResourcePoolManager
+from src.services.resume_structure_analyzer import ResumeStructureAnalyzer
 from src.utils.adaptive_retry import AdaptiveRetryStrategy
 from src.utils.feature_flags import FeatureFlags
 
@@ -67,6 +68,12 @@ class CombinedAnalysisServiceV2(BaseService):
         # Service dependencies
         self.index_service = index_service or IndexCalculationServiceV2()
         self.gap_service = gap_service or GapAnalysisServiceV2()
+
+        # Resume structure analyzer (V4 enhancement)
+        self.structure_analyzer = ResumeStructureAnalyzer()
+        self.enable_structure_analysis = (
+            os.getenv("ENABLE_RESUME_STRUCTURE_ANALYSIS", "true").lower() == "true"
+        )
 
         # Resource management
         pool_config = FeatureFlags.get_resource_pool_config()
@@ -193,15 +200,27 @@ class CombinedAnalysisServiceV2(BaseService):
 
         phase_timings = {}
 
-        # V3 TRUE PARALLEL: Start Keywords and Embeddings simultaneously at T=0
+        # V3 TRUE PARALLEL: Start Keywords, Embeddings, and Structure simultaneously at T=0
         phase1_start = time.time()
         detailed_timings["embedding_start"] = phase1_start
         detailed_timings["keyword_match_start"] = phase1_start
+
+        # V4 Enhancement: Add structure analysis timing
+        if self.enable_structure_analysis:
+            detailed_timings["structure_start"] = phase1_start
 
         # Create async tasks for parallel execution
         keyword_task = asyncio.create_task(
             asyncio.to_thread(self._quick_keyword_match, resume, keywords)
         )
+
+        # V4 Enhancement: Add structure analysis task
+        # Test ID: RS-001-IT - Parallel execution timing
+        structure_task = None
+        if self.enable_structure_analysis:
+            structure_task = asyncio.create_task(
+                self.structure_analyzer.analyze_structure(resume)
+            )
 
         # Start embeddings generation in parallel
         embedding_task = None
@@ -353,8 +372,35 @@ class CombinedAnalysisServiceV2(BaseService):
             }
         )
 
+        # V4 Enhancement: Get structure analysis result
+        # Test ID: RS-003-IT - Error handling flow
+        resume_structure = None
+        if structure_task:
+            try:
+                # Wait for structure analysis with timeout
+                resume_structure = await asyncio.wait_for(
+                    structure_task,
+                    timeout=3.0
+                )
+                detailed_timings["structure_end"] = time.time()
+
+                # Add to timing breakdown
+                timing_breakdown["structure_analysis_time"] = round(
+                    (detailed_timings["structure_end"] - detailed_timings["structure_start"]) * 1000, 2
+                )
+
+                logger.info(
+                    f"Structure analysis completed in {timing_breakdown['structure_analysis_time']}ms"
+                )
+            except TimeoutError:
+                logger.warning("Structure analysis timed out, using fallback")
+                resume_structure = self.structure_analyzer._get_fallback_structure()
+            except Exception as e:
+                logger.warning(f"Structure analysis failed: {e}, using fallback")
+                resume_structure = self.structure_analyzer._get_fallback_structure()
+
         # Combine results (maintain API compatibility)
-        return {
+        result = {
             "index_calculation": index_result,
             "gap_analysis": gap_result,
             "metadata": {
@@ -368,9 +414,16 @@ class CombinedAnalysisServiceV2(BaseService):
                 },
                 "detailed_timings_ms": timing_breakdown,
                 "parallel_efficiency": round(efficiency * 100, 1),
-                "resource_pool_used": os.getenv('RESOURCE_POOL_ENABLED', 'true').lower() != 'false'
+                "resource_pool_used": os.getenv('RESOURCE_POOL_ENABLED', 'true').lower() != 'false',
+                "structure_analysis_enabled": self.enable_structure_analysis
             }
         }
+
+        # V4 Enhancement: Add structure to result if available
+        if resume_structure:
+            result["resume_structure"] = resume_structure.dict()
+
+        return result
 
     async def _generate_embeddings_parallel(
         self,

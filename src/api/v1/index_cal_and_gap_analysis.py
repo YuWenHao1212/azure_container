@@ -132,7 +132,11 @@ class KeywordCoverageData(BaseModel):
 
 
 class IndexCalAndGapAnalysisData(BaseModel):
-    """Response data for combined index calculation and gap analysis."""
+    """
+    Response data for combined index calculation and gap analysis.
+
+    Test ID: RS-002-IT - API response format validation
+    """
     raw_similarity_percentage: int = Field(
         default=0, description="Raw cosine similarity percentage"
     )
@@ -146,6 +150,10 @@ class IndexCalAndGapAnalysisData(BaseModel):
     gap_analysis: GapAnalysisData = Field(
         default_factory=GapAnalysisData,
         description="Gap analysis results"
+    )
+    resume_structure: dict[str, Any] | None = Field(
+        default=None,
+        description="Resume structure analysis (V4 enhancement)"
     )
 
 
@@ -236,7 +244,9 @@ async def _execute_v2_analysis(
                     SkillQuery(**skill)
                     for skill in gap_result.get("SkillSearchQueries", [])
                 ]
-            )
+            ),
+            # V4 Enhancement: Add resume structure if available
+            resume_structure=result.get("resume_structure")
         )
 
         logger.info(

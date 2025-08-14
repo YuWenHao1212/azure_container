@@ -201,6 +201,11 @@ class AdvancedPreCommitValidator:
             "--color=no"  # Disable color to avoid parsing issues
         ]
 
+        # Skip flaky tests in pre-commit if environment variable is set
+        # Usage: SKIP_FLAKY_TESTS=true python test/scripts/pre_commit_check_advanced.py
+        if os.getenv("SKIP_FLAKY_TESTS", "false").lower() == "true":
+            args.extend(["-m", "not flaky"])
+
         # Suppress output for integration tests to keep output clean
         if "integration" in test_name or "IT" in test_name:
             args.append("--capture=sys")  # Capture stdout/stderr
@@ -449,10 +454,15 @@ class AdvancedPreCommitValidator:
         step_info = "Step 6/7: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Gap Analysis tests...{Colors.RESET}")
 
-        unit_files = ["test/unit/test_gap_analysis_v2.py"]
+        # Include Resume Structure Analysis tests (part of Gap Analysis V4)
+        unit_files = [
+            "test/unit/test_gap_analysis_v2.py",
+            "test/unit/test_resume_structure_analyzer.py"  # Resume Structure unit tests
+        ]
         integration_files = [
             "test/integration/test_gap_analysis_v2_integration_complete.py",
-            "test/integration/test_error_handling_v2.py"
+            "test/integration/test_error_handling_v2.py",
+            "test/integration/test_resume_structure_integration.py"  # Resume Structure integration tests
         ]
 
         # Run unit tests

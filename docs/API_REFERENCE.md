@@ -251,6 +251,11 @@ X-API-Key: [YOUR_API_KEY]
 - [Presentation Gap]: 候選人具備技能但履歷中未明確展示
 - 支援 Resume Tailoring v2.0.0 兩階段架構優化
 
+**版本更新 (v4 - 2025-08-14)** 🚀
+- 新增 `resume_structure` 欄位，提供履歷結構分析
+- 自動檢測履歷完整性並提供改進建議
+- 計算結構完整性分數（0-100）
+
 **請求參數**
 ```json
 {
@@ -289,6 +294,24 @@ X-API-Key: [YOUR_API_KEY]
           "skill_category": "SKILL",
           "description": "Container technology"
         }
+      ]
+    },
+    "resume_structure": {
+      "total_sections": 5,
+      "sections": {
+        "contact": true,
+        "summary": true,
+        "experience": true,
+        "education": true,
+        "skills": true,
+        "projects": false,
+        "certifications": false
+      },
+      "completeness_score": 71.43,
+      "missing_sections": ["projects", "certifications"],
+      "recommendations": [
+        "Add a Projects section to showcase practical experience",
+        "Include Certifications section for professional credentials"
       ]
     }
   },
