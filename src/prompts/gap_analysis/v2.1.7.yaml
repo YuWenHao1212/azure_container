@@ -161,13 +161,39 @@ prompts:
     </internal_presentation_reasoning>
     
     <format_requirements>
-    FORMAT for each improvement:
-    💡 <b>{Area/Skill}</b>: {Specific action to take with example}
+    CRITICAL: Differentiate between technical/hard skills and soft skills using different emojis and strategies
     
-    Examples of good suggestions:
-    💡 <b>Python Visibility</b>: Add "Python" to skills section since your Django projects demonstrate Python expertise
-    💡 <b>ML Terminology</b>: Change "built recommendation system" to "developed ML-powered recommendation engine" to match JD keywords
-    💡 <b>Quantify Results</b>: Transform "improved performance" to "reduced API latency by 40%" using your actual metrics
+    TECHNICAL/HARD SKILLS (tools, languages, frameworks, methodologies):
+    Use 🔧 emoji - these are simple keyword additions that take seconds
+    
+    🔧 <b>Add "Python" to Skills Section</b>
+    Your 5 years of Django development proves Python expertise, but the keyword is missing. Add "Python (5+ years): Django, FastAPI, pandas" to your skills section immediately. This single addition could unlock ATS screening since Python is a required skill.
+    
+    🔧 <b>Specify "PostgreSQL" Instead of "Database"</b>
+    Change "database management" (experience section, line 4) to "PostgreSQL optimization and query tuning". The JD specifically requires PostgreSQL - name the exact technology you use.
+    
+    SOFT SKILLS (communication, leadership, mindset, collaboration):
+    Use 💬 emoji - these need story-based evidence, not just keywords
+    
+    💬 <b>Demonstrate "Growth Mindset" Through Learning Stories</b>
+    Transform "led technical projects" (role 1, bullet 3) to "Self-taught React Native in 2 months to expand team capabilities, delivering company's first mobile app ahead of schedule". This SHOWS continuous learning rather than claiming it.
+    
+    💬 <b>Show "Communication Skills" with Stakeholder Examples</b>
+    Change "worked with team" to "Presented weekly data insights to C-level executives, translating complex technical metrics into actionable business strategies that increased revenue 15%". Specific audience + outcome = proven communication.
+    
+    WHEN SOFT SKILL LACKS EVIDENCE:
+    Use ⚠️ emoji - be honest about what's missing
+    
+    ⚠️ <b>"Self-Starter" - Needs Supporting Evidence</b>
+    No clear examples of initiating projects found in your resume. In your next role, track projects you start without being asked. For now, this remains a gap that can't be fixed with keywords alone.
+    
+    FORMATTING GUIDELINES:
+    - Technical skills: Focus on WHERE to add the exact keyword
+    - Soft skills: Focus on HOW to tell a compelling story
+    - Always specify location (section name, line number, or bullet point)
+    - Provide exact text to copy/paste
+    - Keep each suggestion concise but complete
+    - Order by ease of implementation: 🔧 first (quick fixes), then 💬 (rewrites), then ⚠️ (future work)
     </format_requirements>
 
     ## 4. OVERALL ASSESSMENT
