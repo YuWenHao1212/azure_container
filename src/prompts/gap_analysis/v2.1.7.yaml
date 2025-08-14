@@ -122,6 +122,12 @@ prompts:
         └─ NO → Skill Gap from scratch (→ Key Gaps)
     
     After classification, output ONLY the formatted gaps with 🚨 markers.
+    
+    INTERNAL TRACKING (for your use only - do not output):
+    Create two lists from your Phase 2 classification:
+    - Skill Gaps list: [keywords needing learning → go to Key Gaps section]
+    - Presentation Gaps list: [keywords needing visibility → go to Quick Improvements section]
+    Use ONLY items from Presentation Gaps list in Quick Improvements.
     </internal_gap_classification>
     
     <format_requirements>
@@ -145,22 +151,44 @@ prompts:
 
     ## 3. QUICK IMPROVEMENTS (Presentation Gap Optimizations)
     
-    **NEW FOCUS**: This section provides specific resume rewriting suggestions for skills that exist but aren't visible.
-    These are capabilities identified in Phase 2 as Presentation Gaps.
+    **CRITICAL CONSTRAINTS**:
+    1. This section ONLY contains Presentation Gaps identified from {missing_keywords} in Phase 2 Classification
+    2. NEVER create suggestions for skills NOT in the {missing_keywords} list (e.g., if Python/SQL are not in missing_keywords, don't mention them)
+    3. NEVER include skills classified as Skill Gaps (those belong in Key Gaps section)
+    4. If no Presentation Gaps were identified, explicitly state "No presentation improvements needed - all gaps require learning"
+    
+    **FOCUS**: Provide specific resume rewriting suggestions ONLY for skills that:
+    - Were in the {missing_keywords} list AND
+    - Were classified as Presentation Gaps (skill exists but not visible) in Phase 2
     
     <internal_presentation_reasoning>
     IMPORTANT: The following reasoning is for your internal use only. DO NOT output these steps.
     
-    For each Presentation Gap identified:
-    Step 1: Locate evidence in resume that implies this skill
-    Step 2: Identify why it wasn't matched (terminology, placement, etc.)
-    Step 3: Generate specific rewriting suggestion
-    Step 4: Provide concrete before/after example where helpful
+    CRITICAL VALIDATION PROCESS:
+    Step 0: Review your Phase 2 classifications - separate Skill Gaps from Presentation Gaps
     
-    After internal reasoning, output ONLY the formatted improvements with 💡 markers.
+    For EACH keyword you plan to include in Quick Improvements:
+    Step 1: VERIFY it was in the original {missing_keywords} list (not covered_keywords or imagined)
+    Step 2: CONFIRM it was classified as Presentation Gap in Phase 2 (not Skill Gap)
+    Step 3: LOCATE specific evidence in resume that implies this skill exists
+    Step 4: IDENTIFY why the keyword wasn't matched (different terminology, buried in text, etc.)
+    Step 5: GENERATE specific rewriting suggestion with exact location and text
+    
+    REJECTION RULES:
+    - If keyword NOT in {missing_keywords} → REJECT (don't create suggestion)
+    - If keyword classified as Skill Gap → REJECT (belongs in Key Gaps section)
+    - If no evidence of skill in resume → REJECT (it's a Skill Gap, not Presentation Gap)
+    
+    After internal reasoning, output ONLY the formatted improvements for MISSING KEYWORDS.
     </internal_presentation_reasoning>
     
     <format_requirements>
+    MANDATORY RULES:
+    1. Every suggestion MUST be for a keyword from {missing_keywords} that was classified as Presentation Gap
+    2. Each suggestion MUST have format: [emoji] <b>[Title]</b>: [Explanation]
+    3. Title MUST reference the actual missing keyword being addressed
+    4. If NO Presentation Gaps exist, output: "All identified gaps require skill development - see Key Gaps section for learning priorities."
+    
     CRITICAL: Differentiate between technical/hard skills and soft skills using different emojis and strategies
     
     TECHNICAL/HARD SKILLS (tools, languages, frameworks, methodologies):
@@ -168,29 +196,29 @@ prompts:
     
     FORMAT: 🔧 <b>[Short Action Title]</b>: [Detailed explanation in regular text]
     
-    Example:
-    🔧 <b>Add "Python" to Skills Section</b>: Your 5 years of Django development proves Python expertise, but the keyword is missing. Add "Python (5+ years): Django, FastAPI, pandas" to your skills section immediately. This single addition could unlock ATS screening since Python is a required skill.
+    Example (assuming "Docker" is in {missing_keywords} and classified as Presentation Gap):
+    🔧 <b>Add "Docker" to Skills Section</b>: Your containerization work mentioned in project 2 proves Docker expertise, but the keyword is missing. Add "Docker: Container deployment and orchestration" to your skills section.
     
-    Another example:
-    🔧 <b>Specify "PostgreSQL" Instead of "Database"</b>: Change "database management" (experience section, line 4) to "PostgreSQL optimization and query tuning". The JD specifically requires PostgreSQL - name the exact technology you use.
+    WRONG example (Python NOT in {missing_keywords}):
+    ❌ 🔧 <b>Add "Python" to Skills Section</b>: [This is WRONG - never suggest keywords not in missing_keywords list]
     
     SOFT SKILLS (communication, leadership, mindset, collaboration):
     Use 💬 emoji - these need story-based evidence, not just keywords
     
     FORMAT: 💬 <b>[Short Action Title]</b>: [Detailed explanation in regular text]
     
-    Example:
+    Example (assuming "Growth Mindset" is in {missing_keywords} and classified as Presentation Gap):
     💬 <b>Demonstrate "Growth Mindset" Through Learning Stories</b>: Transform "led technical projects" (role 1, bullet 3) to "Self-taught React Native in 2 months to expand team capabilities, delivering company's first mobile app ahead of schedule". This SHOWS continuous learning rather than claiming it.
     
-    Another example:
-    💬 <b>Show "Communication Skills" with Stakeholder Examples</b>: Change "worked with team" to "Presented weekly data insights to C-level executives, translating complex technical metrics into actionable business strategies that increased revenue 15%". Specific audience + outcome = proven communication.
+    WRONG example (Communication NOT in {missing_keywords}):
+    ❌ 💬 <b>Show "Communication Skills"...</b>: [This is WRONG - never suggest keywords not in missing_keywords list]
     
     WHEN SOFT SKILL LACKS EVIDENCE:
     Use ⚠️ emoji - be honest about what's missing
     
     FORMAT: ⚠️ <b>[Skill Name] - Needs Supporting Evidence</b>: [Honest explanation in regular text]
     
-    Example:
+    Example (assuming "Self-Starter" is in {missing_keywords} but has no evidence):
     ⚠️ <b>"Self-Starter" - Needs Supporting Evidence</b>: No clear examples of initiating projects found in your resume. In your next role, track projects you start without being asked. For now, this remains a gap that can't be fixed with keywords alone.
     
     FORMATTING GUIDELINES:
