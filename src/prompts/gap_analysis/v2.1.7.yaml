@@ -78,13 +78,17 @@ prompts:
     QUALITY PRINCIPLE: Better to have fewer strong, relevant strengths than forcing weak connections
     </dynamic_strength_count>
     
-    <reasoning_steps>
+    <internal_reasoning>
+    IMPORTANT: The following steps are for your internal reasoning only. DO NOT output these steps in your response.
+    
     Step 1: Determine target count based on {similarity_score}
     Step 2: Extract JD core requirements (not just keywords)
     Step 3: Score each resume experience for relevance
     Step 4: Select top experiences up to target count
     Step 5: Craft descriptions with supporting evidence
-    </reasoning_steps>
+    
+    After completing these reasoning steps internally, output ONLY the formatted strengths with emoji markers.
+    </internal_reasoning>
     
     <formatting_instructions>
     Priority markers (use exactly these):
@@ -102,7 +106,9 @@ prompts:
     **CRITICAL REQUIREMENT**: This section contains ONLY skills the candidate genuinely lacks and needs to learn.
     All Presentation Gaps (skills they have but aren't visible) go to QUICK IMPROVEMENTS.
     
-    <gap_classification_cot>
+    <internal_gap_classification>
+    IMPORTANT: Use this decision tree internally. DO NOT output this reasoning process.
+    
     For each Missing Keyword, follow this decision tree:
     
     Question 1: Does resume show related experience?
@@ -114,7 +120,9 @@ prompts:
     └─ NO → Question 4: Any transferable skills?
         ├─ YES → Skill Gap with some base (→ Key Gaps)
         └─ NO → Skill Gap from scratch (→ Key Gaps)
-    </gap_classification_cot>
+    
+    After classification, output ONLY the formatted gaps with 🚨 markers.
+    </internal_gap_classification>
     
     <format_requirements>
     FORMAT for each skill gap:
@@ -140,13 +148,17 @@ prompts:
     **NEW FOCUS**: This section provides specific resume rewriting suggestions for skills that exist but aren't visible.
     These are capabilities identified in Phase 2 as Presentation Gaps.
     
-    <presentation_optimization_cot>
+    <internal_presentation_reasoning>
+    IMPORTANT: The following reasoning is for your internal use only. DO NOT output these steps.
+    
     For each Presentation Gap identified:
     Step 1: Locate evidence in resume that implies this skill
     Step 2: Identify why it wasn't matched (terminology, placement, etc.)
     Step 3: Generate specific rewriting suggestion
     Step 4: Provide concrete before/after example where helpful
-    </presentation_optimization_cot>
+    
+    After internal reasoning, output ONLY the formatted improvements with 💡 markers.
+    </internal_presentation_reasoning>
     
     <format_requirements>
     FORMAT for each improvement:
