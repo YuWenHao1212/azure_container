@@ -124,19 +124,29 @@ prompts:
     After classification, output ONLY the formatted gaps with 🚨 markers.
     
     INTERNAL TRACKING (for your use only - do not output):
-    Create two lists from your Phase 2 classification:
-    - Skill Gaps list: [keywords needing learning → go to Key Gaps section]
-    - Presentation Gaps list: [keywords needing visibility → go to Quick Improvements section]
-    Use ONLY items from Presentation Gaps list in Quick Improvements.
+    Create four lists from your Phase 2 classification:
+    - Tech/Hard Skill Gaps: [technical skills needing learning → Key Gaps with 🔧]
+    - Soft/Domain Skill Gaps: [soft skills/domain knowledge needing development → Key Gaps with 💼]
+    - Tech/Hard Presentation Gaps: [technical skills needing visibility → Quick Improvements with 🔧]
+    - Soft Presentation Gaps: [soft skills needing better expression → Quick Improvements with 💬]
+    
+    Use appropriate emoji markers based on skill type in each section.
     </internal_gap_classification>
     
     <format_requirements>
-    FORMAT for each skill gap:
-    🚨 <b>{Skill Name}</b>: {Description of what's missing} + {Realistic learning timeline}
+    FORMAT for each skill gap based on type:
     
-    CRITICAL: Only include skills that truly need learning
-    CRITICAL: Be honest about learning timelines (months, not weeks for significant skills)
+    For Technical/Hard Skills (tools, languages, frameworks, methodologies):
+    🔧 <b>{Skill Name}</b>: {Description of what's missing} + {Realistic learning timeline}
+    
+    For Soft Skills/Domain Knowledge (leadership, communication, industry knowledge):
+    💼 <b>{Skill Name}</b>: {Description of what's missing} + {Development approach/timeline}
+    
+    CRITICAL: Differentiate skill types using appropriate emoji markers
+    CRITICAL: Only include skills that truly need learning/development
+    CRITICAL: Be honest about timelines (months for technical skills, ongoing for soft skills)
     CRITICAL: Use varied sentence patterns
+    CRITICAL: List technical skills first, then soft skills/domain knowledge
     </format_requirements>
     
     <timeline_guidelines>
@@ -282,96 +292,137 @@ prompts:
     ## 5. SKILL DEVELOPMENT PRIORITIES
     
     <extraction_rules>
-    Extract ONLY from skills listed in KEY GAPS section (Skill Gaps only)
+    Extract ONLY technical skills (🔧 marked) from KEY GAPS section
+    EXCLUDE all soft skills/domain knowledge (💼 marked) - these need practice, not courses
     EXCLUDE all Presentation Gaps (those are in Quick Improvements)
-    Order by importance for THIS specific role
+    Focus on skills that can be learned through courses/training
+    Order by importance and learning feasibility for THIS specific role
     </extraction_rules>
     
-    Present 3-6 specific learnable skills using this format:
-    [Format: SKILL_N::SkillName::CATEGORY::DetailedDescription]
-    [CATEGORY: Tech or Non-Tech only]
+    Present 3-6 specific learnable TECHNICAL skills using this format:
+    [Format: SKILL_N::SkillName::Tech::DetailedDescription]
+    [Note: All should be "Tech" category since we only extract technical skills]
 
     # FEW-SHOT EXAMPLES
 
     <example_strong_match_85_percent>
     Context: 
     - Similarity: 85%
-    - Missing Keywords: ["Kubernetes", "GraphQL", "Microservices", "ML", "Python"]
-    - Resume highlights: "5 years building Django REST APIs", "Docker containerization", "Deployed services to AWS"
+    - Missing Keywords: ["Kubernetes", "GraphQL", "Microservices", "ML", "Python", "Team Leadership", "Agile"]
+    - Resume highlights: "5 years building Django REST APIs", "Docker containerization", "Deployed services to AWS", "Led projects"
     
     Classification thinking:
-    - "Python" → Django implies Python → Presentation Gap
-    - "Kubernetes" → Has Docker but not K8s → Skill Gap
-    - "GraphQL" → Only REST experience → Skill Gap
-    - "Microservices" → Has "deployed services" → Presentation Gap
-    - "ML" → No evidence → Skill Gap
+    - "Python" → Django implies Python → Presentation Gap (technical)
+    - "Kubernetes" → Has Docker but not K8s → Skill Gap (technical)
+    - "GraphQL" → Only REST experience → Skill Gap (technical)
+    - "Microservices" → Has "deployed services" → Presentation Gap (technical)
+    - "ML" → No evidence → Skill Gap (technical)
+    - "Team Leadership" → Has "Led projects" → Presentation Gap (soft)
+    - "Agile" → No evidence → Skill Gap (soft/methodology)
     
     KEY GAPS output:
-    🚨 <b>Kubernetes</b>: Container orchestration expertise is missing. With your Docker foundation, expect 3-4 months to reach production proficiency.
-    🚨 <b>GraphQL</b>: This API paradigm differs from REST. Budget 4-6 weeks to become proficient given your API experience.
-    🚨 <b>Machine Learning</b>: No ML experience evident. Consider 6-9 months for practical ML skills development.
+    🔧 <b>Kubernetes</b>: Container orchestration expertise is missing. With your Docker foundation, expect 3-4 months to reach production proficiency.
+    🔧 <b>GraphQL</b>: This API paradigm differs from REST. Budget 4-6 weeks to become proficient given your API experience.
+    🔧 <b>Machine Learning</b>: No ML experience evident. Consider 6-9 months for practical ML skills development.
+    💼 <b>Agile Methodology</b>: Formal Agile/Scrum experience not evident. While you have project experience, structured Agile practices require 2-3 months of hands-on practice.
     
     QUICK IMPROVEMENTS output:
-    💡 <b>Python Visibility</b>: Add "Python" prominently to skills section and change "Django developer" to "Python/Django developer" throughout.
-    💡 <b>Microservices Architecture</b>: Reframe "deployed services to AWS" as "deployed microservices architecture on AWS" to align with JD terminology.
+    🔧 <b>Python Visibility</b>: Add "Python" prominently to skills section and change "Django developer" to "Python/Django developer" throughout.
+    🔧 <b>Microservices Architecture</b>: Reframe "deployed services to AWS" as "deployed microservices architecture on AWS" to align with JD terminology.
+    💬 <b>Team Leadership</b>: Transform "Led projects" to "Led cross-functional teams of 5-8 engineers, delivering 3 major features on schedule" to showcase leadership impact.
+    
+    SKILL DEVELOPMENT PRIORITIES output:
+    SKILL_1::Kubernetes Container Orchestration::Tech::Master K8s for production-ready container deployment and scaling
+    SKILL_2::GraphQL API Development::Tech::Learn GraphQL schema design and resolver implementation for modern API architecture
+    SKILL_3::Machine Learning Fundamentals::Tech::Build foundation in ML algorithms and practical implementation with Python libraries
     </example_strong_match_85_percent>
 
     <example_moderate_match_65_percent>
     Context:
     - Similarity: 65%
-    - Missing Keywords: ["React", "Node.js", "MongoDB", "AWS", "TypeScript", "Docker"]
-    - Resume highlights: "Frontend development with Vue.js", "PHP backend", "MySQL databases"
+    - Missing Keywords: ["React", "Node.js", "MongoDB", "AWS", "TypeScript", "Docker", "Product Management", "Customer Focus"]
+    - Resume highlights: "Frontend development with Vue.js", "PHP backend", "MySQL databases", "Worked with product team"
     
     Classification thinking:
-    - "React" → Has Vue but not React → Skill Gap (related experience)
-    - "Node.js" → PHP backend only → Skill Gap
-    - "MongoDB" → SQL only → Skill Gap
-    - "AWS" → No cloud mentioned → Skill Gap
-    - "TypeScript" → No evidence → Skill Gap
-    - "Docker" → No containerization → Skill Gap
+    - "React" → Has Vue but not React → Skill Gap (technical)
+    - "Node.js" → PHP backend only → Skill Gap (technical)
+    - "MongoDB" → SQL only → Skill Gap (technical)
+    - "AWS" → No cloud mentioned → Skill Gap (technical)
+    - "TypeScript" → No evidence → Skill Gap (technical)
+    - "Docker" → No containerization → Skill Gap (technical)
+    - "Product Management" → Has "Worked with product team" → Presentation Gap (soft)
+    - "Customer Focus" → No evidence → Skill Gap (soft)
     
     KEY GAPS output:
-    🚨 <b>React</b>: While you know Vue.js, React requires different patterns. Plan 2-3 months for proficiency.
-    🚨 <b>Node.js</b>: Backend JavaScript differs from PHP. Expect 3-4 months to become job-ready.
-    🚨 <b>MongoDB</b>: NoSQL paradigm differs from MySQL. Budget 6-8 weeks for competency.
-    🚨 <b>AWS</b>: Cloud platform expertise needed. Plan 3-4 months for AWS fundamentals and services.
-    🚨 <b>TypeScript</b>: Adds typing to JavaScript. With your Vue experience, expect 4-6 weeks to adopt.
-    🚨 <b>Docker</b>: Containerization is essential. Plan 6-8 weeks for Docker proficiency.
+    🔧 <b>React</b>: While you know Vue.js, React requires different patterns. Plan 2-3 months for proficiency.
+    🔧 <b>Node.js</b>: Backend JavaScript differs from PHP. Expect 3-4 months to become job-ready.
+    🔧 <b>MongoDB</b>: NoSQL paradigm differs from MySQL. Budget 6-8 weeks for competency.
+    🔧 <b>AWS</b>: Cloud platform expertise needed. Plan 3-4 months for AWS fundamentals and services.
+    🔧 <b>TypeScript</b>: Adds typing to JavaScript. With your Vue experience, expect 4-6 weeks to adopt.
+    🔧 <b>Docker</b>: Containerization is essential. Plan 6-8 weeks for Docker proficiency.
+    💼 <b>Customer Focus</b>: Direct customer interaction experience not evident. Developing customer-centric mindset requires ongoing practice through user research and feedback loops.
     
     QUICK IMPROVEMENTS output:
-    💡 <b>JavaScript Emphasis</b>: Highlight your Vue.js work as "Modern JavaScript (ES6+)" to show JS proficiency.
-    💡 <b>Database Skills</b>: Mention any JSON handling in MySQL as "Document-style data modeling" to show adaptability.
+    🔧 <b>JavaScript Emphasis</b>: Highlight your Vue.js work as "Modern JavaScript (ES6+)" to show JS proficiency.
+    🔧 <b>Database Skills</b>: Mention any JSON handling in MySQL as "Document-style data modeling" to show adaptability.
+    💬 <b>Product Collaboration</b>: Expand "Worked with product team" to "Collaborated with Product Managers to translate business requirements into technical solutions, participating in sprint planning and feature prioritization".
+    
+    SKILL DEVELOPMENT PRIORITIES output:
+    SKILL_1::React Framework::Tech::Master React hooks, state management, and component lifecycle for modern frontend development
+    SKILL_2::Node.js Backend Development::Tech::Learn server-side JavaScript, Express.js, and async programming patterns
+    SKILL_3::AWS Cloud Services::Tech::Gain proficiency in EC2, S3, Lambda, and core AWS services for cloud deployment
+    SKILL_4::MongoDB NoSQL Database::Tech::Understand document databases, aggregation pipelines, and NoSQL data modeling
+    SKILL_5::Docker Containerization::Tech::Learn container creation, orchestration basics, and deployment workflows
+    SKILL_6::TypeScript::Tech::Add type safety to JavaScript projects with interfaces, generics, and advanced types
     </example_moderate_match_65_percent>
 
     <example_poor_match_35_percent>
     Context:
     - Similarity: 35%
-    - Missing Keywords: ["Python", "Data Science", "Machine Learning", "TensorFlow", "SQL", "Statistics"]
-    - Resume highlights: "Product Manager", "Business Analysis", "Excel", "Stakeholder Management"
+    - Missing Keywords: ["Python", "Data Science", "Machine Learning", "TensorFlow", "SQL", "Statistics", "Technical Leadership", "Innovation"]
+    - Resume highlights: "Product Manager", "Business Analysis", "Excel", "Stakeholder Management", "Team coordination"
     
     Classification thinking:
-    - All technical skills are genuine gaps
-    - Some analytical foundation from business analysis
-    - This is a career transition scenario
+    - "Python" → No programming experience → Skill Gap (technical)
+    - "Data Science" → No technical data work → Skill Gap (technical)
+    - "Machine Learning" → No ML background → Skill Gap (technical)
+    - "TensorFlow" → No framework experience → Skill Gap (technical)
+    - "SQL" → Possibly used but not mentioned → Could be Presentation Gap
+    - "Statistics" → Excel implies some stats → Presentation Gap
+    - "Technical Leadership" → No technical background → Skill Gap (soft)
+    - "Innovation" → Product role implies innovation → Presentation Gap (soft)
     
     KEY GAPS output:
-    🚨 <b>Python</b>: Programming fundamentals needed from scratch. Plan 6-9 months for job-ready Python skills.
-    🚨 <b>Data Science</b>: Comprehensive field requiring statistics, programming, and domain knowledge. Expect 12-18 months of structured learning.
-    🚨 <b>Machine Learning</b>: Requires strong math and programming foundation. Budget 12+ months after Python proficiency.
-    🚨 <b>SQL</b>: Database querying essential for data roles. Plan 2-3 months for solid SQL skills.
-    🚨 <b>Statistics</b>: Mathematical foundation needed. Consider 3-6 months of focused study.
+    🔧 <b>Python</b>: Programming fundamentals needed from scratch. Plan 6-9 months for job-ready Python skills.
+    🔧 <b>Data Science</b>: Comprehensive field requiring statistics, programming, and domain knowledge. Expect 12-18 months of structured learning.
+    🔧 <b>Machine Learning</b>: Requires strong math and programming foundation. Budget 12+ months after Python proficiency.
+    🔧 <b>TensorFlow</b>: Deep learning framework requiring Python and ML knowledge first. Additional 3-4 months after ML foundation.
+    🔧 <b>SQL</b>: Database querying essential for data roles. Plan 2-3 months for solid SQL skills if not already familiar.
+    💼 <b>Technical Leadership</b>: Leading technical teams requires building technical credibility first. This develops naturally as you gain technical expertise over 1-2 years.
     
     QUICK IMPROVEMENTS output:
-    💡 <b>Analytical Skills</b>: Reframe "Business Analysis" as "Data-Driven Business Analysis" to emphasize analytical thinking.
-    💡 <b>Excel Expertise</b>: Highlight any Excel modeling as "Statistical Analysis with Excel" to show quantitative skills.
+    🔧 <b>Statistical Analysis</b>: Highlight any Excel modeling as "Statistical Analysis with Excel including regression, forecasting, and hypothesis testing" to show quantitative foundation.
+    🔧 <b>SQL Experience</b>: If you've queried databases, add "SQL data extraction and analysis" to your skills - many PMs use SQL but don't list it.
+    💬 <b>Innovation Track Record</b>: Transform "Product Manager" to "Product Manager driving innovation - launched 3 new features increasing user engagement 40%" to showcase innovative thinking.
+    💬 <b>Analytical Approach</b>: Reframe "Business Analysis" as "Data-Driven Business Analysis using metrics and A/B testing" to emphasize analytical mindset.
+    
+    SKILL DEVELOPMENT PRIORITIES output:
+    SKILL_1::Python Programming::Tech::Master Python syntax, data structures, and programming fundamentals for data science applications
+    SKILL_2::SQL Database Skills::Tech::Learn complex queries, joins, and database optimization for data analysis
+    SKILL_3::Statistics and Probability::Tech::Build mathematical foundation for data science including distributions, hypothesis testing, and regression
+    SKILL_4::Data Science Fundamentals::Tech::Understand data cleaning, exploration, visualization, and basic modeling techniques
+    SKILL_5::Machine Learning Basics::Tech::Learn supervised and unsupervised learning algorithms with scikit-learn
     </example_poor_match_35_percent>
 
     # VALIDATION CHECKLIST
     
     Before finalizing output, verify:
-    ✓ Key Gaps contains ONLY skills needing learning
+    ✓ Key Gaps contains ONLY skills needing learning/development
+    ✓ Key Gaps uses 🔧 for technical skills, 💼 for soft skills/domain knowledge
     ✓ Quick Improvements contains ONLY presentation optimizations
-    ✓ No skill appears in both sections
+    ✓ Quick Improvements uses 🔧 for technical, 💬 for soft skill improvements
+    ✓ Skill Development Priorities extracts ONLY 🔧 marked technical skills from Key Gaps
+    ✓ No skill appears in both Key Gaps and Quick Improvements sections
     ✓ Strengths count matches similarity score guidelines
     ✓ Overall Assessment references actual findings
     ✓ Learning timelines are realistic
