@@ -5,6 +5,7 @@ Improved gap analysis with context-aware processing and index result integration
 Key component of Index Cal and Gap Analysis V2 refactoring.
 """
 import logging
+import os
 import time
 from typing import Any
 
@@ -200,7 +201,13 @@ class GapAnalysisServiceV2(TokenTrackingMixin):
         # Load the prompt configuration
         try:
             # Use prompt manager to load the correct version (env var -> active -> latest)
-            config = prompt_manager.load_prompt_config("gap_analysis", version="latest")
+            # Check for v2.1.7 override via environment variable
+            gap_analysis_version = os.environ.get('GAP_ANALYSIS_PROMPT_VERSION', 'latest')
+            if gap_analysis_version == '2.1.7':
+                # Load v2.1.7 specifically
+                config = prompt_manager.load_prompt_config_by_filename("gap_analysis", "v2.1.7.yaml")
+            else:
+                config = prompt_manager.load_prompt_config("gap_analysis", version="latest")
             logger.info(f"Loaded gap_analysis prompt version: {getattr(config, 'version', 'unknown')}")
 
             # Get system and user prompts
@@ -289,7 +296,6 @@ Please provide a comprehensive gap analysis.
         Returns:
             Dictionary with temperature, max_tokens, and additional_params
         """
-        import os
 
         # Default configuration
         config = {
@@ -301,7 +307,12 @@ Please provide a comprehensive gap analysis.
         try:
             # Load from YAML configuration using SimplePromptManager with env var support
             # Priority: env var → active → latest
-            prompt_config = prompt_manager.load_prompt_config("gap_analysis", version="latest")
+            gap_analysis_version = os.environ.get('GAP_ANALYSIS_PROMPT_VERSION', 'latest')
+            if gap_analysis_version == '2.1.7':
+                # Load v2.1.7 specifically
+                prompt_config = prompt_manager.load_prompt_config_by_filename("gap_analysis", "v2.1.7.yaml")
+            else:
+                prompt_config = prompt_manager.load_prompt_config("gap_analysis", version="latest")
 
             if hasattr(prompt_config, 'llm_config'):
                 llm_config_obj = prompt_config.llm_config
