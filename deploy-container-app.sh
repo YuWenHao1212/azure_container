@@ -79,6 +79,7 @@ if az containerapp show --name $CONTAINER_APP_NAME --resource-group $RESOURCE_GR
             GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview \
             LLM_MODEL_KEYWORDS=gpt-4.1-mini \
             LLM_MODEL_GAP_ANALYSIS=gpt-4.1 \
+            GAP_ANALYSIS_PROMPT_VERSION=2.1.8 \
             LLM_MODEL_RESUME_FORMAT=gpt-4.1 \
             LLM_MODEL_RESUME_TAILOR=gpt-4.1 \
             AZURE_OPENAI_API_KEY=secretref:azure-openai-key \
@@ -123,6 +124,7 @@ else
             GPT41_MINI_JAPANEAST_API_VERSION=2025-01-01-preview \
             LLM_MODEL_KEYWORDS=gpt-4.1-mini \
             LLM_MODEL_GAP_ANALYSIS=gpt-4.1 \
+            GAP_ANALYSIS_PROMPT_VERSION=2.1.8 \
             LLM_MODEL_RESUME_FORMAT=gpt-4.1 \
             LLM_MODEL_RESUME_TAILOR=gpt-4.1 \
             AZURE_OPENAI_API_KEY=secretref:azure-openai-key \
