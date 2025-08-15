@@ -39,6 +39,7 @@ class UnifiedResponse(BaseModel):
         default_factory=lambda: datetime.utcnow().isoformat(),
         description="Response timestamp in ISO format"
     )
+    metadata: dict[str, Any] | None = Field(default=None, description="Optional metadata including timing information")
 
     class Config:
         json_schema_extra: ClassVar[dict[str, Any]] = {
@@ -85,15 +86,24 @@ class StandardizedTerm(BaseModel):
     method: str = Field(default="", description="Standardization method used")
 
 
-def create_success_response(data: dict[str, Any]) -> UnifiedResponse:
-    """Create a successful response with given data."""
-    return UnifiedResponse(
+def create_success_response(
+    data: dict[str, Any],
+    metadata: dict[str, Any] | None = None
+) -> UnifiedResponse:
+    """Create a successful response with given data and optional metadata."""
+    response = UnifiedResponse(
         success=True,
         data=data,
         error=ErrorDetail(),
         warning=WarningInfo(),
         timestamp=datetime.utcnow().isoformat()
     )
+
+    # Add metadata if provided
+    if metadata:
+        response.metadata = metadata
+
+    return response
 
 
 def create_error_response(

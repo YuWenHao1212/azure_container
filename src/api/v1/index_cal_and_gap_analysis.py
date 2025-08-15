@@ -4,7 +4,7 @@ Handles both similarity calculation and gap analysis in a single request.
 """
 import logging
 import time
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Optional
 
 from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, Field, validator
@@ -105,6 +105,15 @@ class SkillQuery(BaseModel):
         description="Category: SKILL (single course, 1-3 months) or FIELD (specialization/certification, 6+ months)"
     )
     description: str = Field(default="", description="Skill description")
+    # Course Availability fields (added by CourseAvailabilityChecker)
+    has_available_courses: Optional[bool] = Field(
+        default=None,
+        description="Whether courses are available for this skill"
+    )
+    course_count: Optional[int] = Field(
+        default=None,
+        description="Number of available courses for this skill"
+    )
 
 
 class GapAnalysisData(BaseModel):
@@ -259,7 +268,10 @@ async def _execute_v2_analysis(
             f"efficiency={metadata.get('parallel_efficiency', 0):.1f}%"
         )
 
-        return create_success_response(data=response_data.model_dump())
+        return create_success_response(
+            data=response_data.model_dump(),
+            metadata=metadata  # Include timing metadata
+        )
 
     except Exception as e:
         # Log the error with context for lightweight monitoring

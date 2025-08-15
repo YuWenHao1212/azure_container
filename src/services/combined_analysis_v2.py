@@ -407,6 +407,7 @@ class CombinedAnalysisServiceV2(BaseService):
 
         # Course Availability Check - After Gap Analysis
         # Check if courses are available for identified skill gaps
+        logger.info(f"[CourseAvailability] Checking conditions: gap_result={bool(gap_result)}, has_SkillSearchQueries={'SkillSearchQueries' in gap_result if gap_result else False}")
         if gap_result and "SkillSearchQueries" in gap_result:
             try:
                 from src.services.course_availability import check_course_availability
