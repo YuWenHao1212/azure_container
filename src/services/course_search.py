@@ -32,14 +32,33 @@ class CourseSearchService:
 
         # 載入資料庫連線資訊
         if not self._conn_info:
-            try:
-                # 優先使用 tools 目錄的配置
-                with open('tools/coursera_db_manager/config/postgres_connection.json') as f:
-                    self._conn_info = json.load(f)
-            except FileNotFoundError:
-                # 備用路徑
-                with open('temp/postgres_connection.json') as f:
-                    self._conn_info = json.load(f)
+            import os
+
+            # 優先從環境變數讀取
+            if all(os.getenv(k) for k in ['POSTGRES_HOST', 'POSTGRES_DATABASE', 'POSTGRES_USER', 'POSTGRES_PASSWORD']):
+                self._conn_info = {
+                    'host': os.getenv('POSTGRES_HOST'),
+                    'database': os.getenv('POSTGRES_DATABASE'),
+                    'user': os.getenv('POSTGRES_USER'),
+                    'password': os.getenv('POSTGRES_PASSWORD')
+                }
+                logger.info("✅ [CourseSearch] Database config loaded from environment variables")
+            else:
+                # 嘗試從檔案讀取 (用於本地開發)
+                try:
+                    # 優先使用 tools 目錄的配置
+                    with open('tools/coursera_db_manager/config/postgres_connection.json') as f:
+                        self._conn_info = json.load(f)
+                        logger.info("✅ [CourseSearch] Database config loaded from tools/coursera_db_manager/config/")
+                except FileNotFoundError:
+                    try:
+                        # 備用路徑
+                        with open('temp/postgres_connection.json') as f:
+                            self._conn_info = json.load(f)
+                            logger.info("✅ [CourseSearch] Database config loaded from temp/")
+                    except FileNotFoundError:
+                        logger.error("❌ [CourseSearch] No database configuration found (neither env vars nor files)")
+                        raise ValueError("Database configuration not found. Please set POSTGRES_* environment variables or provide postgres_connection.json")
 
         # 建立連線池
         if not self._connection_pool:
