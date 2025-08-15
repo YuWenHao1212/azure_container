@@ -153,9 +153,9 @@ class TestCourseAvailabilityPerformance:
 
                 if template["category"] == "SKILL" and skill_count < 3:
                     # Pick a random variation for this skill
-                    skill_name = random.choice(template["variations"])
+                    skill_name = random.choice(template["variations"])  # noqa: S311
                     # Add small random suffix to ensure uniqueness
-                    random_suffix = ''.join(random.choices(string.ascii_lowercase, k=2))
+                    random_suffix = ''.join(random.choices(string.ascii_lowercase, k=2))  # noqa: S311
                     unique_skill_name = f"{skill_name} {random_suffix}"
 
                     selected_skills.append({
@@ -167,9 +167,9 @@ class TestCourseAvailabilityPerformance:
 
                 elif template["category"] == "FIELD" and field_count < 3:
                     # Pick a random variation for this field
-                    skill_name = random.choice(template["variations"])
+                    skill_name = random.choice(template["variations"])  # noqa: S311
                     # Add small random suffix to ensure uniqueness
-                    random_suffix = ''.join(random.choices(string.ascii_lowercase, k=2))
+                    random_suffix = ''.join(random.choices(string.ascii_lowercase, k=2))  # noqa: S311
                     unique_skill_name = f"{skill_name} {random_suffix}"
 
                     selected_skills.append({
@@ -184,7 +184,7 @@ class TestCourseAvailabilityPerformance:
                 # Fill remaining slots with completely random skills
                 while len(selected_skills) < 6:
                     category = "SKILL" if len([s for s in selected_skills if s["skill_category"] == "SKILL"]) < 3 else "FIELD"
-                    random_name = f"RandomSkill_{iteration}_{len(selected_skills)}_{''.join(random.choices(string.ascii_lowercase, k=4))}"
+                    random_name = f"RandomSkill_{iteration}_{len(selected_skills)}_{''.join(random.choices(string.ascii_lowercase, k=4))}"  # noqa: S311
                     selected_skills.append({
                         "skill_name": random_name,
                         "skill_category": category,

@@ -84,7 +84,7 @@ async def analyze_single_query(iteration: int, use_cached_skills: bool = False) 
         # 使用完全隨機的技能(模擬真實場景)
         import random
         import string
-        suffix = ''.join(random.choices(string.ascii_lowercase, k=4))
+        suffix = ''.join(random.choices(string.ascii_lowercase, k=4))  # noqa: S311
         test_skills = [
             {"skill_name": f"UniqueSkill_{suffix}_1", "skill_category": "SKILL", "description": "Unique test 1"},
             {"skill_name": f"UniqueSkill_{suffix}_2", "skill_category": "SKILL", "description": "Unique test 2"},

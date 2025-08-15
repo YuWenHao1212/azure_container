@@ -167,7 +167,7 @@ async def analyze_parallel_queries(num_queries: int = 6) -> dict:
     embedding_client = get_embedding_client(api_name="course_search")
 
     # 生成測試技能
-    suffix = ''.join(random.choices(string.ascii_lowercase, k=4))
+    suffix = ''.join(random.choices(string.ascii_lowercase, k=4))  # noqa: S311
     test_skills = []
     for i in range(num_queries):
         if i % 2 == 0:

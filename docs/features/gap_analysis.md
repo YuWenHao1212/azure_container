@@ -119,18 +119,24 @@ response = requests.post(
       "SkillSearchQueries": [
         {
           "skill_name": "React",
-          "skill_category": "TECHNICAL",
-          "description": "Frontend framework for building interactive user interfaces required for full-stack role"
+          "skill_category": "SKILL",
+          "description": "Frontend framework for building interactive user interfaces required for full-stack role",
+          "has_available_courses": true,
+          "course_count": 25
         },
         {
-          "skill_name": "Kubernetes",
-          "skill_category": "TECHNICAL",
-          "description": "Container orchestration platform essential for modern DevOps practices"
+          "skill_name": "Kubernetes", 
+          "skill_category": "FIELD",
+          "description": "Container orchestration platform essential for modern DevOps practices",
+          "has_available_courses": true,
+          "course_count": 12
         },
         {
           "skill_name": "AWS",
-          "skill_category": "TECHNICAL",
-          "description": "Cloud platform knowledge required for deploying and managing applications"
+          "skill_category": "FIELD",
+          "description": "Cloud platform knowledge required for deploying and managing applications",
+          "has_available_courses": true,
+          "course_count": 18
         }
       ]
     },
@@ -200,6 +206,18 @@ response = requests.post(
 - 技術和非技術技能的混合
 - 足夠具體以便課程匹配
 - 考慮候選人當前水平和學習路徑
+
+**技能分類說明 (v2.1.8+)**：
+- **SKILL**: 透過單一課程快速學習的技能 (1-3 個月)
+  - 例如：React、Docker、Python框架
+  - 特徵：具體工具、語言框架、短期可掌握
+- **FIELD**: 需要專業認證或深度學習的領域 (6+ 個月)
+  - 例如：Kubernetes、AWS、Machine Learning
+  - 特徵：複雜系統、需要實務經驗、長期投資
+
+**課程可用性資訊**：
+- `has_available_courses`: 是否有相關課程可供學習
+- `course_count`: 可用課程數量，由 Course Availability 服務提供
 
 ### 6. 履歷結構分析（Resume Structure）- V4 新增功能
 使用 GPT-4.1 mini 快速分析履歷結構，識別區塊組織和內容特徵：

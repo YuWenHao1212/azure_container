@@ -245,17 +245,23 @@ X-API-Key: [YOUR_API_KEY]
 
 同時計算匹配指數並分析履歷差距。
 
-**版本更新 (v2.1.0)** ✨
-- KeyGaps 現在包含分類標記：`[Skill Gap]` 或 `[Presentation Gap]`
+**版本更新 (v2.1.8)** ✨
+- SkillSearchQueries 現在包含**課程可用性資訊**：`has_available_courses` 和 `course_count`
+- KeyGaps 包含分類標記：`[Skill Gap]` 或 `[Presentation Gap]`
 - [Skill Gap]: 候選人真正缺乏此技能，需要學習
 - [Presentation Gap]: 候選人具備技能但履歷中未明確展示
-- 支援 Resume Tailoring v2.0.0 兩階段架構優化
+- 技能分類更新：SKILL (1-3 月課程) vs FIELD (6+ 月專業認證)
 
 **版本更新 (v4 - 2025-08-14)** 🚀
 - 新增 `resume_structure` 欄位，提供履歷結構分析
 - 使用 GPT-4.1 mini 快速識別履歷區塊結構
 - 偵測標準區塊、自定義區塊及結構元數據
 - 透過環境變數 `ENABLE_RESUME_STRUCTURE_ANALYSIS` 控制（預設啟用）
+
+**版本更新 (2025-08-15)** 📊
+- 新增 `metadata` 欄位，提供詳細效能計時分析
+- 包含各階段執行時間：keyword_matching, embedding_generation, index_calculation, gap_analysis, course_availability, structure_analysis, pgvector_warmup
+- 總執行時間和並行處理效率指標
 
 **請求參數**
 ```json
@@ -291,9 +297,25 @@ X-API-Key: [YOUR_API_KEY]
       // - FIELD: Requires specialization/certification (6+ months)
       "SkillSearchQueries": [
         {
-          "skill_name": "Docker",
+          "skill_name": "React",
           "skill_category": "SKILL",
-          "description": "Container technology"
+          "description": "Frontend framework for building interactive user interfaces required for full-stack role",
+          "has_available_courses": true,
+          "course_count": 25
+        },
+        {
+          "skill_name": "Kubernetes",
+          "skill_category": "FIELD", 
+          "description": "Container orchestration platform essential for modern DevOps practices",
+          "has_available_courses": true,
+          "course_count": 12
+        },
+        {
+          "skill_name": "AWS",
+          "skill_category": "FIELD",
+          "description": "Cloud platform knowledge required for deploying and managing applications", 
+          "has_available_courses": true,
+          "course_count": 18
         }
       ]
     },
@@ -316,11 +338,33 @@ X-API-Key: [YOUR_API_KEY]
     }
   },
   "error": {
+    "has_error": false,
     "code": "",
     "message": "",
     "details": ""
   },
-  "timestamp": "2025-07-26T10:30:00.000Z"
+  "warning": {
+    "has_warning": false,
+    "message": "",
+    "expected_minimum": 12,
+    "actual_extracted": 0,
+    "suggestion": ""
+  },
+  "timestamp": "2025-08-15T10:30:00.000Z",
+  "metadata": {
+    "phase_timings_ms": {
+      "keyword_matching": 15,
+      "embedding_generation": 450,
+      "index_calculation": 320,
+      "gap_analysis": 1800,
+      "course_availability": 250,
+      "structure_analysis": 180,
+      "pgvector_warmup": 45
+    },
+    "total_time_ms": 3060,
+    "parallel_efficiency": 85.2,
+    "resource_pool_used": true
+  }
 }
 ```
 

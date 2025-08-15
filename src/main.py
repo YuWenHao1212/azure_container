@@ -7,10 +7,6 @@ import os
 from datetime import UTC, datetime
 
 from dotenv import load_dotenv
-
-# Load environment variables from .env file FIRST
-load_dotenv()
-
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +21,9 @@ from src.middleware.lightweight_monitoring import (
     LightweightMonitoringMiddleware,
 )
 from src.middleware.monitoring_middleware import MonitoringMiddleware
+
+# Load environment variables from .env file FIRST
+load_dotenv()
 
 # Initialize settings
 settings = get_settings()
