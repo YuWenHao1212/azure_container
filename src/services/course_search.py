@@ -27,13 +27,16 @@ class CourseSearchService:
 
     async def initialize(self):
         """初始化服務"""
+        import logging
+        import os
+
+        logger = logging.getLogger(__name__)
+
         if not self.embedding_client:
             self.embedding_client = get_course_embedding_client()
 
         # 載入資料庫連線資訊
         if not self._conn_info:
-            import os
-
             # 優先從環境變數讀取
             if all(os.getenv(k) for k in ['POSTGRES_HOST', 'POSTGRES_DATABASE', 'POSTGRES_USER', 'POSTGRES_PASSWORD']):
                 self._conn_info = {
@@ -56,9 +59,10 @@ class CourseSearchService:
                         with open('temp/postgres_connection.json') as f:
                             self._conn_info = json.load(f)
                             logger.info("✅ [CourseSearch] Database config loaded from temp/")
-                    except FileNotFoundError:
+                    except FileNotFoundError as e:
                         logger.error("❌ [CourseSearch] No database configuration found (neither env vars nor files)")
-                        raise ValueError("Database configuration not found. Please set POSTGRES_* environment variables or provide postgres_connection.json")
+                        msg = "Database configuration not found. Please set POSTGRES_* environment variables"
+                        raise ValueError(msg) from e
 
         # 建立連線池
         if not self._connection_pool:
