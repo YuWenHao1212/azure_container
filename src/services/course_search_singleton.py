@@ -14,11 +14,29 @@ class CourseSearchSingleton:
     @classmethod
     async def get_instance(cls) -> CourseSearchService:
         """取得全域單例實例"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # 診斷日誌: 追蹤實例狀態
+        if cls._instance is None:
+            logger.info("🔍 [Singleton] Instance is None, will create new instance")
+        else:
+            logger.debug(f"🔍 [Singleton] Existing instance found: {id(cls._instance)}")
+
         if cls._instance is None:
             async with cls._lock:
                 if cls._instance is None:
+                    logger.info("🔧 [Singleton] Creating new CourseSearchService instance...")
                     cls._instance = CourseSearchService()
                     await cls._instance.initialize()
+                    logger.info(f"✅ [Singleton] Created new instance with ID: {id(cls._instance)}")
+
+                    # 診斷: 檢查連接池狀態
+                    if cls._instance._connection_pool:
+                        logger.info(f"🗄️ [Singleton] Connection pool initialized: {id(cls._instance._connection_pool)}")
+                    else:
+                        logger.warning("⚠️ [Singleton] Connection pool is None after initialization")
+
         return cls._instance
 
     @classmethod

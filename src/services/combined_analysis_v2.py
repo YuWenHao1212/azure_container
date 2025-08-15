@@ -10,6 +10,7 @@ import os
 import time
 from typing import Any
 
+from src.core.monitoring_service import monitoring_service
 from src.services.base import BaseService
 from src.services.gap_analysis_v2 import GapAnalysisServiceV2
 from src.services.index_calculation_v2 import IndexCalculationServiceV2
@@ -209,6 +210,9 @@ class CombinedAnalysisServiceV2(BaseService):
         if self.enable_structure_analysis:
             detailed_timings["structure_start"] = phase1_start
 
+        # Add pgvector warmup timing
+        detailed_timings["pgvector_warmup_start"] = phase1_start
+
         # Create async tasks for parallel execution
         keyword_task = asyncio.create_task(
             asyncio.to_thread(self._quick_keyword_match, resume, keywords)
@@ -221,6 +225,10 @@ class CombinedAnalysisServiceV2(BaseService):
             structure_task = asyncio.create_task(
                 self.structure_analyzer.analyze_structure(resume)
             )
+
+        # NEW: Add pgvector warmup task - runs in parallel with other tasks
+        # This warmup is effectively "free" as it's hidden by Structure Analysis duration
+        warmup_task = asyncio.create_task(self._warmup_pgvector())
 
         # Start embeddings generation in parallel
         embedding_task = None
@@ -249,6 +257,9 @@ class CombinedAnalysisServiceV2(BaseService):
         await embedding_task
         detailed_timings["embedding_end"] = time.time()
         phase_timings["embedding_generation"] = detailed_timings["embedding_end"] - phase1_start
+
+        # Note: We don't wait for warmup_task here - it runs in background
+        # It will complete during Structure Analysis phase (2000ms)
 
         # Start Index Calculation after embeddings are ready
         index_start = time.time()
@@ -335,13 +346,27 @@ class CombinedAnalysisServiceV2(BaseService):
             ),
         }
 
-        # Log V3 optimization performance
+        # Log V3 optimization performance with enhanced course availability tracking
         logger.info(
-            "V3 Optimization - True parallel execution",
+            "[API Timing] Complete breakdown - /api/v1/index-cal-and-gap-analysis",
             extra={
-                "timing_breakdown_ms": timing_breakdown,
-                "optimization": "Plan B",
-                "keyword_to_gap_latency_ms": timing_breakdown.get("keyword_matching_time", 0),
+                "endpoint": "/api/v1/index-cal-and-gap-analysis",
+                "timing_ms": {
+                    "total": timing_breakdown["total_time"],
+                    "parallel_phase": {
+                        "keywords": timing_breakdown.get("keyword_matching_time"),
+                        "embeddings": timing_breakdown.get("embedding_time"),
+                        "structure": timing_breakdown.get("structure_analysis_time"),
+                        "pgvector_warmup": timing_breakdown.get("pgvector_warmup_time")
+                    },
+                    "sequential_phase": {
+                        "index_calculation": timing_breakdown.get("index_calculation_time"),
+                        "gap_analysis": timing_breakdown.get("gap_analysis_time"),
+                        "course_availability": timing_breakdown.get("course_availability_time")
+                    }
+                },
+                "optimization": "V3 Plan B with pgvector warmup",
+                "warmup_status": False,  # Will be updated after warmup completes
                 "phase_percentages": {
                     "keywords": (
                         round(
@@ -368,9 +393,57 @@ class CombinedAnalysisServiceV2(BaseService):
                         if timing_breakdown.get("gap_analysis_time")
                         else None
                     ),
+                    "course_availability": (
+                        round(
+                            (timing_breakdown.get("course_availability_time", 0) /
+                             timing_breakdown["total_time"] * 100), 1
+                        )
+                        if timing_breakdown.get("course_availability_time")
+                        else None
+                    ),
                 }
             }
         )
+
+        # Course Availability Check - After Gap Analysis
+        # Check if courses are available for identified skill gaps
+        if gap_result and "SkillSearchQueries" in gap_result:
+            try:
+                from src.services.course_availability import check_course_availability
+
+                # Track course availability timing
+                detailed_timings["course_availability_start"] = time.time()
+
+                # Execute batch check for course availability
+                # NOTE: pgvector should already be warmed up from parallel phase
+                enhanced_skills = await check_course_availability(
+                    gap_result["SkillSearchQueries"]
+                )
+
+                # Update gap result with enhanced skills
+                gap_result["SkillSearchQueries"] = enhanced_skills
+
+                detailed_timings["course_availability_end"] = time.time()
+
+                logger.info(
+                    f"[CourseAvailability] Checked {len(enhanced_skills)} skills for course availability"
+                )
+
+                # Add to timing breakdown
+                timing_breakdown["course_availability_time"] = round(
+                    (detailed_timings["course_availability_end"] -
+                     detailed_timings["course_availability_start"]) * 1000, 2
+                )
+
+            except Exception as e:
+                # Error doesn't interrupt main flow - Graceful Degradation
+                logger.error(f"[CourseAvailability] Check failed: {e}")
+                monitoring_service.track_event("CourseAvailabilityIntegrationError", {
+                    "error": str(e),
+                    "skill_count": len(gap_result.get("SkillSearchQueries", [])),
+                    "severity": "MEDIUM"
+                })
+                # Continue execution, skills remain unchanged (no has_available_courses field)
 
         # V4 Enhancement: Get structure analysis result
         # Test ID: RS-003-IT - Error handling flow
@@ -398,6 +471,30 @@ class CombinedAnalysisServiceV2(BaseService):
             except Exception as e:
                 logger.warning(f"Structure analysis failed: {e}, using fallback")
                 resume_structure = self.structure_analyzer._get_fallback_structure()
+
+        # Check warmup task completion (non-blocking)
+        warmup_metrics = {}
+        if warmup_task.done():
+            try:
+                warmup_metrics = warmup_task.result()
+                detailed_timings["pgvector_warmup_end"] = (
+                    detailed_timings["pgvector_warmup_start"] +
+                    warmup_metrics["duration_ms"] / 1000
+                )
+                timing_breakdown["pgvector_warmup_time"] = warmup_metrics["duration_ms"]
+
+                if warmup_metrics["completed"]:
+                    logger.info(
+                        f"✅ [pgvector warmup] Completed in {warmup_metrics['duration_ms']:.1f}ms "
+                        "during parallel phase"
+                    )
+                else:
+                    logger.warning(f"⚠️ [pgvector warmup] Did not complete: {warmup_metrics.get('error')}")
+            except Exception as e:
+                logger.warning(f"⚠️ [pgvector warmup] Task failed: {e}")
+        else:
+            # Warmup still running or cancelled
+            logger.debug("pgvector warmup task did not complete during parallel phase")
 
         # Combine results (maintain API compatibility)
         result = {
@@ -459,6 +556,66 @@ class CombinedAnalysisServiceV2(BaseService):
             "resume": resume_task.result(),
             "job_description": job_task.result()
         }
+
+    async def _warmup_pgvector(self) -> dict[str, Any]:
+        """
+        Warm up pgvector connection pool and indexes during parallel phase.
+
+        This runs in parallel with other tasks during the initial phase,
+        so the warmup cost is effectively zero (hidden by Structure Analysis).
+
+        Returns:
+            Dictionary with warmup metrics
+        """
+        warmup_metrics = {
+            "started": time.time(),
+            "completed": False,
+            "duration_ms": 0,
+            "connections_warmed": 0,
+            "error": None
+        }
+
+        try:
+            # Get or initialize connection pool via singleton
+            from src.services.course_search_singleton import get_course_search_service
+
+            service = await get_course_search_service()
+            warmup_metrics["connections_warmed"] += 1
+
+            if service._connection_pool:
+                # Use multiple representative vectors for comprehensive warmup
+                test_vectors = [
+                    [0.1] * 1536,  # Test vector 1
+                    [0.2] * 1536,  # Test vector 2 (different range)
+                ]
+
+                # Warmup query - loads pgvector indexes into memory
+                warmup_query = """
+                    SELECT COUNT(*)
+                    FROM courses
+                    WHERE platform = 'coursera'
+                    AND embedding IS NOT NULL
+                    AND 1 - (embedding <=> $1::vector) >= 0.01
+                    LIMIT 1
+                """
+
+                async with service._connection_pool.acquire() as conn:
+                    for vector in test_vectors:
+                        await conn.fetchval(warmup_query, vector)
+                        warmup_metrics["connections_warmed"] += 1
+
+                warmup_metrics["completed"] = True
+                logger.info("✅ [pgvector warmup] Successfully warmed up connection pool and indexes")
+            else:
+                logger.warning("⚠️ [pgvector warmup] Connection pool not available")
+
+        except Exception as e:
+            warmup_metrics["error"] = str(e)
+            logger.warning(f"⚠️ [pgvector warmup] Warmup failed (non-critical): {e}")
+            # Don't raise - warmup failure should not affect main flow
+
+        warmup_metrics["duration_ms"] = round((time.time() - warmup_metrics["started"]) * 1000, 2)
+        return warmup_metrics
 
     def _quick_keyword_match(self, resume: str, keywords: list[str]) -> dict[str, Any]:
         """

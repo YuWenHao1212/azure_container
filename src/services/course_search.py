@@ -43,15 +43,37 @@ class CourseSearchService:
 
         # 建立連線池
         if not self._connection_pool:
+            import logging
+            import time
+
+            from pgvector.asyncpg import register_vector
+
+            logger = logging.getLogger(__name__)
+            start_time = time.time()
+            logger.info("🔧 [CourseSearch] Creating connection pool with pgvector registration...")
+
+            # 定義連接初始化函數
+            async def init_connection(conn):
+                """初始化每個連接: 註冊 pgvector 類型"""
+                await register_vector(conn)
+                logger.debug(f"✅ [CourseSearch] Registered pgvector for connection {id(conn)}")
+
+            # 建立連線池, 每個連接創建時自動註冊 pgvector
             self._connection_pool = await asyncpg.create_pool(
                 host=self._conn_info['host'],
                 database=self._conn_info['database'],
                 user=self._conn_info['user'],
                 password=self._conn_info['password'],
                 ssl='require',
-                min_size=1,
-                max_size=5,
-                command_timeout=30
+                min_size=2,  # Increased for better concurrency
+                max_size=20,  # Support up to 20 parallel queries
+                command_timeout=30,
+                init=init_connection  # 🚀 連接初始化時自動註冊 pgvector
+            )
+            elapsed = (time.time() - start_time) * 1000
+            logger.info(
+                f"✅ [CourseSearch] Connection pool created with pgvector "
+                f"pre-registered in {elapsed:.1f}ms, ID: {id(self._connection_pool)}"
             )
 
     async def search_courses(
