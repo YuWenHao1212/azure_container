@@ -114,13 +114,14 @@ class AdvancedPreCommitValidator:
             "health-keyword": {"name": "Health & Keyword 測試", "step": 4},
             "index-calculation": {"name": "Index Calculation 測試", "step": 5},
             "gap-analysis": {"name": "Gap Analysis 測試", "step": 6},
-            "resume-tailoring": {"name": "Resume Tailoring 測試", "step": 7},
+            "course-availability": {"name": "Course Availability 測試", "step": 7},
+            "resume-tailoring": {"name": "Resume Tailoring 測試", "step": 8},
             "full": {"name": "完整測試", "step": None}
         }
 
     def run_ruff_check(self) -> TestResult:
         """Run Ruff code quality check"""
-        step_info = "Step 1/7: " if self.option == "full" else ""
+        step_info = "Step 1/8: " if self.option == "full" else ""
         print(f"{Colors.BLUE}📝 {step_info}Running Ruff check...{Colors.RESET}")
         print("Checking src/ and test/ directories")
 
@@ -147,7 +148,7 @@ class AdvancedPreCommitValidator:
 
                 for line in lines:
                     if line and not line.startswith('Found'):
-                        if 'S603' in line or 'S108' in line:  # Security warnings
+                        if 'S603' in line or 'S108' in line or 'S311' in line:  # Security warnings
                             warnings.append(line)
                         else:
                             errors.append(line)
@@ -170,11 +171,15 @@ class AdvancedPreCommitValidator:
                             warning_types['S603'] = warning_types.get('S603', 0) + 1
                         elif 'S108' in warning:
                             warning_types['S108'] = warning_types.get('S108', 0) + 1
+                        elif 'S311' in warning:
+                            warning_types['S311'] = warning_types.get('S311', 0) + 1
                     for wtype, count in warning_types.items():
                         if wtype == 'S603':
                             print(f"    {count} x S603: subprocess-without-shell-equals-true")
                         elif wtype == 'S108':
                             print(f"    {count} x S108: hardcoded-temp-file")
+                        elif wtype == 'S311':
+                            print(f"    {count} x S311: pseudo-random-generators-not-for-crypto")
 
                 result.failed_tests = lines[:5]  # Store for summary
 
@@ -273,7 +278,7 @@ class AdvancedPreCommitValidator:
 
     def run_service_modules_tests(self) -> dict[str, TestResult]:
         """Run service module tests"""
-        step_info = "Step 2/7: " if self.option == "full" else ""
+        step_info = "Step 2/8: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Service Modules tests...{Colors.RESET}")
 
         # Based on the actual test files in test/unit/services/
@@ -331,7 +336,7 @@ class AdvancedPreCommitValidator:
 
     def run_error_handler_tests(self) -> dict[str, TestResult]:
         """Run Error Handler System tests (UT & IT)"""
-        step_info = "Step 3/6: " if self.option == "full" else ""
+        step_info = "Step 3/8: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Error Handler System tests...{Colors.RESET}")
 
         unit_files = [
@@ -374,7 +379,7 @@ class AdvancedPreCommitValidator:
 
     def run_health_keyword_tests(self) -> dict[str, TestResult]:
         """Run Health & Keyword tests"""
-        step_info = "Step 4/7: " if self.option == "full" else ""
+        step_info = "Step 4/8: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Health & Keyword tests...{Colors.RESET}")
 
         unit_files = [
@@ -416,7 +421,7 @@ class AdvancedPreCommitValidator:
 
     def run_index_calculation_tests(self) -> dict[str, TestResult]:
         """Run Index Calculation tests"""
-        step_info = "Step 5/7: " if self.option == "full" else ""
+        step_info = "Step 5/8: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Index Calculation tests...{Colors.RESET}")
 
         unit_files = ["test/unit/test_index_calculation_v2.py"]
@@ -451,7 +456,7 @@ class AdvancedPreCommitValidator:
 
     def run_gap_analysis_tests(self) -> dict[str, TestResult]:
         """Run Gap Analysis tests with timeout handling"""
-        step_info = "Step 6/7: " if self.option == "full" else ""
+        step_info = "Step 6/8: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Gap Analysis tests...{Colors.RESET}")
 
         # Include Resume Structure Analysis tests (part of Gap Analysis V4)
@@ -512,9 +517,52 @@ class AdvancedPreCommitValidator:
 
         return results
 
+    def run_course_availability_tests(self) -> dict[str, TestResult]:
+        """Run Course Availability tests"""
+        step_info = "Step 7/8: " if self.option == "full" else ""
+        print(f"\n{Colors.BLUE}📝 {step_info}Running Course Availability tests...{Colors.RESET}")
+
+        unit_files = ["test/unit/services/test_course_availability.py"]
+        integration_files = ["tests/integration/test_course_availability_integration.py"]
+
+        # Run unit tests
+        print("  Unit Tests: ", end="", flush=True)
+        unit_result = self.run_pytest_programmatically(unit_files, "course_availability_unit")
+        if unit_result.total > 0:
+            status = "✅" if unit_result.failed == 0 else "❌"
+            print(f"collected {unit_result.total} items, {unit_result.passed} passed {status}")
+        elif unit_result.skipped > 0:
+            print("file not found, skipped ⚠️")
+        else:
+            print("collected 0 items")
+
+        # Run integration tests
+        print("  Integration Tests: ", end="", flush=True)
+        integration_result = self.run_pytest_programmatically(integration_files, "course_availability_integration")
+        if integration_result.total > 0:
+            status = "✅" if integration_result.failed == 0 else "❌"
+            print(f"collected {integration_result.total} items, {integration_result.passed} passed {status}")
+        elif integration_result.skipped > 0:
+            print("file not found, skipped ⚠️")
+        else:
+            print("collected 0 items")
+
+        results = {
+            "unit": unit_result,
+            "integration": integration_result
+        }
+
+        if any(r.failed > 0 or r.errors > 0 for r in results.values()):
+            print(f"{Colors.RED}❌ Course Availability tests FAILED{Colors.RESET}")
+            self.overall_failed = True
+        else:
+            print(f"{Colors.GREEN}✅ Course Availability tests passed{Colors.RESET}")
+
+        return results
+
     def run_resume_tailoring_tests(self) -> dict[str, TestResult]:
         """Run Resume Tailoring tests (UT & IT only, no PT)"""
-        step_info = "Step 7/7: " if self.option == "full" else ""
+        step_info = "Step 8/8: " if self.option == "full" else ""
         print(f"\n{Colors.BLUE}📝 {step_info}Running Resume Tailoring tests...{Colors.RESET}")
 
         unit_files = ["test/unit/services/test_resume_tailoring_metrics.py"]
@@ -638,6 +686,7 @@ class AdvancedPreCommitValidator:
             "health_keyword": ("🩺 Health & Keyword", "health_keyword"),
             "index_calc": ("🧮 Index Calculation", "index_calc"),
             "gap_analysis": ("📈 Gap Analysis", "gap_analysis"),
+            "course_availability": ("📚 Course Availability", "course_availability"),
             "resume_tailoring": ("📝 Resume Tailoring", "resume_tailoring")
         }
 
@@ -666,7 +715,7 @@ class AdvancedPreCommitValidator:
         has_failures = False
 
         # Check for any failures
-        for key in ["service_modules", "error_handler", "health_keyword", "index_calc", "gap_analysis", "resume_tailoring"]:
+        for key in ["service_modules", "error_handler", "health_keyword", "index_calc", "gap_analysis", "course_availability", "resume_tailoring"]:
             if key in self.results:
                 if isinstance(self.results[key], dict):
                     for result in self.results[key].values():
@@ -776,6 +825,7 @@ class AdvancedPreCommitValidator:
                 print("• Health & Keyword: ./test/scripts/run_health_keyword_unit_integration.sh")
                 print("• Index Calc: ./test/scripts/run_index_calculation_unit_integration.sh")
                 print("• Gap Analysis: ./test/scripts/run_index_cal_gap_analysis_unit_integration.sh")
+                print("• Course Availability: pytest test/unit/services/test_course_availability.py tests/integration/test_course_availability_integration.py -v")
                 print("• Resume Tailoring (UT&IT): pytest test/unit/services/test_resume_tailoring_metrics.py test/integration/test_resume_tailoring_api.py -v")
                 print("• Resume Tailoring (PT): pytest test/performance/test_resume_tailoring_performance.py -v  # Requires real API keys")
                 print("• Quick check: ruff check src/ test/ --line-length=120")
@@ -790,6 +840,7 @@ class AdvancedPreCommitValidator:
             ("health_keyword", self.run_health_keyword_tests),
             ("index_calc", self.run_index_calculation_tests),
             ("gap_analysis", self.run_gap_analysis_tests),
+            ("course_availability", self.run_course_availability_tests),
             ("resume_tailoring", self.run_resume_tailoring_tests)
         ]
 
@@ -800,6 +851,7 @@ class AdvancedPreCommitValidator:
             "health-keyword": [("health_keyword", self.run_health_keyword_tests)],
             "index-calculation": [("index_calc", self.run_index_calculation_tests)],
             "gap-analysis": [("gap_analysis", self.run_gap_analysis_tests)],
+            "course-availability": [("course_availability", self.run_course_availability_tests)],
             "resume-tailoring": [("resume_tailoring", self.run_resume_tailoring_tests)],
             "full": all_steps
         }
@@ -812,14 +864,15 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Available options:
-  ruff              : Run only Ruff code quality check
-  service           : Run only Service Modules tests
-  error-handler     : Run only Error Handler System tests
-  health-keyword    : Run only Health & Keyword tests
-  index-calculation : Run only Index Calculation tests
-  gap-analysis      : Run only Gap Analysis tests
-  resume-tailoring  : Run only Resume Tailoring tests
-  full              : Run all tests (default)
+  ruff                : Run only Ruff code quality check
+  service             : Run only Service Modules tests
+  error-handler       : Run only Error Handler System tests
+  health-keyword      : Run only Health & Keyword tests
+  index-calculation   : Run only Index Calculation tests
+  gap-analysis        : Run only Gap Analysis tests
+  course-availability : Run only Course Availability tests
+  resume-tailoring    : Run only Resume Tailoring tests
+  full                : Run all tests (default)
 
 Examples:
   python test/scripts/pre_commit_check_advanced.py --option service

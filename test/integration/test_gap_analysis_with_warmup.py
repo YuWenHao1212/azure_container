@@ -26,7 +26,7 @@ class TestGapAnalysisWithWarmup:
         return {
             "resume": """
                 <h2>Experience</h2>
-                <p>Senior Software Engineer with 5 years experience in Python, FastAPI, 
+                <p>Senior Software Engineer with 5 years experience in Python, FastAPI,
                 Docker, Kubernetes, AWS, PostgreSQL, Redis, and React.</p>
                 <h2>Skills</h2>
                 <ul>
@@ -103,7 +103,7 @@ class TestGapAnalysisWithWarmup:
                         valid_request_data["keywords"],
                         valid_request_data["language"]
                     )
-                    total_time = time.time() - start_time
+                    time.time() - start_time
 
                     # Assertions
                     assert result is not None
@@ -198,7 +198,7 @@ class TestGapAnalysisWithWarmup:
                     # Execute with logging
                     import logging
                     with caplog.at_level(logging.INFO):
-                        result = await service.analyze(
+                        await service.analyze(
                             valid_request_data["resume"],
                             valid_request_data["job_description"],
                             valid_request_data["keywords"],

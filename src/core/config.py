@@ -39,7 +39,7 @@ class Settings(BaseSettings):
 
     # Course embedding settings (for course search)
     course_embedding_endpoint: str = Field(
-        default="https://ai-azureai700705952086.cognitiveservices.azure.com/openai/deployments/text-embedding-3-small/embeddings?api-version=2023-05-15",
+        default="https://airesumeadvisor.openai.azure.com/openai/deployments/embedding-3-small-japan/embeddings?api-version=2023-05-15",
         validation_alias=AliasChoices("COURSE_EMBEDDING_ENDPOINT", "AZURE_OPENAI_COURSE_EMBEDDING_ENDPOINT"),
         description=(
             "Course embedding endpoint - supports both COURSE_EMBEDDING_ENDPOINT "
@@ -145,6 +145,12 @@ class Settings(BaseSettings):
         default="embedding-3-small",
         validation_alias="LLM_MODEL_COURSE_EMBEDDING",
         description="Embedding model for course search (default: embedding-3-small for efficiency)"
+    )
+    # Course Search Embedding Model (for api_name="course_search")
+    llm_model_embedding_course_search: str = Field(
+        default="embedding-3-small",
+        validation_alias="LLM_MODEL_EMBEDDING_COURSE_SEARCH",
+        description="Embedding model for course search API"
     )
 
     # Prompt version configuration

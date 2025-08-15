@@ -1,11 +1,11 @@
 # Index Calculation and Gap Analysis API 測試規格文檔
 
 ## 文檔資訊
-- **版本**: 1.0.9
+- **版本**: 1.0.11
 - **建立日期**: 2025-08-03
-- **最後更新**: 2025-08-05
+- **最後更新**: 2025-08-15
 - **維護者**: 測試團隊
-- **測試總數**: 50 個（20 單元測試 + 27 整合測試 + 1 效能測試 + 2 E2E 測試）
+- **測試總數**: 62 個（27 單元測試 + 31 整合測試 + 2 效能測試 + 2 E2E 測試）
 - **更新說明**: 
   - v1.0.2: 新增效能測試快速執行指南
   - v1.0.3: 更新效能測試實作（平行執行、P95 20個樣本）
@@ -15,6 +15,8 @@
   - v1.0.7: 新增錯誤處理測試案例 - 新增 10 個整合測試 (IT: 17→27)
   - v1.0.8: 合併效能測試 - 合併 API-GAP-001-PT 和 API-GAP-002-PT，同時計算 P50/P95 (PT: 2→1)
   - v1.0.9: 移除部分成功測試 - 刪除 API-GAP-003-E2E，與產品策略「完全失敗」一致 (E2E: 3→2)
+  - v1.0.10: 新增 Resume Structure Analysis 測試案例 (UT: 20→25, IT: 27→30)
+  - v1.0.11: 新增 Course Availability Check 測試案例 - 7 個單元測試 + 4 個整合測試 + 1 個效能測試 (UT: 25→27, IT: 30→31, PT: 1→2)
 
 ## 重要測試約束 ⚠️
 
@@ -1454,6 +1456,198 @@ pytest test/integration/test_resume_structure_integration.py -v
 pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer::test_RS_001_UT_basic_structure_analysis -v
 ```
 
+## 7. Course Availability Check 測試案例
+
+### 7.1 單元測試 (CA-xxx-UT)
+
+#### CA-001-UT: 批量 Embedding 生成測試
+- **名稱**: Batch Embedding Generation
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證批量生成 embeddings 功能
+- **測試內容**: Mock embedding service，測試 3-6 個技能的批量處理
+- **判斷標準**:
+  - 一次 API 呼叫生成所有 embeddings
+  - 返回數量與輸入一致
+  - 處理空列表不報錯
+  - 正確應用 SKILL/FIELD 差異化文本策略
+
+#### CA-002-UT: 單一技能查詢測試
+- **名稱**: Single Skill Query Execution
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證單一技能的資料庫查詢
+- **測試內容**: Mock 資料庫連線，測試 SQL 查詢邏輯與優先排序
+- **判斷標準**:
+  - 正確返回 has_courses 布林值
+  - course_count 不超過 10
+  - 查詢超時拋出 TimeoutError
+  - 使用正確的相似度閾值（SKILL: 0.30, FIELD: 0.25）
+
+#### CA-003-UT: 快取機制測試
+- **名稱**: Popular Skills Cache Mechanism
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 驗證熱門技能快取
+- **測試內容**: 測試快取命中與未命中場景
+- **判斷標準**:
+  - 熱門技能直接返回快取結果
+  - 未快取技能進入查詢流程
+  - 快取命中率統計正確
+  - Python, JavaScript 等熱門技能在快取中
+
+#### CA-004-UT: 錯誤處理測試
+- **名稱**: Graceful Degradation Error Handling
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證 Graceful Degradation 機制
+- **測試內容**: 模擬各種錯誤場景
+- **判斷標準**:
+  - 單一失敗不影響其他技能
+  - 失敗技能標記為 false/0
+  - 發送正確的錯誤告警
+  - 系統整體失敗時所有技能標記為 false
+
+#### CA-005-UT: 並行處理測試
+- **名稱**: Parallel Processing with asyncio.gather
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證 asyncio.gather 並行執行
+- **測試內容**: 測試 3-6 個技能的並行查詢
+- **判斷標準**:
+  - 所有查詢並行執行
+  - 單一異常不影響其他
+  - return_exceptions=True 正確處理
+  - 執行時間明顯少於串行處理
+
+#### CA-006-UT: 空技能列表處理測試
+- **名稱**: Empty Skill List Handling
+- **優先級**: P2
+- **類型**: 單元測試
+- **測試目標**: 驗證空列表輸入的處理
+- **測試內容**: 傳入空的技能查詢列表
+- **判斷標準**:
+  - 返回空列表而非錯誤
+  - 不呼叫 embedding 或資料庫服務
+  - 快速返回（< 10ms）
+  - 不產生任何錯誤日誌
+
+#### CA-007-UT: 超時處理測試
+- **名稱**: Timeout Handling Test
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 驗證查詢超時的處理機制
+- **測試內容**: 模擬資料庫查詢超時（> 1秒）
+- **判斷標準**:
+  - 正確捕獲 TimeoutError
+  - 超時的技能標記為 unavailable
+  - 記錄警告日誌
+  - 不影響其他技能的查詢
+
+### 7.2 整合測試 (CA-xxx-IT)
+
+#### CA-001-IT: API 整合測試
+- **名稱**: Gap Analysis Integration
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 驗證與 Gap Analysis 的整合
+- **測試內容**: Mock 完整 API 流程，驗證結果增強
+- **測試資料**:
+  - Rust (SKILL): Systems programming language
+  - Quantum Computing (FIELD): Quantum algorithms
+- **判斷標準**:
+  - SkillSearchQueries 包含新欄位 (has_available_courses, course_count)
+  - 數值合理（0-10）
+  - 包含 preferred_count 和 other_count 分解
+
+#### CA-002-IT: 並行處理與差異化策略測試
+- **名稱**: Parallel Processing and Category Differentiation
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 驗證 SKILL/FIELD 差異化處理
+- **測試內容**: 測試不同類別的 embedding 文本生成
+- **判斷標準**:
+  - SKILL 類別包含 "course project certificate" 關鍵詞
+  - FIELD 類別包含 "specialization degree" 關鍵詞
+  - 並行處理多個技能
+  - 正確應用不同的相似度閾值
+
+#### CA-003-IT: 優雅降級測試
+- **名稱**: Graceful Degradation on Service Failure
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 驗證服務失敗時的恢復
+- **測試內容**: 模擬 Embedding/DB 服務失敗
+- **判斷標準**:
+  - 主 API 繼續運作
+  - 技能標記為 false
+  - 錯誤告警正確發送
+  - 不中斷主要 Gap Analysis 流程
+
+#### CA-004-IT: 資料庫連線失敗測試
+- **名稱**: Database Connection Failure Handling
+- **優先級**: P1
+- **類型**: 整合測試
+- **測試目標**: 驗證資料庫連線失敗的處理
+- **測試內容**: Mock connection pool 拋出異常
+- **判斷標準**:
+  - 服務不崩潰
+  - 返回 false/0 作為預設值
+  - 正確記錄錯誤日誌
+  - Graceful degradation 機制啟動
+
+### 7.3 效能測試 (CA-xxx-PT)
+
+#### CA-001-PT: 6 技能效能測試
+- **名稱**: 6-Skill Performance Test
+- **優先級**: P0
+- **類型**: 效能測試
+- **測試目標**: 測試 6 個技能並行查詢的效能表現
+- **測試內容**:
+  - 固定 6 個技能（3 SKILL + 3 FIELD 類別）
+  - 連續執行 20 次迭代
+  - 每次迭代都是 6 個技能的並行查詢
+  - 計算 P50、P95、平均值等統計數據
+- **測試資料**: 真實存在的技能（Python, Docker, React, Machine Learning, Data Science, Cloud Computing）
+- **判斷標準**:
+  - P50 < 500ms（使用真實 API）
+  - P95 < 1000ms（使用真實 API）
+  - 生成詳細 JSON 報告
+
+### 7.4 測試實作位置
+
+```
+test/
+├── unit/
+│   └── services/
+│       └── test_course_availability.py         # 7 個單元測試
+└── integration/
+    └── test_course_availability_integration.py # 4 個整合測試
+└── performance/
+    └── test_course_availability_performance.py  # 3 個效能測試（已修復）
+```
+
+### 7.5 測試執行指令
+
+```bash
+# 執行所有課程可用性測試
+pytest test/unit/services/test_course_availability.py -v
+pytest tests/integration/test_course_availability_integration.py -v
+
+# 執行特定測試
+pytest test/unit/services/test_course_availability.py::TestCourseAvailability::test_CA_001_UT_batch_embedding_generation -v
+
+# 執行效能測試
+./test/scripts/run_course_availability_performance.sh
+
+# 執行特定效能測試
+pytest test/performance/test_course_availability_performance.py::TestCourseAvailabilityPerformance::test_CA_001_PT_progressive_performance -v
+
+# 執行真實 API 測試（需要 API keys）
+pytest test/performance/test_course_availability_performance.py -m real_api -v
+pytest test/performance/test_course_availability_performance.py -v --real-api
+```
+
 ---
 
-**文檔結束** - 版本 1.0.10 | 所有測試已完成驗證 ✅ | 錯誤碼對照表已新增
+**文檔結束** - 版本 1.0.11 | 所有測試已完成驗證 ✅ | 新增課程可用性檢查測試規格

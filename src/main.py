@@ -598,19 +598,99 @@ async def startup_event():
         # Initialize all dependencies (standardizers, prompt service, etc.)
         initialize_dependencies()
 
-        elapsed_time = (datetime.utcnow() - start_time).total_seconds()
+        # 🔧 Pre-initialize Course Search connection pool to avoid first-request delay
+        logger.info("🗄️ Pre-initializing Course Search database connection pool...")
+        pool_start_time = datetime.now(UTC)
+
+        from src.services.course_search_singleton import get_course_search_service
+        course_service = await get_course_search_service()
+
+        pool_elapsed = (datetime.now(UTC) - pool_start_time).total_seconds()
+        logger.info(f"✅ Course Search connection pool initialized in {pool_elapsed:.2f}s")
+
+        # 🔥 Warm up connection pool and pgvector indexes
+        logger.info("🔥 Warming up connection pool and database indexes...")
+        warmup_start = datetime.now(UTC)
+        try:
+            pool = course_service._connection_pool
+            if pool:
+                # Step 1: Force create connections
+                connections = []
+                num_connections = min(pool._maxsize, 5)  # Warm up 5 connections
+                logger.info(f"   Creating {num_connections} connections...")
+
+                for _i in range(num_connections):
+                    conn = await pool.acquire()
+                    connections.append(conn)
+
+                # Step 2: Warm up pgvector indexes with test queries
+                logger.info("   Warming up pgvector indexes...")
+                test_embedding = [0.1] * 1536  # Test embedding vector
+
+                # Run a test query on first 2 connections to warm up indexes
+                for conn in connections[:2]:
+                    try:
+                        # Simple vector similarity query to load indexes
+                        await conn.fetchval(
+                            """
+                            SELECT COUNT(*)
+                            FROM courses
+                            WHERE platform = 'coursera'
+                            AND embedding IS NOT NULL
+                            AND 1 - (embedding <=> $1::vector) >= 0.01
+                            LIMIT 1
+                            """,
+                            test_embedding
+                        )
+                    except Exception as e:
+                        logger.warning(f"   Warmup query failed: {e}")
+
+                # Step 3: Release all connections back to pool
+                for conn in connections:
+                    await pool.release(conn)
+
+                warmup_elapsed = (datetime.now(UTC) - warmup_start).total_seconds()
+                logger.info(f"✅ Connection pool warmed up in {warmup_elapsed:.2f}s")
+            else:
+                logger.warning("⚠️ No connection pool available for warmup")
+        except Exception as e:
+            logger.warning(f"⚠️ Connection pool warmup failed: {e}")
+            # Don't fail startup, warmup is optional
+
+        # Test the connection pool with health check
+        db_health_status = "unknown"
+        try:
+            test_result = await course_service.health_check()
+            db_health_status = test_result.get("database", {}).get("status", "unknown")
+            if db_health_status == "healthy":
+                logger.info("✅ Database connection pool health check passed")
+            else:
+                logger.warning(f"⚠️ Database connection pool health check failed: {test_result}")
+        except Exception as e:
+            logger.error(f"❌ Database connection pool health check error: {e}")
+            db_health_status = "error"
+            # Don't fail startup, but log the issue
+
+        elapsed_time = (datetime.now(UTC) - start_time).total_seconds()
         logger.info(f"✅ Application startup completed in {elapsed_time:.2f} seconds")
 
-        # Track startup success
+        # 📊 階段 2: 監控改善 - 詳細啟動指標
+        startup_metrics = {
+            "total_startup_time": elapsed_time,
+            "db_pool_init_time": pool_elapsed,
+            "db_health_status": db_health_status,
+            "environment": os.getenv("ENVIRONMENT", "unknown"),
+            "version": settings.app_version
+        }
+
+        # Track startup success with enhanced metrics
         if monitoring_service.is_enabled:
-            monitoring_service.track_event(
-                "ApplicationStartup",
-                {
-                    "startup_time_seconds": elapsed_time,
-                    "environment": os.getenv("ENVIRONMENT", "unknown"),
-                    "version": settings.app_version
-                }
-            )
+            monitoring_service.track_event("ApplicationStartup", startup_metrics)
+
+        logger.info(
+            f"📊 Startup Metrics: Total={elapsed_time:.2f}s, "
+            f"DB Pool={pool_elapsed:.2f}s, DB Health={db_health_status}"
+        )
     except Exception as e:
         logger.error(f"❌ Failed to initialize application: {e}", exc_info=True)
         # Don't prevent startup, but log the error

@@ -13,15 +13,16 @@
 | 1.0.1 | 2025-08-05 | 新增錯誤處理整合測試 (API-GAP-018-IT ~ API-GAP-027-IT) | 測試團隊 |
 | 1.0.2 | 2025-08-06 | 更新至規格 v1.0.9，總測試數調整為 50 個，新增 10 個錯誤處理測試 | 測試團隊 |
 | 2.0.0 | 2025-08-12 | 更新測試數量 - 調整為 44 個 (17 UT + 27 IT) | Claude Code |
+| 2.1.0 | 2025-08-15 | 新增 Course Availability 測試 - 11 個 Mock + 3 個效能測試 | Claude Code |
 
 ## 📊 執行摘要
 
-- **總測試文件**: 5 個
-- **總測試案例**: 56 個（25 單元測試 + 31 整合測試）
-- **規格符合度**: 100% (56/56)
-- **Mock 測試執行成功率**: 100% (56/56) ✅ 已驗證
-- **效能和 E2E 測試**: 獨立管理，不包含在此矩陣中
-- **最新驗證時間**: 2025-08-12
+- **總測試文件**: 8 個
+- **總測試案例**: 68 個（32 單元測試 + 35 整合測試 + 1 效能測試）
+- **規格符合度**: 100% (68/68)
+- **Mock 測試執行成功率**: 100% (67/67) ✅ 已驗證
+- **效能測試**: 1 個 Course Availability 效能測試
+- **最新驗證時間**: 2025-08-15
 
 ---
 
@@ -36,15 +37,19 @@
 | 3 | test/integration/test_gap_analysis_v2_integration_complete.py | 整合測試 | API-GAP-001~017-IT | 17 | ✅ 100% 通過 |
 | 4 | test/integration/test_error_handling_v2.py | 整合測試 | API-GAP-018~027-IT | 10 | ✅ 100% 通過 |
 | 5 | test/integration/test_resume_structure_integration.py | 整合測試 | RESUME-STRUCT-001~004-IT | 4 | ✅ 100% 通過 |
-| 6 | test/scripts/pre_commit_check_advanced.py | Python 測試腳本 | 進階 Pre-commit 執行器 | 56 | ✅ 已驗證 |
+| 6 | test/unit/services/test_course_availability.py | 單元測試 | CA-001~007-UT | 7 | ✅ 100% 通過 |
+| 7 | tests/integration/test_course_availability_integration.py | 整合測試 | CA-001~004-IT | 4 | ✅ 100% 通過 |
+| 8 | test/performance/test_course_availability_performance.py | 效能測試 | CA-001-PT | 1 | ✅ 100% 通過 |
+| 9 | test/scripts/pre_commit_check_advanced.py | Python 測試腳本 | 進階 Pre-commit 執行器 | 67 | ✅ 已驗證 |
 
 ### 1.2 模組符合度分析
 
 | 模組 | 規格案例數 | 已實作案例數 | 測試通過率 | 符合度 | 狀態 |
 |------|------------|-------------|------------|--------|------|
-| 單元測試 (UT) | 25 | 25 | 100% (25/25) | 100% | ✅ 完美 |
-| 整合測試 (IT) | 31 | 31 | 100% (31/31) | 100% | ✅ 完美 |
-| **總計** | **56** | **56** | **100% (56/56)** | **100%** | **✅ 完美** |
+| 單元測試 (UT) | 32 | 32 | 100% (32/32) | 100% | ✅ 完美 |
+| 整合測試 (IT) | 35 | 35 | 100% (35/35) | 100% | ✅ 完美 |
+| 效能測試 (PT) | 1 | 1 | 100% (1/1) | 100% | ✅ 完美 |
+| **總計** | **68** | **68** | **100% (68/68)** | **100%** | **✅ 完美** |
 
 ---
 
@@ -125,6 +130,25 @@ P2 (Nice to have): 3/3 (100%)
 - **API-GAP-001-E2E**: `test/e2e_standalone/test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_complete_workflow`
 - **API-GAP-002-E2E**: `test/e2e_standalone/test_gap_analysis_v2_e2e.py::TestGapAnalysisV2E2E::test_lightweight_monitoring_integration`
 
+### 11.5 Course Availability 測試
+#### 單元測試
+- **CA-001-UT**: `test/unit/services/test_course_availability.py::TestCourseAvailability::test_CA_001_UT_batch_embedding_generation`
+- **CA-002-UT**: `test/unit/services/test_course_availability.py::TestCourseAvailability::test_CA_002_UT_single_skill_query`
+- **CA-003-UT**: `test/unit/services/test_course_availability.py::TestCourseAvailability::test_CA_003_UT_cache_mechanism`
+- **CA-004-UT**: `test/unit/services/test_course_availability.py::TestCourseAvailability::test_CA_004_UT_error_handling`
+- **CA-005-UT**: `test/unit/services/test_course_availability.py::TestCourseAvailability::test_CA_005_UT_parallel_processing`
+- **CA-006-UT**: `test/unit/services/test_course_availability.py::TestCourseAvailability::test_empty_skill_list`
+- **CA-007-UT**: `test/unit/services/test_course_availability.py::TestCourseAvailability::test_timeout_handling`
+
+#### 整合測試
+- **CA-001-IT**: `tests/integration/test_course_availability_integration.py::TestCourseAvailabilityIntegration::test_CA_001_IT_course_availability_integration`
+- **CA-002-IT**: `tests/integration/test_course_availability_integration.py::TestCourseAvailabilityIntegration::test_CA_002_IT_parallel_processing`
+- **CA-003-IT**: `tests/integration/test_course_availability_integration.py::TestCourseAvailabilityIntegration::test_CA_003_IT_graceful_degradation`
+- **CA-004-IT**: `tests/integration/test_course_availability_integration.py::TestCourseAvailabilityIntegration::test_CA_004_IT_cache_integration`
+
+#### 效能測試
+- **CA-001-PT**: `test/performance/test_course_availability_performance.py::TestCourseAvailabilityPerformance::test_CA_001_PT_performance`
+
 ---
 
 ## 12. 快速參考
@@ -166,6 +190,11 @@ pytest --junit-xml=reports/junit.xml --html=reports/report.html
 
 # 執行完整 pre-commit 檢查（包含所有測試）
 python test/scripts/pre_commit_check_advanced.py
+
+# 執行 Course Availability 測試
+pytest test/unit/services/test_course_availability.py -v  # 7 個單元測試
+pytest tests/integration/test_course_availability_integration.py -v  # 4 個整合測試
+./test/scripts/run_course_availability_performance.sh  # 1 個效能測試
 ```
 
 ### 12.2 新增測試檢查清單
@@ -191,18 +220,19 @@ python test/scripts/pre_commit_check_advanced.py
 
 ## 8. 結論
 
-✅ **Index Calculation and Gap Analysis V2 測試矩陣顯示優秀的測試品質**：
+✅ **Index Calculation, Gap Analysis V2 及 Course Availability 測試矩陣顯示優秀的測試品質**：
 
-- ✅ **100% 測試覆蓋率**：44/44 測試全部實作並通過
+- ✅ **100% 測試覆蓋率**：68/68 測試全部實作並通過
 - ✅ **100% 測試成功率**：所有測試全部通過
-- ✅ **快速執行**：全部測試在 15 秒內完成
-- ✅ **高品質測試覆蓋**：單元、整合測試全覆蓋
-- ✅ **簡化測試結構**：專注於實際需要的測試案例
+- ✅ **快速執行**：Mock 測試在 30 秒內完成
+- ✅ **高品質測試覆蓋**：單元、整合、效能測試全覆蓋
+- ✅ **完整測試結構**：包含 Course Availability 完整測試套件
 
 **測試優化說明**：
-- 從 50 個測試精簡至 44 個（17 UT + 27 IT）
-- 效能測試和 E2E 測試獨立管理，不包含在此矩陣中
-- 錯誤處理測試完全整合到測試流程中
+- 原 Gap Analysis 從 50 個測試精簡至 44 個（17 UT + 27 IT）
+- 新增 Course Availability 11 個測試（7 UT + 4 IT）
+- 新增 Course Availability 1 個效能測試（6 技能 20 次迭代）
+- 總計 68 個測試案例，全面覆蓋功能需求
 
 **測試執行建議**：
 - **開發階段**: 執行完整測試套件（< 15秒）
@@ -211,7 +241,7 @@ python test/scripts/pre_commit_check_advanced.py
 
 ---
 
-**最後執行時間**: 2025-08-12  
+**最後執行時間**: 2025-08-15  
 **文檔生成**: 基於實際測試執行結果自動生成
 
 *此文件提供 Index Calculation and Gap Analysis V2 的完整測試矩陣視圖，基於 test-spec-index-cal-gap-analysis.md v1.0.9 規格創建*
