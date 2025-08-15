@@ -38,6 +38,14 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY src/ ./src/
 COPY requirements.txt .
 
+# Create directories for database configuration
+RUN mkdir -p tools/coursera_db_manager/config temp
+
+# Copy database configuration
+COPY tools/coursera_db_manager/config/postgres_connection.json ./tools/coursera_db_manager/config/
+# Also copy to temp location as fallback
+COPY tools/coursera_db_manager/config/postgres_connection.json ./temp/
+
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 RUN chown -R appuser:appuser /app
