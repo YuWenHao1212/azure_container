@@ -39,10 +39,10 @@ TEST_DATA = {
             <li>Managed MySQL databases</li>
             <li>Used Git for version control</li>
         </ul>
-        
+
         <h2>Education</h2>
         <p>Bachelor's Degree in Computer Science</p>
-        
+
         <h2>Skills</h2>
         <ul>
             <li>Programming: Python, JavaScript, HTML, CSS</li>
