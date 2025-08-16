@@ -1,0 +1,21 @@
+Spotify is the world's most popular audio streaming subscription service with more than 500 million users, including 220+ million subscribers, across 184 markets. Our mission is to unlock the potential of human creativity by giving a million creative artists the opportunity to live off their art and billions of fans the opportunity to enjoy and be inspired by it. Our Growth Analytics team uses data science and experimentation to understand user behavior, optimize acquisition strategies, and drive sustainable growth across all markets and user segments.
+
+We are seeking a Growth Analytics Manager to lead data-driven growth initiatives for Spotify's Premium subscription business, focusing on user acquisition, conversion optimization, and retention strategies. This role requires a leader who can combine analytical expertise with product intuition to drive insights that directly impact Spotify's growth trajectory and business metrics across global markets.
+
+What You'll Drive:
+1. Lead a team of 4-5 growth analysts and data scientists working on user acquisition optimization, conversion funnel analysis, and retention modeling across Spotify's global markets and user segments.
+2. Design and execute comprehensive experimentation programs to optimize marketing campaigns, pricing strategies, and product features that drive Premium subscription growth and user engagement.
+3. Develop sophisticated attribution models and user journey analytics to understand the effectiveness of marketing channels and optimize media spend allocation across paid and organic acquisition channels.
+4. Collaborate with product managers, marketing teams, and engineering groups to identify growth opportunities and implement data-driven solutions that improve conversion rates and user lifetime value.
+5. Build predictive models for user lifetime value prediction, churn forecasting, and engagement scoring to inform growth strategy and personalization efforts across all Spotify products.
+6. Present growth insights and strategic recommendations to senior leadership, translating complex analytical findings into clear business implications and actionable growth strategies.
+
+Essential Requirements:
+1. Master's degree in Statistics, Economics, Computer Science, or related quantitative field with strong foundation in experimental design and causal inference methodologies.
+2. 6+ years of experience in growth analytics, data science, or related roles with at least 2 years in management positions leading analytical teams in consumer internet or subscription businesses.
+3. Expert proficiency in SQL, Python, and R for data analysis, with extensive experience in A/B testing, statistical modeling, and machine learning applications for growth optimization.
+4. Deep understanding of digital marketing analytics, attribution modeling, and user acquisition strategies with hands-on experience in marketing mix modeling and media effectiveness measurement.
+5. Strong product intuition and growth mindset with proven track record of driving measurable business impact through data-driven growth initiatives and optimization programs.
+6. Excellent leadership and communication skills with demonstrated ability to influence cross-functional teams and present complex analytical insights to senior executives and stakeholders.
+7. Experience with subscription business models, freemium conversion optimization, and retention analytics in consumer technology or media industries is highly preferred.
+8. Passion for music and audio content with understanding of creator economy dynamics and digital media consumption patterns across diverse global markets.

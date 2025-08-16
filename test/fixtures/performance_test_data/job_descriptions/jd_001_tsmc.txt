@@ -1,0 +1,19 @@
+Established in 1987 and headquartered in Taiwan, TSMC pioneered the pure-play foundry business model with an exclusive focus on manufacturing its customers' products. In 2023, the company served 528 customers with 11,895 products for high performance computing, smartphones, IoT, automotive, and consumer electronics, and is the world's largest provider of logic ICs with annual capacity of 16 million 12-inch equivalent wafers. TSMC operates fabs in Taiwan as well as manufacturing subsidiaries in Washington State, Japan and China, and its ESMC subsidiary plans to begin construction on a fab in Germany in 2024. In Arizona, TSMC is building three fabs, with the first starting 4nm production in 2025, the second by 2028, and the third by the end of the decade.
+
+We are seeking a highly skilled and experienced Senior Data Analyst to join our dynamic team. This role is pivotal in transforming how our organization utilizes data in the Compensation and Benefits domain. The ideal candidate will have a deep understanding of global data analysis and a proven track record of delivering data-driven insights that inform strategic decision-making. You will work closely with cross-functional teams to understand their data needs and provide innovative solutions that drive efficiency and enhance data integrity.
+
+Job Responsibilities:
+1. Gather and meticulously analyze global data from diverse sources and systems related to Compensation and Benefits.
+2. Partner with cross-functional teams to comprehend data requirements and deliver tailored solutions.
+3. Design and craft interactive dashboards and comprehensive reports utilizing Tableau and other advanced tools and technologies.
+4. Identify and propose process enhancements to optimize data collection and analysis workflows.
+5. Establish and uphold data quality standards, ensuring the highest level of data integrity.
+
+Job Qualifications:
+1. Master's degree in computer science, Information Management, or a related discipline.
+2. Over 10 years of experience in global data analysis and reporting, with a preference for expertise in HR compensation & benefits and consultancy.
+3. Proficiency in Tableau, Excel, SQL, and other data visualization tools.
+4. Exceptional analytical skills, with extensive experience in statistical analysis, data visualization, and reporting methodologies.
+5. Proven ability to translate complex business challenges into actionable, data-driven solutions.
+6. Strong presentation skills, capable of conveying data analysis insights to audiences of varying backgrounds.
+7. Excellent English communication skills, both verbal and written.

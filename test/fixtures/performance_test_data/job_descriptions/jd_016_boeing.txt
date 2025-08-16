@@ -1,0 +1,21 @@
+The Boeing Company is the world's largest aerospace company and leading manufacturer of commercial airplanes and defense, space and security systems. We are engineers and technicians, skilled and creative builders, and bold innovators who refuse to accept the limits of today's conventional wisdom. Our Supply Chain Analytics team leverages advanced data science and operations research to optimize complex global supply networks that support production of commercial aircraft, defense systems, and space exploration technologies.
+
+We are hiring a Supply Chain Data Analyst to support analytics initiatives across Boeing's global supplier network, focusing on supply chain optimization, risk assessment, and performance improvement. This role requires strong analytical skills combined with deep understanding of aerospace manufacturing and supply chain complexity to drive insights that ensure on-time delivery of critical components and materials.
+
+Primary Responsibilities:
+1. Analyze complex supply chain data from multiple systems to identify bottlenecks, risks, and optimization opportunities across Boeing's global network of thousands of suppliers and manufacturing locations.
+2. Develop predictive models for supplier performance assessment, delivery risk prediction, and capacity planning to support strategic sourcing decisions and contract negotiations.
+3. Design and maintain comprehensive dashboards and reporting systems that provide real-time visibility into supply chain performance metrics, inventory levels, and supplier quality indicators.
+4. Collaborate with procurement teams, program managers, and suppliers to implement data-driven solutions that improve on-time delivery performance and reduce supply chain costs.
+5. Support strategic supply chain initiatives including supplier diversification analysis, make-vs-buy decisions, and new supplier evaluation using advanced analytics and modeling techniques.
+6. Conduct deep-dive analyses of supply chain disruptions and quality issues, providing actionable recommendations to prevent recurrence and improve overall supply chain resilience.
+
+Required Qualifications:
+1. Bachelor's degree in Industrial Engineering, Supply Chain Management, Operations Research, or related analytical field with strong quantitative foundation.
+2. 4+ years of experience in supply chain analytics, operations research, or related analytical roles, preferably in aerospace, automotive, or complex manufacturing industries.
+3. Proficiency in SQL, Python, and R for data analysis, with experience in statistical modeling, optimization algorithms, and machine learning applications for supply chain problems.
+4. Strong understanding of supply chain management principles including procurement, inventory management, logistics, and supplier relationship management.
+5. Experience with supply chain planning systems such as SAP, Oracle, or similar ERP platforms with knowledge of data integration and reporting capabilities.
+6. Excellent analytical and problem-solving skills with ability to work with large, complex datasets and translate findings into actionable business recommendations.
+7. Strong communication abilities with experience presenting analytical findings to diverse audiences including senior management, suppliers, and cross-functional teams.
+8. Knowledge of aerospace industry regulations, quality standards, and manufacturing processes is preferred but not required.

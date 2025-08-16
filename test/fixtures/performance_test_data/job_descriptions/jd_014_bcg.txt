@@ -1,0 +1,21 @@
+Boston Consulting Group partners with leaders in business and society to tackle their most important challenges and capture their greatest opportunities. BCG was the pioneer in business strategy when it was founded in 1963. Today, we work closely with clients to embrace a transformational approach aimed at benefiting all stakeholders—empowering organizations to grow, build sustainable competitive advantage, and drive positive societal impact. Our Data & Analytics practice combines deep industry expertise with cutting-edge analytical capabilities to help clients harness the power of data for competitive advantage.
+
+We are looking for a Data Strategy Consultant to join our Digital Ventures practice, specializing in helping clients design and implement comprehensive data and analytics transformations. This role requires a unique blend of strategic consulting skills and technical analytical expertise to guide Fortune 500 companies through complex digital transformation initiatives that create lasting competitive advantage and organizational capability.
+
+Core Responsibilities:
+1. Lead client engagements to develop enterprise-wide data strategies that align with business objectives and drive measurable value creation across multiple business units and functional areas.
+2. Design and oversee implementation of advanced analytics capabilities including data platforms, governance frameworks, and organizational structures that enable data-driven decision making at scale.
+3. Collaborate with C-suite executives and senior leadership teams to assess current state analytics maturity and develop roadmaps for building world-class data and analytics capabilities.
+4. Manage complex, multi-workstream transformation projects involving technology implementation, process redesign, and organizational change management across diverse industries and geographic regions.
+5. Develop compelling business cases and ROI models that demonstrate the value of analytics investments and secure executive buy-in for large-scale transformation initiatives.
+6. Create thought leadership content and present at industry forums to establish BCG's position as the premier partner for data and analytics transformation consulting.
+
+Required Qualifications:
+1. MBA from top-tier business school or advanced degree in Engineering, Computer Science, or related analytical field with demonstrated business strategy expertise.
+2. 4+ years of management consulting experience or equivalent strategic roles with proven track record of delivering transformational business results for large enterprise clients.
+3. Strong analytical capabilities with proficiency in Python, R, SQL, and modern data platforms including cloud-based analytics solutions and big data technologies.
+4. Deep understanding of data and analytics technologies, including modern data architecture, machine learning platforms, and enterprise data governance frameworks.
+5. Exceptional client management and communication skills with experience engaging senior executives and building consensus among diverse stakeholder groups in complex organizational environments.
+6. Proven ability to synthesize complex technical concepts into clear strategic recommendations and compelling business narratives for executive audiences.
+7. Strong project management capabilities with experience leading fast-paced, high-stakes consulting engagements while managing multiple competing priorities and stakeholder interests.
+8. Willingness to travel extensively and work collaboratively in dynamic team environments across multiple client industries and international markets.

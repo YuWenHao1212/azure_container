@@ -1,0 +1,20 @@
+Uber's mission is to create opportunity through movement. We started in 2010 to solve a simple problem: how do you get access to a ride at the touch of a button? Over a decade later, we've grown into a global platform serving millions of consumers and millions of earners and movers. Our Decision Science team applies advanced analytics and machine learning to optimize marketplace dynamics, improve user experience, and drive business growth across rides, delivery, and freight services.
+
+We are hiring a Decision Science Manager to lead analytics initiatives for our Marketplace Intelligence team, focusing on optimizing supply-demand matching, pricing strategies, and driver economics across Uber's global markets. This role requires a leader who can balance strategic thinking with hands-on analytical work, driving insights that directly impact millions of rides and deliveries worldwide while managing a team of senior data scientists and analysts.
+
+What You'll Lead:
+1. Manage a team of 5-7 senior data scientists and analysts working on marketplace optimization, demand forecasting, and driver engagement analytics across multiple geographic markets.
+2. Develop and implement sophisticated algorithms for dynamic pricing, surge optimization, and supply-demand balancing using machine learning and optimization techniques.
+3. Partner with product managers, engineers, and operations teams to translate business challenges into analytical problems and deliver insights that drive measurable improvements in marketplace efficiency.
+4. Design and oversee A/B testing frameworks and experimentation programs to measure the impact of product changes on rider experience, driver earnings, and overall marketplace health.
+5. Lead strategic analytics projects including new market launch analysis, competitive intelligence, and growth opportunity assessment to support Uber's global expansion and market penetration strategies.
+6. Establish data science best practices and analytical standards for the marketplace organization, ensuring rigorous methodology and high-quality insights across all analytical work.
+
+Qualifications:
+1. PhD in Economics, Statistics, Operations Research, or related quantitative field with strong foundation in econometrics, causal inference, and experimental design.
+2. 8+ years of experience in data science, economics, or analytics with at least 3 years in management roles leading high-performing analytical teams.
+3. Expert proficiency in Python, R, and SQL for data analysis, with extensive experience in machine learning, optimization algorithms, and large-scale data processing.
+4. Deep understanding of marketplace dynamics, two-sided networks, and platform economics with hands-on experience in pricing, matching, or recommendation systems.
+5. Proven track record of leading complex analytical projects and influencing senior stakeholders through compelling data-driven insights and strategic recommendations.
+6. Strong business acumen with ability to balance analytical rigor with practical business constraints and implementation considerations in fast-paced technology environment.
+7. Excellent leadership and communication skills with demonstrated ability to develop analytical talent and present complex findings to executive leadership and cross-functional partners.

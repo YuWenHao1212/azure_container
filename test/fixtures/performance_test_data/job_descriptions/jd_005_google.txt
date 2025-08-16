@@ -1,0 +1,20 @@
+Google's mission is to organize the world's information and make it universally accessible and useful. As part of Alphabet Inc., Google operates the world's most popular search engine, develops the Android mobile operating system, and provides cloud computing services to millions of businesses worldwide. Our data engineering teams are at the heart of this mission, building the infrastructure that powers Google Search, YouTube, Gmail, and countless other products used by billions of people globally.
+
+We are looking for a Data Engineering Manager to lead our growing team of data engineers focused on building scalable data pipelines and analytics platforms. This role combines technical leadership with people management, requiring both deep technical expertise and the ability to guide and develop engineering talent. You will be responsible for architecting and implementing data solutions that support critical business decisions across multiple Google products.
+
+What You'll Do:
+1. Lead and mentor a team of 8-12 senior data engineers, providing technical guidance and career development while fostering a culture of innovation and excellence.
+2. Design and oversee the implementation of large-scale data processing systems using Google Cloud Platform, BigQuery, Dataflow, and other cutting-edge technologies.
+3. Collaborate with product managers, data scientists, and engineering teams to understand requirements and deliver robust data solutions that scale to billions of users.
+4. Establish data engineering best practices, code review standards, and quality assurance processes to ensure reliable and efficient data pipelines.
+5. Drive strategic technical decisions regarding data architecture, tool selection, and infrastructure investments to support long-term scalability and performance.
+6. Partner with stakeholders across the organization to identify opportunities for data-driven improvements and lead the technical implementation of data initiatives.
+
+What We're Looking For:
+1. MS or PhD in Computer Science, Data Engineering, or equivalent practical experience with focus on distributed systems and large-scale data processing.
+2. 10+ years of experience in data engineering with at least 4 years in management roles leading high-performing technical teams.
+3. Deep expertise in big data technologies including Hadoop, Spark, Kafka, and cloud-native data platforms with hands-on coding experience in Python, Java, or Scala.
+4. Proven track record of building and scaling data systems that process petabytes of data with high availability and low latency requirements.
+5. Strong understanding of data modeling, ETL/ELT processes, and real-time streaming architectures with experience in both batch and stream processing.
+6. Excellent leadership and communication skills with ability to influence technical decisions across multiple teams and present complex technical concepts to non-technical stakeholders.
+7. Experience with machine learning infrastructure and MLOps practices, supporting data science teams with production-ready ML pipelines and model deployment strategies.

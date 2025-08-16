@@ -1,0 +1,20 @@
+Apple is a global leader in innovation, designing and manufacturing cutting-edge consumer electronics, software, and services. With a presence in over 100 countries and a commitment to sustainability and privacy, Apple continues to revolutionize technology through products like iPhone, iPad, Mac, Apple Watch, and services like iCloud, Apple Music, and the App Store. Our teams work collaboratively to create products that delight millions of customers worldwide.
+
+We are seeking an exceptional Senior Business Analyst to join our Operations team. This role will be instrumental in driving data-driven insights that support strategic business decisions across our global supply chain and retail operations. The ideal candidate will combine strong analytical capabilities with business acumen to transform complex data into actionable recommendations for senior leadership.
+
+Key Responsibilities:
+1. Analyze complex business performance data across multiple product lines and geographic regions to identify trends, opportunities, and areas for improvement.
+2. Collaborate with cross-functional teams including Finance, Supply Chain, Retail, and Engineering to understand business requirements and deliver analytical solutions.
+3. Develop and maintain comprehensive dashboards and reports using advanced analytics tools to track key performance indicators and business metrics.
+4. Lead strategic projects involving market analysis, competitive intelligence, and business case development for new initiatives and investments.
+5. Present findings and recommendations to executive leadership, translating technical analysis into clear business implications and actionable insights.
+6. Design and implement process improvements to enhance data collection, analysis workflows, and reporting accuracy across the organization.
+
+Required Qualifications:
+1. Master's degree in Business Administration, Engineering, Economics, or related analytical field with emphasis on quantitative analysis.
+2. 8+ years of progressive experience in business analysis, strategy consulting, or related analytical roles within technology or consumer electronics industries.
+3. Expert proficiency in data analysis tools including SQL, Python, R, and advanced Excel capabilities with statistical modeling experience.
+4. Demonstrated expertise in business intelligence platforms such as Tableau, Power BI, or similar visualization tools.
+5. Strong project management skills with experience leading cross-functional initiatives and managing multiple stakeholders simultaneously.
+6. Exceptional communication and presentation abilities, capable of conveying complex analytical concepts to diverse audiences including C-level executives.
+7. Deep understanding of supply chain operations, retail analytics, and financial modeling with proven track record of driving business impact through data insights.

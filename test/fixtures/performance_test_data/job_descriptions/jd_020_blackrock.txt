@@ -1,0 +1,21 @@
+BlackRock is the world's largest asset manager, with $10 trillion in assets under management on behalf of investors worldwide. We help millions of people build savings that serve them throughout their lives by making investing easier and more affordable. Our Investment Analytics team leverages advanced quantitative methods and cutting-edge technology to support investment decisions, risk management, and portfolio optimization across all asset classes and investment strategies.
+
+We are hiring an Investment Analytics Lead to spearhead the development of next-generation analytics capabilities for our Fundamental Active Equity team, focusing on factor modeling, performance attribution, and systematic alpha generation. This role requires deep expertise in quantitative finance combined with leadership capabilities to guide a team of analysts and researchers in developing innovative investment tools and insights.
+
+Primary Responsibilities:
+1. Lead a team of 3-4 investment analysts and quantitative researchers working on factor modeling, risk attribution, and systematic investment strategies for fundamental equity portfolios.
+2. Develop sophisticated multi-factor models and attribution frameworks that provide portfolio managers with detailed insights into performance drivers, risk exposures, and alpha generation sources.
+3. Design and implement advanced analytics tools for portfolio construction, optimization, and risk management that integrate fundamental research insights with systematic quantitative methods.
+4. Collaborate closely with portfolio managers, fundamental analysts, and risk management teams to translate investment insights into actionable portfolio decisions and risk management strategies.
+5. Research and implement cutting-edge quantitative techniques including machine learning applications for alpha generation, alternative data integration, and systematic investment processes.
+6. Present investment analytics findings and recommendations to senior portfolio managers, investment committees, and client teams, translating complex quantitative analysis into clear investment insights.
+
+Required Qualifications:
+1. Master's degree or PhD in Finance, Economics, Mathematics, or related quantitative field with strong foundation in investment theory and quantitative finance.
+2. 6+ years of experience in investment analytics, quantitative research, or portfolio management with at least 2 years in leadership roles managing analytical teams.
+3. Expert proficiency in Python, R, and MATLAB for quantitative analysis, with extensive experience in factor modeling, performance attribution, and portfolio optimization techniques.
+4. Deep understanding of equity markets, fundamental analysis, and investment processes with hands-on experience in active portfolio management and systematic investment strategies.
+5. Strong knowledge of risk management frameworks, performance measurement, and regulatory requirements relevant to institutional asset management.
+6. Excellent leadership and communication skills with proven ability to influence investment decisions and present complex quantitative concepts to investment professionals and senior management.
+7. Professional certifications such as CFA, FRM, or CAIA are strongly preferred along with demonstrated thought leadership in quantitative investment management.
+8. Experience with alternative datasets, ESG integration, and sustainable investing analytics is highly valued but not required for exceptional candidates with strong quantitative background.

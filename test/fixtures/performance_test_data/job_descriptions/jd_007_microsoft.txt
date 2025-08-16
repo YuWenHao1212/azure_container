@@ -1,0 +1,20 @@
+Microsoft empowers every person and every organization on the planet to achieve more. As a leading technology company, we develop productivity software, cloud computing services, and cutting-edge AI solutions that transform how people work and live. Our Business Intelligence team plays a crucial role in helping organizations across industries harness the power of their data to make informed decisions and drive digital transformation.
+
+We are seeking a Business Intelligence Lead to spearhead our enterprise analytics initiatives and drive the adoption of Microsoft's BI solutions across our global customer base. This role combines technical expertise in data analytics with strategic thinking and customer-facing responsibilities. You will work with Fortune 500 companies to design and implement comprehensive BI strategies that leverage Microsoft Power BI, Azure Analytics, and other cutting-edge technologies.
+
+Key Responsibilities:
+1. Lead customer engagements to assess business intelligence needs and design comprehensive data strategy solutions using Microsoft's analytics and BI platform ecosystem.
+2. Architect and implement end-to-end BI solutions including data warehousing, ETL processes, and interactive dashboards that scale to support enterprise-level analytics requirements.
+3. Collaborate with sales teams and solution architects to develop compelling business cases and technical proposals for large-scale BI transformation projects.
+4. Mentor and guide junior analysts and consultants, establishing best practices for BI implementation and ensuring high-quality delivery across all customer projects.
+5. Stay current with emerging trends in business intelligence, artificial intelligence, and data analytics to continuously enhance Microsoft's BI offerings and competitive positioning.
+6. Develop thought leadership content including whitepapers, case studies, and conference presentations to establish Microsoft as the preferred BI solution provider.
+
+Required Qualifications:
+1. Master's degree in Business Administration, Information Systems, Computer Science, or related field with focus on data analytics and business intelligence.
+2. 8+ years of progressive experience in business intelligence, data analytics, or management consulting with proven track record of successful BI implementations.
+3. Deep expertise in Microsoft BI stack including Power BI, Azure Synapse Analytics, SQL Server Analysis Services, and Azure Data Factory.
+4. Strong proficiency in SQL, DAX, and M (Power Query) with hands-on experience in data modeling and performance optimization for large datasets.
+5. Excellent project management skills with experience leading complex, multi-stakeholder BI initiatives from conception to deployment and adoption.
+6. Outstanding communication and presentation abilities, capable of engaging with C-level executives and translating technical concepts into business value propositions.
+7. Experience in customer-facing roles with ability to build strong relationships and drive consensus among diverse stakeholder groups in enterprise environments.

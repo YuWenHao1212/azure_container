@@ -1,0 +1,21 @@
+Airbnb was born in 2008 when two designers who had space to share hosted three travelers looking for a place to stay. Now, millions of Hosts and guests have created free Airbnb accounts to enjoy each other's unique view of the world. Our Business Operations team combines strategic thinking with analytical rigor to optimize marketplace dynamics, improve operational efficiency, and drive sustainable growth across all aspects of Airbnb's global platform.
+
+We are looking for a Business Operations Manager to join our Marketplace Strategy team, focusing on optimizing host and guest experiences through data-driven operational improvements and strategic initiatives. This role requires a blend of analytical expertise, operational excellence, and strategic thinking to drive insights that enhance marketplace health and support Airbnb's mission of creating a world where anyone can belong anywhere.
+
+Core Responsibilities:
+1. Lead strategic operations initiatives to optimize marketplace dynamics including host onboarding, guest booking conversion, and overall platform efficiency across global markets and property types.
+2. Develop and implement comprehensive analytical frameworks for measuring marketplace health, including supply-demand balance, pricing optimization, and quality assessment across diverse geographic markets.
+3. Collaborate with product teams, engineering groups, and regional operations to identify operational bottlenecks and implement data-driven solutions that improve host and guest satisfaction metrics.
+4. Design and maintain executive-level dashboards and reporting systems that provide real-time visibility into key operational metrics, marketplace trends, and business performance indicators.
+5. Drive cross-functional projects involving policy development, process optimization, and strategic planning to support Airbnb's rapid growth and international expansion initiatives.
+6. Conduct deep-dive analyses of operational challenges and market opportunities, providing actionable recommendations to senior leadership on strategic priorities and resource allocation decisions.
+
+Required Qualifications:
+1. MBA or Master's degree in Engineering, Economics, or related analytical field with strong foundation in business strategy and operations management.
+2. 5+ years of experience in business operations, strategy consulting, or analytics roles, preferably in marketplace, travel, or consumer internet companies.
+3. Strong proficiency in SQL, Python, and data visualization tools with experience in statistical analysis, A/B testing, and business intelligence applications.
+4. Deep understanding of marketplace dynamics, two-sided platforms, and network effects with hands-on experience in operations optimization and strategic planning.
+5. Proven project management capabilities with experience leading complex, cross-functional initiatives involving diverse stakeholder groups and competing organizational priorities.
+6. Excellent analytical and problem-solving skills with ability to synthesize complex operational data into clear strategic insights and actionable business recommendations.
+7. Strong communication and presentation abilities, capable of engaging with senior executives and translating operational complexities into strategic narratives for diverse audiences.
+8. Global mindset with understanding of international business operations, cultural differences, and regulatory considerations in diverse markets worldwide.

@@ -1,0 +1,21 @@
+McKinsey & Company is a global management consulting firm that serves leading businesses, governments, non-governmental organizations, and not-for-profits. We help our clients make lasting improvements to their performance and realize their most important goals. Our Advanced Analytics practice combines deep industry expertise with cutting-edge analytical capabilities to solve complex business problems and drive transformational change for Fortune 500 companies worldwide.
+
+We are looking for a Management Consultant specializing in Advanced Analytics to join our Digital & Analytics practice. This role requires a unique combination of business strategy expertise and quantitative analytical skills to help clients leverage data and analytics for competitive advantage. You will work with CEO and C-suite executives to design and implement data-driven transformation initiatives that create sustainable value and drive organizational change.
+
+Core Responsibilities:
+1. Lead client engagements to develop comprehensive analytics strategies that align with business objectives and drive measurable impact across multiple functional areas and business units.
+2. Design and oversee implementation of advanced analytics solutions including predictive modeling, optimization algorithms, and machine learning applications for strategic decision-making.
+3. Collaborate with client leadership teams to identify high-impact use cases for analytics and develop compelling business cases that demonstrate clear ROI and strategic value.
+4. Manage cross-functional project teams including data scientists, engineers, and business stakeholders to deliver complex analytics implementations within aggressive timelines.
+5. Develop thought leadership content and present findings at industry conferences to establish McKinsey's position as the premier analytics consulting partner.
+6. Mentor junior consultants and analysts, providing guidance on analytical methodologies, client management, and professional development within the consulting environment.
+
+Required Qualifications:
+1. MBA from top-tier business school or equivalent advanced degree in Engineering, Economics, or related analytical field with demonstrated business acumen.
+2. 5+ years of management consulting experience or equivalent strategic analytical roles with proven track record of delivering high-impact business results.
+3. Strong proficiency in advanced analytics tools including Python, R, SQL, and cloud-based analytics platforms with hands-on modeling experience.
+4. Deep understanding of business strategy, operations, and organizational change management with ability to translate analytical insights into actionable business recommendations.
+5. Exceptional client management and presentation skills with experience engaging C-level executives and building consensus among diverse stakeholder groups.
+6. Proven project management capabilities with experience leading complex, multi-workstream initiatives in fast-paced, high-pressure consulting environments.
+7. Strong business writing and communication skills with ability to synthesize complex analytical findings into clear, compelling strategic narratives for executive audiences.
+8. Willingness to travel extensively (up to 80%) and work in dynamic, collaborative team environments across multiple client industries and geographic regions.

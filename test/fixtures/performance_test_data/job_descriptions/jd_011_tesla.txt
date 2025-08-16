@@ -1,0 +1,21 @@
+Tesla's mission is to accelerate the world's transition to sustainable energy through electric vehicles, energy storage, and renewable energy solutions. As a leader in automotive innovation, we combine cutting-edge technology with manufacturing excellence to deliver products that transform transportation and energy industries. Our Operations Analytics team plays a critical role in optimizing production efficiency, quality control, and supply chain performance across our global manufacturing network.
+
+We are seeking an Operations Analytics Manager to drive data-driven insights that enhance manufacturing operations across Tesla's vehicle production facilities. This role combines deep analytical expertise with manufacturing domain knowledge to optimize production processes, reduce waste, and improve quality metrics. You will work closely with production engineers, quality teams, and plant management to implement analytics solutions that support Tesla's aggressive production targets and quality standards.
+
+Key Responsibilities:
+1. Develop and implement advanced analytics solutions for production optimization, including throughput analysis, bottleneck identification, and capacity planning across multiple manufacturing lines.
+2. Design and maintain real-time dashboards and monitoring systems that provide visibility into key production metrics, quality indicators, and operational performance across all Tesla manufacturing facilities.
+3. Lead cross-functional teams to identify and resolve production inefficiencies using statistical analysis, root cause analysis, and process improvement methodologies.
+4. Collaborate with engineering teams to integrate IoT sensor data, machine learning models, and predictive analytics into production systems for proactive maintenance and quality control.
+5. Drive strategic projects including new manufacturing line design, equipment optimization, and supply chain analytics to support Tesla's rapid scaling and global expansion initiatives.
+6. Establish analytics standards and best practices for manufacturing operations, ensuring consistent methodology and high-quality insights across all production facilities.
+
+Required Qualifications:
+1. Master's degree in Industrial Engineering, Operations Research, Manufacturing Engineering, or related technical field with strong analytical foundation.
+2. 6+ years of experience in manufacturing analytics, operations research, or process improvement with proven track record in automotive or high-tech manufacturing environments.
+3. Expert proficiency in Python, R, and SQL for data analysis, with experience in statistical modeling, optimization algorithms, and machine learning applications for manufacturing.
+4. Deep understanding of lean manufacturing principles, Six Sigma methodologies, and statistical process control with hands-on experience in production environment optimization.
+5. Strong knowledge of IoT systems, sensor data analysis, and industrial automation technologies with experience integrating analytics into manufacturing execution systems.
+6. Proven project management skills with ability to lead complex, multi-stakeholder initiatives and drive consensus among diverse engineering and operations teams.
+7. Excellent communication and presentation abilities, capable of translating complex analytical findings into actionable recommendations for plant management and executive leadership.
+8. Passion for sustainable technology and Tesla's mission, with ability to thrive in fast-paced, innovative environment with rapidly changing priorities and aggressive timelines.

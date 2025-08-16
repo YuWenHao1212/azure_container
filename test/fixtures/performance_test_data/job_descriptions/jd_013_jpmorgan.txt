@@ -1,0 +1,20 @@
+JPMorgan Chase & Co. is a leading global financial services firm with assets of $3.2 trillion and operations worldwide. The firm is a leader in investment banking, financial services for consumers and small businesses, commercial banking, financial transaction processing, and asset management. Our Risk Analytics team develops sophisticated models and analytical frameworks that support risk management decisions across all business lines while ensuring regulatory compliance and maintaining the firm's strong risk culture.
+
+We are seeking a Risk Analytics Manager to join our Market Risk team, focusing on developing and implementing quantitative models for measuring and managing market risk across trading portfolios. This role requires expertise in financial modeling, regulatory compliance, and team leadership to ensure robust risk measurement and reporting that supports trading decisions while meeting stringent regulatory requirements.
+
+Primary Duties:
+1. Lead development and validation of Value-at-Risk (VaR) models, stress testing frameworks, and scenario analysis tools for fixed income, equity, and derivatives trading portfolios.
+2. Manage a team of 4-6 quantitative analysts responsible for daily risk reporting, model performance monitoring, and regulatory capital calculations under Basel III framework.
+3. Collaborate with traders, portfolio managers, and compliance teams to ensure risk models accurately capture portfolio exposures and provide actionable insights for risk management decisions.
+4. Oversee implementation of regulatory requirements including FRTB, CCAR, and Dodd-Frank compliance, ensuring timely and accurate submission of required risk reports to regulators.
+5. Design and maintain automated risk reporting systems and dashboards that provide real-time visibility into market risk exposures across all trading desks and business units.
+6. Lead strategic risk initiatives including new product risk assessment, trading limit optimization, and risk appetite framework development to support business growth while maintaining prudent risk management.
+
+Essential Requirements:
+1. Master's degree in Finance, Mathematics, Statistics, or related quantitative field with strong foundation in financial markets and risk management principles.
+2. 7+ years of experience in market risk management, quantitative analysis, or related roles within investment banking or asset management with proven leadership capabilities.
+3. Expert knowledge of risk management frameworks, VaR methodologies, and stress testing approaches with hands-on experience in model development and validation.
+4. Strong programming skills in Python, R, and MATLAB with experience in high-performance computing for large-scale risk calculations and Monte Carlo simulations.
+5. Deep understanding of derivatives pricing, fixed income markets, and regulatory capital requirements with knowledge of Basel III, FRTB, and other relevant regulations.
+6. Excellent analytical and problem-solving abilities with proven track record of developing innovative solutions to complex risk management challenges.
+7. Strong communication and leadership skills with ability to influence senior stakeholders and present complex risk concepts to non-technical audiences including senior management and regulators.

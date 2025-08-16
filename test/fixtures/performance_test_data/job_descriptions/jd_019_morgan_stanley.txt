@@ -1,0 +1,21 @@
+Morgan Stanley is a leading global financial services firm providing investment banking, securities, wealth management and investment management services. With offices in more than 41 countries, the firm's employees serve clients worldwide including corporations, governments, institutions and individuals. Our Quantitative Research team develops cutting-edge analytical models and tools that support trading, risk management, and investment decisions across all business divisions while maintaining our reputation for analytical excellence and innovation.
+
+We are seeking a Business Data Analyst to join our Wealth Management Technology team, focusing on developing analytics solutions that enhance advisor productivity and client experience across Morgan Stanley's global wealth management platform. This role combines financial services expertise with advanced analytical capabilities to drive insights that support both advisor tools and client portfolio management.
+
+Key Responsibilities:
+1. Develop comprehensive analytics solutions for wealth management advisors including client portfolio analysis, performance attribution, and risk assessment tools that enhance advisor effectiveness and client satisfaction.
+2. Design and implement advanced reporting systems and dashboards that provide real-time visibility into client portfolio performance, asset allocation, and investment trends across diverse client segments.
+3. Collaborate with wealth management advisors, portfolio managers, and technology teams to understand business requirements and deliver analytical solutions that support client relationship management and investment decision-making.
+4. Conduct sophisticated analysis of client behavior patterns, investment preferences, and market trends to identify opportunities for improving client engagement and advisor productivity.
+5. Support strategic wealth management initiatives including new product development, market expansion analysis, and competitive intelligence to inform business strategy and product roadmap decisions.
+6. Ensure data quality and regulatory compliance across all analytical solutions, maintaining adherence to financial services regulations and internal risk management standards.
+
+Essential Qualifications:
+1. Bachelor's degree in Finance, Economics, Mathematics, or related quantitative field with strong foundation in financial markets and investment analysis.
+2. 3+ years of experience in financial services analytics, wealth management, or related roles with proven track record of delivering analytical solutions for investment professionals.
+3. Strong proficiency in SQL, Python, and Excel with experience in financial modeling, portfolio analysis, and investment performance measurement tools.
+4. Deep understanding of wealth management business, including portfolio construction, asset allocation, and client relationship management processes and best practices.
+5. Knowledge of financial markets, investment products, and regulatory requirements including fiduciary standards and compliance frameworks relevant to wealth management.
+6. Excellent analytical and problem-solving skills with ability to translate complex financial concepts into clear, actionable insights for both technical and non-technical audiences.
+7. Strong communication abilities with experience presenting analytical findings to investment professionals, senior management, and external clients in professional wealth management settings.
+8. Professional certifications such as CFA, FRM, or related credentials are preferred but not required for candidates with strong analytical background and relevant experience.

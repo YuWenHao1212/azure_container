@@ -1,0 +1,21 @@
+Amazon is guided by four principles: customer obsession rather than competitor focus, passion for invention, commitment to operational excellence, and long-term thinking. We are the world's largest online retailer and a leading provider of cloud computing services through Amazon Web Services (AWS). Our analytics teams work across diverse business units including retail, logistics, advertising, and cloud services to drive data-informed decisions that enhance customer experience and operational efficiency.
+
+We are hiring an Analytics Manager to lead our Supply Chain Intelligence team, focusing on optimizing logistics operations across Amazon's global fulfillment network. This role requires a leader who can balance strategic thinking with hands-on analytical work, driving insights that directly impact millions of customer deliveries worldwide. You will manage a team of analysts while personally contributing to high-impact projects that shape the future of e-commerce logistics.
+
+What You'll Own:
+1. Lead a team of 6-8 senior analysts responsible for supply chain optimization, inventory forecasting, and logistics performance measurement across Amazon's global fulfillment centers.
+2. Develop and implement advanced analytics solutions for demand forecasting, route optimization, and capacity planning using machine learning and operations research techniques.
+3. Partner with operations teams, product managers, and engineering groups to translate business challenges into analytical problems and deliver actionable insights that drive operational improvements.
+4. Design and maintain executive-level dashboards and reporting systems that provide real-time visibility into supply chain performance metrics and key operational indicators.
+5. Drive strategic initiatives including new fulfillment center location analysis, vendor performance optimization, and cost reduction opportunities through data-driven recommendations.
+6. Establish analytical standards and best practices for the supply chain organization, ensuring consistent methodology and high-quality insights across all analytical work.
+
+Requirements:
+1. MBA or MS in Operations Research, Industrial Engineering, Supply Chain Management, or related analytical discipline with strong quantitative foundation.
+2. 7+ years of experience in analytics, operations research, or management consulting with at least 3 years in people management roles.
+3. Expert proficiency in SQL, Python, and R for data analysis, with experience in advanced statistical modeling and machine learning applications for business problems.
+4. Deep understanding of supply chain and logistics operations, with hands-on experience in demand forecasting, inventory optimization, or transportation analytics.
+5. Proven track record of leading cross-functional projects and influencing senior stakeholders through compelling data-driven storytelling and recommendations.
+6. Strong business acumen with ability to balance analytical rigor with practical business constraints and implementation considerations.
+7. Experience with cloud-based analytics platforms (preferably AWS) and big data technologies for processing large-scale operational datasets.
+8. Excellent leadership skills with demonstrated ability to develop analytical talent and build high-performing teams in fast-paced, results-oriented environments.

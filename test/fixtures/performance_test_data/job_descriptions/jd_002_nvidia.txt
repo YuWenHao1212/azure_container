@@ -1,0 +1,15 @@
+NVIDIA seeks a highly skilled Senior Data Scientist for its Diag Team. This role requires technical excellence, project leadership, and cross-functional collaboration. The ideal candidate will tackle complex GPU server manufacturing issues by deploying and optimizing AI/ML technologies, driving improvements in efficiency, quality, and diagnostics, contributing to NVIDIA's innovation in GPU server manufacturing.
+
+What You'll Be Doing
+
+Developing a high-performance, highly available real-time analytics system for both internal teams and external partners. Designing and building various services and agentic applications utilizing diverse AI models and machine learning techniques to address challenges in GPU server manufacturing. Continuously improving AI/ML model performance through ongoing finetuning or training. Participating in planning and design meetings with stakeholders, offering professional suggestions, and consistently tracking follow-up actions.
+
+What We Need To See
+
+BS or MS in Computer Science, Artificial Intelligence, or equivalent experience. 6+ years of demonstrable experience in AI / ML Expertise in the full lifecycle of AI model development, from training to real-world production deployment, with a deep understanding of machine learning algorithms. Proficient in developing sophisticated agentic applications, especially those using RAG architecture or MCP protocol. Comprehensive knowledge and hands-on experience with various ML strategies (Regression, Classification, Clusterization), understanding their principles and optimal use. Proven track record in designing, implementing, and maintaining robust, scalable distributed systems for large data and computational demands. Strong ability to clearly articulate complex technical concepts to diverse audiences and collaborate effectively. Highly proficient in spoken and written English for international professional communication. Self-motivated, takes initiative, owns tasks, delivers high-quality results, and meets deadlines consistently.
+
+Ways To Stand Out From The Crowd
+
+Proficient in programming languages such as Python, R, or C/C++. Experienced with the Linux development environment. Familiar with data science libraries and tools, including scikit-learn, SciPy, NumPy, pandas, Matplotlib, PyTorch, natural language processing (NLP), and searching/indexing techniques. Skilled in SQL and other data query languages. Knowledgeable in various database systems (SQL, NoSQL, embedding databases, etc.).
+
+With competitive salaries and a generous benefits package, NVIDIA is widely considered to be one of the most desirable employers in the world. We have some of the most brilliant and talented people in the world working for us. If you are creative, autonomous and love a challenge, we want to hear from you. We are an equal opportunity employer and value diversity at our company. We do not discriminate on the basis of race, religion, color, national origin, gender, sexual orientation, age, marital status, veteran status, or disability status.

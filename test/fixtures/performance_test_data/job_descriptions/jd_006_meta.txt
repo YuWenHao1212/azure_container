@@ -1,0 +1,21 @@
+Meta builds technologies that help people connect, find communities, and grow businesses. Our family of apps including Facebook, Instagram, WhatsApp, and Threads serve billions of people worldwide. As we continue to evolve beyond social networking into the metaverse, we're looking for talented individuals who can help us leverage data to understand user behavior, improve product experiences, and drive business growth across our diverse portfolio of products and services.
+
+We are seeking a Product Data Scientist to join our Growth team, focusing on user acquisition, engagement, and retention across Meta's family of apps. This role requires a unique blend of statistical expertise, product intuition, and business acumen to drive data-informed decisions that impact billions of users. You will work closely with product managers, engineers, and designers to identify growth opportunities and optimize user experiences through rigorous experimentation and analysis.
+
+Core Responsibilities:
+1. Design and execute comprehensive A/B tests and multivariate experiments to measure the impact of product features on user engagement, retention, and monetization metrics.
+2. Analyze user behavior patterns across multiple touchpoints and platforms to identify opportunities for growth and engagement optimization using advanced statistical methods.
+3. Build and maintain sophisticated attribution models and user journey analytics to understand the effectiveness of marketing campaigns and product interventions.
+4. Collaborate with engineering teams to implement robust measurement frameworks and ensure data quality across product analytics infrastructure.
+5. Develop predictive models for user lifetime value, churn prediction, and engagement forecasting to inform product strategy and resource allocation decisions.
+6. Present actionable insights and recommendations to senior leadership, translating complex statistical findings into clear business implications and strategic guidance.
+
+Requirements:
+1. PhD in Statistics, Mathematics, Computer Science, Economics, or related quantitative field with strong foundation in experimental design and causal inference.
+2. 6+ years of industry experience as a data scientist in product or growth roles, preferably in consumer internet or social media companies.
+3. Expert-level proficiency in Python or R for statistical analysis, with extensive experience in SQL for data manipulation and query optimization.
+4. Deep understanding of A/B testing methodologies, statistical significance testing, and power analysis with experience designing experiments at scale.
+5. Hands-on experience with big data technologies including Hadoop, Spark, and distributed computing frameworks for processing large-scale user datasets.
+6. Strong product sense and ability to translate business questions into analytical frameworks, with experience working in cross-functional product development teams.
+7. Excellent communication skills with proven ability to influence product decisions through data-driven insights and present complex analyses to both technical and non-technical audiences.
+8. Experience with machine learning techniques for user modeling, recommendation systems, or content optimization is highly preferred but not required.

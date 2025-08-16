@@ -1,0 +1,20 @@
+Goldman Sachs is a leading global investment banking, securities and investment management firm that provides a wide range of financial services to corporations, financial institutions, governments and individuals worldwide. Our Quantitative Analytics team develops sophisticated mathematical models and analytical tools that support trading, risk management, and investment decisions across all business divisions. We leverage cutting-edge technology and advanced statistical methods to maintain our competitive edge in global financial markets.
+
+We are seeking a Quantitative Analyst to join our Fixed Income, Currencies and Commodities (FICC) division, focusing on developing and implementing quantitative models for derivatives pricing, risk assessment, and portfolio optimization. This role offers the opportunity to work on complex mathematical problems that directly impact trading strategies and risk management decisions for one of the world's most prestigious financial institutions.
+
+Primary Responsibilities:
+1. Develop and calibrate sophisticated mathematical models for pricing complex derivatives instruments including interest rate swaps, credit default swaps, and exotic options using stochastic calculus and numerical methods.
+2. Implement quantitative models in production trading systems using C++, Python, and MATLAB, ensuring robust performance and accuracy for real-time trading applications.
+3. Collaborate with traders, risk managers, and technology teams to enhance existing models and develop new analytical tools that support trading strategies and regulatory compliance requirements.
+4. Conduct comprehensive model validation and back-testing analysis to ensure model accuracy and regulatory compliance with Basel III and other international banking standards.
+5. Research and implement cutting-edge quantitative techniques including machine learning applications for alpha generation, alternative data analysis, and systematic trading strategies.
+6. Prepare detailed technical documentation and present model performance results to senior management, traders, and regulatory authorities as required.
+
+Essential Qualifications:
+1. PhD in Mathematics, Physics, Financial Engineering, or related quantitative field with strong foundation in stochastic processes, partial differential equations, and numerical analysis.
+2. 4+ years of experience in quantitative finance, preferably in derivatives pricing, risk modeling, or systematic trading within investment banking or hedge fund environments.
+3. Expert programming skills in C++, Python, and MATLAB with experience in high-performance computing and real-time trading systems development.
+4. Deep understanding of fixed income markets, derivative instruments, and risk management frameworks with knowledge of regulatory requirements including CCAR and Basel III.
+5. Strong mathematical modeling capabilities with experience in Monte Carlo simulations, finite difference methods, and optimization algorithms for financial applications.
+6. Excellent analytical and problem-solving skills with ability to work under pressure and adapt quickly to changing market conditions and regulatory requirements.
+7. Strong communication skills with ability to explain complex quantitative concepts to non-technical stakeholders and present findings to senior leadership and external regulators.
