@@ -475,21 +475,26 @@ class CombinedAnalysisServiceV2(BaseService):
                     structure_task,
                     timeout=structure_timeout
                 )
-                # Use actual completion time if available, otherwise use current time
+
+                # IMPORTANT: Use actual completion time from callback, not current time
+                # The callback records when structure analysis ACTUALLY finished
                 if "structure_actual_end" in detailed_timings:
-                    detailed_timings["structure_end"] = detailed_timings["structure_actual_end"]
+                    # This is the real end time when the task completed
+                    actual_end = detailed_timings["structure_actual_end"]
+                    detailed_timings["structure_end"] = actual_end
+
+                    # Calculate actual execution time (from start to actual completion)
+                    actual_execution_time = actual_end - detailed_timings["structure_start"]
+                    timing_breakdown["structure_analysis_time"] = round(actual_execution_time * 1000, 2)
+
+                    # Calculate wait time (from actual completion to when we checked it)
+                    wait_time = time.time() - actual_end
+                    timing_breakdown["structure_wait_time"] = round(wait_time * 1000, 2)
                 else:
+                    # Fallback if callback didn't fire (shouldn't happen)
                     detailed_timings["structure_end"] = time.time()
-
-                # Add to timing breakdown - use actual execution time
-                timing_breakdown["structure_analysis_time"] = round(
-                    (detailed_timings["structure_end"] - detailed_timings["structure_start"]) * 1000, 2
-                )
-
-                # Also record wait time (from actual completion to check)
-                if "structure_actual_end" in detailed_timings:
-                    timing_breakdown["structure_wait_time"] = round(
-                        (time.time() - detailed_timings["structure_actual_end"]) * 1000, 2
+                    timing_breakdown["structure_analysis_time"] = round(
+                        (detailed_timings["structure_end"] - detailed_timings["structure_start"]) * 1000, 2
                     )
 
                 logger.info(
@@ -552,8 +557,10 @@ class CombinedAnalysisServiceV2(BaseService):
                         },
                         "structure_analysis": {
                             "start": 0,
+                            # Use actual execution time, not the total time including wait
                             "end": timing_breakdown.get("structure_analysis_time", 0),
-                            "wait_time": timing_breakdown.get("structure_wait_time", 0)
+                            "wait_time": timing_breakdown.get("structure_wait_time", 0),
+                            "actual_completed": True if "structure_actual_end" in detailed_timings else False
                         },
                         "pgvector_warmup": {
                             "start": 0,

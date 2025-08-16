@@ -89,7 +89,7 @@ class PerformanceTestRunner:
         return {
             "resume": self.resume_content,
             "job_description": jd_content,
-            "extracted_keywords": keywords
+            "keywords": keywords
         }
 
     async def call_api(self, client: AsyncClient, payload: dict, test_id: str) -> tuple[dict, dict]:
