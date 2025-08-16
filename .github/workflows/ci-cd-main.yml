@@ -259,28 +259,39 @@ jobs:
       run: |
         echo "🔍 Detecting active prompt versions..."
         
-        # Function to find active version for a task
-        find_active_version() {
+        # Function to find ALL active versions for a task (including multi-language)
+        find_active_versions() {
           local task=$1
           local dir="src/prompts/$task"
+          local versions=""
           
           if [ ! -d "$dir" ]; then
             echo ""
             return
           fi
           
-          # Look for files with status: active in metadata
+          # Look for ALL files with status: active in metadata
           for file in $dir/v*.yaml; do
             if [ -f "$file" ]; then
               if grep -qE 'status:\s*["'\'']?active["'\'']?' "$file" 2>/dev/null; then
                 # Extract version from filename
-                basename "$file" .yaml | sed 's/^v//'
-                return
+                local version=$(basename "$file" .yaml | sed 's/^v//')
+                if [ -z "$versions" ]; then
+                  versions="$version"
+                else
+                  versions="$versions,$version"
+                fi
               fi
             fi
           done
           
-          echo ""
+          echo "$versions"
+        }
+        
+        # Find first active version (for backward compatibility)
+        find_active_version() {
+          local versions=$(find_active_versions "$1")
+          echo "$versions" | cut -d',' -f1
         }
         
         # Detect versions for each task
@@ -289,6 +300,8 @@ jobs:
         INDEX_VERSION=$(find_active_version "index_calculation")
         FORMAT_VERSION=$(find_active_version "resume_format")
         TAILOR_VERSION=$(find_active_version "resume_tailor")
+        # Add resume structure analyzer (instruction_compiler directory)
+        STRUCTURE_VERSION=$(find_active_version "instruction_compiler")
         
         # Set outputs
         echo "gap-analysis-version=${GAP_VERSION:-2.1.8}" >> $GITHUB_OUTPUT
@@ -296,14 +309,16 @@ jobs:
         echo "index-calculation-version=${INDEX_VERSION:-latest}" >> $GITHUB_OUTPUT
         echo "resume-format-version=${FORMAT_VERSION:-latest}" >> $GITHUB_OUTPUT
         echo "resume-tailor-version=${TAILOR_VERSION:-latest}" >> $GITHUB_OUTPUT
+        echo "resume-structure-version=${STRUCTURE_VERSION:-v1.0.1}" >> $GITHUB_OUTPUT
         
-        # Log detected versions
+        # Log detected versions (including multi-language)
         echo "Detected prompt versions:"
         echo "  - Gap Analysis: ${GAP_VERSION:-2.1.8}"
-        echo "  - Keyword Extraction: ${KEYWORD_VERSION:-latest}"
+        echo "  - Keyword Extraction: $(find_active_versions 'keyword_extraction' || echo 'latest')"
         echo "  - Index Calculation: ${INDEX_VERSION:-latest}"
-        echo "  - Resume Format: ${FORMAT_VERSION:-latest}"
+        echo "  - Resume Format: $(find_active_versions 'resume_format' || echo 'latest')"
         echo "  - Resume Tailor: ${TAILOR_VERSION:-latest}"
+        echo "  - Resume Structure: ${STRUCTURE_VERSION:-v1.0.1}"
         
     - name: Deploy to Container App
       run: |
@@ -364,6 +379,7 @@ jobs:
             INDEX_CALCULATION_PROMPT_VERSION="${{ steps.prompt-versions.outputs.index-calculation-version }}" \
             RESUME_FORMAT_PROMPT_VERSION="${{ steps.prompt-versions.outputs.resume-format-version }}" \
             RESUME_TAILOR_PROMPT_VERSION="${{ steps.prompt-versions.outputs.resume-tailor-version }}" \
+            RESUME_STRUCTURE_PROMPT_VERSION="${{ steps.prompt-versions.outputs.resume-structure-version }}" \
             JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
             CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
             CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \

@@ -66,7 +66,8 @@ class ResumeStructureAnalyzer:
 
         # Use Prompt Management System
         self.prompt_manager = SimplePromptManager()
-        prompt_version = os.getenv("STRUCTURE_ANALYSIS_PROMPT_VERSION", "v1.0.1")
+        # Use RESUME_STRUCTURE_PROMPT_VERSION for consistency with CI/CD naming
+        prompt_version = os.getenv("RESUME_STRUCTURE_PROMPT_VERSION", "v1.0.1")
 
         try:
             # Load prompt from YAML

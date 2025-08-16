@@ -68,6 +68,7 @@ KEYWORD_VERSIONS=$(find_active_versions "keyword_extraction")
 INDEX_VERSIONS=$(find_active_versions "index_calculation")
 FORMAT_VERSIONS=$(find_active_versions "resume_format")
 TAILOR_VERSIONS=$(find_active_versions "resume_tailor")
+STRUCTURE_VERSIONS=$(find_active_versions "instruction_compiler")  # Resume structure analyzer
 
 # Set defaults if not found
 GAP_VERSIONS=${GAP_VERSIONS:-"2.1.8"}
@@ -75,6 +76,7 @@ KEYWORD_VERSIONS=${KEYWORD_VERSIONS:-"latest"}
 INDEX_VERSIONS=${INDEX_VERSIONS:-"latest"}
 FORMAT_VERSIONS=${FORMAT_VERSIONS:-"latest"}
 TAILOR_VERSIONS=${TAILOR_VERSIONS:-"latest"}
+STRUCTURE_VERSIONS=${STRUCTURE_VERSIONS:-"v1.0.1"}
 
 # Display configuration that will be deployed
 echo -e "${BLUE}${BOLD}📝 Active Prompt Versions (from YAML files):${NC}"
@@ -86,6 +88,7 @@ printf "│ %-35s │ ${GREEN}%-34s${NC} │\n" "Keyword Extraction" "$KEYWORD_V
 printf "│ %-35s │ ${GREEN}%-34s${NC} │\n" "Index Calculation" "$INDEX_VERSIONS"
 printf "│ %-35s │ ${GREEN}%-34s${NC} │\n" "Resume Format" "$FORMAT_VERSIONS"
 printf "│ %-35s │ ${GREEN}%-34s${NC} │\n" "Resume Tailor" "$TAILOR_VERSIONS"
+printf "│ %-35s │ ${GREEN}%-34s${NC} │\n" "Resume Structure" "$STRUCTURE_VERSIONS"
 echo "└─────────────────────────────────────┴────────────────────────────────────┘"
 echo ""
 echo -e "${CYAN}ℹ️  Note: System supports multiple active versions for different languages${NC}"
