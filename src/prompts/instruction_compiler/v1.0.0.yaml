@@ -3,7 +3,7 @@ metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-01-16T00:00:00Z"
   description: "GPT-4.1 mini powered instruction compiler for Resume Tailoring v2.0.0"
-  status: "active"
+  status: "inactive"
   notes: "Lightweight preprocessor that converts Gap Analysis into precise editing instructions"
 
 llm_config:
