@@ -4,7 +4,7 @@ Handles both similarity calculation and gap analysis in a single request.
 """
 import logging
 import time
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, Field, validator
@@ -106,11 +106,11 @@ class SkillQuery(BaseModel):
     )
     description: str = Field(default="", description="Skill description")
     # Course Availability fields (added by CourseAvailabilityChecker)
-    has_available_courses: Optional[bool] = Field(
+    has_available_courses: bool | None = Field(
         default=None,
         description="Whether courses are available for this skill"
     )
-    course_count: Optional[int] = Field(
+    course_count: int | None = Field(
         default=None,
         description="Number of available courses for this skill"
     )

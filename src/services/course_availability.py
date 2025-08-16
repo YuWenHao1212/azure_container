@@ -5,7 +5,7 @@ Checks if courses are available for identified skill gaps
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import asyncpg
 
@@ -93,7 +93,7 @@ FROM ranked_courses;
 class CourseAvailabilityChecker:
     """Service for checking course availability for skills"""
 
-    def __init__(self, connection_pool: Optional[asyncpg.Pool] = None):
+    def __init__(self, connection_pool: asyncpg.Pool | None = None):
         """
         Initialize the course availability checker
 
@@ -327,7 +327,7 @@ class CourseAvailabilityChecker:
 
 
 # Global instance
-_checker_instance: Optional[CourseAvailabilityChecker] = None
+_checker_instance: CourseAvailabilityChecker | None = None
 
 
 async def check_course_availability(

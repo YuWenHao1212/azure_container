@@ -119,7 +119,7 @@ class TestResumeStructureAnalyzer:
         assert "{resume_html}" in analyzer.prompt_template["user"]
 
         # Test prompt template structure
-        fallback_template = analyzer._get_fallback_prompt_template()
+        fallback_template = analyzer._get_fallback_prompt()
         assert "system" in fallback_template
         assert "user" in fallback_template
         assert "{resume_html}" in fallback_template["user"]

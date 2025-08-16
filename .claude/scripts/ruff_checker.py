@@ -21,7 +21,7 @@ class RuffChecker:
         if paths is None:
             paths = ["src/", "test/"]
 
-        cmd = ["ruff", "check"] + paths + [f"--line-length={self.line_length}"]
+        cmd = ["ruff", "check", *paths, f"--line-length={self.line_length}"]
         if fix:
             cmd.append("--fix")
 

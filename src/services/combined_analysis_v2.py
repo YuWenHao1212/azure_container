@@ -456,10 +456,11 @@ class CombinedAnalysisServiceV2(BaseService):
         resume_structure = None
         if structure_task:
             try:
-                # Wait for structure analysis with timeout
+                # Wait for structure analysis with timeout (from environment variable)
+                structure_timeout = float(os.getenv("STRUCTURE_ANALYSIS_TIMEOUT", "5.0"))
                 resume_structure = await asyncio.wait_for(
                     structure_task,
-                    timeout=3.0
+                    timeout=structure_timeout
                 )
                 detailed_timings["structure_end"] = time.time()
 

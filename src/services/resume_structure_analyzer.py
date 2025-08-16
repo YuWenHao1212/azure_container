@@ -10,10 +10,10 @@ import json
 import logging
 import os
 import time
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from src.core.simple_prompt_manager import SimplePromptManager
 from src.services.llm_factory import get_llm_client
 
 logger = logging.getLogger(__name__)
@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 class StandardSections(BaseModel):
     """Standard resume section mappings."""
 
-    summary: Optional[str] = Field(None, description="Professional summary section title")
-    skills: Optional[str] = Field(None, description="Skills section title")
-    experience: Optional[str] = Field(None, description="Work experience section title")
-    education: Optional[str] = Field(None, description="Education section title")
-    certifications: Optional[str] = Field(None, description="Certifications section title")
-    projects: Optional[str] = Field(None, description="Projects section title")
+    summary: str | None = Field(None, description="Professional summary section title")
+    skills: str | None = Field(None, description="Skills section title")
+    experience: str | None = Field(None, description="Work experience section title")
+    education: str | None = Field(None, description="Education section title")
+    certifications: str | None = Field(None, description="Certifications section title")
+    projects: str | None = Field(None, description="Projects section title")
 
 
 class StructureMetadata(BaseModel):
@@ -62,14 +62,32 @@ class ResumeStructureAnalyzer:
         # Retry configuration
         self.max_retries = int(os.getenv("STRUCTURE_ANALYSIS_MAX_RETRIES", "3"))
         self.retry_delay = float(os.getenv("STRUCTURE_ANALYSIS_RETRY_DELAY", "0.5"))
-        self.timeout = float(os.getenv("STRUCTURE_ANALYSIS_TIMEOUT", "3.0"))
+        self.timeout = float(os.getenv("STRUCTURE_ANALYSIS_TIMEOUT", "5.0"))
 
-        # Use inline prompt template
-        self.prompt_template = self._get_prompt_template()
+        # Use Prompt Management System
+        self.prompt_manager = SimplePromptManager()
+        prompt_version = os.getenv("STRUCTURE_ANALYSIS_PROMPT_VERSION", "v1.0.1")
+
+        try:
+            # Load prompt from YAML
+            self.prompt_config = self.prompt_manager.load_prompt_config_by_filename(
+                "instruction_compiler",
+                f"{prompt_version}.yaml"
+            )
+            # PromptConfig has prompts attribute with system and user keys
+            self.prompt_template = {
+                "system": self.prompt_config.prompts.get("system", ""),
+                "user": self.prompt_config.prompts.get("user", "")
+            }
+            logger.info(f"Loaded prompt version {prompt_version} from YAML")
+        except Exception as e:
+            logger.warning(f"Failed to load prompt {prompt_version}, using fallback: {e}")
+            # Fallback to simple prompt if YAML loading fails
+            self.prompt_template = self._get_fallback_prompt()
 
         logger.info(
             f"ResumeStructureAnalyzer initialized with GPT-4.1 mini "
-            f"(retries={self.max_retries}, timeout={self.timeout}s)"
+            f"(retries={self.max_retries}, timeout={self.timeout}s, prompt={prompt_version})"
         )
 
     async def analyze_structure(self, resume_html: str) -> ResumeStructure:
@@ -269,102 +287,9 @@ class ResumeStructureAnalyzer:
             ),
         )
 
-    def _get_prompt_template(self) -> dict[str, str]:
-        """
-        Get prompt template for structure analysis.
-
-        Returns:
-            Prompt template dictionary with system and user prompts
-        """
-        return {
-            "system": """You are a Resume Structure Analyzer. Your role is to quickly identify the resume structure.
-
-## Your Task
-Analyze the resume HTML and identify:
-1. Which sections exist and their actual titles (e.g., "Work Experience" vs "Employment History")
-2. Count basic statistics (number of jobs, education entries, etc.)
-3. Note structural observations
-
-## Important Rules
-1. Only identify structure, don't make any content decisions
-2. For standard_sections, use the ACTUAL section title from the resume
-3. Use null if a section doesn't exist in the resume
-4. Keep the output minimal and focused
-5. Do NOT suggest improvements or actions - that's for the main LLM
-6. Count actual entries, not make judgments about quality
-
-## Output Format
-Return JSON with this exact structure:
-
-{
-  "standard_sections": {
-    "summary": "actual section title" or null,
-    "skills": "actual section title" or null,
-    "experience": "actual section title" or null,
-    "education": "actual section title" or null,
-    "certifications": "actual section title" or null,
-    "projects": "actual section title" or null
-  },
-  "custom_sections": ["section1", "section2"],
-  "metadata": {
-    "total_experience_entries": number,
-    "total_education_entries": number,
-    "has_quantified_achievements": boolean,
-    "estimated_length": "1 page" or "2 pages" or "3+ pages"
-  }
-}
-
-## Section Identification Guidelines
-
-### Summary Section
-Look for: Professional Summary, Executive Summary, Profile, About Me, Career Objective
-
-### Skills Section
-Look for: Skills, Technical Skills, Core Competencies, Areas of Expertise, Key Skills
-
-### Experience Section
-Look for: Experience, Work Experience, Professional Experience, Employment History, Career History
-
-### Education Section
-Look for: Education, Academic Background, Educational Qualifications, Academic History
-
-### Certifications Section
-Look for: Certifications, Licenses, Professional Certifications, Credentials
-
-### Projects Section
-Look for: Projects, Key Projects, Notable Projects, Portfolio
-
-### Custom Sections
-Any sections that don't fit the above categories (e.g., Languages, Publications, Awards, Volunteer Work)
-
-## Metadata Guidelines
-
-### total_experience_entries
-Count individual job positions/roles listed
-
-### total_education_entries
-Count individual degrees/institutions listed
-
-### has_quantified_achievements
-Check if there are numbers, percentages, or metrics in achievements (e.g., "increased sales by 25%")
-
-### estimated_length
-Based on content volume:
-- "1 page": Minimal content, likely fits on single page
-- "2 pages": Moderate content, standard resume length
-- "3+ pages": Extensive content, detailed resume""",
-            "user": """Analyze this resume structure:
-
-{resume_html}
-
-Provide structural analysis in the specified JSON format."""
-        }
-
-    def _get_fallback_prompt_template(self) -> dict[str, str]:
+    def _get_fallback_prompt(self) -> dict[str, str]:
         """
         Get fallback prompt template if YAML loading fails.
-
-        Test ID: RS-002-UT - Prompt template validation
 
         Returns:
             Basic prompt template dictionary

@@ -2,12 +2,13 @@
 Integration tests for Course Availability Check feature
 Test ID: CA-001-IT to CA-005-IT
 """
-import pytest
 import asyncio
 import json
-from unittest.mock import patch, AsyncMock, MagicMock
+from typing import Any, Dict, List
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import numpy as np
-from typing import List, Dict, Any
+import pytest
 
 from src.services.course_availability import CourseAvailabilityChecker
 
@@ -24,7 +25,7 @@ class TestCourseAvailabilityIntegration:
     @pytest.fixture
     def mock_embedding_response(self):
         """Mock embedding API response"""
-        def create_embeddings(texts: List[str]) -> List[List[float]]:
+        def create_embeddings(texts: list[str]) -> list[list[float]]:
             # Return 1536-dimensional embeddings
             return [np.random.rand(1536).tolist() for _ in texts]
         return create_embeddings
@@ -72,7 +73,7 @@ class TestCourseAvailabilityIntegration:
         # Mock embedding client
         with patch.object(service, '_embedding_client') as mock_client:
             mock_client.create_embeddings = AsyncMock(return_value=mock_embedding_response(["text1", "text2"]))
-            
+
             # Mock connection pool
             mock_pool = MagicMock()
             mock_conn = AsyncMock()
@@ -81,7 +82,7 @@ class TestCourseAvailabilityIntegration:
             mock_ctx.__aenter__.return_value = mock_conn
             mock_ctx.__aexit__.return_value = None
             mock_pool.acquire.return_value = mock_ctx
-            
+
             # Mock database response
             mock_conn.fetchrow = AsyncMock(return_value={
                 "has_courses": True,
@@ -89,23 +90,23 @@ class TestCourseAvailabilityIntegration:
                 "preferred_count": 7,
                 "other_count": 3
             })
-            
+
             service._connection_pool = mock_pool
             service._embedding_client = mock_client
-            
+
             # Execute
             result = await service.check_course_availability(skill_queries)
-            
+
             # Verify
             assert len(result) == 2
-            
+
             # Check Rust (SKILL)
             rust_skill = result[0]
             assert rust_skill["has_available_courses"] is True
             assert rust_skill["course_count"] == 10
             assert rust_skill.get("preferred_courses") == 7
-            
-            # Check Quantum Computing (FIELD)  
+
+            # Check Quantum Computing (FIELD)
             qc_skill = result[1]
             assert qc_skill["has_available_courses"] is True
             assert qc_skill["course_count"] == 10
@@ -119,7 +120,7 @@ class TestCourseAvailabilityIntegration:
     ):
         """
         Test ID: CA-002-IT
-        Scenario: Parallel processing of multiple skills  
+        Scenario: Parallel processing of multiple skills
         Validation: Verify concurrent execution and performance
         """
         # Test data with mixed categories (use non-cached skills)
@@ -135,18 +136,18 @@ class TestCourseAvailabilityIntegration:
                 "description": "Quantum algorithms and computation"
             }
         ]
-        
+
         # Track embedding text generation
         generated_texts = []
-        
+
         async def capture_texts(texts):
             generated_texts.extend(texts)
             return mock_embedding_response(texts)
-        
+
         # Mock embedding client to capture generated texts
         with patch.object(service, '_embedding_client') as mock_client:
             mock_client.create_embeddings = AsyncMock(side_effect=capture_texts)
-            
+
             # Mock connection pool
             mock_pool = MagicMock()
             mock_conn = AsyncMock()
@@ -161,19 +162,19 @@ class TestCourseAvailabilityIntegration:
                 "preferred_count": 3,
                 "other_count": 2
             })
-            
+
             service._connection_pool = mock_pool
             service._embedding_client = mock_client
-            
+
             # Execute
-            result = await service.check_course_availability(skill_queries)
-            
+            await service.check_course_availability(skill_queries)
+
             # Verify different strategies were applied
             assert len(generated_texts) == 2
-            
+
             # Check SKILL category text
             assert "Rust course project certificate" in generated_texts[0]
-            
+
             # Check FIELD category text
             assert "Quantum Computing specialization degree" in generated_texts[1]
 
@@ -201,33 +202,33 @@ class TestCourseAvailabilityIntegration:
         with patch('src.services.course_availability.CourseAvailabilityChecker') as MockChecker:
             mock_service = AsyncMock()
             MockChecker.return_value = mock_service
-            
+
             # Track concurrent calls
             call_times = []
-            
+
             async def mock_check(skill_queries):
                 import time
                 start_time = time.time()
                 call_times.append(start_time)
-                
+
                 # Simulate database query delay
                 await asyncio.sleep(0.01)
-                
+
                 return {
                     skill['skill_name']: mock_db_response(True, 5)
                     for skill in skill_queries
                 }
-            
+
             mock_service.check_availability.side_effect = mock_check
-            
+
             # Use our fixture service
             service._embedding_client = mock_service
-            
+
             import time
             start = time.time()
             result = await service.check_course_availability(skills)
             duration = time.time() - start
-            
+
             # Verify parallel execution
             assert len(result) == 20
             # With mocked services, should be very fast
@@ -254,21 +255,21 @@ class TestCourseAvailabilityIntegration:
         # Mock embedding client to work normally
         with patch.object(service, '_embedding_client') as mock_client:
             mock_client.create_embeddings = AsyncMock(return_value=[[0.1] * 1536])
-            
+
             # Mock connection pool to fail
             mock_pool = MagicMock()
             mock_pool.acquire.side_effect = Exception("Database connection failed")
-            
+
             service._connection_pool = mock_pool
             service._embedding_client = mock_client
-            
+
             # Execute - should not raise exception
             result = await service.check_course_availability(skills)
-            
+
             # Should return with graceful degradation
             assert result is not None
             assert len(result) == 1
-            
+
             # Skill should be marked as unavailable
             assert result[0]["has_available_courses"] is False
             assert result[0]["course_count"] == 0
