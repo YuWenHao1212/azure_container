@@ -1,0 +1,251 @@
+{
+  "timestamp": "20250816_133242",
+  "configuration": {
+    "num_tests": 20,
+    "delay_between_tests": 2.0,
+    "api_endpoint": "/api/v1/index-cal-and-gap-analysis"
+  },
+  "statistics": {
+    "total_tests": 20,
+    "successful_tests": 20,
+    "failed_tests": 0,
+    "min_time": 6.116038799285889,
+    "max_time": 13.311132907867432,
+    "mean_time": 9.831714355945588,
+    "median_time": 10.208400011062622,
+    "p50": 10.208568096160889,
+    "p95": 13.311132907867432,
+    "p99": 13.311132907867432,
+    "worst_case": 13.311132907867432,
+    "all_times": [
+      6.116038799285889,
+      7.809881925582886,
+      8.159398794174194,
+      8.249053001403809,
+      8.537487983703613,
+      8.92612886428833,
+      8.935111999511719,
+      9.371509075164795,
+      9.482748031616211,
+      10.208231925964355,
+      10.208568096160889,
+      10.229103088378906,
+      10.309375047683716,
+      10.356862306594849,
+      10.576439142227173,
+      11.132136106491089,
+      11.31323504447937,
+      11.573740005493164,
+      11.828104972839355,
+      13.311132907867432
+    ],
+    "function_blocks": {
+      "keyword_matching_time": {
+        "mean": 13.354500000000002,
+        "median": 13.155000000000001,
+        "min": 12.73,
+        "max": 16.39,
+        "p50": 13.16,
+        "p95": 16.39
+      },
+      "embedding_time": {
+        "mean": 139.5375,
+        "median": 138.82,
+        "min": 114.3,
+        "max": 175.33,
+        "p50": 139.68,
+        "p95": 175.33
+      },
+      "index_calculation_time": {
+        "mean": 136.22949999999997,
+        "median": 125.95500000000001,
+        "min": 99.28,
+        "max": 194.72,
+        "p50": 127.12,
+        "p95": 194.72
+      },
+      "gap_analysis_time": {
+        "mean": 8818.889500000001,
+        "median": 9187.055,
+        "min": 5152.24,
+        "max": 12300.1,
+        "p50": 9224.58,
+        "p95": 12300.1
+      },
+      "course_availability_time": {
+        "mean": 628.72,
+        "median": 607.815,
+        "min": 493.33,
+        "max": 1156.51,
+        "p50": 608.47,
+        "p95": 1156.51
+      },
+      "structure_analysis_time": {
+        "mean": 1399.2300000000002,
+        "median": 1321.7350000000001,
+        "min": 1234.42,
+        "max": 1937.55,
+        "p50": 1326.42,
+        "p95": 1937.55
+      },
+      "structure_wait_time": {
+        "mean": 8324.220000000001,
+        "median": 8428.535,
+        "min": 4762.25,
+        "max": 11657.41,
+        "p50": 8653.47,
+        "p95": 11657.41
+      },
+      "pgvector_warmup_time": {
+        "mean": 293.1724999999999,
+        "median": 281.375,
+        "min": 267.61,
+        "max": 355.69,
+        "p50": 283.93,
+        "p95": 355.69
+      }
+    }
+  },
+  "test_results": [
+    {
+      "test_id": "001",
+      "company": "TSMC",
+      "position": "Senior Data Analyst",
+      "total_time": 8.159398794174194,
+      "error": null
+    },
+    {
+      "test_id": "002",
+      "company": "NVIDIA",
+      "position": "Senior Data Scientist",
+      "total_time": 7.809881925582886,
+      "error": null
+    },
+    {
+      "test_id": "003",
+      "company": "foodpanda",
+      "position": "Data Analyst",
+      "total_time": 6.116038799285889,
+      "error": null
+    },
+    {
+      "test_id": "004",
+      "company": "Apple",
+      "position": "Senior Business Analyst",
+      "total_time": 11.573740005493164,
+      "error": null
+    },
+    {
+      "test_id": "005",
+      "company": "Google",
+      "position": "Data Engineering Manager",
+      "total_time": 10.208568096160889,
+      "error": null
+    },
+    {
+      "test_id": "006",
+      "company": "Meta",
+      "position": "Product Data Scientist",
+      "total_time": 10.229103088378906,
+      "error": null
+    },
+    {
+      "test_id": "007",
+      "company": "Microsoft",
+      "position": "Business Intelligence Lead",
+      "total_time": 13.311132907867432,
+      "error": null
+    },
+    {
+      "test_id": "008",
+      "company": "Amazon",
+      "position": "Analytics Manager",
+      "total_time": 9.371509075164795,
+      "error": null
+    },
+    {
+      "test_id": "009",
+      "company": "Goldman Sachs",
+      "position": "Quantitative Analyst",
+      "total_time": 10.356862306594849,
+      "error": null
+    },
+    {
+      "test_id": "010",
+      "company": "McKinsey",
+      "position": "Management Consultant",
+      "total_time": 11.31323504447937,
+      "error": null
+    },
+    {
+      "test_id": "011",
+      "company": "Tesla",
+      "position": "Operations Analytics Manager",
+      "total_time": 11.132136106491089,
+      "error": null
+    },
+    {
+      "test_id": "012",
+      "company": "Uber",
+      "position": "Decision Science Manager",
+      "total_time": 8.92612886428833,
+      "error": null
+    },
+    {
+      "test_id": "013",
+      "company": "JPMorgan",
+      "position": "Risk Analytics Manager",
+      "total_time": 8.935111999511719,
+      "error": null
+    },
+    {
+      "test_id": "014",
+      "company": "BCG",
+      "position": "Data Strategy Consultant",
+      "total_time": 10.208231925964355,
+      "error": null
+    },
+    {
+      "test_id": "015",
+      "company": "Deloitte",
+      "position": "Digital Transformation Manager",
+      "total_time": 10.309375047683716,
+      "error": null
+    },
+    {
+      "test_id": "016",
+      "company": "Boeing",
+      "position": "Supply Chain Data Analyst",
+      "total_time": 9.482748031616211,
+      "error": null
+    },
+    {
+      "test_id": "017",
+      "company": "Spotify",
+      "position": "Growth Analytics Manager",
+      "total_time": 8.537487983703613,
+      "error": null
+    },
+    {
+      "test_id": "018",
+      "company": "Airbnb",
+      "position": "Business Operations Manager",
+      "total_time": 11.828104972839355,
+      "error": null
+    },
+    {
+      "test_id": "019",
+      "company": "Morgan Stanley",
+      "position": "Business Data Analyst",
+      "total_time": 10.576439142227173,
+      "error": null
+    },
+    {
+      "test_id": "020",
+      "company": "BlackRock",
+      "position": "Investment Analytics Lead",
+      "total_time": 8.249053001403809,
+      "error": null
+    }
+  ]
+}
