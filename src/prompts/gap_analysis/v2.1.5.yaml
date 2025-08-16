@@ -4,7 +4,7 @@ metadata:
   created_at: "2025-08-13T00:00:00Z"
   updated_at: "2025-08-13T21:00:00Z"
   description: "Dynamic strength count based on similarity score with universal relevance filtering"
-  status: "production"
+  status: "inactive"
   notes: "V2.1.5 implements adaptive strength count and generic relevance-based filtering without hardcoded job types"
   changes_from_v2.1.4: |
     - Removed hardcoded job type classification (DESIGN/ENGINEERING/PM/DATA)

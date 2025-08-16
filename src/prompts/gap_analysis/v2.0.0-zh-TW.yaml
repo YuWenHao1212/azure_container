@@ -3,7 +3,7 @@ metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-08-09T00:00:00Z"
   description: "Enhanced gap analysis with comprehensive structured output in Traditional Chinese"
-  status: "active"
+  status: "inactive"
   notes: "V2 繁體中文優化版本，包含改進的推理步驟、範例和隱藏技能發現"
 
 llm_config:

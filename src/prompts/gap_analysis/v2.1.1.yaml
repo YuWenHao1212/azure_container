@@ -4,7 +4,7 @@ metadata:
   created_at: "2025-08-13T00:00:00Z"
   updated_at: "2025-08-13T17:00:00Z"
   description: "Refined Overall Assessment with 100-word limit, narrative flow, and similarity-based assessment"
-  status: "production"
+  status: "inactive"
   notes: "V2.1.1 uses real similarity score with refined thresholds for accurate match assessment"
   changes_from_v2.1.0: |
     - Overall Assessment limited to MAX 100 words (much stricter than previous 150-250)

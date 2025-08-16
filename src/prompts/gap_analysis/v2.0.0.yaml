@@ -3,7 +3,7 @@ metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-08-09T00:00:00Z"
   description: "Enhanced gap analysis with comprehensive structured output in English"
-  status: "active"
+  status: "inactive"
   notes: "V2 optimized version with improved reasoning, examples, and hidden skill discovery"
 
 llm_config:

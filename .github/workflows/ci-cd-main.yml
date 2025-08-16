@@ -272,7 +272,7 @@ jobs:
           # Look for files with status: active in metadata
           for file in $dir/v*.yaml; do
             if [ -f "$file" ]; then
-              if grep -q "status: active" "$file" 2>/dev/null; then
+              if grep -qE 'status:\s*["'\'']?active["'\'']?' "$file" 2>/dev/null; then
                 # Extract version from filename
                 basename "$file" .yaml | sed 's/^v//'
                 return
@@ -291,7 +291,7 @@ jobs:
         TAILOR_VERSION=$(find_active_version "resume_tailor")
         
         # Set outputs
-        echo "gap-analysis-version=${GAP_VERSION:-2.1.1}" >> $GITHUB_OUTPUT
+        echo "gap-analysis-version=${GAP_VERSION:-2.1.8}" >> $GITHUB_OUTPUT
         echo "keyword-extraction-version=${KEYWORD_VERSION:-latest}" >> $GITHUB_OUTPUT
         echo "index-calculation-version=${INDEX_VERSION:-latest}" >> $GITHUB_OUTPUT
         echo "resume-format-version=${FORMAT_VERSION:-latest}" >> $GITHUB_OUTPUT
@@ -299,7 +299,7 @@ jobs:
         
         # Log detected versions
         echo "Detected prompt versions:"
-        echo "  - Gap Analysis: ${GAP_VERSION:-2.1.1}"
+        echo "  - Gap Analysis: ${GAP_VERSION:-2.1.8}"
         echo "  - Keyword Extraction: ${KEYWORD_VERSION:-latest}"
         echo "  - Index Calculation: ${INDEX_VERSION:-latest}"
         echo "  - Resume Format: ${FORMAT_VERSION:-latest}"

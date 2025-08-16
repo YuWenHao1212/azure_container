@@ -3,7 +3,7 @@ metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-01-08T00:00:00Z"
   description: "Comprehensive gap analysis between candidate's resume and job requirements"
-  status: "active"
+  status: "inactive"
 
 llm_config:
   temperature: 0.0

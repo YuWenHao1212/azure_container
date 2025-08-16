@@ -3,7 +3,7 @@ metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-01-08T00:00:00Z"
   description: "履歷與職位需求之間的綜合差距分析"
-  status: "active"
+  status: "inactive"
 
 llm_config:
   temperature: 0.7
