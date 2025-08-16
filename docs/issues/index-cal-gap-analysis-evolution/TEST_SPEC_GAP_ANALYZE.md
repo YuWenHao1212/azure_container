@@ -1,9 +1,10 @@
 # 完整測試規格文檔 - Index Cal & Gap Analysis
 
 ## 文檔資訊
-- **版本**: 2.0.0
+- **版本**: 2.1.0
 - **建立日期**: 2025-08-03
 - **最後更新**: 2025-08-16
+- **文檔名稱**: TEST_SPEC_GAP_ANALYZE.md (原名: TEST_SPECIFICATION_COMPLETE.md)
 - **維護者**: AI Resume Advisor Team
 - **測試總數**: 67 個核心測試 + 4 個特殊測試
   - Gap Analysis: 25 UT + 31 IT = 56 個
@@ -21,6 +22,8 @@
   - v1.0.9: 移除部分成功測試 - 刪除 API-GAP-003-E2E，與產品策略「完全失敗」一致 (E2E: 3→2)
   - v1.0.10: 新增 Resume Structure Analysis 測試案例 (UT: 20→25, IT: 27→30)
   - v1.0.11: 新增 Course Availability Check 測試案例 - 7 個單元測試 + 4 個整合測試 + 1 個效能測試 (UT: 25→27, IT: 30→31, PT: 1→2)
+  - v2.0.0: 文檔改名為 TEST_SPEC_GAP_ANALYZE.md
+  - v2.1.0: 新增完整性能測試套件 performance_test_suite.py
 
 ## 重要測試約束 ⚠️
 
@@ -1655,6 +1658,212 @@ pytest test/performance/test_course_availability_performance.py -m real_api -v
 pytest test/performance/test_course_availability_performance.py -v --real-api
 ```
 
+## 8. 完整性能測試套件 (Performance Test Suite)
+
+### 8.1 工具簡介
+
+**performance_test_suite.py** 是一個功能完整的性能測試工具，專門用於分析 Index-Cal-Gap-Analysis API 的效能表現。
+
+#### 主要功能
+- ✅ 支援 1-20 次可配置測試執行
+- ✅ 自動提取完整的 timing breakdown
+- ✅ 生成 Gantt Chart 顯示並行/順序執行
+- ✅ 生成組件時間分析圖表
+- ✅ 計算 P50、P95 等統計指標
+- ✅ 輸出詳細 JSON 結果
+
+### 8.2 使用方式
+
+#### 基本指令
+```bash
+# 快速測試（1 次）
+python test/performance/performance_test_suite.py --tests 1
+
+# 標準測試（5 次，預設）
+python test/performance/performance_test_suite.py
+
+# 中等測試（10 次）
+python test/performance/performance_test_suite.py --tests 10
+
+# 完整測試（20 次）
+python test/performance/performance_test_suite.py --tests 20
+
+# 不生成圖表（僅 JSON）
+python test/performance/performance_test_suite.py --tests 5 --no-charts
+
+# 指定輸出目錄
+python test/performance/performance_test_suite.py --output-dir ./results
+```
+
+#### 命令行參數
+| 參數 | 說明 | 預設值 |
+|------|------|--------|
+| `--tests N` | 測試次數 (1-20) | 5 |
+| `--output-dir` | 結果輸出目錄 | docs/issues/index-cal-gap-analysis-evolution/performance |
+| `--no-charts` | 跳過圖表生成 | False |
+
+### 8.3 輸出檔案
+
+#### 生成的檔案
+1. **JSON 結果檔案**: `performance_test_YYYYMMDD_HHMMSS.json`
+   - 完整測試數據
+   - 統計分析結果
+   - 每個測試的詳細 timing breakdown
+
+2. **Gantt Chart**: `gantt_chart_YYYYMMDD_HHMMSS.png`
+   - 視覺化並行執行階段
+   - 顯示順序執行階段
+   - 標註各組件執行時間
+
+3. **組件分析圖表**: `component_analysis_YYYYMMDD_HHMMSS.png`
+   - 餅圖：時間分佈
+   - 箱線圖：主要組件變異
+   - 折線圖：性能趨勢
+   - 堆疊柱狀圖：組件分解
+
+### 8.4 Timing Breakdown 解析
+
+#### 並行執行組件（同時開始）
+- **structure_analysis_time**: Resume Structure Analyzer (GPT-4.1 mini)
+- **keyword_matching_time**: 關鍵字匹配
+- **embedding_time**: 向量嵌入生成
+- **pgvector_warmup_time**: 向量資料庫預熱
+
+#### 順序執行組件（依序執行）
+- **index_calculation_time**: 匹配指數計算
+- **gap_analysis_time**: 差距分析 (GPT-4.1)
+- **course_availability_time**: 課程可用性檢查
+
+#### 其他時間指標
+- **structure_wait_time**: Structure Analysis 完成後的等待時間
+- **total_time**: API 總回應時間
+
+### 8.5 JSON 輸出格式
+
+```json
+{
+  "timestamp": "20250816_145615",
+  "test_date": "2025-08-16T14:56:15",
+  "configuration": {
+    "num_tests": 5,
+    "api_endpoint": "/api/v1/index-cal-and-gap-analysis",
+    "api_url": "https://...",
+    "test_cases_used": 5
+  },
+  "statistics": {
+    "total_tests": 5,
+    "successful_tests": 5,
+    "failed_tests": 0,
+    "success_rate": 100.0,
+    "total_time_stats": {
+      "p50": 7.25,
+      "p95": 8.94,
+      "mean": 7.00,
+      "min": 4.84,
+      "max": 8.94
+    },
+    "component_stats": {
+      "structure_analysis_time": {
+        "median": 1337,
+        "p50": 1337,
+        "p95": 1500,
+        "mean": 1320,
+        "min": 1200,
+        "max": 1500,
+        "samples": 5
+      },
+      "gap_analysis_time": {...},
+      ...
+    }
+  },
+  "test_details": [
+    {
+      "test_id": "001",
+      "company": "TSMC",
+      "position": "Senior Data Analyst",
+      "success": true,
+      "total_time_seconds": 7.5,
+      "timings_ms": {
+        "structure_analysis_time": 1305,
+        "gap_analysis_time": 6281,
+        ...
+      }
+    }
+  ]
+}
+```
+
+### 8.6 效能基準線
+
+根據測試結果，以下是預期的效能基準：
+
+| 組件 | P50 (中位數) | P95 | 佔總時間比例 |
+|------|-------------|-----|-------------|
+| Gap Analysis | 4500-6500ms | 7000-8000ms | 60-75% |
+| Structure Analysis | 1200-1500ms | 1600-2000ms | 15-20% |
+| Course Availability | 1000-1500ms | 1800-2500ms | 10-15% |
+| Index Calculation | 100-200ms | 250-350ms | 2-3% |
+| Embedding | 100-150ms | 200-300ms | 1-2% |
+| Keywords | 10-20ms | 30-50ms | <1% |
+| **總回應時間** | 7-8s | 9-11s | 100% |
+
+### 8.7 性能分析重點
+
+#### 從 Gantt Chart 觀察
+1. **並行優化效果**: Structure Analysis 與其他組件並行，節省約 1.3 秒
+2. **主要瓶頸**: Gap Analysis 佔用 60-75% 的總時間
+3. **Wait Time**: Structure 通常提前完成，有 2-3 秒等待時間
+
+#### 從組件分析觀察
+1. **時間分佈**: Gap Analysis 是主要時間消耗者
+2. **穩定性**: Structure Analysis 和 Gap Analysis 時間較穩定
+3. **變異性**: Course Availability 時間變異較大（取決於技能數量）
+
+### 8.8 故障排除
+
+#### 常見問題
+1. **HTTP 422 錯誤**: 確保測試資料（JD 和 Resume）長度 ≥ 200 字元
+2. **Timeout 錯誤**: API 回應超過 30 秒，可能是網路或服務問題
+3. **圖表生成失敗**: 確保已安裝 matplotlib (`pip install matplotlib`)
+
+#### 除錯建議
+```bash
+# 單次測試除錯
+python test/performance/performance_test_suite.py --tests 1
+
+# 查看詳細輸出
+python test/performance/performance_test_suite.py --tests 1 2>&1 | tee debug.log
+
+# 檢查 API 連線
+curl -X GET https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast.azurecontainerapps.io/health
+```
+
+### 8.9 與其他效能測試的比較
+
+| 測試工具 | 用途 | 測試數量 | 輸出 |
+|---------|------|---------|------|
+| `performance_test_suite.py` | 完整性能分析 | 1-20 次可配置 | JSON + Gantt + 分析圖 |
+| `run_v101_test.py` | v1.0.1 版本測試 | 固定 20 次 | JSON only |
+| `create_comparison_report.py` | 版本比較 | N/A | 比較圖表 |
+| `test_gap_analysis_v2_performance.py` | 單元效能測試 | 20 次 | JSON report |
+
+### 8.10 最佳實踐
+
+1. **測試頻率建議**
+   - 日常開發：1-5 次快速測試
+   - 版本發布前：10 次標準測試
+   - 性能基準建立：20 次完整測試
+
+2. **資料選擇**
+   - 使用真實場景的 JD 和 Resume
+   - 確保資料長度符合 API 要求（≥ 200 字元）
+   - 包含多樣化的職位類型
+
+3. **結果解讀**
+   - 關注 P50 而非平均值（更穩定）
+   - P95 用於評估最差情況
+   - 觀察趨勢而非單次結果
+
 ---
 
-**文檔結束** - 版本 1.0.11 | 所有測試已完成驗證 ✅ | 新增課程可用性檢查測試規格
+**文檔結束** - 版本 2.1.0 | 所有測試已完成驗證 ✅ | 新增完整性能測試套件
