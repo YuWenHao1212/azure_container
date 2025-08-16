@@ -20,7 +20,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from statistics import median, quantiles
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -179,7 +179,7 @@ class PerformanceTestRunner:
                         if isinstance(server_timings, dict):
                             print("   📈 Server breakdown:")
                             for key, value in server_timings.items():
-                                if key not in ["total_time"] and value and isinstance(value, (int, float)):
+                                if key not in ["total_time"] and value and isinstance(value, int | float):
                                     # Convert ms to seconds for display
                                     print(f"      - {key}: {value/1000:.3f}s")
 
@@ -240,7 +240,7 @@ class PerformanceTestRunner:
                 if "detailed_timings_ms" in metadata:
                     timings = metadata["detailed_timings_ms"]
                     for key, value in timings.items():
-                        if key != "total_time" and value and isinstance(value, (int, float)):
+                        if key != "total_time" and value and isinstance(value, int | float):
                             if key not in block_timings:
                                 block_timings[key] = []
                             block_timings[key].append(value)
@@ -336,7 +336,7 @@ class PerformanceTestRunner:
             return
 
         # Create figure with 3 subplots
-        fig = plt.figure(figsize=(16, 12))
+        plt.figure(figsize=(16, 12))
 
         # Subplot 1: Parallel Execution Timeline (for first test)
         ax1 = plt.subplot(3, 1, 1)
@@ -440,7 +440,7 @@ class PerformanceTestRunner:
         # Extract response times
         times = []
         labels = []
-        for i, result in enumerate(self.test_results[:15]):  # First 15
+        for _, result in enumerate(self.test_results[:15]):  # First 15
             if result["timing"]["total_time"]:
                 times.append(result["timing"]["total_time"])
                 labels.append(f"{result['test_case']['company'][:10]}")
@@ -450,7 +450,7 @@ class PerformanceTestRunner:
 
         # Create bar chart
         colors = ['green' if t < stats['p50'] else 'yellow' if t < stats['p95'] else 'red' for t in times]
-        bars = ax.bar(range(len(times)), times, color=colors, alpha=0.7)
+        ax.bar(range(len(times)), times, color=colors, alpha=0.7)
 
         # Add P50 and P95 lines
         ax.axhline(y=stats['p50'], color='green', linestyle='--', label=f'P50: {stats["p50"]:.2f}s')
