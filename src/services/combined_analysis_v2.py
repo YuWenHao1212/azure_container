@@ -560,7 +560,7 @@ class CombinedAnalysisServiceV2(BaseService):
                             # Use actual execution time, not the total time including wait
                             "end": timing_breakdown.get("structure_analysis_time", 0),
                             "wait_time": timing_breakdown.get("structure_wait_time", 0),
-                            "actual_completed": True if "structure_actual_end" in detailed_timings else False
+                            "actual_completed": "structure_actual_end" in detailed_timings
                         },
                         "pgvector_warmup": {
                             "start": 0,

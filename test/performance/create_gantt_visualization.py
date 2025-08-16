@@ -49,7 +49,7 @@ def create_gantt_chart(results):
         return
 
     # Create figure with subplots
-    fig = plt.figure(figsize=(18, 12))
+    plt.figure(figsize=(18, 12))
 
     # Define colors for different task types
     colors = {
@@ -261,7 +261,7 @@ def plot_performance_stats(ax, results):
 
     # Highlight bottlenecks
     if bottlenecks:
-        top_bottleneck = bottlenecks[0]
+        bottlenecks[0]
         ax.text(0.5, max_times[0] * 1.1,
                f'🔴 Main Bottleneck: {functions[0]} ({avg_times[0]:.0f}ms avg)',
                ha='center', fontsize=11, fontweight='bold', color='red',
