@@ -113,20 +113,20 @@ async def test_api_call(session, test_case):
 
     job_description = f"""
     {test_case['company']} is seeking a {test_case['position']} to join our team.
-    
+
     Required Qualifications:
     - 5+ years of experience in data analytics or related field
     - Strong proficiency in SQL and Python
     - Experience with data visualization tools (Tableau, Power BI)
     - Knowledge of statistical analysis and machine learning
     - Excellent communication and presentation skills
-    
+
     Preferred Qualifications:
     - Advanced degree in Data Science, Statistics, or related field
     - Experience with cloud platforms (AWS, GCP, Azure)
     - Knowledge of big data technologies (Spark, Hadoop)
     - Industry experience in technology or consulting
-    
+
     Key Responsibilities:
     - Analyze large datasets to identify trends and insights
     - Build and maintain dashboards for business stakeholders

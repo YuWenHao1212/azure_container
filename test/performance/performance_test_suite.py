@@ -10,7 +10,7 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import aiohttp
 import matplotlib.patches as mpatches
@@ -118,12 +118,12 @@ Supply Chain Optimization Dashboard
 async def test_api_call(session: aiohttp.ClientSession, test_case: dict[str, str], test_num: int) -> dict[str, Any]:
     """
     Execute a single API test call with comprehensive timing capture
-    
+
     Args:
         session: aiohttp session for making requests
         test_case: Test case with company and position
         test_num: Test number for identification
-        
+
     Returns:
         Dictionary with test results and timing breakdown
     """
@@ -132,20 +132,20 @@ async def test_api_call(session: aiohttp.ClientSession, test_case: dict[str, str
     # Generate job description
     job_description = f"""
     {test_case['company']} is seeking a {test_case['position']} to join our team.
-    
+
     Required Qualifications:
     - 5+ years of experience in data analytics or related field
     - Strong proficiency in SQL and Python
     - Experience with data visualization tools (Tableau, Power BI)
     - Knowledge of statistical analysis and machine learning
     - Excellent communication and presentation skills
-    
+
     Preferred Qualifications:
     - Advanced degree in Data Science, Statistics, or related field
     - Experience with cloud platforms (AWS, GCP, Azure)
     - Knowledge of big data technologies (Spark, Hadoop)
     - Industry experience in technology or consulting
-    
+
     Key Responsibilities:
     - Analyze large datasets to identify trends and insights
     - Build and maintain dashboards for business stakeholders
@@ -227,10 +227,10 @@ async def test_api_call(session: aiohttp.ClientSession, test_case: dict[str, str
 async def run_performance_tests(num_tests: int) -> list[dict[str, Any]]:
     """
     Run multiple performance tests
-    
+
     Args:
         num_tests: Number of tests to run (1-20)
-        
+
     Returns:
         List of test results
     """
@@ -271,10 +271,10 @@ async def run_performance_tests(num_tests: int) -> list[dict[str, Any]]:
 def calculate_statistics(results: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Calculate comprehensive statistics from test results
-    
+
     Args:
         results: List of test results
-        
+
     Returns:
         Dictionary with statistics
     """
@@ -345,11 +345,11 @@ def calculate_statistics(results: list[dict[str, Any]]) -> dict[str, Any]:
 def create_gantt_chart(results: list[dict[str, Any]], output_path: Path) -> Path:
     """
     Create a Gantt chart showing parallel and sequential execution
-    
+
     Args:
         results: Test results with timing data
         output_path: Path to save the chart
-        
+
     Returns:
         Path to saved chart
     """
@@ -363,7 +363,6 @@ def create_gantt_chart(results: list[dict[str, Any]], output_path: Path) -> Path
     sample_timing = successful[0]["timings"]
 
     # Define task structure
-    tasks = []
     colors = {
         "Structure Analysis": "#2E86AB",
         "Keywords Matching": "#A23B72",
@@ -461,11 +460,11 @@ def create_gantt_chart(results: list[dict[str, Any]], output_path: Path) -> Path
 def create_component_analysis(results: list[dict[str, Any]], output_path: Path) -> Path:
     """
     Create component timing analysis charts
-    
+
     Args:
         results: Test results with timing data
         output_path: Path to save the chart
-        
+
     Returns:
         Path to saved chart
     """
@@ -555,12 +554,8 @@ def create_component_analysis(results: list[dict[str, Any]], output_path: Path) 
     # 4. Stacked bar chart - Component breakdown per test
     ax4 = axes[1, 1]
 
-    if len(successful) <= 10:
-        # Show all tests if 10 or fewer
-        show_tests = successful
-    else:
-        # Show first 10 tests
-        show_tests = successful[:10]
+    # Show all tests if 10 or fewer, otherwise show first 10
+    show_tests = successful if len(successful) <= 10 else successful[:10]
 
     test_labels = [f"Test {i+1}" for i in range(len(show_tests))]
 
@@ -578,11 +573,11 @@ def create_component_analysis(results: list[dict[str, Any]], output_path: Path) 
     x = np.arange(len(test_labels))
     width = 0.6
 
-    p1 = ax4.bar(x, structure_times, width, label='Structure', color='#2E86AB', alpha=0.8)
-    p2 = ax4.bar(x, gap_times, width, bottom=structure_times, label='Gap Analysis', color='#BC4B51', alpha=0.8)
-    p3 = ax4.bar(x, index_times, width, bottom=np.array(structure_times)+np.array(gap_times),
+    ax4.bar(x, structure_times, width, label='Structure', color='#2E86AB', alpha=0.8)
+    ax4.bar(x, gap_times, width, bottom=structure_times, label='Gap Analysis', color='#BC4B51', alpha=0.8)
+    ax4.bar(x, index_times, width, bottom=np.array(structure_times)+np.array(gap_times),
                 label='Index Calc', color='#6A994E', alpha=0.8)
-    p4 = ax4.bar(x, other_times, width,
+    ax4.bar(x, other_times, width,
                 bottom=np.array(structure_times)+np.array(gap_times)+np.array(index_times),
                 label='Other', color='#999999', alpha=0.8)
 
@@ -610,13 +605,13 @@ def save_results(results: list[dict[str, Any]], statistics: dict[str, Any],
                  output_path: Path, args: argparse.Namespace) -> Path:
     """
     Save comprehensive test results to JSON
-    
+
     Args:
         results: Test results
         statistics: Calculated statistics
         output_path: Path to save results
         args: Command line arguments
-        
+
     Returns:
         Path to saved JSON file
     """
@@ -662,7 +657,7 @@ def save_results(results: list[dict[str, Any]], statistics: dict[str, Any],
 def print_summary(statistics: dict[str, Any]):
     """
     Print comprehensive test summary
-    
+
     Args:
         statistics: Calculated statistics
     """

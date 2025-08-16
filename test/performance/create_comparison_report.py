@@ -148,20 +148,20 @@ def create_comparison_chart(v100_data, v101_data):
     summary_text = f"""
     PERFORMANCE IMPROVEMENT SUMMARY
     =====================================
-    
+
     Resume Structure Analyzer Prompt Version
     • v1.0.0 → v1.0.1
-    
+
     Response Time Improvements:
     • P50: {v100_data['statistics']['p50']:.2f}s → {v101_data['statistics']['p50']:.2f}s ({p50_improvement:+.1f}%)
     • P95: {v100_data['statistics']['p95']:.2f}s → {v101_data['statistics']['p95']:.2f}s ({p95_improvement:+.1f}%)
     • Mean: {v100_data['statistics']['mean_time']:.2f}s → {v101_data['statistics']['mean_time']:.2f}s ({mean_improvement:+.1f}%)
-    
+
     Key Achievements:
     • {"✅ Significant improvement" if p50_improvement > 10 else "⚠️ Moderate improvement" if p50_improvement > 0 else "❌ No improvement"} in P50 response time
     • {"✅ Better consistency" if p95_improvement > 10 else "⚠️ Similar consistency" if p95_improvement > -5 else "❌ Less consistent"} in P95 times
     • {"✅ Overall faster" if mean_improvement > 10 else "⚠️ Slightly faster" if mean_improvement > 0 else "❌ Slower"} average performance
-    
+
     Test Configuration:
     • Tests: 20 diverse job descriptions
     • Environment: Azure Container Apps (Production)
