@@ -234,6 +234,25 @@ class TestGapAnalysisV2IntegrationComplete:
         assert isinstance(result["keyword_coverage"], dict)
         assert isinstance(result["gap_analysis"], dict)
 
+        # Verify SkillSearchQueries if present
+        if result.get("gap_analysis"):
+            gap_analysis = result["gap_analysis"]
+            if "SkillSearchQueries" in gap_analysis:
+                skill_queries = gap_analysis["SkillSearchQueries"]
+                assert isinstance(skill_queries, list)
+                # Check for course ID fields in skills
+                for skill in skill_queries:
+                    if skill.get("has_available_courses") is True:
+                        # If courses are available, should have course_count
+                        assert "course_count" in skill
+                        # New field: available_course_ids (optional but expected)
+                        if "available_course_ids" in skill:
+                            assert isinstance(skill["available_course_ids"], list)
+                            # Verify course ID format
+                            for course_id in skill["available_course_ids"]:
+                                assert isinstance(course_id, str)
+                                assert course_id.startswith(("coursera_crse:", "coursera_spzn:"))
+
     # TEST: API-GAP-002-IT
     @pytest.mark.integration
     def test_API_GAP_002_IT_jd_length_validation(self, test_client, test_data):
@@ -1005,6 +1024,74 @@ class TestGapAnalysisV2IntegrationComplete:
 
         # Note: In production, we would expect api_call_stats["second_request_calls"] < api_call_stats["first_request_calls"]
         # but in mock tests, we focus on functional correctness rather than optimization
+
+    # TEST: API-GAP-025-IT
+    @pytest.mark.integration
+    def test_API_GAP_028_IT_course_ids_in_response(
+        self, test_client, test_data, mock_keyword_service
+    ):
+        """TEST: API-GAP-028-IT - 課程 ID 列表驗證測試.
+
+        驗證 SkillSearchQueries 中包含 available_course_ids 欄位,
+        且格式正確, 數量與 course_count 一致。
+        """
+        request_data = test_data["valid_test_data"]["standard_requests"][0]
+
+        # Mock the course availability service to return course IDs
+        with patch('src.services.course_availability.CourseAvailabilityChecker.check_course_availability') as mock_check:
+            async def mock_check_availability(skill_queries):
+                # Add course availability data including IDs
+                for skill in skill_queries:
+                    skill["has_available_courses"] = True
+                    skill["course_count"] = 5
+                    skill["available_course_ids"] = [
+                        f"coursera_crse:v1-{i}" for i in range(1001, 1006)
+                    ]
+                return skill_queries
+
+            mock_check.side_effect = mock_check_availability
+
+            response = test_client.post(
+                "/api/v1/index-cal-and-gap-analysis",
+                json={
+                    "resume": request_data["resume"],
+                    "job_description": request_data["job_description"],
+                    "keywords": request_data["keywords"]
+                },
+                headers={"X-API-Key": "test-api-key"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+        # Check SkillSearchQueries contains course IDs
+        gap_analysis = data["data"]["gap_analysis"]
+        if "SkillSearchQueries" in gap_analysis:
+            skill_queries = gap_analysis["SkillSearchQueries"]
+
+            for skill in skill_queries:
+                # If courses are available, verify course IDs
+                if skill.get("has_available_courses") is True:
+                    assert "course_count" in skill
+                    assert "available_course_ids" in skill
+
+                    course_ids = skill["available_course_ids"]
+                    course_count = skill["course_count"]
+
+                    # Verify format and count
+                    assert isinstance(course_ids, list)
+                    # NEW CRITERIA: When has_available_courses is true, must have at least 1 course ID
+                    assert len(course_ids) > 0, "When has_available_courses is true, available_course_ids must not be empty"
+                    assert len(course_ids) <= min(course_count, 25)  # Max 25 IDs
+
+                    # Verify each ID format
+                    for course_id in course_ids:
+                        assert isinstance(course_id, str)
+                        assert course_id.startswith(("coursera_crse:", "coursera_spzn:"))
+                        # ID should have content after the prefix
+                        prefix_len = len("coursera_crse:")
+                        assert len(course_id) > prefix_len
 
 
 if __name__ == "__main__":

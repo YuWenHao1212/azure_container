@@ -140,7 +140,7 @@ class TestCourseAvailability:
 
         # Verify result
         assert result["has_courses"] is True
-        assert result["count"] == 10  # Should be capped at 10
+        assert result["count"] == 15  # Should return actual count when < 25
         assert result["preferred_count"] == 10
         assert result["other_count"] == 5
 

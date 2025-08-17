@@ -114,6 +114,10 @@ class SkillQuery(BaseModel):
         default=None,
         description="Number of available courses for this skill"
     )
+    available_course_ids: list[str] | None = Field(
+        default=None,
+        description="List of available course IDs for direct lookup (max 25)"
+    )
 
 
 class GapAnalysisData(BaseModel):

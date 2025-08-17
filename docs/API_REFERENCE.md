@@ -301,21 +301,40 @@ X-API-Key: [YOUR_API_KEY]
           "skill_category": "SKILL",
           "description": "Frontend framework for building interactive user interfaces required for full-stack role",
           "has_available_courses": true,
-          "course_count": 25
+          "course_count": 25,
+          "available_course_ids": [
+            "coursera_crse:v1-2598",
+            "coursera_crse:v1-2599",
+            "coursera_spzn:react-basics",
+            "coursera_crse:v1-2601",
+            "coursera_crse:v1-2602"
+            // ... up to 25 course IDs
+          ]
         },
         {
           "skill_name": "Kubernetes",
           "skill_category": "FIELD", 
           "description": "Container orchestration platform essential for modern DevOps practices",
           "has_available_courses": true,
-          "course_count": 12
+          "course_count": 12,
+          "available_course_ids": [
+            "coursera_spzn:kubernetes-engine",
+            "coursera_crse:v1-1234",
+            "coursera_crse:v1-1235"
+          ]
         },
         {
           "skill_name": "AWS",
           "skill_category": "FIELD",
           "description": "Cloud platform knowledge required for deploying and managing applications", 
           "has_available_courses": true,
-          "course_count": 18
+          "course_count": 18,
+          "available_course_ids": [
+            "coursera_spzn:aws-fundamentals",
+            "coursera_crse:v1-3001",
+            "coursera_crse:v1-3002",
+            "coursera_crse:v1-3003"
+          ]
         }
       ]
     },

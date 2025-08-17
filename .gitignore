@@ -196,4 +196,5 @@ test/archive/
 
 # Database credentials (IMPORTANT: Never commit these!)
 tools/coursera_db_manager/config/postgres_connection.json
-temp/postgres_connection.json
+temp/postgres_connection.json# Diagnostic test files (temporary)
+test/diagnostics/

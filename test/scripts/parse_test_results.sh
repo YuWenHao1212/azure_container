@@ -45,7 +45,7 @@ parse_batch_test_results() {
     if [ "$error_handling_passed" -gt 0 ]; then
         # Map error handling tests to API-GAP IDs
         local error_test_ids=("API-GAP-018-IT" "API-GAP-019-IT" "API-GAP-020-IT" "API-GAP-021-IT" "API-GAP-022-IT" 
-                             "API-GAP-023-IT" "API-GAP-024-IT" "API-GAP-025-IT" "API-GAP-026-IT" "API-GAP-027-IT")
+                             "API-GAP-023-IT" "API-GAP-024-IT" "API-GAP-025-IT" "API-GAP-026-IT" "API-GAP-027-IT" "API-GAP-028-IT")
         
         # Add passed tests based on count (simplified approach)
         local count=0

@@ -500,7 +500,7 @@ class AdvancedPreCommitValidator:
                 print(f"collected {integration_result.total} items, {integration_result.passed} passed {status}")
         except TimeoutError:
             print(f"{Colors.YELLOW}timed out (27 tests skipped) ⚠️{Colors.RESET}")
-            integration_result.skipped = 27  # Expected 27 integration tests
+            integration_result.skipped = 33  # Expected 33 integration tests (18 gap + 10 error + 5 resume)
             integration_result.duration = float(timeout_seconds)
             signal.alarm(0)  # Cancel alarm
 

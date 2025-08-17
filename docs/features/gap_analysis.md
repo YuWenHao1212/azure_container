@@ -122,21 +122,39 @@ response = requests.post(
           "skill_category": "SKILL",
           "description": "Frontend framework for building interactive user interfaces required for full-stack role",
           "has_available_courses": true,
-          "course_count": 25
+          "course_count": 25,
+          "available_course_ids": [
+            "coursera_crse:v1-2598",
+            "coursera_crse:v1-2599",
+            "coursera_spzn:react-basics",
+            "coursera_crse:v1-2601",
+            "coursera_crse:v1-2602"
+          ]
         },
         {
           "skill_name": "Kubernetes", 
           "skill_category": "FIELD",
           "description": "Container orchestration platform essential for modern DevOps practices",
           "has_available_courses": true,
-          "course_count": 12
+          "course_count": 12,
+          "available_course_ids": [
+            "coursera_spzn:kubernetes-engine",
+            "coursera_crse:v1-1234",
+            "coursera_crse:v1-1235"
+          ]
         },
         {
           "skill_name": "AWS",
           "skill_category": "FIELD",
           "description": "Cloud platform knowledge required for deploying and managing applications",
           "has_available_courses": true,
-          "course_count": 18
+          "course_count": 18,
+          "available_course_ids": [
+            "coursera_spzn:aws-fundamentals",
+            "coursera_crse:v1-3001",
+            "coursera_crse:v1-3002",
+            "coursera_crse:v1-3003"
+          ]
         }
       ]
     },
@@ -218,6 +236,7 @@ response = requests.post(
 **課程可用性資訊**：
 - `has_available_courses`: 是否有相關課程可供學習
 - `course_count`: 可用課程數量，由 Course Availability 服務提供
+- `available_course_ids`: 可用課程 ID 列表（最多 25 個），用於直接查詢課程詳情
 
 ### 6. 履歷結構分析（Resume Structure）- V4 新增功能
 使用 GPT-4.1 mini 快速分析履歷結構，識別區塊組織和內容特徵：

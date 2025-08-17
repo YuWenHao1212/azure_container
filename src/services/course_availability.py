@@ -23,15 +23,78 @@ SIMILARITY_THRESHOLDS = {
 
 # Popular skills cache (preloaded at startup)
 POPULAR_SKILLS_CACHE = {
-    # Technical Skills (SKILL category)
-    "Python": {"has_courses": True, "count": 10},
-    "JavaScript": {"has_courses": True, "count": 10},
-    "React": {"has_courses": True, "count": 10},
-    "Docker": {"has_courses": True, "count": 8},
-    "Kubernetes": {"has_courses": True, "count": 6},
-    "AWS": {"has_courses": True, "count": 10},
-    "Azure": {"has_courses": True, "count": 10},
-    "Machine Learning": {"has_courses": True, "count": 10},
+    # Technical Skills (SKILL category) - with sample course IDs
+    "Python": {
+        "has_courses": True,
+        "count": 10,
+        "course_ids": [
+            "coursera_crse:v1-2001", "coursera_crse:v1-2002", "coursera_spzn:python-for-everybody",
+            "coursera_crse:v1-2004", "coursera_crse:v1-2005", "coursera_crse:v1-2006",
+            "coursera_crse:v1-2007", "coursera_crse:v1-2008", "coursera_crse:v1-2009", "coursera_crse:v1-2010"
+        ]
+    },
+    "JavaScript": {
+        "has_courses": True,
+        "count": 10,
+        "course_ids": [
+            "coursera_crse:v1-2101", "coursera_crse:v1-2102", "coursera_spzn:javascript-basics",
+            "coursera_crse:v1-2104", "coursera_crse:v1-2105", "coursera_crse:v1-2106",
+            "coursera_crse:v1-2107", "coursera_crse:v1-2108", "coursera_crse:v1-2109", "coursera_crse:v1-2110"
+        ]
+    },
+    "React": {
+        "has_courses": True,
+        "count": 10,
+        "course_ids": [
+            "coursera_crse:v1-2201", "coursera_crse:v1-2202", "coursera_spzn:react-basics",
+            "coursera_crse:v1-2204", "coursera_crse:v1-2205", "coursera_crse:v1-2206",
+            "coursera_crse:v1-2207", "coursera_crse:v1-2208", "coursera_crse:v1-2209", "coursera_crse:v1-2210"
+        ]
+    },
+    "Docker": {
+        "has_courses": True,
+        "count": 8,
+        "course_ids": [
+            "coursera_crse:v1-2301", "coursera_crse:v1-2302", "coursera_spzn:docker-kubernetes",
+            "coursera_crse:v1-2304", "coursera_crse:v1-2305", "coursera_crse:v1-2306",
+            "coursera_crse:v1-2307", "coursera_crse:v1-2308"
+        ]
+    },
+    "Kubernetes": {
+        "has_courses": True,
+        "count": 6,
+        "course_ids": [
+            "coursera_spzn:kubernetes-engine", "coursera_crse:v1-2402", "coursera_crse:v1-2403",
+            "coursera_crse:v1-2404", "coursera_crse:v1-2405", "coursera_crse:v1-2406"
+        ]
+    },
+    "AWS": {
+        "has_courses": True,
+        "count": 10,
+        "course_ids": [
+            "coursera_spzn:aws-fundamentals", "coursera_crse:v1-2502", "coursera_crse:v1-2503",
+            "coursera_crse:v1-2504", "coursera_crse:v1-2505", "coursera_crse:v1-2506",
+            "coursera_crse:v1-2507", "coursera_crse:v1-2508", "coursera_crse:v1-2509", "coursera_crse:v1-2510"
+        ]
+    },
+    "Azure": {
+        "has_courses": True,
+        "count": 10,
+        "course_ids": [
+            "coursera_spzn:azure-fundamentals", "coursera_crse:v1-2602", "coursera_crse:v1-2603",
+            "coursera_crse:v1-2604", "coursera_crse:v1-2605", "coursera_crse:v1-2606",
+            "coursera_crse:v1-2607", "coursera_crse:v1-2608", "coursera_crse:v1-2609", "coursera_crse:v1-2610"
+        ]
+    },
+    "Machine Learning": {
+        "has_courses": True,
+        "count": 10,
+        "course_ids": [
+            "coursera_spzn:deep-learning", "coursera_crse:v1-2702", "coursera_crse:v1-2703",
+            "coursera_crse:v1-2704", "coursera_crse:v1-2705", "coursera_crse:v1-2706",
+            "coursera_crse:v1-2707", "coursera_crse:v1-2708", "coursera_crse:v1-2709", "coursera_crse:v1-2710"
+        ]
+    },
     "TypeScript": {"has_courses": True, "count": 10},
     "Node.js": {"has_courses": True, "count": 10},
     "Java": {"has_courses": True, "count": 10},
@@ -52,6 +115,7 @@ POPULAR_SKILLS_CACHE = {
 AVAILABILITY_QUERY = """
 WITH ranked_courses AS (
     SELECT
+        id,
         course_type_standard,
         name,
         1 - (embedding <=> $1::vector) as similarity,
@@ -79,13 +143,14 @@ WITH ranked_courses AS (
     AND embedding IS NOT NULL
     AND 1 - (embedding <=> $1::vector) >= $2
     ORDER BY priority_score DESC, similarity DESC
-    LIMIT 10
+    LIMIT 25  -- Limit to collect up to 25 course IDs
 )
 SELECT
     COUNT(*) > 0 as has_courses,
     COUNT(*) as total_count,
     SUM(CASE WHEN priority_score > 0 THEN 1 ELSE 0 END) as preferred_count,
-    SUM(CASE WHEN priority_score = 0 THEN 1 ELSE 0 END) as other_count
+    SUM(CASE WHEN priority_score = 0 THEN 1 ELSE 0 END) as other_count,
+    array_agg(id ORDER BY priority_score DESC, similarity DESC) as course_ids
 FROM ranked_courses;
 """
 
@@ -202,6 +267,9 @@ class CourseAvailabilityChecker:
                     else:
                         skill["has_available_courses"] = result["has_courses"]
                         skill["course_count"] = result["count"]
+                        # Add course IDs if available
+                        if result.get("course_ids"):
+                            skill["available_course_ids"] = result["course_ids"]
                         # Add breakdown if available
                         if result.get("preferred_count") is not None:
                             skill["preferred_courses"] = result["preferred_count"]
@@ -257,6 +325,9 @@ class CourseAvailabilityChecker:
                 cached[name] = POPULAR_SKILLS_CACHE[name]
                 skill["has_available_courses"] = cached[name]["has_courses"]
                 skill["course_count"] = cached[name]["count"]
+                # Add course IDs from cache if available
+                if "course_ids" in cached[name]:
+                    skill["available_course_ids"] = cached[name]["course_ids"]
                 logger.debug(f"[CourseAvailability] Cache hit for '{name}'")
         return cached
 
@@ -310,12 +381,18 @@ class CourseAvailabilityChecker:
                         skill_category
                     )
 
-                    # Return enhanced result with breakdown
+                    # Get course IDs (limit to 25 for response size)
+                    course_ids = result.get("course_ids", []) or []
+                    if course_ids and len(course_ids) > 25:
+                        course_ids = course_ids[:25]
+
+                    # Return enhanced result with breakdown and course IDs
                     return {
                         "has_courses": result["has_courses"],
-                        "count": min(result["total_count"], 10),  # Cap at 10
+                        "count": min(result["total_count"], 25),  # Update cap to match query
                         "preferred_count": result.get("preferred_count", 0),
-                        "other_count": result.get("other_count", 0)
+                        "other_count": result.get("other_count", 0),
+                        "course_ids": course_ids
                     }
 
         except TimeoutError:

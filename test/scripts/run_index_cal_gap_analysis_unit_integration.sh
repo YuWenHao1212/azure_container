@@ -154,7 +154,7 @@ get_test_priority() {
         # P1 Priority tests (important functionality)
         "API-GAP-013-UT"|"API-GAP-016-UT"|"API-GAP-018-UT"|"API-GAP-019-UT"|"API-GAP-020-UT")
             echo "P1" ;;
-        "API-GAP-004-IT"|"API-GAP-012-IT"|"API-GAP-013-IT"|"API-GAP-018-IT"|"API-GAP-019-IT"|"API-GAP-020-IT"|"API-GAP-021-IT"|"API-GAP-022-IT"|"API-GAP-023-IT"|"API-GAP-024-IT"|"API-GAP-025-IT"|"API-GAP-026-IT"|"API-GAP-027-IT")
+        "API-GAP-004-IT"|"API-GAP-012-IT"|"API-GAP-013-IT"|"API-GAP-018-IT"|"API-GAP-019-IT"|"API-GAP-020-IT"|"API-GAP-021-IT"|"API-GAP-022-IT"|"API-GAP-023-IT"|"API-GAP-024-IT"|"API-GAP-025-IT"|"API-GAP-026-IT"|"API-GAP-027-IT"|"API-GAP-028-IT")
             echo "P1" ;;
         # P2 Priority tests (nice to have)
         "API-GAP-003-UT"|"API-GAP-004-UT"|"API-GAP-017-UT")

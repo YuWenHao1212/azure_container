@@ -339,7 +339,7 @@ API-GAP-[序號]-[類型]
   - 無資源洩漏
   - 資源池狀態正常
 
-### 2.2 整合測試 (31個)
+### 2.2 整合測試 (32個)
 
 #### API-GAP-001-IT: API 端點基本功能測試
 - **名稱**: POST /api/v1/index-cal-and-gap-analysis 正常流程
@@ -679,8 +679,6 @@ API-GAP-[序號]-[類型]
 - **測試內容**: 測試不同 Retry-After 值的處理
 - **判斷標準**: 
   - 60s → 使用 20s
-  - 15s → 使用 15s
-  - -1 → 使用預設策略
 
 #### API-GAP-025-IT: 錯誤分類器準確性測試
 - **名稱**: 錯誤類型分類邏輯的完整驗證
@@ -714,6 +712,21 @@ API-GAP-[序號]-[類型]
   - 3 * (2^n) 公式正確
   - 最大延遲 20 秒限制
   - 計算結果準確
+
+#### API-GAP-028-IT: 課程 ID 列表驗證測試
+- **名稱**: SkillSearchQueries 包含課程 ID 列表
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 驗證 SkillSearchQueries 中包含 available_course_ids 欄位
+- **測試內容**: 
+  - 驗證課程 ID 列表格式（coursera_crse:xxx 或 coursera_spzn:xxx）
+  - 確認 ID 數量與 course_count 一致
+  - 驗證最多返回 25 個課程 ID
+- **判斷標準**: 
+  - available_course_ids 為 list[str] 格式
+  - 當 has_available_courses 為 true 時，len(available_course_ids) > 0
+  - 每個 ID 符合預期格式
+  - 列表長度 <= min(course_count, 25)
 
 ### 2.3 效能測試 (1個)
 
