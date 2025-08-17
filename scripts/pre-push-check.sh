@@ -199,8 +199,27 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${MAGENTA}${BOLD}Do you want to proceed with push to main? This will trigger deployment.${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -n "Type 'yes' to continue or 'no' to cancel: "
-read -r response
+
+# Check for auto-confirm environment variable
+# Usage: AUTO_CONFIRM_PUSH=yes git push origin main
+if [ "$AUTO_CONFIRM_PUSH" = "yes" ]; then
+    echo -e "${GREEN}Auto-confirm enabled via AUTO_CONFIRM_PUSH=yes${NC}"
+    response="yes"
+elif [ "$CI" = "true" ] || [ "$GITHUB_ACTIONS" = "true" ]; then
+    # Auto-confirm in CI environments
+    echo -e "${GREEN}CI environment detected, auto-confirming...${NC}"
+    response="yes"
+else
+    # Interactive confirmation from terminal
+    echo -n "Type 'yes' to continue or 'no' to cancel: "
+    # Read from /dev/tty to ensure it works in git hook context
+    if [ -t 0 ]; then
+        read -r response < /dev/tty
+    else
+        # Fallback if no TTY available
+        read -r response
+    fi
+fi
 
 if [[ "$response" != "yes" ]]; then
     echo ""
