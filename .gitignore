@@ -198,3 +198,7 @@ test/archive/
 tools/coursera_db_manager/config/postgres_connection.json
 temp/postgres_connection.json# Diagnostic test files (temporary)
 test/diagnostics/
+
+# Performance test generated files (temporary)
+test/performance/charts/*.png
+test/performance/charts/*.json

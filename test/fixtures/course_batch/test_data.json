@@ -1,0 +1,90 @@
+{
+  "basic_test": {
+    "course_ids": [
+      "coursera_crse:v1-2598",
+      "coursera_crse:v1-2599",
+      "coursera_crse:v1-2600"
+    ],
+    "max_courses": null,
+    "full_description": true,
+    "description_max_length": 500,
+    "enable_time_tracking": false
+  },
+  "max_courses_test": {
+    "course_ids": [
+      "coursera_crse:v1-2598",
+      "coursera_crse:v1-2599",
+      "coursera_crse:v1-2600",
+      "coursera_crse:v1-2601",
+      "coursera_crse:v1-2602",
+      "coursera_crse:v1-2603",
+      "coursera_crse:v1-2604",
+      "coursera_crse:v1-2605",
+      "coursera_crse:v1-2606",
+      "coursera_crse:v1-2607"
+    ],
+    "max_courses": 3,
+    "full_description": true,
+    "description_max_length": 500,
+    "enable_time_tracking": false
+  },
+  "description_truncation_test": {
+    "course_ids": ["coursera_crse:v1-2598"],
+    "max_courses": null,
+    "full_description": false,
+    "description_max_length": 100,
+    "enable_time_tracking": false
+  },
+  "time_tracking_test": {
+    "course_ids": [
+      "coursera_crse:v1-2598",
+      "coursera_crse:v1-2599"
+    ],
+    "max_courses": null,
+    "full_description": true,
+    "description_max_length": 500,
+    "enable_time_tracking": true
+  },
+  "empty_test": {
+    "course_ids": [],
+    "max_courses": null,
+    "full_description": true,
+    "description_max_length": 500,
+    "enable_time_tracking": false
+  },
+  "not_found_test": {
+    "course_ids": [
+      "invalid_id_1",
+      "invalid_id_2",
+      "not_exist_id"
+    ],
+    "max_courses": null,
+    "full_description": true,
+    "description_max_length": 500,
+    "enable_time_tracking": false
+  },
+  "mixed_test": {
+    "course_ids": [
+      "coursera_crse:v1-2598",
+      "invalid_id_1",
+      "coursera_crse:v1-2599",
+      "not_exist_id",
+      "coursera_crse:v1-2600"
+    ],
+    "max_courses": null,
+    "full_description": true,
+    "description_max_length": 500,
+    "enable_time_tracking": false
+  },
+  "order_preservation_test": {
+    "course_ids": [
+      "coursera_crse:v1-2600",
+      "coursera_crse:v1-2598",
+      "coursera_crse:v1-2599"
+    ],
+    "max_courses": null,
+    "full_description": true,
+    "description_max_length": 500,
+    "enable_time_tracking": false
+  }
+}

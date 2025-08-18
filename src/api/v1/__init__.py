@@ -5,6 +5,7 @@ Aggregates all v1 endpoints for Work Item #347 integration.
 from fastapi import APIRouter
 
 # from .course_matching import router as course_router
+from ..endpoints.course_batch import router as course_batch_router
 from ..endpoints.find_course import router as find_course_router
 from .index_cal_and_gap_analysis import router as index_gap_router
 from .index_calculation import router as index_calculation_router
@@ -36,8 +37,9 @@ router.include_router(format_router, tags=["Resume Format"])
 router.include_router(tailoring_router, tags=["Resume Tailoring"])
 # router.include_router(course_router, tags=["Course Matching"])
 
-# Include find course router
+# Include course routers
 router.include_router(find_course_router, prefix="/courses", tags=["Course Search"])
+router.include_router(course_batch_router, prefix="/courses", tags=["Course Batch"])
 
 # Include memory monitoring router (non-production only)
 router.include_router(memory_router, tags=["Memory Monitoring"])
@@ -139,6 +141,12 @@ async def v1_root():
                     "path": "/api/v1/courses/categories",
                     "method": "GET",
                     "description": "Get popular course categories",
+                    "status": "implemented"
+                },
+                "get_courses_by_ids": {
+                    "path": "/api/v1/courses/get-by-ids",
+                    "method": "POST",
+                    "description": "Batch query courses by IDs with caching",
                     "status": "implemented"
                 }
             },

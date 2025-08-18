@@ -1,0 +1,48 @@
+{
+  "small_batch": {
+    "description": "5 course IDs for P50 response time test",
+    "course_ids": [
+      "coursera_crse:v1-2598",
+      "coursera_crse:v1-2599", 
+      "coursera_crse:v1-2600",
+      "coursera_crse:v1-2601",
+      "coursera_crse:v1-2602"
+    ],
+    "course_names": {
+      "coursera_crse:v1-2598": "React - The Complete Guide",
+      "coursera_crse:v1-2599": "Advanced React and Redux",
+      "coursera_crse:v1-2600": "JavaScript: The Complete Guide",
+      "coursera_crse:v1-2601": "Node.js - Complete Guide",
+      "coursera_crse:v1-2602": "Python for Data Science"
+    }
+  },
+  "large_batch": {
+    "description": "100 course IDs for batch performance test",
+    "course_ids": [
+      "coursera_crse:v1-2598", "coursera_crse:v1-2599", "coursera_crse:v1-2600", "coursera_crse:v1-2601", "coursera_crse:v1-2602",
+      "coursera_crse:v1-2603", "coursera_crse:v1-2604", "coursera_crse:v1-2605", "coursera_crse:v1-2606", "coursera_crse:v1-2607",
+      "coursera_crse:v1-2608", "coursera_crse:v1-2609", "coursera_crse:v1-2610", "coursera_crse:v1-2611", "coursera_crse:v1-2612",
+      "coursera_crse:v1-2613", "coursera_crse:v1-2614", "coursera_crse:v1-2615", "coursera_crse:v1-2616", "coursera_crse:v1-2617",
+      "coursera_crse:v1-2618", "coursera_crse:v1-2619", "coursera_crse:v1-2620", "coursera_crse:v1-2621", "coursera_crse:v1-2622",
+      "coursera_crse:v1-2623", "coursera_crse:v1-2624", "coursera_crse:v1-2625", "coursera_crse:v1-2626", "coursera_crse:v1-2627",
+      "coursera_crse:v1-2628", "coursera_crse:v1-2629", "coursera_crse:v1-2630", "coursera_crse:v1-2631", "coursera_crse:v1-2632",
+      "coursera_crse:v1-2633", "coursera_crse:v1-2634", "coursera_crse:v1-2635", "coursera_crse:v1-2636", "coursera_crse:v1-2637",
+      "coursera_crse:v1-2638", "coursera_crse:v1-2639", "coursera_crse:v1-2640", "coursera_crse:v1-2641", "coursera_crse:v1-2642",
+      "coursera_crse:v1-2643", "coursera_crse:v1-2644", "coursera_crse:v1-2645", "coursera_crse:v1-2646", "coursera_crse:v1-2647",
+      "coursera_crse:v1-2648", "coursera_crse:v1-2649", "coursera_crse:v1-2650", "coursera_crse:v1-2651", "coursera_crse:v1-2652",
+      "coursera_crse:v1-2653", "coursera_crse:v1-2654", "coursera_crse:v1-2655", "coursera_crse:v1-2656", "coursera_crse:v1-2657",
+      "coursera_crse:v1-2658", "coursera_crse:v1-2659", "coursera_crse:v1-2660", "coursera_crse:v1-2661", "coursera_crse:v1-2662",
+      "coursera_crse:v1-2663", "coursera_crse:v1-2664", "coursera_crse:v1-2665", "coursera_crse:v1-2666", "coursera_crse:v1-2667",
+      "coursera_crse:v1-2668", "coursera_crse:v1-2669", "coursera_crse:v1-2670", "coursera_crse:v1-2671", "coursera_crse:v1-2672",
+      "coursera_crse:v1-2673", "coursera_crse:v1-2674", "coursera_crse:v1-2675", "coursera_crse:v1-2676", "coursera_crse:v1-2677",
+      "coursera_crse:v1-2678", "coursera_crse:v1-2679", "coursera_crse:v1-2680", "coursera_crse:v1-2681", "coursera_crse:v1-2682",
+      "coursera_crse:v1-2683", "coursera_crse:v1-2684", "coursera_crse:v1-2685", "coursera_crse:v1-2686", "coursera_crse:v1-2687",
+      "coursera_crse:v1-2688", "coursera_crse:v1-2689", "coursera_crse:v1-2690", "coursera_crse:v1-2691", "coursera_crse:v1-2692",
+      "coursera_crse:v1-2693", "coursera_crse:v1-2694", "coursera_crse:v1-2695", "coursera_crse:v1-2696", "coursera_crse:v1-2697"
+    ],
+    "count": 100
+  },
+  "generated_at": "2025-08-18T15:30:00",
+  "database": "mock_performance_test",
+  "note": "Mock data for performance testing - simulates real course IDs"
+}

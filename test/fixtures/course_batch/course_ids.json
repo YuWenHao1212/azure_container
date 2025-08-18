@@ -1,0 +1,237 @@
+{
+  "combinations": [
+    {
+      "name": "react_courses",
+      "ids": [
+        "coursera_crse:v1-2598",
+        "coursera_crse:v1-2599",
+        "coursera_spzn:react-basics",
+        "coursera_crse:v1-2601",
+        "coursera_crse:v1-2602"
+      ]
+    },
+    {
+      "name": "python_courses",
+      "ids": [
+        "coursera_crse:v1-3001",
+        "coursera_crse:v1-3002",
+        "coursera_crse:v1-3003",
+        "coursera_spzn:python-data",
+        "coursera_crse:v1-3005"
+      ]
+    },
+    {
+      "name": "data_science_courses",
+      "ids": [
+        "coursera_crse:v1-4001",
+        "coursera_crse:v1-4002",
+        "coursera_spzn:data-science",
+        "coursera_crse:v1-4004",
+        "coursera_crse:v1-4005",
+        "coursera_crse:v1-4006"
+      ]
+    },
+    {
+      "name": "machine_learning_courses",
+      "ids": [
+        "coursera_crse:v1-5001",
+        "coursera_spzn:ml-basics",
+        "coursera_crse:v1-5003",
+        "coursera_crse:v1-5004"
+      ]
+    },
+    {
+      "name": "web_development_courses",
+      "ids": [
+        "coursera_crse:v1-6001",
+        "coursera_crse:v1-6002",
+        "coursera_crse:v1-6003",
+        "coursera_spzn:web-dev",
+        "coursera_crse:v1-6005",
+        "coursera_crse:v1-6006",
+        "coursera_crse:v1-6007"
+      ]
+    },
+    {
+      "name": "cloud_computing_courses",
+      "ids": [
+        "coursera_spzn:aws-fundamentals",
+        "coursera_crse:v1-7002",
+        "coursera_crse:v1-7003",
+        "coursera_crse:v1-7004"
+      ]
+    },
+    {
+      "name": "docker_kubernetes_courses",
+      "ids": [
+        "coursera_spzn:kubernetes-engine",
+        "coursera_crse:v1-8002",
+        "coursera_crse:v1-8003"
+      ]
+    },
+    {
+      "name": "database_courses",
+      "ids": [
+        "coursera_crse:v1-9001",
+        "coursera_crse:v1-9002",
+        "coursera_spzn:sql-basics",
+        "coursera_crse:v1-9004",
+        "coursera_crse:v1-9005"
+      ]
+    },
+    {
+      "name": "security_courses",
+      "ids": [
+        "coursera_crse:v1-1001",
+        "coursera_crse:v1-1002",
+        "coursera_spzn:cybersecurity",
+        "coursera_crse:v1-1004"
+      ]
+    },
+    {
+      "name": "mobile_development_courses",
+      "ids": [
+        "coursera_crse:v1-1101",
+        "coursera_crse:v1-1102",
+        "coursera_spzn:android-dev",
+        "coursera_crse:v1-1104",
+        "coursera_crse:v1-1105"
+      ]
+    },
+    {
+      "name": "ai_courses",
+      "ids": [
+        "coursera_spzn:ai-for-everyone",
+        "coursera_crse:v1-1202",
+        "coursera_crse:v1-1203",
+        "coursera_crse:v1-1204",
+        "coursera_crse:v1-1205"
+      ]
+    },
+    {
+      "name": "blockchain_courses",
+      "ids": [
+        "coursera_crse:v1-1301",
+        "coursera_spzn:blockchain-basics",
+        "coursera_crse:v1-1303"
+      ]
+    },
+    {
+      "name": "devops_courses",
+      "ids": [
+        "coursera_crse:v1-1401",
+        "coursera_crse:v1-1402",
+        "coursera_spzn:devops-culture",
+        "coursera_crse:v1-1404",
+        "coursera_crse:v1-1405",
+        "coursera_crse:v1-1406"
+      ]
+    },
+    {
+      "name": "frontend_frameworks",
+      "ids": [
+        "coursera_spzn:angular-basics",
+        "coursera_crse:v1-1502",
+        "coursera_spzn:vue-fundamentals",
+        "coursera_crse:v1-1504"
+      ]
+    },
+    {
+      "name": "backend_technologies",
+      "ids": [
+        "coursera_crse:v1-1601",
+        "coursera_spzn:nodejs-express",
+        "coursera_crse:v1-1603",
+        "coursera_crse:v1-1604",
+        "coursera_crse:v1-1605"
+      ]
+    },
+    {
+      "name": "testing_courses",
+      "ids": [
+        "coursera_crse:v1-1701",
+        "coursera_crse:v1-1702",
+        "coursera_spzn:test-automation",
+        "coursera_crse:v1-1704"
+      ]
+    },
+    {
+      "name": "agile_scrum_courses",
+      "ids": [
+        "coursera_spzn:agile-development",
+        "coursera_crse:v1-1802",
+        "coursera_crse:v1-1803"
+      ]
+    },
+    {
+      "name": "mixed_technologies",
+      "ids": [
+        "coursera_crse:v1-2598",
+        "coursera_spzn:python-data",
+        "coursera_crse:v1-5003",
+        "coursera_spzn:aws-fundamentals",
+        "coursera_crse:v1-1002",
+        "coursera_spzn:nodejs-express",
+        "coursera_crse:v1-1702"
+      ]
+    },
+    {
+      "name": "large_batch",
+      "ids": [
+        "coursera_crse:v1-2598",
+        "coursera_crse:v1-2599",
+        "coursera_crse:v1-2600",
+        "coursera_crse:v1-2601",
+        "coursera_crse:v1-2602",
+        "coursera_crse:v1-3001",
+        "coursera_crse:v1-3002",
+        "coursera_crse:v1-3003",
+        "coursera_crse:v1-4001",
+        "coursera_crse:v1-4002",
+        "coursera_crse:v1-5001",
+        "coursera_crse:v1-5003",
+        "coursera_crse:v1-6001",
+        "coursera_crse:v1-6002",
+        "coursera_crse:v1-7002",
+        "coursera_crse:v1-8002",
+        "coursera_crse:v1-9001",
+        "coursera_crse:v1-1001",
+        "coursera_crse:v1-1101",
+        "coursera_crse:v1-1202"
+      ]
+    },
+    {
+      "name": "single_course",
+      "ids": ["coursera_crse:v1-2598"]
+    }
+  ],
+  "valid_ids": [
+    "coursera_crse:v1-2598",
+    "coursera_crse:v1-2599",
+    "coursera_crse:v1-2600",
+    "coursera_crse:v1-2601",
+    "coursera_crse:v1-2602",
+    "coursera_spzn:react-basics",
+    "coursera_spzn:python-data",
+    "coursera_spzn:data-science",
+    "coursera_spzn:ml-basics",
+    "coursera_spzn:web-dev",
+    "coursera_spzn:aws-fundamentals",
+    "coursera_spzn:kubernetes-engine",
+    "coursera_spzn:sql-basics",
+    "coursera_spzn:cybersecurity",
+    "coursera_spzn:android-dev",
+    "coursera_spzn:ai-for-everyone",
+    "coursera_spzn:blockchain-basics",
+    "coursera_spzn:devops-culture",
+    "coursera_spzn:angular-basics",
+    "coursera_spzn:nodejs-express"
+  ],
+  "invalid_ids": [
+    "invalid_id_1",
+    "invalid_id_2",
+    "not_exist_id",
+    "wrong_format",
+    "test_invalid_course"
+  ]
+}

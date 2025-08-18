@@ -653,6 +653,83 @@ X-API-Key: [YOUR_API_KEY]
 }
 ```
 
+### 8. 批次查詢課程詳情
+`POST /api/v1/courses/get-by-ids`
+
+根據課程 ID 列表批次查詢課程詳細資訊，支援 Bubble.io 前端展示。
+
+**請求參數**
+```json
+{
+  "course_ids": ["string"],          // 必填，課程 ID 列表（1-100 個）
+  "max_courses": 20,                 // 選填，最多查詢幾個（1-100）
+  "full_description": true,          // 選填，是否返回完整描述，預設 true
+  "description_max_length": 500,     // 選填，描述截斷長度（字元），預設 500
+  "enable_time_tracking": true       // 選填，啟用時間追蹤，預設 true
+}
+```
+
+**回應範例（簡化結構）**
+```json
+{
+  "success": true,
+  "courses": [
+    {
+      "id": "coursera_crse:v1-2598",
+      "name": "React - The Complete Guide",
+      "description": "Learn React.js from the ground up...",
+      "provider": "Academind",
+      "provider_standardized": "Academind",
+      "provider_logo_url": "https://example.com/logo.png",
+      "price": 49.99,
+      "currency": "USD",
+      "image_url": "https://example.com/course.jpg",
+      "affiliate_url": "https://www.coursera.org/learn/react",
+      "course_type": "course",
+      "duration": "40 hours",
+      "difficulty": "Intermediate",
+      "rating": 4.7,
+      "enrollment_count": 150000
+    }
+  ],
+  "total_found": 1,
+  "requested_count": 1,
+  "processed_count": 1,
+  "skipped_count": 0,
+  "not_found_ids": [],
+  "cache_hit_rate": 0.0,
+  "from_cache_count": 0,
+  "all_not_found": false,
+  "fallback_url": null,
+  "time_tracking": {
+    "enabled": true,
+    "total_ms": 125,
+    "timeline": [
+      {"task": "preparation", "duration_ms": 3, "description": "Input validation"},
+      {"task": "cache_operations", "duration_ms": 15, "description": "Cache lookup"},
+      {"task": "db_operations", "duration_ms": 85, "description": "Database query"},
+      {"task": "processing", "duration_ms": 22, "description": "Response formatting"}
+    ],
+    "summary": {
+      "preparation_pct": 2.4,
+      "cache_operations_pct": 12.0,
+      "db_operations_pct": 68.0,
+      "processing_pct": 17.6
+    }
+  },
+  "error": {
+    "code": "",
+    "message": "",
+    "details": ""
+  }
+}
+```
+
+**特殊情況處理**
+- **空列表請求**: 返回成功但空結果，提供 fallback_url
+- **部分失敗**: 返回找到的課程，not_found_ids 列出未找到的 ID
+- **超過限制**: 使用 max_courses 限制查詢數量，剩餘 ID 計入 skipped_count
+
 ## 錯誤碼
 
 ### 標準錯誤格式
