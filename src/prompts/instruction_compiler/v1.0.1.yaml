@@ -1,4 +1,4 @@
-version: v1.0.1
+version: "1.0.1"
 metadata:
   author: Claude Code + WenHao
   description: Resume structure analysis prompt for multi-language resumes

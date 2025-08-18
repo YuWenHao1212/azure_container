@@ -16,7 +16,10 @@ from src.services.embedding_client import get_course_embedding_client
 
 # Conditional import for course batch functionality
 if TYPE_CHECKING:
-    pass
+    from src.models.course_batch_simple import (
+        CourseDetailsBatchRequest,
+        CourseDetailsBatchResponse,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -694,14 +697,14 @@ class CourseSearchService:
 
     def format_description_to_html(self, description: str) -> str:
         """
-        將課程描述轉換為 HTML 格式，供 Bubble.io HTML 元件直接顯示
+        將課程描述轉換為 HTML 格式, 供 Bubble.io HTML 元件直接顯示
 
-        處理項目：
-        1. HTML 特殊字元轉義（必須）
-        2. 換行符號處理（必須）
-        3. URL 自動轉連結（建議）
-        4. Markdown 粗體/斜體（建議）
-        5. Bullet points（建議）
+        處理項目:
+        1. HTML 特殊字元轉義 (必須)
+        2. 換行符號處理 (必須)
+        3. URL 自動轉連結 (建議)
+        4. Markdown 粗體/斜體 (建議)
+        5. Bullet points (建議)
 
         Args:
             description: 原始課程描述文字
@@ -715,7 +718,12 @@ class CourseSearchService:
         if not description:
             return ""
 
-        # 1. HTML 特殊字元轉義（最重要，防止破壞 HTML 結構）
+        # 0. 先處理字面字符串的 \n (從資料庫讀取的)
+        # 資料庫中儲存的是兩個字元: 反斜線和n, 不是真正的換行符
+        description = description.replace('\\n', '\n')
+
+
+        # 1. HTML 特殊字元轉義 (最重要, 防止破壞 HTML 結構)
         description = html.escape(description)
 
         # 2. 處理 Markdown 粗體 **text** → <strong>text</strong>
@@ -723,11 +731,11 @@ class CourseSearchService:
         description = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', description)
 
         # 3. 處理 Markdown 斜體 *text* → <em>text</em>
-        # 避免與分隔線衝突，確保前後都不是 *
+        # 避免與分隔線衝突, 確保前後都不是 *
         description = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', r'<em>\1</em>', description)
 
         # 4. 處理 URL 自動轉換為可點擊連結
-        # 使用 target="_blank" 在新視窗開啟，rel="noopener" 提高安全性
+        # 使用 target="_blank" 在新視窗開啟, rel="noopener" 提高安全性
         description = re.sub(
             r'(https?://[^\s<>)"\']+)',
             r'<a href="\1" target="_blank" rel="noopener noreferrer">\1</a>',
@@ -735,7 +743,7 @@ class CourseSearchService:
         )
 
         # 5. 處理段落和換行
-        # 先分割成段落（連續兩個換行）
+        # 先分割成段落 (連續兩個換行)
         paragraphs = description.split('\n\n')
         formatted_paragraphs = []
 
@@ -767,7 +775,7 @@ class CourseSearchService:
                             is_bullet = True
                             break
 
-                    # 檢查 - 或 * 作為 bullet（需要後面有空格）
+                    # 檢查 - 或 * 作為 bullet (需要後面有空格)
                     if not is_bullet and len(line) > 2 and line[0] in ['-', '*'] and line[1] == ' ':
                         content = line[2:].strip()
                         list_items.append(f'<li>{content}</li>')
@@ -779,7 +787,7 @@ class CourseSearchService:
 
                 # 組合結果
                 if non_list_content:
-                    # 列表前的文字，單換行轉為 <br>
+                    # 列表前的文字, 單換行轉為 <br>
                     text = '<br>'.join(non_list_content)
                     formatted_paragraphs.append(f'<p>{text}</p>')
 
@@ -787,7 +795,7 @@ class CourseSearchService:
                     # 添加無序列表
                     formatted_paragraphs.append(f'<ul>{"".join(list_items)}</ul>')
             else:
-                # 普通段落，將單換行轉為 <br>
+                # 普通段落, 將單換行轉為 <br>
                 para_html = para.replace('\n', '<br>')
                 formatted_paragraphs.append(f'<p>{para_html}</p>')
 
@@ -800,10 +808,10 @@ class CourseSearchService:
     ) -> "CourseDetailsBatchResponse":
         """
         批次查詢課程詳情 by IDs
-        
+
         Args:
             request: 批次查詢請求物件
-            
+
         Returns:
             CourseDetailsBatchResponse: 課程詳情回應
         """
@@ -869,7 +877,7 @@ class CourseSearchService:
                 async with self._connection_pool.acquire() as conn:
                     # 使用 array_position 保持順序
                     query = """
-                        SELECT 
+                        SELECT
                             id,
                             name,
                             description,
@@ -899,7 +907,7 @@ class CourseSearchService:
                             # HTML 格式化處理
                             description_field = self.format_description_to_html(description)
                         else:
-                            # 標準描述處理（可能截斷）
+                            # 標準描述處理 (可能截斷)
                             if not request.full_description and len(description) > request.description_max_length:
                                 description_field = description[:request.description_max_length] + "..."
                             else:
@@ -922,7 +930,10 @@ class CourseSearchService:
                         db_courses.append(course)
 
                         # 快取結果
-                        cache_key = f"course_detail:{row['id']}:{request.full_description}:{request.description_max_length}"
+                        cache_key = (
+                            f"course_detail:{row['id']}:"
+                            f"{request.full_description}:{request.description_max_length}"
+                        )
                         self.cache.set(cache_key, course)
 
                 track_time("db_operations", "Query uncached courses", db_start)
@@ -953,7 +964,7 @@ class CourseSearchService:
 
             # 建立時間追蹤摘要
             time_tracking = None
-            if request.enable_time_tracking and timeline:
+            if request.enable_time_tracking:
                 total_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
                 # 計算百分比

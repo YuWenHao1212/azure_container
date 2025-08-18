@@ -42,7 +42,7 @@ class CourseDetailsBatchRequest(BaseModel):
         example=True
     )
     format_description_html: bool = Field(
-        True,  # 預設為 True，自動格式化為 HTML
+        True,  # 預設為 True, 自動格式化為 HTML
         description="是否將描述格式化為 HTML (用於 Bubble.io 顯示)",
         example=True
     )

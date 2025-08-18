@@ -127,6 +127,10 @@ dmypy.json
 .AppleDouble
 .LSOverride
 
+# Temporary analysis scripts
+scripts/analyze_*.py
+scripts/test_*.py
+
 # Windows
 Thumbs.db
 ehthumbs.db
