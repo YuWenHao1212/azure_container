@@ -793,7 +793,7 @@ class CourseSearchService:
 
                 async with self._connection_pool.acquire() as conn:
                     # 使用 array_position 保持輸入順序
-                        query = """
+                    query = """
                         SELECT
                             id,
                             name,
@@ -805,38 +805,34 @@ class CourseSearchService:
                             currency,
                             image_url,
                             affiliate_url,
-                            course_type,
-                            duration,
-                            difficulty,
-                            rating,
-                            enrollment_count
+                            course_type
                         FROM courses
                         WHERE id = ANY($1::text[])
                         ORDER BY array_position($1::text[], id)
                     """
 
-                rows = await conn.fetch(query, uncached_ids)
+                    rows = await conn.fetch(query, uncached_ids)
 
-                for row in rows:
-                    course = dict(row)
+                    for row in rows:
+                        course = dict(row)
 
-                    # 處理描述截斷
-                    if not full_description and course.get('description'):
-                        description = course['description']
-                        if len(description) > description_max_length:
-                            # 在單詞邊界截斷
-                            truncated = description[:description_max_length]
-                            last_space = truncated.rfind(' ')
-                            if last_space > 0:
-                                truncated = truncated[:last_space]
-                            course['description'] = truncated + '...'
+                        # 處理描述截斷
+                        if not full_description and course.get('description'):
+                            description = course['description']
+                            if len(description) > description_max_length:
+                                # 在單詞邊界截斷
+                                truncated = description[:description_max_length]
+                                last_space = truncated.rfind(' ')
+                                if last_space > 0:
+                                    truncated = truncated[:last_space]
+                                course['description'] = truncated + '...'
 
-                    db_courses.append(course)
+                        db_courses.append(course)
 
-                    # 快取個別課程
-                    individual_cache_key = f"{course['id']}|{full_description}|{description_max_length}"
-                    individual_cache_key = hashlib.sha256(individual_cache_key.encode()).hexdigest()[:16]
-                    self.batch_cache.set(individual_cache_key, course)
+                        # 快取個別課程
+                        individual_cache_key = f"{course['id']}|{full_description}|{description_max_length}"
+                        individual_cache_key = hashlib.sha256(individual_cache_key.encode()).hexdigest()[:16]
+                        self.batch_cache.set(individual_cache_key, course)
 
                 tracker.end_task()
             else:
