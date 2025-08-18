@@ -665,9 +665,18 @@ X-API-Key: [YOUR_API_KEY]
   "max_courses": 20,                 // 選填，最多查詢幾個（1-100）
   "full_description": true,          // 選填，是否返回完整描述，預設 true
   "description_max_length": 500,     // 選填，描述截斷長度（字元），預設 500
-  "enable_time_tracking": true       // 選填，啟用時間追蹤，預設 true
+  "enable_time_tracking": true,      // 選填，啟用時間追蹤，預設 true
+  "format_description_html": true    // 選填，將描述格式化為 HTML，預設 true
 }
 ```
+
+**HTML 格式化功能**
+- **預設啟用**：`format_description_html` 預設為 `true`
+- **欄位名稱固定**：始終使用 `description` 欄位，不會改變名稱
+- 當 `format_description_html=true`（預設）：`description` 欄位包含 HTML 格式化內容
+- 當 `format_description_html=false`：`description` 欄位包含原始純文字
+- 支援：HTML 轉義、換行處理、Markdown 轉換、URL 自動連結、Bullet Points
+- 適合直接在 Bubble.io HTML 元件中顯示，無需額外處理
 
 **回應範例（簡化結構）**
 ```json
@@ -677,7 +686,9 @@ X-API-Key: [YOUR_API_KEY]
     {
       "id": "coursera_crse:v1-2598",
       "name": "React - The Complete Guide",
-      "description": "Learn React.js from the ground up...",
+      "description": "Learn React.js from the ground up...",  // 當 format_description_html=false 時為純文字
+      // 或
+      "description": "<p>Learn React.js from the ground up...</p>",  // 當 format_description_html=true 時為 HTML
       "provider": "Academind",
       "provider_standardized": "Academind",
       "provider_logo_url": "https://example.com/logo.png",

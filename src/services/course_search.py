@@ -16,7 +16,7 @@ from src.services.embedding_client import get_course_embedding_client
 
 # Conditional import for course batch functionality
 if TYPE_CHECKING:
-    from src.models.course_batch_simple import CourseDetailsBatchRequest, CourseDetailsBatchResponse
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -692,242 +692,320 @@ class CourseSearchService:
         else:
             return f"UNKNOWN_ERROR_{error_type.upper()}"
 
+    def format_description_to_html(self, description: str) -> str:
+        """
+        將課程描述轉換為 HTML 格式，供 Bubble.io HTML 元件直接顯示
+
+        處理項目：
+        1. HTML 特殊字元轉義（必須）
+        2. 換行符號處理（必須）
+        3. URL 自動轉連結（建議）
+        4. Markdown 粗體/斜體（建議）
+        5. Bullet points（建議）
+
+        Args:
+            description: 原始課程描述文字
+
+        Returns:
+            HTML 格式化的描述
+        """
+        import html
+        import re
+
+        if not description:
+            return ""
+
+        # 1. HTML 特殊字元轉義（最重要，防止破壞 HTML 結構）
+        description = html.escape(description)
+
+        # 2. 處理 Markdown 粗體 **text** → <strong>text</strong>
+        # 使用 <strong> 而非 <b> 更符合語義化 HTML
+        description = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', description)
+
+        # 3. 處理 Markdown 斜體 *text* → <em>text</em>
+        # 避免與分隔線衝突，確保前後都不是 *
+        description = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', r'<em>\1</em>', description)
+
+        # 4. 處理 URL 自動轉換為可點擊連結
+        # 使用 target="_blank" 在新視窗開啟，rel="noopener" 提高安全性
+        description = re.sub(
+            r'(https?://[^\s<>)"\']+)',
+            r'<a href="\1" target="_blank" rel="noopener noreferrer">\1</a>',
+            description
+        )
+
+        # 5. 處理段落和換行
+        # 先分割成段落（連續兩個換行）
+        paragraphs = description.split('\n\n')
+        formatted_paragraphs = []
+
+        for para in paragraphs:
+            if not para.strip():
+                continue
+
+            # 檢查是否包含 bullet points
+            lines = para.split('\n')
+            has_bullets = any(line.strip().startswith(('•', '●', '■', '▪')) for line in lines)
+
+            if has_bullets:
+                # 處理 bullet list
+                list_items = []
+                non_list_content = []
+
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    # 檢查是否是 bullet point
+                    is_bullet = False
+                    for bullet in ['•', '●', '■', '▪']:
+                        if line.startswith(bullet):
+                            # 移除 bullet 符號並加入列表
+                            content = line[len(bullet):].strip()
+                            list_items.append(f'<li>{content}</li>')
+                            is_bullet = True
+                            break
+
+                    # 檢查 - 或 * 作為 bullet（需要後面有空格）
+                    if not is_bullet and len(line) > 2 and line[0] in ['-', '*'] and line[1] == ' ':
+                        content = line[2:].strip()
+                        list_items.append(f'<li>{content}</li>')
+                        is_bullet = True
+
+                    if not is_bullet and not list_items:
+                        # 還沒開始列表的內容
+                        non_list_content.append(line)
+
+                # 組合結果
+                if non_list_content:
+                    # 列表前的文字，單換行轉為 <br>
+                    text = '<br>'.join(non_list_content)
+                    formatted_paragraphs.append(f'<p>{text}</p>')
+
+                if list_items:
+                    # 添加無序列表
+                    formatted_paragraphs.append(f'<ul>{"".join(list_items)}</ul>')
+            else:
+                # 普通段落，將單換行轉為 <br>
+                para_html = para.replace('\n', '<br>')
+                formatted_paragraphs.append(f'<p>{para_html}</p>')
+
+        # 組合所有段落
+        return ''.join(formatted_paragraphs)
+
     async def get_courses_by_ids(
         self,
         request: "CourseDetailsBatchRequest"
     ) -> "CourseDetailsBatchResponse":
         """
-        根據課程 ID 列表批次查詢課程詳情
-
+        批次查詢課程詳情 by IDs
+        
         Args:
-            request: 批次查詢請求物件, 包含課程 ID 列表和查詢選項
-
+            request: 批次查詢請求物件
+            
         Returns:
-            CourseDetailsBatchResponse: 包含課程詳情的回應物件
+            CourseDetailsBatchResponse: 課程詳情回應
         """
-        import hashlib
+        from datetime import datetime
 
         from src.models.course_batch_simple import CourseDetailsBatchResponse
         from src.services.course_cache import CourseSearchCache
-        from src.utils.time_tracker import SimpleTimeTracker
 
-        # 從 request 物件取得參數
-        course_ids = request.course_ids
-        max_courses = request.max_courses
-        full_description = request.full_description
-        description_max_length = request.description_max_length
-        enable_time_tracking = request.enable_time_tracking
+        start_time = datetime.now()
+        timeline = []
+
+        def track_time(task: str, description: str, start: datetime) -> dict:
+            """追蹤任務時間"""
+            duration_ms = int((datetime.now() - start).total_seconds() * 1000)
+            if request.enable_time_tracking and duration_ms > 50:  # 只記錄超過 50ms 的操作
+                timeline.append({
+                    "task": task,
+                    "duration_ms": duration_ms,
+                    "description": description
+                })
+            return {"duration": duration_ms}
 
         try:
-            # 初始化時間追蹤器
-            tracker = SimpleTimeTracker(enabled=enable_time_tracking)
-            tracker.start()
+            # 1. 準備階段
+            prep_start = datetime.now()
 
-            # Phase 1: 預處理 (preparation)
-            tracker.start_task("preparation", "Input validation and limits")
+            # 處理 max_courses 限制
+            course_ids = request.course_ids[:request.max_courses] if request.max_courses else request.course_ids
+            skipped_count = len(request.course_ids) - len(course_ids)
 
-            # 應用 max_courses 限制
-            if max_courses and max_courses > 0:
-                processed_ids = course_ids[:max_courses]
-                skipped_count = len(course_ids) - len(processed_ids)
-            else:
-                processed_ids = course_ids
-                skipped_count = 0
+            track_time("preparation", "Input validation and limits", prep_start)
 
-            # 去重並保持順序
-            seen = set()
-            unique_ids = []
-            for course_id in processed_ids:
-                if course_id not in seen:
-                    seen.add(course_id)
-                    unique_ids.append(course_id)
-
-            tracker.end_task()
-
-            # Phase 2: 快取操作 (cache_operations)
-            tracker.start_task("cache_operations", "Check cached courses")
+            # 2. 快取操作
+            cache_start = datetime.now()
 
             # 初始化快取
-            if not hasattr(self, 'batch_cache'):
-                self.batch_cache = CourseSearchCache(ttl_seconds=900)  # 15分鐘 TTL
+            if not hasattr(self, 'cache'):
+                self.cache = CourseSearchCache()
 
-            # 生成快取鍵
-            cache_key_base = f"{sorted(unique_ids)}|{full_description}|{description_max_length}"
-            cache_key = hashlib.sha256(cache_key_base.encode()).hexdigest()[:16]
-
-            # 檢查整體快取
-            cached_result = self.batch_cache.get(cache_key)
-            if cached_result:
-                tracker.end_task()
-
-                # 更新快取統計資訊
-                cached_result['cache_hit_rate'] = 1.0  # 100% 快取命中
-                cached_result['from_cache_count'] = cached_result.get('total_found', 0)
-
-                # 添加時間追蹤資訊
-                if enable_time_tracking:
-                    cached_result['time_tracking'] = tracker.get_tracking_data()
-
-                return CourseDetailsBatchResponse(**cached_result)
-
-            # 檢查個別課程快取
-            cached_courses = {}
+            # 檢查快取
+            cached_courses = []
             uncached_ids = []
 
-            for course_id in unique_ids:
-                individual_cache_key = f"{course_id}|{full_description}|{description_max_length}"
-                individual_cache_key = hashlib.sha256(individual_cache_key.encode()).hexdigest()[:16]
-                cached_course = self.batch_cache.get(individual_cache_key)
-
-                if cached_course:
-                    cached_courses[course_id] = cached_course
+            for course_id in course_ids:
+                cache_key = f"course_detail:{course_id}:{request.full_description}:{request.description_max_length}"
+                cached = self.cache.get(cache_key)
+                if cached:
+                    cached_courses.append(cached)
                 else:
                     uncached_ids.append(course_id)
 
-            tracker.end_task()
+            track_time("cache_operations", "Check cached courses", cache_start)
 
-            # Phase 3: 資料庫操作 (db_operations)
+            # 3. 資料庫操作
             db_courses = []
             if uncached_ids:
-                tracker.start_task("db_operations", "Query uncached courses")
+                db_start = datetime.now()
 
+                # 初始化連線
+                await self.initialize()
+
+                # 批次查詢
                 async with self._connection_pool.acquire() as conn:
-                    # 使用 array_position 保持輸入順序
+                    # 使用 array_position 保持順序
                     query = """
-                        SELECT
+                        SELECT 
                             id,
                             name,
                             description,
-                            provider,
+                            COALESCE(provider_standardized, provider) as provider,
                             provider_standardized,
                             provider_logo_url,
-                            price,
+                            price as current_price,
                             currency,
                             image_url,
                             affiliate_url,
-                            course_type
+                            course_type_standard as course_type,
+                            array_position($1::text[], id) as sort_order
                         FROM courses
                         WHERE id = ANY($1::text[])
+                        AND platform = 'coursera'
                         ORDER BY array_position($1::text[], id)
                     """
 
-                    rows = await conn.fetch(query, uncached_ids)
+                    results = await conn.fetch(query, uncached_ids)
 
-                    for row in rows:
-                        course = dict(row)
+                    for row in results:
+                        # 處理描述
+                        description = row['description'] or ''
 
-                        # 處理描述截斷
-                        if not full_description and course.get('description'):
-                            description = course['description']
-                            if len(description) > description_max_length:
-                                # 在單詞邊界截斷
-                                truncated = description[:description_max_length]
-                                last_space = truncated.rfind(' ')
-                                if last_space > 0:
-                                    truncated = truncated[:last_space]
-                                course['description'] = truncated + '...'
+                        # 根據 format_description_html 決定是否格式化
+                        if request.format_description_html:
+                            # HTML 格式化處理
+                            description_field = self.format_description_to_html(description)
+                        else:
+                            # 標準描述處理（可能截斷）
+                            if not request.full_description and len(description) > request.description_max_length:
+                                description_field = description[:request.description_max_length] + "..."
+                            else:
+                                description_field = description
+
+                        course = {
+                            "id": row['id'],
+                            "name": row['name'],
+                            "description": description_field,  # 固定使用 description 欄位
+                            "provider": row['provider'],
+                            "provider_standardized": row['provider_standardized'] or '',
+                            "provider_logo_url": row['provider_logo_url'] or '',
+                            "price": float(row['current_price'] or 0),
+                            "currency": row['currency'] or 'USD',
+                            "image_url": row['image_url'] or '',
+                            "affiliate_url": row['affiliate_url'] or '',
+                            "course_type": row['course_type'] or 'course'
+                        }
 
                         db_courses.append(course)
 
-                        # 快取個別課程
-                        individual_cache_key = f"{course['id']}|{full_description}|{description_max_length}"
-                        individual_cache_key = hashlib.sha256(individual_cache_key.encode()).hexdigest()[:16]
-                        self.batch_cache.set(individual_cache_key, course)
+                        # 快取結果
+                        cache_key = f"course_detail:{row['id']}:{request.full_description}:{request.description_max_length}"
+                        self.cache.set(cache_key, course)
 
-                tracker.end_task()
-            else:
-                # 沒有需要查詢的課程, 添加跳過的任務
-                tracker.add_task_result("db_operations", 0, "Query uncached courses (skipped)")
+                track_time("db_operations", "Query uncached courses", db_start)
 
-            # Phase 4: 處理與回應 (processing)
-            tracker.start_task("processing", "Format and build response")
+            # 4. 處理與組合結果
+            process_start = datetime.now()
 
-            # 合併快取和資料庫結果, 保持原始順序
-            all_courses = []
+            # 合併結果並保持原始順序
+            all_courses = cached_courses + db_courses
+            courses_dict = {c['id']: c for c in all_courses}
+
+            # 按原始順序排序
+            ordered_courses = []
             not_found_ids = []
 
-            for course_id in unique_ids:
-                if course_id in cached_courses:
-                    all_courses.append(cached_courses[course_id])
+            for course_id in course_ids:
+                if course_id in courses_dict:
+                    ordered_courses.append(courses_dict[course_id])
                 else:
-                    # 在資料庫結果中查找
-                    found = False
-                    for db_course in db_courses:
-                        if db_course['id'] == course_id:
-                            all_courses.append(db_course)
-                            found = True
-                            break
+                    not_found_ids.append(course_id)
 
-                    if not found:
-                        not_found_ids.append(course_id)
+            track_time("processing", "Format and build response", process_start)
 
-            # 計算統計資訊
-            from_cache_count = len(cached_courses)
-            len(db_courses)
-            total_found = len(all_courses)
-            len(not_found_ids)
-            cache_hit_rate = from_cache_count / len(unique_ids) if unique_ids else 0
+            # 計算統計
+            total_found = len(ordered_courses)
+            cache_hit_rate = len(cached_courses) / len(course_ids) if course_ids else 0
+            all_not_found = total_found == 0
 
-            tracker.end_task()
+            # 建立時間追蹤摘要
+            time_tracking = None
+            if request.enable_time_tracking and timeline:
+                total_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
-            # 取得時間追蹤資料
-            time_tracking_data = tracker.get_tracking_data() if enable_time_tracking else None
+                # 計算百分比
+                summary = {}
+                for item in timeline:
+                    key = f"{item['task']}_pct"
+                    summary[key] = round((item['duration_ms'] / total_ms) * 100, 1) if total_ms > 0 else 0
 
-            # 建立回應物件(不需要再 import, 已在 try 開頭 import)
-            response = CourseDetailsBatchResponse(
+                time_tracking = {
+                    "enabled": True,
+                    "total_ms": total_ms,
+                    "timeline": timeline,
+                    "summary": summary
+                }
+
+            # 返回結果
+            return CourseDetailsBatchResponse(
                 success=True,
-                courses=all_courses,
+                courses=ordered_courses,
                 total_found=total_found,
-                requested_count=len(course_ids),
-                processed_count=len(processed_ids),
+                requested_count=len(request.course_ids),
+                processed_count=len(course_ids),
                 skipped_count=skipped_count,
                 not_found_ids=not_found_ids,
                 cache_hit_rate=round(cache_hit_rate, 2),
-                from_cache_count=from_cache_count,
-                all_not_found=(total_found == 0),
-                fallback_url="https://imp.i384100.net/mOkdyq" if total_found == 0 else None,
-                time_tracking=time_tracking_data,
-                error={
-                    "code": "",
-                    "message": "",
-                    "details": ""
-                }
+                from_cache_count=len(cached_courses),
+                all_not_found=all_not_found,
+                fallback_url="https://imp.i384100.net/mOkdyq" if all_not_found else None,
+                time_tracking=time_tracking,
+                error={"code": "", "message": "", "details": ""}
             )
 
-            # 快取整體結果(轉換為 dict 進行快取)
-            cache_result = response.model_dump()
-            self.batch_cache.set(cache_key, cache_result)
-
-            return response
-
         except Exception as e:
-            # 記錄錯誤
-            logger.error(f"[CourseSearch] Batch query error: {e}")
+            logger.error(f"[CourseBatch] Error in get_courses_by_ids: {e}")
 
-            # 建立錯誤回應
+            # 返回錯誤回應
             return CourseDetailsBatchResponse(
                 success=False,
                 courses=[],
                 total_found=0,
-                requested_count=len(course_ids),
+                requested_count=len(request.course_ids),
                 processed_count=0,
                 skipped_count=0,
-                not_found_ids=course_ids,
+                not_found_ids=request.course_ids,
                 cache_hit_rate=0.0,
                 from_cache_count=0,
                 all_not_found=True,
                 fallback_url="https://imp.i384100.net/mOkdyq",
                 time_tracking=None,
                 error={
-                    "code": "DATABASE_ERROR" if "connection" in str(e).lower() else "QUERY_ERROR",
+                    "code": "BATCH_QUERY_ERROR",
                     "message": "Failed to query courses",
                     "details": str(e)
                 }
             )
-
-    async def close(self):
-        """關閉服務"""
-        if self.embedding_client:
-            await self.embedding_client.close()
-        if self._connection_pool:
-            await self._connection_pool.close()

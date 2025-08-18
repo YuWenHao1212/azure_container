@@ -123,7 +123,8 @@ response = requests.post(
         "max_courses": 20,               # 可選：最多查詢前 20 個 ID（最大 100）
         "full_description": False,       # 可選：返回截斷的描述
         "description_max_length": 200,   # 可選：描述截斷至 200 字元
-        "enable_time_tracking": True     # 可選：啟用時間追蹤（預設開啟） 
+        "enable_time_tracking": True,    # 可選：啟用時間追蹤（預設開啟）
+        "format_description_html": True  # 可選：將描述格式化為 HTML（預設開啟） 
     }
 )
 ```
@@ -314,7 +315,8 @@ response = requests.post(
   "max_courses": int | None = None,         # 可選：最多查詢幾個課程（1-100，只查詢前 N 個 ID）
   "full_description": bool = True,          # 可選：是否返回完整描述
   "description_max_length": int = 500,      # 可選：描述截斷長度-字元數（當 full_description=false 時生效）
-  "enable_time_tracking": bool = True       # 可選：啟用時間追蹤（預設開啟）
+  "enable_time_tracking": bool = True,      # 可選：啟用時間追蹤（預設開啟）
+  "format_description_html": bool = True    # 可選：是否將描述格式化為 HTML（預設為 true）
 }
 ```
 
@@ -323,7 +325,7 @@ response = requests.post(
 {
   "id": str,                        # 課程唯一識別碼
   "name": str,                      # 課程名稱
-  "description": str,               # 課程描述（可截斷）
+  "description": str,               # 課程描述（當 format_description_html=false 時為原始文字，為 true 時為 HTML 格式）
   "provider": str,                  # 提供者名稱
   "provider_standardized": str,     # 標準化提供者名稱
   "provider_logo_url": str,         # 提供者 Logo URL
@@ -445,6 +447,42 @@ URL: API Response's metadata's fallback_url
 - 截斷長度可透過 `description_max_length` 控制
 - 截斷時會在單詞邊界進行，避免斷詞
 - 某些選填欄位可能為 null
+
+### HTML 格式化功能
+**預設啟用**：`format_description_html` 預設為 `true`，自動將課程描述轉換為 HTML 格式。
+
+- **format_description_html=true（預設）**：描述欄位返回 HTML 格式化內容，可直接在 Bubble.io HTML 元件中顯示
+- **format_description_html=false**：描述欄位返回原始純文字內容
+
+#### 格式化處理項目
+1. **HTML 特殊字元轉義** - 防止 XSS 攻擊和破壞 HTML 結構
+   - `<` → `&lt;`
+   - `>` → `&gt;`
+   - `&` → `&amp;`
+   - `"` → `&quot;`
+
+2. **換行處理**
+   - 單換行 (`
+`) → `<br>`
+   - 雙換行分段 → `<p>` 標籤
+
+3. **Markdown 格式轉換**
+   - `**粗體文字**` → `<strong>粗體文字</strong>`
+   - `*斜體文字*` → `<em>斜體文字</em>`
+
+4. **URL 自動連結**
+   - `https://example.com` → `<a href="https://example.com" target="_blank">https://example.com</a>`
+
+5. **Bullet Points 處理**
+   - `• 項目` → `<ul><li>項目</li></ul>`
+   - 支援多種 bullet 符號：`•`, `●`, `■`, `▪`, `-`, `*`
+
+#### 使用注意事項
+- 描述欄位始終為 `description`，不會改變欄位名稱
+- 當 `format_description_html=true`（預設）時，`description` 欄位包含 HTML 格式化內容
+- 當 `format_description_html=false` 時，`description` 欄位包含原始純文字
+- Bubble.io 可以固定使用 `description` 欄位，無需根據參數調整
+- 格式化不會影響快取鍵值，相同內容的不同格式會分別快取
 
 ### 效能考量
 - 大量 ID 查詢可能稍慢（建議使用 `max_courses` 限制）
