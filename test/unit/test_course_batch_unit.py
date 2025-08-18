@@ -46,7 +46,7 @@ def course_service():
     """Create CourseSearchService instance with mocked dependencies."""
     service = CourseSearchService()
     # Mock the connection pool
-    service.pool = AsyncMock()
+    service._connection_pool = AsyncMock()
     return service
 
 
@@ -78,7 +78,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act
         result = await course_service.get_courses_by_ids(request)
@@ -118,7 +118,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act
         result = await course_service.get_courses_by_ids(request)
@@ -164,7 +164,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act
         result = await course_service.get_courses_by_ids(request)
@@ -208,7 +208,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act - First query (should hit database)
         result1 = await course_service.get_courses_by_ids(request)
@@ -259,7 +259,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act
         result = await course_service.get_courses_by_ids(request)
@@ -304,7 +304,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act
         result = await course_service.get_courses_by_ids(request)
@@ -335,7 +335,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act
         result = await course_service.get_courses_by_ids(request)
@@ -396,7 +396,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act
         result = await course_service.get_courses_by_ids(request)
@@ -428,7 +428,7 @@ class TestCourseBatchUnit:
         mock_context_manager = AsyncMock()
         mock_context_manager.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_context_manager.__aexit__ = AsyncMock(return_value=None)
-        course_service.pool.acquire = MagicMock(return_value=mock_context_manager)
+        course_service._connection_pool.acquire = MagicMock(return_value=mock_context_manager)
 
         # Act - Query twice
         result1 = await course_service.get_courses_by_ids(request)
