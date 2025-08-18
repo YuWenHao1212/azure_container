@@ -1,0 +1,52 @@
+{
+  "timestamp": "2025-08-18T11:30:29.824280",
+  "test_id": "API-CDB-002-PT",
+  "courses_requested": 3,
+  "courses_found": 3,
+  "cache_metrics": {
+    "hit_rate": 0.0,
+    "from_cache": 0
+  },
+  "time_tracking": {
+    "enabled": true,
+    "total_ms": 40.0,
+    "timeline": [
+      {
+        "task": "preparation",
+        "duration_ms": 0.0,
+        "description": "Input validation and limits",
+        "skipped": true
+      },
+      {
+        "task": "cache_operations",
+        "duration_ms": 0.0,
+        "description": "Check cached courses",
+        "skipped": true
+      },
+      {
+        "task": "db_operations",
+        "duration_ms": 40.0,
+        "description": "Query uncached courses"
+      },
+      {
+        "task": "processing",
+        "duration_ms": 0.0,
+        "description": "Format and build response",
+        "skipped": true
+      }
+    ],
+    "summary": {
+      "preparation_pct": 0.0,
+      "cache_operations_pct": 0.0,
+      "db_operations_pct": 99.9,
+      "processing_pct": 0.0
+    }
+  },
+  "performance_targets": {
+    "p50_target_ms": 150,
+    "p90_target_ms": 200,
+    "p95_target_ms": 300,
+    "cold_start_target_ms": 500,
+    "full_cache_target_ms": 100
+  }
+}
