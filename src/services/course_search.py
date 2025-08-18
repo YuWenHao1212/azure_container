@@ -139,7 +139,7 @@ class CourseSearchService:
             query_embedding = query_embeddings[0]
 
             # 從連線池取得連線
-            async with self.pool.acquire() as conn:
+            async with self._connection_pool.acquire() as conn:
                 # 註冊 vector 類型
                 await register_vector(conn)
                 # 建立基本查詢
@@ -791,7 +791,7 @@ class CourseSearchService:
             if uncached_ids:
                 tracker.start_task("db_operations", "Query uncached courses")
 
-                async with self.pool.acquire() as conn:
+                async with self._connection_pool.acquire() as conn:
                     # 使用 array_position 保持輸入順序
                         query = """
                         SELECT
