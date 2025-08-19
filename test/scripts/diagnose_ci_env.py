@@ -18,7 +18,12 @@ try:
     print(f"\nTestConfig.is_ci_environment(): {TestConfig.is_ci_environment()}")
     print(f"Test timeout: {TestConfig.get_test_timeout()}s")
     delays = TestConfig.get_retry_delays()
-    print(f"Rate limit initial delay: {delays['rate_limit']['initial_delay']}s")
+    if isinstance(delays, dict) and 'rate_limit' in delays:
+        print(f"Rate limit initial delay: {delays['rate_limit']['initial_delay']}s")
+        print(f"Timeout initial delay: {delays['timeout']['initial_delay']}s")
+        print(f"General initial delay: {delays['general']['initial_delay']}s")
+    else:
+        print(f"Retry delays structure: {delays}")
 except ImportError as e:
     print(f"\nError importing TestConfig: {e}")
 

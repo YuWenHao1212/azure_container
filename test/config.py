@@ -25,15 +25,39 @@ class TestConfig:
         if TestConfig.is_ci_environment():
             # Shorter delays for CI to speed up tests
             return {
-                'initial_delay': 0.1,
-                'max_delay': 1.0,
-                'exponential_base': 1.5
+                'rate_limit': {
+                    'initial_delay': 0.1,
+                    'max_delay': 1.0,
+                    'multiplier': 1.5
+                },
+                'timeout': {
+                    'initial_delay': 0.05,
+                    'max_delay': 0.5,
+                    'multiplier': 1.5
+                },
+                'general': {
+                    'initial_delay': 0.1,
+                    'max_delay': 1.0,
+                    'multiplier': 1.5
+                }
             }
         # Default delays for local development
         return {
-            'initial_delay': 1.0,
-            'max_delay': 10.0,
-            'exponential_base': 2.0
+            'rate_limit': {
+                'initial_delay': 3.0,
+                'max_delay': 30.0,
+                'multiplier': 2.0
+            },
+            'timeout': {
+                'initial_delay': 0.5,
+                'max_delay': 5.0,
+                'multiplier': 2.0
+            },
+            'general': {
+                'initial_delay': 1.0,
+                'max_delay': 10.0,
+                'multiplier': 2.0
+            }
         }
 
     @staticmethod
