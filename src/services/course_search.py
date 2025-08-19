@@ -726,15 +726,19 @@ class CourseSearchService:
         # 1. HTML 特殊字元轉義 (最重要, 防止破壞 HTML 結構)
         description = html.escape(description)
 
-        # 2. 處理 Markdown 粗體 **text** → <strong>text</strong>
+        # 2. 先處理分隔線 (連續3個或更多星號)
+        # 將連續的星號分隔線轉換為水平線
+        description = re.sub(r'\*{3,}', '<hr>', description)
+
+        # 3. 處理 Markdown 粗體 **text** → <strong>text</strong>
         # 使用 <strong> 而非 <b> 更符合語義化 HTML
         description = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', description)
 
-        # 3. 處理 Markdown 斜體 *text* → <em>text</em>
+        # 4. 處理 Markdown 斜體 *text* → <em>text</em>
         # 避免與分隔線衝突, 確保前後都不是 *
         description = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', r'<em>\1</em>', description)
 
-        # 4. 處理 URL 自動轉換為可點擊連結
+        # 5. 處理 URL 自動轉換為可點擊連結
         # 使用 target="_blank" 在新視窗開啟, rel="noopener" 提高安全性
         description = re.sub(
             r'(https?://[^\s<>)"\']+)',
