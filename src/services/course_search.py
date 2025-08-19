@@ -870,8 +870,9 @@ class CourseSearchService:
             if uncached_ids:
                 db_start = datetime.now()
 
-                # 初始化連線
-                await self.initialize()
+                # 初始化連線 (只在連線池不存在時)
+                if not self._connection_pool:
+                    await self.initialize()
 
                 # 批次查詢
                 async with self._connection_pool.acquire() as conn:
