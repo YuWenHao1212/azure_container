@@ -113,7 +113,7 @@ WITH initial_candidates AS (
     FROM courses
     WHERE platform = 'coursera'
     AND embedding IS NOT NULL
-    AND 1 - (embedding <=> $1::vector) >= 0.30  -- MIN_SIMILARITY_THRESHOLD
+    AND 1 - (embedding <=> $1::vector) >= $2  -- MIN_SIMILARITY_THRESHOLD
     ORDER BY similarity DESC
     LIMIT 80  -- Get enough candidates for diversity
 ),
@@ -122,11 +122,11 @@ filtered_candidates AS (
     SELECT * FROM initial_candidates
     WHERE
         -- SKILL category requires moderate threshold
-        ($3 = 'SKILL' AND similarity >= 0.35) OR
+        ($3 = 'SKILL' AND similarity >= $4) OR
         -- FIELD category uses lower threshold
-        ($3 = 'FIELD' AND similarity >= 0.30) OR
+        ($3 = 'FIELD' AND similarity >= $5) OR
         -- DEFAULT uses SKILL threshold
-        ($3 NOT IN ('SKILL', 'FIELD') AND similarity >= 0.35)
+        ($3 NOT IN ('SKILL', 'FIELD') AND similarity >= $6)
 ),
 type_ranked AS (
     -- Step 3: Rank within each course type and get counts
@@ -456,9 +456,12 @@ class CourseAvailabilityChecker:
                     # Execute availability check query with quota-based diversity
                     result = await conn.fetchrow(
                         AVAILABILITY_QUERY,
-                        embedding,
-                        min_threshold,  # Use minimum threshold
-                        skill_category
+                        embedding,                                              # $1
+                        min_threshold,                                          # $2 = 0.30
+                        skill_category,                                         # $3
+                        SIMILARITY_THRESHOLDS.get("SKILL", SIMILARITY_THRESHOLDS["DEFAULT"]),    # $4 = 0.35
+                        SIMILARITY_THRESHOLDS.get("FIELD", SIMILARITY_THRESHOLDS["DEFAULT"]),    # $5 = 0.30
+                        SIMILARITY_THRESHOLDS.get("DEFAULT", SIMILARITY_THRESHOLDS["DEFAULT"])  # $6 = 0.35
                     )
 
                     # Get course IDs (already limited in query)
