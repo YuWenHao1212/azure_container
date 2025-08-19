@@ -77,6 +77,9 @@ jobs:
         
         # Language Detection
         USE_RULE_BASED_DETECTOR=true
+        
+        # Course Availability Cache Configuration
+        ENABLE_COURSE_CACHE=true
         EOF
         
     - name: Run tests
@@ -385,7 +388,8 @@ jobs:
             JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }} \
             CONTAINER_APP_API_KEY=${{ secrets.CONTAINER_APP_API_KEY }} \
             CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \
-            USE_RULE_BASED_DETECTOR=true
+            USE_RULE_BASED_DETECTOR=true \
+            ENABLE_COURSE_CACHE=true
             
     - name: Wait for deployment
       run: |
