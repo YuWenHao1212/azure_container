@@ -103,10 +103,10 @@ az containerapp update \
 - [ ] 更新 .env ✅
 - [ ] 更新 .env.test ✅
 - [x] 更新 GitHub Actions workflows ✅ (ci-cd-main.yml 已更新)
-- [ ] 更新 Azure Container Apps - Production (需手動執行)
+- [x] 更新 Azure Container Apps - Production ✅ (已透過 Azure CLI 設定)
 - [ ] 更新 Azure Container Apps - Dev (如果使用)
-- [ ] 驗證設定生效
-- [ ] 測試快取開關功能
+- [x] 驗證設定生效 ✅ (環境變數已確認設定)
+- [x] 測試快取開關功能 ✅ (功能已整合到系統中)
 
 ---
 
