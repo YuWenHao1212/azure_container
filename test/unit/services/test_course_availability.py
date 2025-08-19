@@ -394,9 +394,9 @@ class TestCourseAvailability:
         from src.services.course_availability import SIMILARITY_THRESHOLDS
 
         # Verify new threshold values
-        assert SIMILARITY_THRESHOLDS["SKILL"] == 0.45, "SKILL threshold should be 0.45"
-        assert SIMILARITY_THRESHOLDS["FIELD"] == 0.40, "FIELD threshold should be 0.40"
-        assert SIMILARITY_THRESHOLDS["DEFAULT"] == 0.45, "DEFAULT threshold should be 0.45"
+        assert SIMILARITY_THRESHOLDS["SKILL"] == 0.35, "SKILL threshold should be 0.35"
+        assert SIMILARITY_THRESHOLDS["FIELD"] == 0.30, "FIELD threshold should be 0.30"
+        assert SIMILARITY_THRESHOLDS["DEFAULT"] == 0.35, "DEFAULT threshold should be 0.35"
 
     @pytest.mark.asyncio
     async def test_CA_009_UT_course_type_diversity(self, checker):
@@ -472,7 +472,7 @@ class TestCourseAvailability:
         from src.services.course_availability import MIN_SIMILARITY_THRESHOLD
 
         # Verify minimum threshold value
-        assert MIN_SIMILARITY_THRESHOLD == 0.40, "MIN_SIMILARITY_THRESHOLD should be 0.40"
+        assert MIN_SIMILARITY_THRESHOLD == 0.30, "MIN_SIMILARITY_THRESHOLD should be 0.30"
 
         # This threshold should be less than or equal to all category thresholds
         from src.services.course_availability import SIMILARITY_THRESHOLDS

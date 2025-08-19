@@ -14,15 +14,15 @@ from src.services.llm_factory import get_embedding_client
 
 logger = logging.getLogger(__name__)
 
-# Similarity thresholds by skill category (Updated for better relevance)
+# Similarity thresholds by skill category (Balanced for coverage and quality)
 SIMILARITY_THRESHOLDS = {
-    "SKILL": 0.45,    # Higher threshold for technical skills (was 0.30)
-    "FIELD": 0.40,    # Lower threshold for domain knowledge (was 0.25)
-    "DEFAULT": 0.45   # Default threshold (was 0.30)
+    "SKILL": 0.35,    # Moderate threshold for technical skills
+    "FIELD": 0.30,    # Lower threshold for domain knowledge
+    "DEFAULT": 0.35   # Default threshold
 }
 
 # Minimum threshold for initial query (optimization)
-MIN_SIMILARITY_THRESHOLD = 0.40
+MIN_SIMILARITY_THRESHOLD = 0.30
 
 # Course type quotas for balanced recommendations
 COURSE_TYPE_QUOTAS = {
@@ -113,7 +113,7 @@ WITH initial_candidates AS (
     FROM courses
     WHERE platform = 'coursera'
     AND embedding IS NOT NULL
-    AND 1 - (embedding <=> $1::vector) >= 0.40  -- MIN_SIMILARITY_THRESHOLD
+    AND 1 - (embedding <=> $1::vector) >= 0.30  -- MIN_SIMILARITY_THRESHOLD
     ORDER BY similarity DESC
     LIMIT 80  -- Get enough candidates for diversity
 ),
@@ -121,12 +121,12 @@ filtered_candidates AS (
     -- Step 2: Apply category-specific threshold filtering
     SELECT * FROM initial_candidates
     WHERE
-        -- SKILL category requires higher threshold
-        ($3 = 'SKILL' AND similarity >= 0.45) OR
+        -- SKILL category requires moderate threshold
+        ($3 = 'SKILL' AND similarity >= 0.35) OR
         -- FIELD category uses lower threshold
-        ($3 = 'FIELD' AND similarity >= 0.40) OR
+        ($3 = 'FIELD' AND similarity >= 0.30) OR
         -- DEFAULT uses SKILL threshold
-        ($3 NOT IN ('SKILL', 'FIELD') AND similarity >= 0.45)
+        ($3 NOT IN ('SKILL', 'FIELD') AND similarity >= 0.35)
 ),
 type_ranked AS (
     -- Step 3: Rank within each course type and get counts
