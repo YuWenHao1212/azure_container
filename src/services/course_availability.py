@@ -165,7 +165,7 @@ quota_applied AS (
             (course_type_standard = 'degree' AND type_rank <= LEAST(2, type_count))
         ))
 )
--- Step 5: Final selection ordered by pure similarity
+-- Step 5: Final selection with aggregated results
 SELECT
     COUNT(*) > 0 as has_courses,
     COUNT(*) as total_count,
@@ -173,7 +173,6 @@ SELECT
     array_agg(DISTINCT course_type_standard) as course_types,
     array_agg(id ORDER BY similarity DESC) as course_ids
 FROM quota_applied
-ORDER BY similarity DESC
 LIMIT 25;
 """
 
