@@ -393,10 +393,10 @@ class TestCourseAvailability:
         """
         from src.services.course_availability import SIMILARITY_THRESHOLDS
 
-        # Verify new threshold values
-        assert SIMILARITY_THRESHOLDS["SKILL"] == 0.35, "SKILL threshold should be 0.35"
-        assert SIMILARITY_THRESHOLDS["FIELD"] == 0.30, "FIELD threshold should be 0.30"
-        assert SIMILARITY_THRESHOLDS["DEFAULT"] == 0.35, "DEFAULT threshold should be 0.35"
+        # Verify new threshold values (Stage 2: Moderate strictness)
+        assert SIMILARITY_THRESHOLDS["SKILL"] == 0.40, "SKILL threshold should be 0.40"
+        assert SIMILARITY_THRESHOLDS["FIELD"] == 0.35, "FIELD threshold should be 0.35"
+        assert SIMILARITY_THRESHOLDS["DEFAULT"] == 0.40, "DEFAULT threshold should be 0.40"
 
     @pytest.mark.asyncio
     async def test_CA_009_UT_course_type_diversity(self, checker):
@@ -450,17 +450,17 @@ class TestCourseAvailability:
         assert "SKILL" in COURSE_TYPE_QUOTAS
         assert "FIELD" in COURSE_TYPE_QUOTAS
 
-        # Check SKILL quotas
+        # Check SKILL quotas (Stage 2: Adjusted for stricter thresholds)
         skill_quotas = COURSE_TYPE_QUOTAS["SKILL"]
-        assert skill_quotas["course"] == 15, "SKILL should allow up to 15 courses"
-        assert skill_quotas["project"] == 5, "SKILL should allow up to 5 projects"
-        assert skill_quotas["certification"] == 2, "SKILL should allow up to 2 certifications"
+        assert skill_quotas["course"] == 18, "SKILL should allow up to 18 courses"
+        assert skill_quotas["project"] == 3, "SKILL should allow up to 3 projects"
+        assert skill_quotas["certification"] == 3, "SKILL should allow up to 3 certifications"
 
-        # Check FIELD quotas
+        # Check FIELD quotas (Stage 2: Adjusted for stricter thresholds)
         field_quotas = COURSE_TYPE_QUOTAS["FIELD"]
-        assert field_quotas["specialization"] == 12, "FIELD should allow up to 12 specializations"
-        assert field_quotas["degree"] == 4, "FIELD should allow up to 4 degrees"
-        assert field_quotas["course"] == 5, "FIELD should allow up to 5 courses"
+        assert field_quotas["specialization"] == 15, "FIELD should allow up to 15 specializations"
+        assert field_quotas["degree"] == 3, "FIELD should allow up to 3 degrees"
+        assert field_quotas["course"] == 6, "FIELD should allow up to 6 courses"
 
     @pytest.mark.asyncio
     async def test_CA_011_UT_minimum_threshold_usage(self, checker):
@@ -471,8 +471,8 @@ class TestCourseAvailability:
         """
         from src.services.course_availability import MIN_SIMILARITY_THRESHOLD
 
-        # Verify minimum threshold value
-        assert MIN_SIMILARITY_THRESHOLD == 0.30, "MIN_SIMILARITY_THRESHOLD should be 0.30"
+        # Verify minimum threshold value (Stage 2: Increased for better quality)
+        assert MIN_SIMILARITY_THRESHOLD == 0.35, "MIN_SIMILARITY_THRESHOLD should be 0.35"
 
         # This threshold should be less than or equal to all category thresholds
         from src.services.course_availability import SIMILARITY_THRESHOLDS

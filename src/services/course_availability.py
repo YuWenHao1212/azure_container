@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 # Similarity thresholds by skill category (Stage 2: Moderate strictness for higher quality)
 # Support environment variable overrides for production tuning without redeployment
 SIMILARITY_THRESHOLDS = {
-    "SKILL": float(os.getenv("COURSE_THRESHOLD_SKILL", "0.40")),    # Increased threshold for technical skills (was 0.35)
-    "FIELD": float(os.getenv("COURSE_THRESHOLD_FIELD", "0.35")),    # Increased threshold for domain knowledge (was 0.30)
-    "DEFAULT": float(os.getenv("COURSE_THRESHOLD_DEFAULT", "0.40"))  # Default threshold (was 0.35)
+    "SKILL": float(os.getenv("COURSE_THRESHOLD_SKILL", "0.40")),    # Increased from 0.35
+    "FIELD": float(os.getenv("COURSE_THRESHOLD_FIELD", "0.35")),    # Increased from 0.30
+    "DEFAULT": float(os.getenv("COURSE_THRESHOLD_DEFAULT", "0.40"))  # Default (was 0.35)
 }
 
 # Minimum threshold for initial query (optimization)
-MIN_SIMILARITY_THRESHOLD = float(os.getenv("COURSE_MIN_THRESHOLD", "0.35"))  # Increased from 0.30 for better quality filtering
+MIN_SIMILARITY_THRESHOLD = float(os.getenv("COURSE_MIN_THRESHOLD", "0.35"))  # Increased from 0.30
 
 # Log the active thresholds on module load
 logger.info(f"Course Availability Thresholds - SKILL: {SIMILARITY_THRESHOLDS['SKILL']}, "
