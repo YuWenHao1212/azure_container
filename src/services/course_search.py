@@ -903,16 +903,17 @@ class CourseSearchService:
                         # 處理描述
                         description = row['description'] or ''
 
+                        # 先處理截斷(無論是否要 HTML 格式化)
+                        if not request.full_description and len(description) > request.description_max_length:
+                            description = description[:request.description_max_length] + "..."
+
                         # 根據 format_description_html 決定是否格式化
                         if request.format_description_html:
-                            # HTML 格式化處理
+                            # HTML 格式化處理(描述已經截斷過了)
                             description_field = self.format_description_to_html(description)
                         else:
-                            # 標準描述處理 (可能截斷)
-                            if not request.full_description and len(description) > request.description_max_length:
-                                description_field = description[:request.description_max_length] + "..."
-                            else:
-                                description_field = description
+                            # 標準描述處理(已經截斷過了)
+                            description_field = description
 
                         course = {
                             "id": row['id'],
