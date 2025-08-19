@@ -86,8 +86,8 @@ class TestCourseAvailabilityIntegration:
                 return {
                     "has_courses": True,
                     "count": 10 if skill_name == "Python" else 8,
-                    "preferred_count": 6 if skill_name == "Python" else 5,
-                    "other_count": 4 if skill_name == "Python" else 3,
+                    "type_diversity": 2,
+                    "course_types": ["course", "project"],
                     "course_ids": [f"coursera_crse:v1-{skill_name.lower()}-001",
                                   f"coursera_crse:v1-{skill_name.lower()}-002"]
                 }
@@ -117,4 +117,5 @@ class TestCourseAvailabilityIntegration:
             # Verify specific skill results
             python_result = next(s for s in result if s["skill_name"] == "Python")
             assert python_result["course_count"] == 10
-            assert python_result["preferred_courses"] == 6
+            # New system doesn't return preferred_courses, check for course IDs instead
+            assert len(python_result["available_course_ids"]) == 2

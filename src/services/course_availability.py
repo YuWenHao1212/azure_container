@@ -14,11 +14,32 @@ from src.services.llm_factory import get_embedding_client
 
 logger = logging.getLogger(__name__)
 
-# Similarity thresholds by skill category
+# Similarity thresholds by skill category (Updated for better relevance)
 SIMILARITY_THRESHOLDS = {
-    "SKILL": 0.30,  # Higher threshold for technical skills
-    "FIELD": 0.25,  # Lower threshold for domain knowledge
-    "DEFAULT": 0.30  # Default threshold
+    "SKILL": 0.45,    # Higher threshold for technical skills (was 0.30)
+    "FIELD": 0.40,    # Lower threshold for domain knowledge (was 0.25)
+    "DEFAULT": 0.45   # Default threshold (was 0.30)
+}
+
+# Minimum threshold for initial query (optimization)
+MIN_SIMILARITY_THRESHOLD = 0.40
+
+# Course type quotas for balanced recommendations
+COURSE_TYPE_QUOTAS = {
+    "SKILL": {
+        "course": 15,          # Single courses for quick learning
+        "project": 5,          # Hands-on projects
+        "certification": 2,    # Professional certifications
+        "specialization": 2,   # Course series
+        "degree": 1           # Degree programs
+    },
+    "FIELD": {
+        "specialization": 12,  # Course series for comprehensive learning
+        "degree": 4,          # Full degree programs
+        "course": 5,          # Supplementary single courses
+        "certification": 2,    # Professional certifications
+        "project": 1          # Practical projects
+    }
 }
 
 # Popular skills cache (preloaded at startup)
@@ -80,47 +101,80 @@ POPULAR_SKILLS_CACHE = {
     "Business Analysis": {"has_courses": True, "count": 10},
 }
 
-# SQL query for checking course availability with course type prioritization
+# SQL query for course availability with quota-based diversity (v2.0)
 AVAILABILITY_QUERY = """
-WITH ranked_courses AS (
+WITH initial_candidates AS (
+    -- Step 1: Use minimum threshold for initial filtering
     SELECT
         id,
         course_type_standard,
         name,
-        1 - (embedding <=> $1::vector) as similarity,
-        CASE
-            -- SKILL category preferences
-            WHEN $3 = 'SKILL' THEN
-                CASE course_type_standard
-                    WHEN 'course' THEN 3         -- Highest priority
-                    WHEN 'project' THEN 2        -- Second priority
-                    WHEN 'certification' THEN 1  -- Third priority
-                    ELSE 0  -- Other types still included
-                END
-            -- FIELD category preferences
-            WHEN $3 = 'FIELD' THEN
-                CASE course_type_standard
-                    WHEN 'specialization' THEN 3  -- Highest priority
-                    WHEN 'degree' THEN 2           -- Second priority
-                    WHEN 'certification' THEN 1    -- Third priority
-                    ELSE 0  -- Other types still included
-                END
-            ELSE 0
-        END as priority_score
+        1 - (embedding <=> $1::vector) as similarity
     FROM courses
     WHERE platform = 'coursera'
     AND embedding IS NOT NULL
-    AND 1 - (embedding <=> $1::vector) >= $2
-    ORDER BY priority_score DESC, similarity DESC
-    LIMIT 25  -- Limit to collect up to 25 course IDs
+    AND 1 - (embedding <=> $1::vector) >= 0.40  -- MIN_SIMILARITY_THRESHOLD
+    ORDER BY similarity DESC
+    LIMIT 80  -- Get enough candidates for diversity
+),
+filtered_candidates AS (
+    -- Step 2: Apply category-specific threshold filtering
+    SELECT * FROM initial_candidates
+    WHERE
+        -- SKILL category requires higher threshold
+        ($3 = 'SKILL' AND similarity >= 0.45) OR
+        -- FIELD category uses lower threshold
+        ($3 = 'FIELD' AND similarity >= 0.40) OR
+        -- DEFAULT uses SKILL threshold
+        ($3 NOT IN ('SKILL', 'FIELD') AND similarity >= 0.45)
+),
+type_ranked AS (
+    -- Step 3: Rank within each course type and get counts
+    SELECT *,
+        ROW_NUMBER() OVER (
+            PARTITION BY course_type_standard
+            ORDER BY similarity DESC
+        ) as type_rank,
+        COUNT(*) OVER (PARTITION BY course_type_standard) as type_count
+    FROM filtered_candidates
+),
+quota_applied AS (
+    -- Step 4: Apply dynamic quotas based on category
+    SELECT * FROM type_ranked
+    WHERE
+        ($3 = 'SKILL' AND (
+            (course_type_standard = 'course' AND type_rank <= LEAST(15, type_count)) OR
+            (course_type_standard = 'project' AND type_rank <= LEAST(5, type_count)) OR
+            (course_type_standard = 'certification' AND type_rank <= LEAST(2, type_count)) OR
+            (course_type_standard = 'specialization' AND type_rank <= LEAST(2, type_count)) OR
+            (course_type_standard = 'degree' AND type_rank <= LEAST(1, type_count))
+        )) OR
+        ($3 = 'FIELD' AND (
+            (course_type_standard = 'specialization' AND type_rank <= LEAST(12, type_count)) OR
+            (course_type_standard = 'degree' AND type_rank <= LEAST(4, type_count)) OR
+            (course_type_standard = 'course' AND type_rank <= LEAST(5, type_count)) OR
+            (course_type_standard = 'certification' AND type_rank <= LEAST(2, type_count)) OR
+            (course_type_standard = 'project' AND type_rank <= LEAST(1, type_count))
+        )) OR
+        -- DEFAULT category uses balanced quotas
+        ($3 NOT IN ('SKILL', 'FIELD') AND (
+            (course_type_standard = 'course' AND type_rank <= LEAST(10, type_count)) OR
+            (course_type_standard = 'specialization' AND type_rank <= LEAST(5, type_count)) OR
+            (course_type_standard = 'project' AND type_rank <= LEAST(3, type_count)) OR
+            (course_type_standard = 'certification' AND type_rank <= LEAST(2, type_count)) OR
+            (course_type_standard = 'degree' AND type_rank <= LEAST(2, type_count))
+        ))
 )
+-- Step 5: Final selection ordered by pure similarity
 SELECT
     COUNT(*) > 0 as has_courses,
     COUNT(*) as total_count,
-    SUM(CASE WHEN priority_score > 0 THEN 1 ELSE 0 END) as preferred_count,
-    SUM(CASE WHEN priority_score = 0 THEN 1 ELSE 0 END) as other_count,
-    array_agg(id ORDER BY priority_score DESC, similarity DESC) as course_ids
-FROM ranked_courses;
+    COUNT(DISTINCT course_type_standard) as type_diversity,
+    array_agg(DISTINCT course_type_standard) as course_types,
+    array_agg(id ORDER BY similarity DESC) as course_ids
+FROM quota_applied
+ORDER BY similarity DESC
+LIMIT 25;
 """
 
 
@@ -284,10 +338,10 @@ class CourseAvailabilityChecker:
                         skill["course_count"] = result["count"]
                         skill["available_course_ids"] = result.get("course_ids", [])
 
-                        # Add breakdown if available
-                        if result.get("preferred_count") is not None:
-                            skill["preferred_courses"] = result["preferred_count"]
-                            skill["other_courses"] = result["other_count"]
+                        # Add diversity metrics (v2.0)
+                        if result.get("type_diversity") is not None:
+                            skill["type_diversity"] = result["type_diversity"]
+                            skill["course_types"] = result.get("course_types", [])
 
                         # Cache the result for future use (if cache enabled)
                         if self._cache_enabled and self._dynamic_cache and cache_key:
@@ -295,8 +349,8 @@ class CourseAvailabilityChecker:
                                 "has_available_courses": result["has_courses"],
                                 "course_count": result["count"],
                                 "available_course_ids": result.get("course_ids", []),
-                                "preferred_courses": result.get("preferred_count", 0),
-                                "other_courses": result.get("other_count", 0)
+                                "type_diversity": result.get("type_diversity", 0),
+                                "course_types": result.get("course_types", [])
                             })
 
             # 3. Record performance metrics
@@ -395,28 +449,33 @@ class CourseAvailabilityChecker:
                     # pgvector already registered in connection pool init
                     # No need to register again - saves 607ms per query!
 
-                    # Get similarity threshold based on category
-                    threshold = SIMILARITY_THRESHOLDS.get(skill_category, SIMILARITY_THRESHOLDS["DEFAULT"])
+                    # Use minimum threshold for initial query (optimization)
+                    # The actual filtering happens in the SQL based on skill_category
+                    min_threshold = MIN_SIMILARITY_THRESHOLD
 
-                    # Execute availability check query with prioritization
+                    # Execute availability check query with quota-based diversity
                     result = await conn.fetchrow(
                         AVAILABILITY_QUERY,
                         embedding,
-                        threshold,
+                        min_threshold,  # Use minimum threshold
                         skill_category
                     )
 
-                    # Get course IDs (limit to 25 for response size)
+                    # Get course IDs (already limited in query)
                     course_ids = result.get("course_ids", []) or []
                     if course_ids and len(course_ids) > 25:
                         course_ids = course_ids[:25]
 
-                    # Return enhanced result with breakdown and course IDs
+                    # Get type diversity information
+                    type_diversity = result.get("type_diversity", 0)
+                    course_types = result.get("course_types", [])
+
+                    # Return enhanced result with diversity metrics
                     return {
                         "has_courses": result["has_courses"],
-                        "count": min(result["total_count"], 25),  # Update cap to match query
-                        "preferred_count": result.get("preferred_count", 0),
-                        "other_count": result.get("other_count", 0),
+                        "count": min(result.get("total_count", 0), 25),  # Use get() for safety
+                        "type_diversity": type_diversity,  # Number of different course types
+                        "course_types": course_types,      # List of course types found
                         "course_ids": course_ids
                     }
 

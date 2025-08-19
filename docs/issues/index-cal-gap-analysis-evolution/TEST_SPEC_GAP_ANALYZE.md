@@ -1,14 +1,14 @@
 # 完整測試規格文檔 - Index Cal & Gap Analysis
 
 ## 文檔資訊
-- **版本**: 2.1.0
+- **版本**: 2.2.0
 - **建立日期**: 2025-08-03
-- **最後更新**: 2025-08-16
+- **最後更新**: 2025-01-19
 - **文檔名稱**: TEST_SPEC_GAP_ANALYZE.md (原名: TEST_SPECIFICATION_COMPLETE.md)
 - **維護者**: AI Resume Advisor Team
-- **測試總數**: 67 個核心測試 + 4 個特殊測試
+- **測試總數**: 73 個核心測試 + 4 個特殊測試
   - Gap Analysis: 25 UT + 31 IT = 56 個
-  - Course Availability: 7 UT + 4 IT = 11 個
+  - Course Availability: 13 UT + 4 IT = 17 個
   - 效能測試: 2 個
   - E2E 測試: 2 個
 - **更新說明**: 
@@ -24,6 +24,7 @@
   - v1.0.11: 新增 Course Availability Check 測試案例 - 7 個單元測試 + 4 個整合測試 + 1 個效能測試 (UT: 25→27, IT: 30→31, PT: 1→2)
   - v2.0.0: 文檔改名為 TEST_SPEC_GAP_ANALYZE.md
   - v2.1.0: 新增完整性能測試套件 performance_test_suite.py
+  - v2.2.0: 新增 Course Availability 配額系統測試 (CA-008 至 CA-013) - 6 個單元測試
 
 ## 重要測試約束 ⚠️
 
@@ -59,7 +60,7 @@ API-GAP-[序號]-[類型]
 |----------|----------|------|------|
 | 001-025 | Gap Analysis 單元測試(UT) | 25 | Gap Analysis 服務層測試 |
 | 001-031 | Gap Analysis 整合測試(IT) | 31 | API 端點整合測試（含錯誤處理） |
-| 001-007 | Course Availability 單元測試(UT) | 7 | 課程檢查服務測試 |
+| 001-013 | Course Availability 單元測試(UT) | 13 | 課程檢查服務測試（含配額系統） |
 | 001-004 | Course Availability 整合測試(IT) | 4 | 課程 API 整合測試 |
 | 001-002 | 效能測試(PT) | 2 | 真實 Azure 服務效能測試 |
 | 001-002 | 端對端測試(E2E) | 2 | 完整流程測試 |
@@ -1566,6 +1567,80 @@ pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer:
   - 超時的技能標記為 unavailable
   - 記錄警告日誌
   - 不影響其他技能的查詢
+
+#### CA-008-UT: 相似度閾值驗證測試
+- **名稱**: Similarity Thresholds Validation
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 驗證新的相似度閾值設定正確
+- **測試內容**: 確認相似度閾值已提升至新標準
+- **判斷標準**:
+  - SKILL 閾值為 0.45（原 0.30）
+  - FIELD 閾值為 0.40（原 0.25）
+  - DEFAULT 閾值為 0.45（原 0.30）
+  - 常數定義存在且可存取
+
+#### CA-009-UT: 課程類型多樣性追蹤測試
+- **名稱**: Course Type Diversity Tracking
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 測試結果中的課程類型多樣性指標
+- **測試內容**: 驗證多樣性指標正確回傳
+- **判斷標準**:
+  - type_diversity 欄位存在
+  - course_types 陣列包含正確類型
+  - 數值與實際類型數量一致
+  - 結果包含 4-5 種不同課程類型
+
+#### CA-010-UT: 配額制度驗證測試
+- **名稱**: Quota-Based Selection System
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 測試基於技能類別的配額系統
+- **測試內容**: 確認配額設定正確且合理
+- **判斷標準**:
+  - COURSE_TYPE_QUOTAS 常數存在
+  - SKILL 配額：course(15), project(5), certification(2), specialization(2), degree(1)
+  - FIELD 配額：specialization(12), degree(4), course(5), certification(2), project(1)
+  - 配額分佈符合類別特性
+
+#### CA-011-UT: 最小閾值優化測試
+- **名稱**: Minimum Threshold Optimization
+- **優先級**: P2
+- **類型**: 單元測試
+- **測試目標**: 測試查詢優化用的最小閾值
+- **測試內容**: 驗證 MIN_SIMILARITY_THRESHOLD 用於初始篩選
+- **判斷標準**:
+  - MIN_SIMILARITY_THRESHOLD = 0.40
+  - 小於或等於所有類別閾值
+  - 用於 SQL 查詢的第一階段
+  - 優化查詢效能
+
+#### CA-012-UT: 結果多樣性驗證測試
+- **名稱**: Diversity in Search Results
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 測試結果包含多樣化的課程類型
+- **測試內容**: 確認實際結果展現多樣性
+- **測試資料**: SKILL 類別應包含 15 courses + 5 projects + 2 certifications + 2 specializations + 1 degree
+- **判斷標準**:
+  - 結果包含多種課程類型
+  - 分佈符合配額限制
+  - type_diversity >= 3
+  - 總數不超過 25
+
+#### CA-013-UT: FIELD 類別配額測試
+- **名稱**: FIELD Category Quota Distribution
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 測試 FIELD 類別使用不同配額分佈
+- **測試內容**: 驗證 FIELD 類別偏重專業課程和學位
+- **測試資料**: FIELD 類別應包含 12 specializations + 4 degrees + 5 courses + 2 certifications + 1 project
+- **判斷標準**:
+  - specialization 數量最多（12個）
+  - degree 次之（4個）
+  - 總體分佈符合 FIELD 配額
+  - 適合領域知識學習
 
 ### 7.2 整合測試 (CA-xxx-IT)
 
