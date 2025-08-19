@@ -92,7 +92,7 @@ jobs:
         
         # Debug CI environment
         echo "=== Debug CI Environment ==="
-        python test/scripts/debug_ci_env.py || true
+        python test/scripts/diagnose_ci_env.py || true
         echo ""
         
         # 執行完整測試套件 (包含所有測試) - 使用 Python 版本
