@@ -4,6 +4,7 @@ Checks if courses are available for identified skill gaps
 """
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Any
 
@@ -14,31 +15,38 @@ from src.services.llm_factory import get_embedding_client
 
 logger = logging.getLogger(__name__)
 
-# Similarity thresholds by skill category (Balanced for coverage and quality)
+# Similarity thresholds by skill category (Stage 2: Moderate strictness for higher quality)
+# Support environment variable overrides for production tuning without redeployment
 SIMILARITY_THRESHOLDS = {
-    "SKILL": 0.35,    # Moderate threshold for technical skills
-    "FIELD": 0.30,    # Lower threshold for domain knowledge
-    "DEFAULT": 0.35   # Default threshold
+    "SKILL": float(os.getenv("COURSE_THRESHOLD_SKILL", "0.40")),    # Increased threshold for technical skills (was 0.35)
+    "FIELD": float(os.getenv("COURSE_THRESHOLD_FIELD", "0.35")),    # Increased threshold for domain knowledge (was 0.30)
+    "DEFAULT": float(os.getenv("COURSE_THRESHOLD_DEFAULT", "0.40"))  # Default threshold (was 0.35)
 }
 
 # Minimum threshold for initial query (optimization)
-MIN_SIMILARITY_THRESHOLD = 0.30
+MIN_SIMILARITY_THRESHOLD = float(os.getenv("COURSE_MIN_THRESHOLD", "0.35"))  # Increased from 0.30 for better quality filtering
 
-# Course type quotas for balanced recommendations
+# Log the active thresholds on module load
+logger.info(f"Course Availability Thresholds - SKILL: {SIMILARITY_THRESHOLDS['SKILL']}, "
+           f"FIELD: {SIMILARITY_THRESHOLDS['FIELD']}, "
+           f"DEFAULT: {SIMILARITY_THRESHOLDS['DEFAULT']}, "
+           f"MIN: {MIN_SIMILARITY_THRESHOLD}")
+
+# Course type quotas adjusted for stricter thresholds (Stage 2: Focus on quality)
 COURSE_TYPE_QUOTAS = {
     "SKILL": {
-        "course": 15,          # Single courses for quick learning
-        "project": 5,          # Hands-on projects
-        "certification": 2,    # Professional certifications
-        "specialization": 2,   # Course series
-        "degree": 1           # Degree programs
+        "course": 18,          # Increased for more high-quality single courses (was 15)
+        "project": 3,          # Reduced to focus on best projects (was 5)
+        "certification": 3,    # Slightly increased for professional certs (was 2)
+        "specialization": 3,   # Increased for comprehensive learning (was 2)
+        "degree": 1           # Keep focused on most relevant degree
     },
     "FIELD": {
-        "specialization": 12,  # Course series for comprehensive learning
-        "degree": 4,          # Full degree programs
-        "course": 5,          # Supplementary single courses
-        "certification": 2,    # Professional certifications
-        "project": 1          # Practical projects
+        "specialization": 15,  # Increased for high-quality series (was 12)
+        "degree": 3,          # Slightly reduced but still substantial (was 4)
+        "course": 6,          # Slightly increased for variety (was 5)
+        "certification": 2,    # Keep professional certifications
+        "project": 1          # Keep focused on best practical project
     }
 }
 
