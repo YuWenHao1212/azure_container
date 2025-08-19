@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 """Test single Course Batch Query test to diagnose CI failure."""
 
+import asyncio
 import json
 import os
 import sys
+import traceback
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -16,10 +18,10 @@ print(f"Working directory: {os.getcwd()}")
 print(f"Python path: {sys.path[:3]}")
 
 # Import test dependencies
-import pytest
+import pytest  # noqa: E402 - need to add to path first
 
-from src.models.course_batch_simple import CourseDetailsBatchRequest
-from src.services.course_search import CourseSearchService
+from src.models.course_batch_simple import CourseDetailsBatchRequest  # noqa: E402
+from src.services.course_search import CourseSearchService  # noqa: E402
 
 # Load fixtures manually
 fixture_path = Path("test/fixtures/course_batch")
@@ -78,12 +80,9 @@ async def test_basic_batch_query():
         return True
     except Exception as e:
         print(f"❌ Test failed: {e}")
-        import traceback
         traceback.print_exc()
         return False
 
 # Run the async test
-import asyncio
-
 success = asyncio.run(test_basic_batch_query())
 sys.exit(0 if success else 1)

@@ -3,6 +3,7 @@
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -97,12 +98,12 @@ print()
 # Run a simple test to see if pytest works
 print("=== Running minimal pytest test ===")
 try:
-    import subprocess
-    result = subprocess.run(
-        ["python", "-m", "pytest", "--collect-only", "test/unit/test_course_batch_unit.py"],
+    result = subprocess.run(  # noqa: S603 - diagnostic script, controlled input
+        [sys.executable, "-m", "pytest", "--collect-only", "test/unit/test_course_batch_unit.py"],
         capture_output=True,
         text=True,
-        cwd=str(project_root)
+        cwd=str(project_root),
+        check=False
     )
     print(f"Exit code: {result.returncode}")
     if result.returncode == 0:

@@ -2,6 +2,7 @@
 """Debug script to check CI environment detection."""
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -37,15 +38,15 @@ if fixture_path.exists():
 
 # Try to run the specific test with verbose output
 print("\n=== Running Course Batch Query test with verbose output ===")
-import subprocess
 
-result = subprocess.run(
-    ["python", "-m", "pytest",
+result = subprocess.run(  # noqa: S603 - diagnostic script, controlled input
+    [sys.executable, "-m", "pytest",  # Use sys.executable instead of "python"
      "test/unit/test_course_batch_unit.py::TestCourseBatchUnit::test_API_CDB_001_UT_basic_batch_query",
      "-xvs", "--tb=short"],
     capture_output=True,
     text=True,
-    cwd=str(Path(__file__).parent.parent.parent)
+    cwd=str(Path(__file__).parent.parent.parent),
+    check=False  # Don't raise exception on non-zero exit
 )
 print(f"Exit code: {result.returncode}")
 if result.returncode != 0:
