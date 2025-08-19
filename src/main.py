@@ -2,6 +2,7 @@
 Main FastAPI application entry point.
 Following FHS architecture principles.
 """
+import asyncio
 import logging
 import os
 from datetime import UTC, datetime
@@ -34,6 +35,9 @@ logging.basicConfig(
     format=settings.log_format
 )
 logger = logging.getLogger(__name__)
+
+# Global background tasks
+_background_tasks = []
 
 
 def create_app() -> FastAPI:
@@ -98,8 +102,9 @@ def create_app() -> FastAPI:
     app.include_router(v1_router, prefix=settings.api_v1_prefix)
 
     # Include monitoring endpoints (lightweight dashboard)
-    from src.api.monitoring import error_dashboard_router
+    from src.api.monitoring import cache_dashboard_router, error_dashboard_router
     app.include_router(error_dashboard_router, prefix="/api/v1")
+    app.include_router(cache_dashboard_router)
 
     # Root endpoint
     @app.get("/")
@@ -686,6 +691,17 @@ async def startup_event():
         # Track startup success with enhanced metrics
         if monitoring_service.is_enabled:
             monitoring_service.track_event("ApplicationStartup", startup_metrics)
+
+        # 🧹 Start background cache cleanup task
+        logger.info("🧹 Starting dynamic cache background cleanup task...")
+        try:
+            from src.services.dynamic_course_cache import start_background_cleanup
+            cleanup_task = asyncio.create_task(start_background_cleanup())
+            _background_tasks.append(cleanup_task)
+            logger.info("✅ Dynamic cache background cleanup task started")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to start cache cleanup task: {e}")
+            # Don't fail startup for cache cleanup
 
         logger.info(
             f"📊 Startup Metrics: Total={elapsed_time:.2f}s, "

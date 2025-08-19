@@ -524,7 +524,7 @@ class AdvancedPreCommitValidator:
         print(f"\n{Colors.BLUE}📝 {step_info}Running Course Availability tests...{Colors.RESET}")
 
         unit_files = ["test/unit/services/test_course_availability.py"]
-        integration_files = ["tests/integration/test_course_availability_integration.py"]
+        integration_files = ["test/integration/test_course_availability.py"]
 
         # Run unit tests
         print("  Unit Tests: ", end="", flush=True)
