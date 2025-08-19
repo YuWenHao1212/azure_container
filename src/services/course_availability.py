@@ -27,73 +27,42 @@ POPULAR_SKILLS_CACHE = {
     "Python": {
         "has_courses": True,
         "count": 10,
-        "course_ids": [
-            "coursera_crse:v1-2001", "coursera_crse:v1-2002", "coursera_spzn:python-for-everybody",
-            "coursera_crse:v1-2004", "coursera_crse:v1-2005", "coursera_crse:v1-2006",
-            "coursera_crse:v1-2007", "coursera_crse:v1-2008", "coursera_crse:v1-2009", "coursera_crse:v1-2010"
-        ]
+        # Course IDs removed - will be fetched from database
     },
     "JavaScript": {
         "has_courses": True,
         "count": 10,
-        "course_ids": [
-            "coursera_crse:v1-2101", "coursera_crse:v1-2102", "coursera_spzn:javascript-basics",
-            "coursera_crse:v1-2104", "coursera_crse:v1-2105", "coursera_crse:v1-2106",
-            "coursera_crse:v1-2107", "coursera_crse:v1-2108", "coursera_crse:v1-2109", "coursera_crse:v1-2110"
-        ]
+        # Course IDs removed - will be fetched from database
     },
     "React": {
         "has_courses": True,
         "count": 10,
-        "course_ids": [
-            "coursera_crse:v1-2201", "coursera_crse:v1-2202", "coursera_spzn:react-basics",
-            "coursera_crse:v1-2204", "coursera_crse:v1-2205", "coursera_crse:v1-2206",
-            "coursera_crse:v1-2207", "coursera_crse:v1-2208", "coursera_crse:v1-2209", "coursera_crse:v1-2210"
-        ]
+        # Course IDs removed - will be fetched from database
     },
     "Docker": {
         "has_courses": True,
         "count": 8,
-        "course_ids": [
-            "coursera_crse:v1-2301", "coursera_crse:v1-2302", "coursera_spzn:docker-kubernetes",
-            "coursera_crse:v1-2304", "coursera_crse:v1-2305", "coursera_crse:v1-2306",
-            "coursera_crse:v1-2307", "coursera_crse:v1-2308"
-        ]
+        # Course IDs removed - will be fetched from database
     },
     "Kubernetes": {
         "has_courses": True,
         "count": 6,
-        "course_ids": [
-            "coursera_spzn:kubernetes-engine", "coursera_crse:v1-2402", "coursera_crse:v1-2403",
-            "coursera_crse:v1-2404", "coursera_crse:v1-2405", "coursera_crse:v1-2406"
-        ]
+        # Course IDs removed - will be fetched from database
     },
     "AWS": {
         "has_courses": True,
         "count": 10,
-        "course_ids": [
-            "coursera_spzn:aws-fundamentals", "coursera_crse:v1-2502", "coursera_crse:v1-2503",
-            "coursera_crse:v1-2504", "coursera_crse:v1-2505", "coursera_crse:v1-2506",
-            "coursera_crse:v1-2507", "coursera_crse:v1-2508", "coursera_crse:v1-2509", "coursera_crse:v1-2510"
-        ]
+        # Course IDs removed - will be fetched from database
     },
     "Azure": {
         "has_courses": True,
         "count": 10,
-        "course_ids": [
-            "coursera_spzn:azure-fundamentals", "coursera_crse:v1-2602", "coursera_crse:v1-2603",
-            "coursera_crse:v1-2604", "coursera_crse:v1-2605", "coursera_crse:v1-2606",
-            "coursera_crse:v1-2607", "coursera_crse:v1-2608", "coursera_crse:v1-2609", "coursera_crse:v1-2610"
-        ]
+        # Course IDs removed - will be fetched from database
     },
     "Machine Learning": {
         "has_courses": True,
         "count": 10,
-        "course_ids": [
-            "coursera_spzn:deep-learning", "coursera_crse:v1-2702", "coursera_crse:v1-2703",
-            "coursera_crse:v1-2704", "coursera_crse:v1-2705", "coursera_crse:v1-2706",
-            "coursera_crse:v1-2707", "coursera_crse:v1-2708", "coursera_crse:v1-2709", "coursera_crse:v1-2710"
-        ]
+        # Course IDs removed - will be fetched from database
     },
     "TypeScript": {"has_courses": True, "count": 10},
     "Node.js": {"has_courses": True, "count": 10},
@@ -257,6 +226,7 @@ class CourseAvailabilityChecker:
                         logger.error(f"[CourseAvailability] Failed for {skill['skill_name']}: {result}")
                         skill["has_available_courses"] = False
                         skill["course_count"] = 0
+                        skill["available_course_ids"] = []  # Always provide empty list on error
 
                         # Send alert to Operations
                         monitoring_service.track_event("CourseAvailabilityCheckFailed", {
@@ -267,9 +237,8 @@ class CourseAvailabilityChecker:
                     else:
                         skill["has_available_courses"] = result["has_courses"]
                         skill["course_count"] = result["count"]
-                        # Add course IDs if available
-                        if result.get("course_ids"):
-                            skill["available_course_ids"] = result["course_ids"]
+                        # Always provide course IDs (empty list if none available)
+                        skill["available_course_ids"] = result.get("course_ids", [])
                         # Add breakdown if available
                         if result.get("preferred_count") is not None:
                             skill["preferred_courses"] = result["preferred_count"]
@@ -325,9 +294,10 @@ class CourseAvailabilityChecker:
                 cached[name] = POPULAR_SKILLS_CACHE[name]
                 skill["has_available_courses"] = cached[name]["has_courses"]
                 skill["course_count"] = cached[name]["count"]
-                # Add course IDs from cache if available
-                if "course_ids" in cached[name]:
-                    skill["available_course_ids"] = cached[name]["course_ids"]
+                # Always provide available_course_ids field
+                # Since we removed fake IDs from cache, return empty list for now
+                # TODO: Implement real-time cache with actual course IDs
+                skill["available_course_ids"] = []
                 logger.debug(f"[CourseAvailability] Cache hit for '{name}'")
         return cached
 
