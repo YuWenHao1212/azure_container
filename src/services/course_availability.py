@@ -15,22 +15,29 @@ from src.services.llm_factory import get_embedding_client
 
 logger = logging.getLogger(__name__)
 
-# Similarity thresholds by skill category (Temporarily lowered for testing)
-# Support environment variable overrides for production tuning without redeployment
+# Similarity thresholds by skill category (Configurable via environment variables)
+# Default values are conservative to ensure courses are returned
+# Production can override via environment variables for fine-tuning
 SIMILARITY_THRESHOLDS = {
-    "SKILL": float(os.getenv("COURSE_THRESHOLD_SKILL", "0.35")),    # Lowered back to 0.35
-    "FIELD": float(os.getenv("COURSE_THRESHOLD_FIELD", "0.30")),    # Lowered back to 0.30
-    "DEFAULT": float(os.getenv("COURSE_THRESHOLD_DEFAULT", "0.35"))  # Lowered back to 0.35
+    "SKILL": float(os.getenv("COURSE_THRESHOLD_SKILL", "0.35")),    # Default: 0.35, Target: 0.40
+    "FIELD": float(os.getenv("COURSE_THRESHOLD_FIELD", "0.30")),    # Default: 0.30, Target: 0.35
+    "DEFAULT": float(os.getenv("COURSE_THRESHOLD_DEFAULT", "0.35"))  # Default: 0.35, Target: 0.40
 }
 
 # Minimum threshold for initial query (optimization)
-MIN_SIMILARITY_THRESHOLD = float(os.getenv("COURSE_MIN_THRESHOLD", "0.30"))  # Lowered back to 0.30
+MIN_SIMILARITY_THRESHOLD = float(os.getenv("COURSE_MIN_THRESHOLD", "0.30"))  # Default: 0.30, Target: 0.35
+
+# Feature toggle for deficit filling mechanism
+# When enabled, the system will apply intelligent quota management and deficit filling
+# When disabled, it will simply return top courses by similarity
+ENABLE_DEFICIT_FILLING = os.getenv("ENABLE_DEFICIT_FILLING", "false").lower() == "true"
 
 # Log the active thresholds on module load
 logger.info(f"Course Availability Thresholds - SKILL: {SIMILARITY_THRESHOLDS['SKILL']}, "
            f"FIELD: {SIMILARITY_THRESHOLDS['FIELD']}, "
            f"DEFAULT: {SIMILARITY_THRESHOLDS['DEFAULT']}, "
-           f"MIN: {MIN_SIMILARITY_THRESHOLD}")
+           f"MIN: {MIN_SIMILARITY_THRESHOLD}, "
+           f"Deficit Filling: {'Enabled' if ENABLE_DEFICIT_FILLING else 'Disabled'}")
 
 # Original quotas for deficit calculation (before reserve pool expansion)
 ORIGINAL_QUOTAS = {
