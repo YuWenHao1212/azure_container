@@ -32,21 +32,53 @@ logger.info(f"Course Availability Thresholds - SKILL: {SIMILARITY_THRESHOLDS['SK
            f"DEFAULT: {SIMILARITY_THRESHOLDS['DEFAULT']}, "
            f"MIN: {MIN_SIMILARITY_THRESHOLD}")
 
-# Course type quotas adjusted for stricter thresholds (Stage 2: Focus on quality)
-COURSE_TYPE_QUOTAS = {
+# Original quotas for deficit calculation (before reserve pool expansion)
+ORIGINAL_QUOTAS = {
     "SKILL": {
-        "course": 18,          # Increased for more high-quality single courses (was 15)
-        "project": 3,          # Reduced to focus on best projects (was 5)
-        "certification": 3,    # Slightly increased for professional certs (was 2)
-        "specialization": 3,   # Increased for comprehensive learning (was 2)
-        "degree": 1           # Keep focused on most relevant degree
+        "course": 15,          # Basic allocation before reserves
+        "project": 5,          # Target quota for projects
+        "certification": 2,    # Target quota for certifications
+        "specialization": 2,   # Target quota for specializations
+        "degree": 1           # Target quota for degrees
     },
     "FIELD": {
-        "specialization": 15,  # Increased for high-quality series (was 12)
-        "degree": 3,          # Slightly reduced but still substantial (was 4)
-        "course": 6,          # Slightly increased for variety (was 5)
-        "certification": 2,    # Keep professional certifications
-        "project": 1          # Keep focused on best practical project
+        "specialization": 12,  # Target quota for specializations
+        "degree": 4,          # Target quota for degrees
+        "course": 5,          # Basic allocation before reserves
+        "certification": 2,    # Target quota for certifications
+        "project": 1          # Target quota for projects
+    },
+    "DEFAULT": {
+        "course": 10,         # Basic allocation before reserves
+        "specialization": 5,   # Target quota for specializations
+        "project": 3,         # Target quota for projects
+        "certification": 2,    # Target quota for certifications
+        "degree": 2           # Target quota for degrees
+    }
+}
+
+# Extended quotas for SQL query (includes reserve pools)
+COURSE_TYPE_QUOTAS = {
+    "SKILL": {
+        "course": 25,          # 15 basic + 10 reserve for supplementation
+        "project": 5,          # No change (specific type)
+        "certification": 2,    # No change (specific type)
+        "specialization": 2,   # No change (specific type)
+        "degree": 1           # No change (specific type)
+    },
+    "FIELD": {
+        "specialization": 12,  # No change (primary for FIELD)
+        "degree": 4,          # No change (specific type)
+        "course": 15,          # 5 basic + 10 reserve for supplementation
+        "certification": 2,    # No change (specific type)
+        "project": 1          # No change (specific type)
+    },
+    "DEFAULT": {
+        "course": 20,         # 10 basic + 10 reserve for supplementation
+        "specialization": 5,   # No change (specific type)
+        "project": 3,         # No change (specific type)
+        "certification": 2,    # No change (specific type)
+        "degree": 2           # No change (specific type)
     }
 }
 
@@ -147,11 +179,11 @@ type_ranked AS (
     FROM filtered_candidates
 ),
 quota_applied AS (
-    -- Step 4: Apply dynamic quotas based on category
+    -- Step 4: Apply dynamic quotas based on category (with reserve pools)
     SELECT * FROM type_ranked
     WHERE
         ($3 = 'SKILL' AND (
-            (course_type_standard = 'course' AND type_rank <= LEAST(15, type_count)) OR
+            (course_type_standard = 'course' AND type_rank <= LEAST(25, type_count)) OR
             (course_type_standard = 'project' AND type_rank <= LEAST(5, type_count)) OR
             (course_type_standard = 'certification' AND type_rank <= LEAST(2, type_count)) OR
             (course_type_standard = 'specialization' AND type_rank <= LEAST(2, type_count)) OR
@@ -160,28 +192,34 @@ quota_applied AS (
         ($3 = 'FIELD' AND (
             (course_type_standard = 'specialization' AND type_rank <= LEAST(12, type_count)) OR
             (course_type_standard = 'degree' AND type_rank <= LEAST(4, type_count)) OR
-            (course_type_standard = 'course' AND type_rank <= LEAST(5, type_count)) OR
+            (course_type_standard = 'course' AND type_rank <= LEAST(15, type_count)) OR
             (course_type_standard = 'certification' AND type_rank <= LEAST(2, type_count)) OR
             (course_type_standard = 'project' AND type_rank <= LEAST(1, type_count))
         )) OR
-        -- DEFAULT category uses balanced quotas
+        -- DEFAULT category uses balanced quotas (with reserves)
         ($3 NOT IN ('SKILL', 'FIELD') AND (
-            (course_type_standard = 'course' AND type_rank <= LEAST(10, type_count)) OR
+            (course_type_standard = 'course' AND type_rank <= LEAST(20, type_count)) OR
             (course_type_standard = 'specialization' AND type_rank <= LEAST(5, type_count)) OR
             (course_type_standard = 'project' AND type_rank <= LEAST(3, type_count)) OR
             (course_type_standard = 'certification' AND type_rank <= LEAST(2, type_count)) OR
             (course_type_standard = 'degree' AND type_rank <= LEAST(2, type_count))
         ))
 )
--- Step 5: Final selection with aggregated results
+-- Step 5: Final selection with aggregated results (includes similarity for resorting)
 SELECT
     COUNT(*) > 0 as has_courses,
     COUNT(*) as total_count,
     COUNT(DISTINCT course_type_standard) as type_diversity,
     array_agg(DISTINCT course_type_standard) as course_types,
-    array_agg(id ORDER BY similarity DESC) as course_ids
-FROM quota_applied
-LIMIT 25;
+    -- Return detailed course data including similarity for post-processing
+    array_agg(
+        json_build_object(
+            'id', id,
+            'similarity', similarity,
+            'type', course_type_standard
+        ) ORDER BY similarity DESC
+    ) as course_data
+FROM quota_applied;
 """
 
 
@@ -471,22 +509,38 @@ class CourseAvailabilityChecker:
                         SIMILARITY_THRESHOLDS.get("DEFAULT", SIMILARITY_THRESHOLDS["DEFAULT"])  # $6 = 0.35
                     )
 
-                    # Get course IDs (already limited in query)
-                    course_ids = result.get("course_ids", []) or []
-                    if course_ids and len(course_ids) > 25:
-                        course_ids = course_ids[:25]
+                    # Process course data with deficit filling logic
+                    course_data = result.get("course_data", []) or []
 
-                    # Get type diversity information
-                    type_diversity = result.get("type_diversity", 0)
-                    course_types = result.get("course_types", [])
+                    # If no courses found, return empty result
+                    if not course_data:
+                        return {
+                            "has_courses": False,
+                            "count": 0,
+                            "type_diversity": 0,
+                            "course_types": [],
+                            "course_ids": []
+                        }
+
+                    # Apply deficit filling and resorting logic
+                    final_course_ids = self._apply_deficit_filling(
+                        course_data,
+                        skill_category
+                    )
+
+                    # Calculate diversity metrics from final selection
+                    final_types = list(set(
+                        c['type'] for c in course_data
+                        if c['id'] in final_course_ids
+                    ))
 
                     # Return enhanced result with diversity metrics
                     return {
-                        "has_courses": result["has_courses"],
-                        "count": min(result.get("total_count", 0), 25),  # Use get() for safety
-                        "type_diversity": type_diversity,  # Number of different course types
-                        "course_types": course_types,      # List of course types found
-                        "course_ids": course_ids
+                        "has_courses": len(final_course_ids) > 0,
+                        "count": len(final_course_ids),
+                        "type_diversity": len(final_types),
+                        "course_types": final_types,
+                        "course_ids": final_course_ids
                     }
 
         except TimeoutError:
@@ -495,6 +549,91 @@ class CourseAvailabilityChecker:
         except Exception as e:
             logger.error(f"[CourseAvailability] Error checking '{skill_name}': {e}")
             raise
+
+    def _apply_deficit_filling(
+        self,
+        course_data: list[dict[str, Any]],
+        skill_category: str
+    ) -> list[str]:
+        """
+        Apply deficit filling logic with course reserves and re-sort by similarity
+
+        Args:
+            course_data: List of course dictionaries with id, similarity, type
+            skill_category: SKILL, FIELD, or DEFAULT
+
+        Returns:
+            List of course IDs after deficit filling and resorting
+        """
+        if not course_data:
+            return []
+
+        # Get the appropriate quotas for this category
+        original_quotas = ORIGINAL_QUOTAS.get(skill_category, ORIGINAL_QUOTAS["DEFAULT"])
+
+        # Group courses by type
+        courses_by_type = {}
+        for course in course_data:
+            course_type = course['type']
+            if course_type not in courses_by_type:
+                courses_by_type[course_type] = []
+            courses_by_type[course_type].append(course)
+
+        # Separate course type into basic and reserve pools
+        course_list = courses_by_type.get('course', [])
+        basic_course_quota = original_quotas.get('course', 10)
+
+        # Split courses into basic allocation and reserves
+        basic_courses = course_list[:basic_course_quota]
+        reserve_courses = course_list[basic_course_quota:]
+
+        # Collect courses up to original quotas for non-course types
+        final_courses = []
+        total_deficit = 0
+
+        # Process non-course types first
+        for type_name, quota in original_quotas.items():
+            if type_name == 'course':
+                # Handle courses separately after calculating deficits
+                continue
+
+            type_courses = courses_by_type.get(type_name, [])
+            actual_count = len(type_courses)
+
+            # Take up to quota
+            final_courses.extend(type_courses[:quota])
+
+            # Calculate deficit
+            deficit = max(0, quota - actual_count)
+            total_deficit += deficit
+
+            if deficit > 0:
+                logger.debug(
+                    f"[CourseAvailability] {skill_category} - {type_name}: "
+                    f"quota={quota}, actual={actual_count}, deficit={deficit}"
+                )
+
+        # Add basic course allocation
+        final_courses.extend(basic_courses)
+
+        # Fill deficits from reserve pool if available
+        if total_deficit > 0 and reserve_courses:
+            supplement_count = min(total_deficit, len(reserve_courses))
+            supplement = reserve_courses[:supplement_count]
+            final_courses.extend(supplement)
+            logger.debug(
+                f"[CourseAvailability] {skill_category} - Supplemented {supplement_count} "
+                f"courses from reserve pool (deficit was {total_deficit})"
+            )
+
+        # Sort all courses by similarity (highest first)
+        final_courses.sort(key=lambda x: x['similarity'], reverse=True)
+
+        # Limit to 25 courses maximum
+        final_courses = final_courses[:25]
+
+        # Extract and return course IDs
+        return [course['id'] for course in final_courses]
 
 
 # Global instance

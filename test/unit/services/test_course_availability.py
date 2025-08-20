@@ -114,14 +114,17 @@ class TestCourseAvailability:
         skill_name = "Python"
         skill_category = "SKILL"
 
-        # Mock connection
+        # Mock connection - now returns course_data instead of course_ids
         mock_conn = AsyncMock()
         mock_conn.fetchrow = AsyncMock(return_value={
             "has_courses": True,
             "total_count": 15,  # SQL query returns total_count
             "type_diversity": 3,
             "course_types": ["course", "project", "certification"],
-            "course_ids": [f"id{i}" for i in range(15)]
+            "course_data": [
+                {"id": f"id{i}", "similarity": 0.9 - i*0.01, "type": "course"}
+                for i in range(15)
+            ]
         })
 
         checker._connection_pool = MagicMock()
@@ -405,13 +408,19 @@ class TestCourseAvailability:
         Test that course type diversity is tracked in results
         Priority: P1
         """
-        # Mock database result with diversity metrics
+        # Mock database result with diversity metrics - using course_data format
         mock_result = {
             "has_courses": True,
             "total_count": 20,
             "type_diversity": 4,  # 4 different course types
             "course_types": ["course", "project", "specialization", "certification"],
-            "course_ids": ["id1", "id2", "id3", "id4", "id5"]
+            "course_data": [
+                {"id": "id1", "similarity": 0.95, "type": "course"},
+                {"id": "id2", "similarity": 0.90, "type": "project"},
+                {"id": "id3", "similarity": 0.85, "type": "specialization"},
+                {"id": "id4", "similarity": 0.80, "type": "certification"},
+                {"id": "id5", "similarity": 0.75, "type": "course"}
+            ]
         }
 
         # Mock connection and query
@@ -450,17 +459,17 @@ class TestCourseAvailability:
         assert "SKILL" in COURSE_TYPE_QUOTAS
         assert "FIELD" in COURSE_TYPE_QUOTAS
 
-        # Check SKILL quotas (Stage 2: Adjusted for stricter thresholds)
+        # Check SKILL quotas (now with reserve pool)
         skill_quotas = COURSE_TYPE_QUOTAS["SKILL"]
-        assert skill_quotas["course"] == 18, "SKILL should allow up to 18 courses"
-        assert skill_quotas["project"] == 3, "SKILL should allow up to 3 projects"
-        assert skill_quotas["certification"] == 3, "SKILL should allow up to 3 certifications"
+        assert skill_quotas["course"] == 25, "SKILL should allow up to 25 courses (15 basic + 10 reserve)"
+        assert skill_quotas["project"] == 5, "SKILL should allow up to 5 projects"
+        assert skill_quotas["certification"] == 2, "SKILL should allow up to 2 certifications"
 
-        # Check FIELD quotas (Stage 2: Adjusted for stricter thresholds)
+        # Check FIELD quotas (now with reserve pool)
         field_quotas = COURSE_TYPE_QUOTAS["FIELD"]
-        assert field_quotas["specialization"] == 15, "FIELD should allow up to 15 specializations"
-        assert field_quotas["degree"] == 3, "FIELD should allow up to 3 degrees"
-        assert field_quotas["course"] == 6, "FIELD should allow up to 6 courses"
+        assert field_quotas["specialization"] == 12, "FIELD should allow up to 12 specializations"
+        assert field_quotas["degree"] == 4, "FIELD should allow up to 4 degrees"
+        assert field_quotas["course"] == 15, "FIELD should allow up to 15 courses (5 basic + 10 reserve)"
 
     @pytest.mark.asyncio
     async def test_CA_011_UT_minimum_threshold_usage(self, checker):
@@ -487,17 +496,25 @@ class TestCourseAvailability:
         Test that results include diverse course types
         Priority: P1
         """
-        # Mock a realistic database response with quota-based selection
+        # Mock a realistic database response with quota-based selection using course_data
+        course_data = []
+        # Add courses with decreasing similarity
+        for i in range(15):
+            course_data.append({"id": f"course_{i}", "similarity": 0.95 - i*0.01, "type": "course"})
+        for i in range(5):
+            course_data.append({"id": f"project_{i}", "similarity": 0.90 - i*0.01, "type": "project"})
+        for i in range(2):
+            course_data.append({"id": f"cert_{i}", "similarity": 0.85 - i*0.01, "type": "certification"})
+        for i in range(2):
+            course_data.append({"id": f"spec_{i}", "similarity": 0.80 - i*0.01, "type": "specialization"})
+        course_data.append({"id": "degree_1", "similarity": 0.75, "type": "degree"})
+
         mock_result = {
             "has_courses": True,
             "total_count": 25,
             "type_diversity": 5,
             "course_types": ["course", "project", "certification", "specialization", "degree"],
-            "course_ids": [f"course_{i}" for i in range(15)] +
-                         [f"project_{i}" for i in range(5)] +
-                         [f"cert_{i}" for i in range(2)] +
-                         [f"spec_{i}" for i in range(2)] +
-                         ["degree_1"]
+            "course_data": course_data
         }
 
         # Mock connection and query
@@ -538,17 +555,24 @@ class TestCourseAvailability:
         Test FIELD category uses different quotas
         Priority: P1
         """
-        # Mock a FIELD-oriented result with more specializations/degrees
+        # Mock a FIELD-oriented result with more specializations/degrees using course_data
+        course_data = []
+        for i in range(12):
+            course_data.append({"id": f"spec_{i}", "similarity": 0.95 - i*0.01, "type": "specialization"})
+        for i in range(4):
+            course_data.append({"id": f"degree_{i}", "similarity": 0.90 - i*0.01, "type": "degree"})
+        for i in range(5):
+            course_data.append({"id": f"course_{i}", "similarity": 0.85 - i*0.01, "type": "course"})
+        for i in range(2):
+            course_data.append({"id": f"cert_{i}", "similarity": 0.80 - i*0.01, "type": "certification"})
+        course_data.append({"id": "project_1", "similarity": 0.75, "type": "project"})
+
         mock_result = {
             "has_courses": True,
             "total_count": 24,
             "type_diversity": 5,
             "course_types": ["specialization", "degree", "course", "certification", "project"],
-            "course_ids": [f"spec_{i}" for i in range(12)] +
-                         [f"degree_{i}" for i in range(4)] +
-                         [f"course_{i}" for i in range(5)] +
-                         [f"cert_{i}" for i in range(2)] +
-                         ["project_1"]
+            "course_data": course_data
         }
 
         # Mock connection and query
@@ -581,3 +605,77 @@ class TestCourseAvailability:
         # FIELD should prioritize specializations and degrees
         assert spec_count == 12, "FIELD should have 12 specializations"
         assert degree_count == 4, "FIELD should have 4 degrees"
+
+    @pytest.mark.asyncio
+    async def test_CA_014_UT_deficit_filling_mechanism(self, checker):
+        """Test CA-014-UT: Deficit filling from course reserve pool"""
+        # Test the new deficit filling logic
+        course_data = [
+            # Basic courses (15)
+            *[{"id": f"course-{i}", "similarity": 0.9 - i*0.01, "type": "course"}
+              for i in range(15)],
+            # Reserve courses (5)
+            *[{"id": f"course-reserve-{i}", "similarity": 0.75 - i*0.01, "type": "course"}
+              for i in range(5)],
+            # Only 3 projects (deficit of 2)
+            *[{"id": f"project-{i}", "similarity": 0.85 - i*0.01, "type": "project"}
+              for i in range(3)],
+            # Only 1 specialization (deficit of 1)
+            {"id": "spec-1", "similarity": 0.80, "type": "specialization"},
+            # 0 certifications (deficit of 2)
+            # 0 degrees (deficit of 1)
+        ]
+
+        # Apply deficit filling for SKILL category
+        result = checker._apply_deficit_filling(course_data, "SKILL")
+
+        # Total deficit = 2 (project) + 1 (spec) + 2 (cert) + 1 (degree) = 6
+        # But only 5 reserves available, so can only fill 5
+        # Result = 15 basic + 5 reserve + 3 projects + 1 spec = 24
+        assert len(result) == 24
+
+        # Check that all 5 reserve courses were used (max available)
+        reserve_used = sum(1 for id in result if "reserve" in id)
+        assert reserve_used == 5  # All 5 reserves used to fill deficit of 6
+
+    @pytest.mark.asyncio
+    async def test_CA_015_UT_similarity_resorting(self, checker):
+        """Test CA-015-UT: Re-sorting by similarity after supplementation"""
+        course_data = [
+            # Mix of types with varying similarities
+            {"id": "course-1", "similarity": 0.70, "type": "course"},
+            {"id": "project-1", "similarity": 0.95, "type": "project"},  # Highest
+            {"id": "course-2", "similarity": 0.65, "type": "course"},
+            {"id": "spec-1", "similarity": 0.85, "type": "specialization"},
+            {"id": "course-reserve-1", "similarity": 0.90, "type": "course"},  # Reserve but high similarity
+            {"id": "cert-1", "similarity": 0.60, "type": "certification"},
+        ]
+
+        # Apply processing
+        result = checker._apply_deficit_filling(course_data, "SKILL")
+
+        # Verify sorted by similarity
+        # First should be project-1 (0.95), then course-reserve-1 (0.90), then spec-1 (0.85)
+        assert result[0] == "project-1"
+        assert result[1] == "course-reserve-1"
+        assert result[2] == "spec-1"
+
+    @pytest.mark.asyncio
+    async def test_CA_016_UT_insufficient_reserves(self, checker):
+        """Test CA-016-UT: Handle case when reserves are insufficient"""
+        course_data = [
+            # Only 2 courses total (no reserves)
+            {"id": "course-1", "similarity": 0.80, "type": "course"},
+            {"id": "course-2", "similarity": 0.75, "type": "course"},
+            # Only 1 project (deficit of 4)
+            {"id": "project-1", "similarity": 0.85, "type": "project"},
+        ]
+
+        # Apply deficit filling for SKILL category
+        result = checker._apply_deficit_filling(course_data, "SKILL")
+
+        # Should only have what's available (no magic courses created)
+        assert len(result) == 3  # 2 courses + 1 project
+        assert "course-1" in result
+        assert "course-2" in result
+        assert "project-1" in result
