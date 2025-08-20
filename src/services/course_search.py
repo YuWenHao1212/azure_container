@@ -12,7 +12,7 @@ import asyncpg
 from pgvector.asyncpg import register_vector
 
 from src.core.monitoring_service import monitoring_service
-from src.services.embedding_client import get_course_embedding_client
+from src.services.llm_factory import get_embedding_client
 
 # Conditional import for course batch functionality
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ class CourseSearchService:
         logger = logging.getLogger(__name__)
 
         if not self.embedding_client:
-            self.embedding_client = get_course_embedding_client()
+            self.embedding_client = get_embedding_client(api_name="course_search")
 
         # 載入資料庫連線資訊
         if not self._conn_info:

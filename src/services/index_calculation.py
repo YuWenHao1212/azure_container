@@ -12,7 +12,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
 from src.core.utils import stable_percentage_round
-from src.services.embedding_client import get_azure_embedding_client
+from src.services.llm_factory import get_embedding_client
 from src.services.text_processing import clean_html_text
 
 
@@ -155,7 +155,7 @@ async def compute_similarity(
         return 0, 0
 
     # Get embedding client
-    embedding_client = get_azure_embedding_client()
+    embedding_client = get_embedding_client(api_name="index_calculation")
 
     try:
         # Create embeddings for both texts

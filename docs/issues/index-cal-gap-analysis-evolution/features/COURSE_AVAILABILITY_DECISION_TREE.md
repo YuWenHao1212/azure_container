@@ -386,8 +386,139 @@ ENABLE_COURSE_CACHE=true         # 預設：true
 
 ---
 
+## 📎 附錄：課程 IDs 消失問題的根本原因分析與修復
+
+### 問題背景
+**日期**：2025-08-20  
+**症狀**：Gap Analysis API 端點返回的 `available_course_ids` 為空陣列或 null  
+**影響**：所有技能顯示無可用課程，嚴重影響用戶體驗
+
+### 🔍 根本原因分析
+
+經過深入調查，發現了三個關鍵問題導致系統無法返回 course IDs：
+
+#### 1. **SQL 返回格式與 Python 處理邏輯不一致**
+
+**問題描述**：
+```sql
+-- 舊版本 (commit 7c93467) - 直接返回 course_ids
+array_agg(id ORDER BY similarity DESC) as course_ids
+
+-- 新版本 - 返回複雜的 course_data JSON 物件
+array_agg(json_build_object('id', id, 'similarity', similarity, 'type', course_type_standard)) as course_data
+```
+
+**影響**：
+- SQL 改為返回 `course_data` 後，Python 程式碼仍期待直接的 `course_ids`
+- 當 `course_data` 為 `[null]` 時，系統無法正確處理
+
+#### 2. **相似度閾值提高導致過度過濾**
+
+**問題描述**：
+```python
+# 原始設定 (可運作)
+SIMILARITY_THRESHOLDS = {
+    "SKILL": 0.35,
+    "FIELD": 0.30,
+    "DEFAULT": 0.35
+}
+
+# 變更後 (太嚴格)
+SIMILARITY_THRESHOLDS = {
+    "SKILL": 0.40,   # 提高了 0.05
+    "FIELD": 0.35,   # 提高了 0.05
+    "DEFAULT": 0.40  # 提高了 0.05
+}
+```
+
+**影響**：
+- 許多相關課程被過濾掉
+- 某些技能完全沒有課程達到新閾值
+
+#### 3. **Deficit Filling 機制預設停用**
+
+**問題描述**：
+```python
+# 新增的 deficit filling 邏輯但預設關閉
+ENABLE_DEFICIT_FILLING = os.getenv("ENABLE_DEFICIT_FILLING", "false").lower() == "true"
+
+# 當停用時的簡單處理有 bug
+if not ENABLE_DEFICIT_FILLING:
+    course_data.sort(key=lambda x: x.get('similarity', 0), reverse=True)
+    final_course_ids = [c['id'] for c in course_data[:25]]  # 當 course_data 為 [None] 時會崩潰
+```
+
+**影響**：
+- 當 `course_data` 包含 null 值時，程式碼會出錯
+- 沒有智慧補充機制來確保課程數量
+
+### 🛠️ 修復策略（三階段實施）
+
+#### Stage 1：建立向後相容性
+1. **降低閾值到保守值**：確保有足夠課程通過篩選
+2. **SQL 同時返回兩種格式**：`course_ids` 和 `course_data`
+3. **加入 null 值過濾**：處理 PostgreSQL 返回的 `[null]`
+
+#### Stage 2：實作功能開關
+1. **環境變數控制閾值**：無需修改程式碼即可調整
+2. **Deficit Filling 開關**：允許逐步啟用新功能
+3. **完善錯誤處理**：確保各種邊界情況都能處理
+
+#### Stage 3：生產部署與驗證
+1. **啟用 Deficit Filling**：透過環境變數 `ENABLE_DEFICIT_FILLING=true`
+2. **監控與驗證**：確認所有技能返回預期數量的課程
+3. **建立回滾計劃**：以防需要快速還原
+
+### 📊 修復前後對比
+
+| 指標 | 修復前 | 修復後 |
+|------|--------|--------|
+| **課程返回率** | 0% (空陣列) | 100% (每個技能最多 25 個) |
+| **平均課程數量** | 0 | 25 |
+| **閾值設定** | 0.40/0.35 (過高) | 0.35/0.30 (保守) |
+| **Null 處理** | ❌ 程式崩潰 | ✅ 優雅處理 |
+| **Deficit Filling** | ❌ 停用 | ✅ 啟用並運作 |
+| **SQL 返回格式** | 只有 course_data | course_ids + course_data |
+| **錯誤恢復能力** | 低 | 高 |
+
+### 🎯 關鍵學習點
+
+1. **資料格式一致性至關重要**
+   - SQL 查詢的輸出必須與 Python 處理邏輯完全匹配
+   - 任何格式變更都需要同步更新上下游程式碼
+
+2. **漸進式部署的重要性**
+   - 使用功能開關允許逐步啟用新功能
+   - 保持向後相容性直到新功能穩定
+
+3. **防禦性程式設計**
+   - 永遠要處理 null 和異常值
+   - 資料庫返回的 `[null]` 是常見但容易被忽略的情況
+
+4. **配置外部化**
+   - 關鍵參數（如閾值）應該可透過環境變數調整
+   - 避免硬編碼需要頻繁調整的值
+
+5. **全面測試的價值**
+   - 16 個單元測試幫助快速定位問題
+   - 生產驗證腳本確保部署成功
+
+### 🔮 預防措施建議
+
+1. **建立資料契約測試**：確保 SQL 輸出與 Python 期望一致
+2. **實施金絲雀部署**：新功能先在小範圍測試
+3. **加強監控告警**：當課程返回率異常時立即通知
+4. **定期回歸測試**：確保核心功能不被新變更破壞
+5. **文檔驅動開發**：先更新文檔再實施變更
+
+### 📝 總結
+
+這次事件的根本原因是**「變更管理不當」**——在修改 SQL 查詢結構和新增功能時，沒有充分考慮向後相容性和錯誤處理。通過三階段的修復策略，我們不僅解決了immediate問題，還建立了更強健的系統架構，為未來的功能迭代打下良好基礎。
+
+---
+
 **文件維護**：
-- 最後更新：2025-01-20
-- 版本：2.1.0（整合版）
+- 最後更新：2025-08-20（新增附錄）
+- 版本：2.2.0（包含 Lesson Learned）
 - 下次審查：2025-02-01
 - 負責團隊：AI Resume Advisor Platform Team

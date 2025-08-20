@@ -12,7 +12,7 @@ import asyncpg
 import numpy as np
 
 from src.core.monitoring_service import monitoring_service
-from src.services.embedding_client import get_azure_embedding_client
+from src.services.llm_factory import get_embedding_client
 
 
 class CourseEmbeddingGenerator:
@@ -49,7 +49,7 @@ class CourseEmbeddingGenerator:
             print(f"📚 找到 {len(courses)} 個需要產生 embedding 的課程")
             
             # 初始化 embedding client
-            self.embedding_client = get_azure_embedding_client()
+            self.embedding_client = get_embedding_client(api_name="etl")
             
             # 批次處理
             for i in range(0, len(courses), self.batch_size):

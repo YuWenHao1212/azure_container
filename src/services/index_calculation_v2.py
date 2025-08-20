@@ -24,8 +24,8 @@ from src.core.config import get_settings
 from src.core.monitoring_service import monitoring_service
 from src.core.utils import stable_percentage_round
 from src.services.base import BaseService
-from src.services.embedding_client import get_azure_embedding_client
 from src.services.exceptions import ServiceError
+from src.services.llm_factory import get_embedding_client
 from src.services.openai_client import (
     AzureOpenAIAuthError,
     AzureOpenAIError,
@@ -74,7 +74,7 @@ class IndexCalculationServiceV2(BaseService):
         super().__init__()
 
         # Dependencies
-        self.embedding_client = embedding_client or get_azure_embedding_client()
+        self.embedding_client = embedding_client or get_embedding_client(api_name="index_calculation")
 
         # Configuration with environment variable support
         self.enable_cache = enable_cache

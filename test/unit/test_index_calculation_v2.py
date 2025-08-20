@@ -255,7 +255,7 @@ class TestIndexCalculationV2Unit:
         mock_embedding_client.create_embeddings.return_value = sample_embeddings
 
         with patch('src.services.index_calculation.get_settings', return_value=mock_settings):
-            with patch('src.services.index_calculation.get_azure_embedding_client',
+            with patch('src.services.index_calculation.get_embedding_client',
                       return_value=mock_embedding_client):
                 with patch('src.services.index_calculation.monitoring_service') as mock_monitoring:
                     # Call compute_similarity
