@@ -379,8 +379,10 @@ def mock_all_external_services(comprehensive_mock_services):
         patch('src.services.combined_analysis_v2.ResourcePoolManager', return_value=services["resource_pool"]),
 
         # Mock the embedding client factory function to return our async mock
-        patch('src.services.embedding_client.get_azure_embedding_client') as mock_get_embedding,
-        patch('src.services.index_calculation_v2.get_azure_embedding_client') as mock_get_embedding_index,
+        # Note: We now use get_embedding_client from llm_factory instead of get_azure_embedding_client
+        patch('src.services.llm_factory.get_embedding_client') as mock_get_embedding,
+        patch('src.services.index_calculation_v2.get_embedding_client') as mock_get_embedding_index,
+        patch('src.services.index_calculation.get_embedding_client') as mock_get_embedding_calc,
 
         # Also mock the class directly in case it's imported directly
         patch('src.services.embedding_client.AzureEmbeddingClient', return_value=services["embedding"]),
@@ -391,6 +393,7 @@ def mock_all_external_services(comprehensive_mock_services):
         # Configure the embedding client mocks to return our AsyncMock
         mock_get_embedding.return_value = services["embedding"]
         mock_get_embedding_index.return_value = services["embedding"]
+        mock_get_embedding_calc.return_value = services["embedding"]
 
         yield services
 
