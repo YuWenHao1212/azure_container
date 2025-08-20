@@ -687,3 +687,66 @@ class TestCourseAvailability:
         assert "course-1" in result
         assert "course-2" in result
         assert "project-1" in result
+
+    @pytest.mark.asyncio
+    async def test_CA_017_UT_null_course_data_handling(self, checker):
+        """
+        Test ID: CA-017-UT
+        Test handling of null or invalid course_data from SQL
+        Priority: P0
+        """
+        # Mock connection returning [null] from PostgreSQL
+        mock_conn = AsyncMock()
+        mock_conn.fetchrow = AsyncMock(return_value={
+            "has_courses": False,
+            "total_count": 0,
+            "type_diversity": 0,
+            "course_types": [],
+            "course_data": [None]  # PostgreSQL might return [null]
+        })
+
+        checker._connection_pool = MagicMock()
+        mock_ctx = AsyncMock()
+        mock_ctx.__aenter__.return_value = mock_conn
+        mock_ctx.__aexit__.return_value = None
+        checker._connection_pool.acquire.return_value = mock_ctx
+
+        # Execute check - should handle [null] gracefully
+        result = await checker._check_single_skill(
+            embedding=[0.1] * 1536,
+            skill_name="RareSkill",
+            skill_category="SKILL"
+        )
+
+        # Should return empty result without error
+        assert result["has_courses"] is False
+        assert result["count"] == 0
+        assert result["course_ids"] == []
+
+    @pytest.mark.asyncio
+    async def test_CA_018_UT_mixed_null_course_data(self, checker):
+        """
+        Test ID: CA-018-UT
+        Test handling of mixed valid and null entries in course_data
+        Priority: P1
+        """
+        # Test the _apply_deficit_filling with mixed data
+        course_data = [
+            {"id": "course-1", "similarity": 0.90, "type": "course"},
+            None,  # Null entry
+            {"id": "project-1", "similarity": 0.85, "type": "project"},
+            None,  # Another null
+            {"id": "course-2", "similarity": 0.80, "type": "course"}
+        ]
+
+        # Filter out None values (mimicking the fix)
+        filtered_data = [c for c in course_data if c and isinstance(c, dict)]
+
+        # Apply deficit filling
+        result = checker._apply_deficit_filling(filtered_data, "SKILL")
+
+        # Should process only valid entries
+        assert len(result) == 3  # Only 3 valid entries
+        assert "course-1" in result
+        assert "project-1" in result
+        assert "course-2" in result

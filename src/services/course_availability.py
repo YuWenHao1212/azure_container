@@ -510,9 +510,15 @@ class CourseAvailabilityChecker:
                     )
 
                     # Process course data with deficit filling logic
-                    course_data = result.get("course_data", []) or []
+                    course_data = result.get("course_data", [])
 
-                    # If no courses found, return empty result
+                    # Ensure course_data is not None and filter out invalid entries
+                    if course_data is None:
+                        course_data = []
+                    # Filter out None values and non-dict entries for robustness
+                    course_data = [c for c in course_data if c and isinstance(c, dict)]
+
+                    # If no valid courses found, return empty result
                     if not course_data:
                         return {
                             "has_courses": False,
