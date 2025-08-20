@@ -1506,7 +1506,7 @@ pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer:
   - 正確返回 has_courses 布林值
   - course_count 不超過 10
   - 查詢超時拋出 TimeoutError
-  - 使用正確的相似度閾值（SKILL: 0.30, FIELD: 0.25）
+  - 使用正確的相似度閾值（SKILL: 0.40, FIELD: 0.35）
 
 #### CA-003-UT: 快取機制測試
 - **名稱**: Popular Skills Cache Mechanism
@@ -1575,9 +1575,9 @@ pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer:
 - **測試目標**: 驗證新的相似度閾值設定正確
 - **測試內容**: 確認相似度閾值已提升至新標準
 - **判斷標準**:
-  - SKILL 閾值為 0.45（原 0.30）
-  - FIELD 閾值為 0.40（原 0.25）
-  - DEFAULT 閾值為 0.45（原 0.30）
+  - SKILL 閾值為 0.40（原 0.35）
+  - FIELD 閾值為 0.35（原 0.30）
+  - DEFAULT 閾值為 0.40（原 0.35）
   - 常數定義存在且可存取
 
 #### CA-009-UT: 課程類型多樣性追蹤測試
@@ -1600,8 +1600,8 @@ pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer:
 - **測試內容**: 確認配額設定正確且合理
 - **判斷標準**:
   - COURSE_TYPE_QUOTAS 常數存在
-  - SKILL 配額：course(15), project(5), certification(2), specialization(2), degree(1)
-  - FIELD 配額：specialization(12), degree(4), course(5), certification(2), project(1)
+  - SKILL 配額：course(25=15基本+10備用), project(5), certification(2), specialization(2), degree(1)
+  - FIELD 配額：course(15=5基本+10備用), specialization(12), degree(4), certification(2), project(1)
   - 配額分佈符合類別特性
 
 #### CA-011-UT: 最小閾值優化測試
@@ -1611,7 +1611,7 @@ pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer:
 - **測試目標**: 測試查詢優化用的最小閾值
 - **測試內容**: 驗證 MIN_SIMILARITY_THRESHOLD 用於初始篩選
 - **判斷標準**:
-  - MIN_SIMILARITY_THRESHOLD = 0.40
+  - MIN_SIMILARITY_THRESHOLD = 0.35
   - 小於或等於所有類別閾值
   - 用於 SQL 查詢的第一階段
   - 優化查詢效能
@@ -1622,7 +1622,7 @@ pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer:
 - **類型**: 單元測試
 - **測試目標**: 測試結果包含多樣化的課程類型
 - **測試內容**: 確認實際結果展現多樣性
-- **測試資料**: SKILL 類別應包含 15 courses + 5 projects + 2 certifications + 2 specializations + 1 degree
+- **測試資料**: SKILL 類別應包含 25 courses (含10備用) + 5 projects + 2 certifications + 2 specializations + 1 degree
 - **判斷標準**:
   - 結果包含多種課程類型
   - 分佈符合配額限制
@@ -1635,12 +1635,57 @@ pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer:
 - **類型**: 單元測試
 - **測試目標**: 測試 FIELD 類別使用不同配額分佈
 - **測試內容**: 驗證 FIELD 類別偏重專業課程和學位
-- **測試資料**: FIELD 類別應包含 12 specializations + 4 degrees + 5 courses + 2 certifications + 1 project
+- **測試資料**: FIELD 類別應包含 15 courses (含10備用) + 12 specializations + 4 degrees + 2 certifications + 1 project
 - **判斷標準**:
   - specialization 數量最多（12個）
   - degree 次之（4個）
   - 總體分佈符合 FIELD 配額
   - 適合領域知識學習
+
+#### CA-014-UT: 缺額填充機制測試
+- **名稱**: Deficit Filling Mechanism
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證當其他課程類型不足配額時，從備用池補充的機制
+- **測試內容**: 模擬各類型課程數量不足，測試自動補充邏輯
+- **測試資料**: 
+  - SKILL類別：course 20個(15基本+5備用)、project 3個(缺2)、spec 1個(缺1)
+  - 預期：從5個備用course中取3個補充缺額
+- **判斷標準**:
+  - 正確計算總缺額(各類型配額-實際數量之和)
+  - 從備用池取出正確數量補充
+  - 不超過備用池可用數量
+  - 最終結果不超過25個課程
+
+#### CA-015-UT: 相似度重排序測試
+- **名稱**: Similarity Re-sorting After Supplementation
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證補充後按相似度重新排序的功能
+- **測試內容**: 混合不同相似度的課程，驗證最終按相似度排序
+- **測試資料**:
+  - 不同類型課程具有不同相似度分數
+  - 補充的備用課程可能有較高相似度
+- **判斷標準**:
+  - 補充完成後所有課程重新排序
+  - 相似度高的課程排在前面
+  - 不分課程類型統一排序
+  - 保留前25個最相關的課程
+
+#### CA-016-UT: 備用不足處理測試
+- **名稱**: Insufficient Reserve Handling
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 驗證備用池不足時的處理邏輯
+- **測試內容**: 模擬備用池數量少於缺額的情況
+- **測試資料**:
+  - 只有2個course(無備用)，project缺4個
+  - 總缺額大於可用備用數
+- **判斷標準**:
+  - 不會憑空創造課程
+  - 使用所有可用備用
+  - 正確處理邊界情況
+  - 返回實際可用的課程數量
 
 ### 7.2 整合測試 (CA-xxx-IT)
 

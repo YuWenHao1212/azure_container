@@ -361,14 +361,22 @@ class TestCourseAvailability:
                 assert skill["course_count"] == 5
 
     @pytest.mark.asyncio
-    async def test_empty_skill_list(self, checker):
-        """Test handling of empty skill list"""
+    async def test_CA_006_UT_empty_skill_list(self, checker):
+        """
+        Test ID: CA-006-UT
+        Test handling of empty skill list
+        Priority: P2
+        """
         result = await checker.check_course_availability([])
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_timeout_handling(self, checker):
-        """Test query timeout handling"""
+    async def test_CA_007_UT_timeout_handling(self, checker):
+        """
+        Test ID: CA-007-UT
+        Test query timeout handling
+        Priority: P1
+        """
         embedding = [0.1] * 1536  # Correct dimension
         skill_name = "TestSkill"
         skill_category = "SKILL"
