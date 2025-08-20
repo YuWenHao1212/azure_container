@@ -563,10 +563,15 @@ class CourseAvailabilityChecker:
                                 "course_ids": []
                             }
 
-                        # SIMPLIFIED: Directly extract course IDs without deficit filling
-                        # Sort by similarity and take top 25
-                        course_data.sort(key=lambda x: x.get('similarity', 0), reverse=True)
-                        final_course_ids = [c['id'] for c in course_data[:25]]
+                        # Check if deficit filling is enabled
+                        if ENABLE_DEFICIT_FILLING:
+                            # Apply deficit filling mechanism with quotas and reserves
+                            logger.debug(f"[CourseAvailability] Applying deficit filling for {skill_category}")
+                            final_course_ids = self._apply_deficit_filling(course_data, skill_category)
+                        else:
+                            # Simple processing: Sort by similarity and take top 25
+                            course_data.sort(key=lambda x: x.get('similarity', 0), reverse=True)
+                            final_course_ids = [c['id'] for c in course_data[:25]]
 
                     # Get diversity metrics
                     type_diversity = result.get("type_diversity", 0)

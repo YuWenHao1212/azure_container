@@ -750,3 +750,68 @@ class TestCourseAvailability:
         assert "course-1" in result
         assert "project-1" in result
         assert "course-2" in result
+
+    @pytest.mark.asyncio
+    async def test_CA_019_UT_deficit_filling_toggle(self, checker):
+        """
+        Test ID: CA-019-UT
+        Test deficit filling feature toggle functionality
+        Priority: P0
+        """
+        import os
+        from importlib import reload
+
+        import src.services.course_availability as ca_module
+
+        # Test case 1: Deficit filling disabled (default)
+        os.environ['ENABLE_DEFICIT_FILLING'] = 'false'
+        reload(ca_module)
+
+        # Mock data with incomplete quotas
+        mock_conn = AsyncMock()
+        mock_conn.fetchrow = AsyncMock(return_value={
+            "has_courses": True,
+            "total_count": 20,
+            "type_diversity": 2,
+            "course_types": ["course", "project"],
+            "course_ids": None,  # Force course_data path
+            "course_data": [
+                {"id": f"course-{i}", "similarity": 0.9 - i*0.01, "type": "course"}
+                for i in range(20)
+            ] + [
+                {"id": f"project-{i}", "similarity": 0.85 - i*0.01, "type": "project"}
+                for i in range(2)
+            ]
+        })
+
+        checker._connection_pool = MagicMock()
+        mock_ctx = AsyncMock()
+        mock_ctx.__aenter__.return_value = mock_conn
+        mock_ctx.__aexit__.return_value = None
+        checker._connection_pool.acquire.return_value = mock_ctx
+
+        # With deficit filling disabled, should just sort and take top 25
+        result = await checker._check_single_skill(
+            embedding=[0.1] * 1536,
+            skill_name="Python",
+            skill_category="SKILL"
+        )
+
+        assert result["has_courses"] is True
+        assert result["count"] == 22  # All 22 courses
+
+        # Test case 2: Deficit filling enabled
+        os.environ['ENABLE_DEFICIT_FILLING'] = 'true'
+        reload(ca_module)
+
+        # Create new checker to pick up the environment change
+        checker2 = ca_module.CourseAvailabilityChecker(connection_pool=checker._connection_pool)
+
+        # With deficit filling enabled, should apply quotas and reserves
+        # Note: The actual behavior depends on the _apply_deficit_filling implementation
+        # For now, just verify the flag is working
+        assert ca_module.ENABLE_DEFICIT_FILLING is True
+
+        # Clean up
+        del os.environ['ENABLE_DEFICIT_FILLING']
+        reload(ca_module)
