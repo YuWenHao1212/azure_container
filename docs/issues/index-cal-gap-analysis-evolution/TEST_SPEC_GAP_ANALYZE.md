@@ -8,7 +8,7 @@
 - **維護者**: AI Resume Advisor Team
 - **測試總數**: 73 個核心測試 + 4 個特殊測試
   - Gap Analysis: 25 UT + 31 IT = 56 個
-  - Course Availability: 13 UT + 4 IT = 17 個
+  - Course Availability: 19 UT + 4 IT = 23 個
   - 效能測試: 2 個
   - E2E 測試: 2 個
 - **更新說明**: 
@@ -25,6 +25,7 @@
   - v2.0.0: 文檔改名為 TEST_SPEC_GAP_ANALYZE.md
   - v2.1.0: 新增完整性能測試套件 performance_test_suite.py
   - v2.2.0: 新增 Course Availability 配額系統測試 (CA-008 至 CA-013) - 6 個單元測試
+  - v2.3.0: 新增 Course Availability null 處理與缺額填充測試 (CA-017 至 CA-019) - 3 個單元測試
 
 ## 重要測試約束 ⚠️
 
@@ -60,7 +61,7 @@ API-GAP-[序號]-[類型]
 |----------|----------|------|------|
 | 001-025 | Gap Analysis 單元測試(UT) | 25 | Gap Analysis 服務層測試 |
 | 001-031 | Gap Analysis 整合測試(IT) | 31 | API 端點整合測試（含錯誤處理） |
-| 001-013 | Course Availability 單元測試(UT) | 13 | 課程檢查服務測試（含配額系統） |
+| 001-019 | Course Availability 單元測試(UT) | 19 | 課程檢查服務測試（含配額系統、null處理、缺額填充） |
 | 001-004 | Course Availability 整合測試(IT) | 4 | 課程 API 整合測試 |
 | 001-002 | 效能測試(PT) | 2 | 真實 Azure 服務效能測試 |
 | 001-002 | 端對端測試(E2E) | 2 | 完整流程測試 |
@@ -1686,6 +1687,52 @@ pytest test/unit/test_resume_structure_analyzer.py::TestResumeStructureAnalyzer:
   - 使用所有可用備用
   - 正確處理邊界情況
   - 返回實際可用的課程數量
+
+#### CA-017-UT: Null 課程資料處理測試
+- **名稱**: Null Course Data Handling
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 驗證當課程資料為 null 時的處理邏輯
+- **測試內容**: 模擬資料庫返回 null course_data 的情況
+- **測試資料**:
+  - 查詢成功但 course_data 欄位為 null
+  - has_courses 為 false
+- **判斷標準**:
+  - 不會拋出 NoneType 錯誤
+  - 正確設定 available_course_ids 為空陣列
+  - has_courses 正確設為 false
+  - 處理邏輯穩定不崩潰
+
+#### CA-018-UT: 混合 Null 課程資料測試
+- **名稱**: Mixed Null Course Data
+- **優先級**: P2
+- **類型**: 單元測試
+- **測試目標**: 驗證部分技能有課程、部分為 null 的混合情況
+- **測試內容**: 模擬多個技能查詢，部分返回 null，部分返回正常資料
+- **測試資料**:
+  - 技能 A: 正常課程資料
+  - 技能 B: null course_data
+  - 技能 C: 正常課程資料
+- **判斷標準**:
+  - 每個技能獨立處理
+  - Null 資料不影響其他技能
+  - 結果結構保持一致
+  - 統計資訊正確
+
+#### CA-019-UT: 缺額填充開關測試
+- **名稱**: Deficit Filling Toggle
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 驗證缺額填充機制的開關功能
+- **測試內容**: 測試 ENABLE_DEFICIT_FILLING 環境變數控制
+- **測試資料**:
+  - 開啟時：執行缺額填充邏輯
+  - 關閉時：保持原始配額結果
+- **判斷標準**:
+  - 環境變數正確控制功能
+  - 關閉時不執行填充邏輯
+  - 開啟時正常執行填充
+  - 預設值為開啟狀態
 
 ### 7.2 整合測試 (CA-xxx-IT)
 
