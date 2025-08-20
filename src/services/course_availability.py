@@ -15,16 +15,16 @@ from src.services.llm_factory import get_embedding_client
 
 logger = logging.getLogger(__name__)
 
-# Similarity thresholds by skill category (Stage 2: Moderate strictness for higher quality)
+# Similarity thresholds by skill category (Temporarily lowered for testing)
 # Support environment variable overrides for production tuning without redeployment
 SIMILARITY_THRESHOLDS = {
-    "SKILL": float(os.getenv("COURSE_THRESHOLD_SKILL", "0.40")),    # Increased from 0.35
-    "FIELD": float(os.getenv("COURSE_THRESHOLD_FIELD", "0.35")),    # Increased from 0.30
-    "DEFAULT": float(os.getenv("COURSE_THRESHOLD_DEFAULT", "0.40"))  # Default (was 0.35)
+    "SKILL": float(os.getenv("COURSE_THRESHOLD_SKILL", "0.35")),    # Lowered back to 0.35
+    "FIELD": float(os.getenv("COURSE_THRESHOLD_FIELD", "0.30")),    # Lowered back to 0.30
+    "DEFAULT": float(os.getenv("COURSE_THRESHOLD_DEFAULT", "0.35"))  # Lowered back to 0.35
 }
 
 # Minimum threshold for initial query (optimization)
-MIN_SIMILARITY_THRESHOLD = float(os.getenv("COURSE_MIN_THRESHOLD", "0.35"))  # Increased from 0.30
+MIN_SIMILARITY_THRESHOLD = float(os.getenv("COURSE_MIN_THRESHOLD", "0.30"))  # Lowered back to 0.30
 
 # Log the active thresholds on module load
 logger.info(f"Course Availability Thresholds - SKILL: {SIMILARITY_THRESHOLDS['SKILL']}, "
@@ -205,13 +205,15 @@ quota_applied AS (
             (course_type_standard = 'degree' AND type_rank <= LEAST(2, type_count))
         ))
 )
--- Step 5: Final selection with aggregated results (includes similarity for resorting)
+-- Step 5: Final selection with aggregated results (SIMPLIFIED FOR TESTING)
 SELECT
     COUNT(*) > 0 as has_courses,
     COUNT(*) as total_count,
     COUNT(DISTINCT course_type_standard) as type_diversity,
     array_agg(DISTINCT course_type_standard) as course_types,
-    -- Return detailed course data including similarity for post-processing
+    -- SIMPLIFIED: Return course IDs directly like the old version
+    array_agg(id ORDER BY similarity DESC) as course_ids,
+    -- Also keep course_data for backward compatibility
     array_agg(
         json_build_object(
             'id', id,
@@ -219,7 +221,8 @@ SELECT
             'type', course_type_standard
         ) ORDER BY similarity DESC
     ) as course_data
-FROM quota_applied;
+FROM quota_applied
+LIMIT 25;
 """
 
 
@@ -525,43 +528,49 @@ class CourseAvailabilityChecker:
                         SIMILARITY_THRESHOLDS.get("DEFAULT", SIMILARITY_THRESHOLDS["DEFAULT"])  # $6 = 0.35
                     )
 
-                    # Process course data with deficit filling logic
-                    course_data = result.get("course_data", [])
+                    # Process course data - SIMPLIFIED VERSION FOR TESTING
+                    # First check if we have course_ids directly (like old version)
+                    course_ids = result.get("course_ids", [])
 
-                    # Ensure course_data is not None and filter out invalid entries
-                    if course_data is None:
-                        course_data = []
-                    # Filter out None values and non-dict entries for robustness
-                    course_data = [c for c in course_data if c and isinstance(c, dict)]
+                    # Check if course_ids is not None and not empty
+                    if course_ids is not None and len(course_ids) > 0 and course_ids[0] is not None:
+                        # Use direct course_ids if available
+                        final_course_ids = course_ids[:25]
+                    else:
+                        # Fallback to course_data processing
+                        course_data = result.get("course_data", [])
 
-                    # If no valid courses found, return empty result
-                    if not course_data:
-                        return {
-                            "has_courses": False,
-                            "count": 0,
-                            "type_diversity": 0,
-                            "course_types": [],
-                            "course_ids": []
-                        }
+                        # Ensure course_data is not None and filter out invalid entries
+                        if course_data is None:
+                            course_data = []
+                        # Filter out None values and non-dict entries for robustness
+                        course_data = [c for c in course_data if c and isinstance(c, dict)]
 
-                    # Apply deficit filling and resorting logic
-                    final_course_ids = self._apply_deficit_filling(
-                        course_data,
-                        skill_category
-                    )
+                        # If no valid courses found, return empty result
+                        if not course_data:
+                            return {
+                                "has_courses": False,
+                                "count": 0,
+                                "type_diversity": 0,
+                                "course_types": [],
+                                "course_ids": []
+                            }
 
-                    # Calculate diversity metrics from final selection
-                    final_types = list(set(
-                        c['type'] for c in course_data
-                        if c['id'] in final_course_ids
-                    ))
+                        # SIMPLIFIED: Directly extract course IDs without deficit filling
+                        # Sort by similarity and take top 25
+                        course_data.sort(key=lambda x: x.get('similarity', 0), reverse=True)
+                        final_course_ids = [c['id'] for c in course_data[:25]]
+
+                    # Get diversity metrics
+                    type_diversity = result.get("type_diversity", 0)
+                    course_types = result.get("course_types", [])
 
                     # Return enhanced result with diversity metrics
                     return {
                         "has_courses": len(final_course_ids) > 0,
                         "count": len(final_course_ids),
-                        "type_diversity": len(final_types),
-                        "course_types": final_types,
+                        "type_diversity": type_diversity,
+                        "course_types": course_types,
                         "course_ids": final_course_ids
                     }
 
