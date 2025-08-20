@@ -597,7 +597,7 @@ async def startup_event():
     from src.core.dependencies import initialize_dependencies
 
     logger.info("🚀 Starting application initialization...")
-    start_time = datetime.utcnow()
+    start_time = datetime.now(UTC)
 
     try:
         # Initialize all dependencies (standardizers, prompt service, etc.)
@@ -662,17 +662,22 @@ async def startup_event():
             logger.warning(f"⚠️ Connection pool warmup failed: {e}")
             # Don't fail startup, warmup is optional
 
-        # Test the connection pool with health check
+        # Test the connection pool with a simple query
         db_health_status = "unknown"
         try:
-            test_result = await course_service.health_check()
-            db_health_status = test_result.get("database", {}).get("status", "unknown")
-            if db_health_status == "healthy":
-                logger.info("✅ Database connection pool health check passed")
+            if course_service._connection_pool:
+                # Test with a simple query
+                async with course_service._connection_pool.acquire() as conn:
+                    course_count = await conn.fetchval(
+                        "SELECT COUNT(*) FROM courses WHERE platform = 'coursera'"
+                    )
+                    logger.info(f"✅ Database connection test passed - Found {course_count} courses")
+                    db_health_status = "healthy"
             else:
-                logger.warning(f"⚠️ Database connection pool health check failed: {test_result}")
+                logger.warning("⚠️ Connection pool not initialized")
+                db_health_status = "not_initialized"
         except Exception as e:
-            logger.error(f"❌ Database connection pool health check error: {e}")
+            logger.error(f"❌ Database connection test error: {e}")
             db_health_status = "error"
             # Don't fail startup, but log the issue
 

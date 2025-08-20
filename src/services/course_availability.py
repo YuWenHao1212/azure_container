@@ -477,18 +477,34 @@ class CourseAvailabilityChecker:
             async with asyncio.timeout(timeout):
                 # Get connection from pool
                 if not self._connection_pool:
-                    logger.info("🔍 [CourseAvailability] No connection pool, fetching from Singleton...")
-                    # Fallback: try to get from CourseSearchSingleton
-                    from src.services.course_search_singleton import get_course_search_service
-                    course_service = await get_course_search_service()
-                    self._connection_pool = course_service._connection_pool
-                    logger.info(
-                        f"✅ [CourseAvailability] Got connection pool from Singleton: "
-                        f"{id(self._connection_pool) if self._connection_pool else 'None'}"
-                    )
+                    logger.info("🔍 [CourseAvailability] No connection pool, attempting initialization...")
+                    try:
+                        # Fallback: try to get from CourseSearchSingleton
+                        from src.services.course_search_singleton import get_course_search_service
+                        course_service = await get_course_search_service()
+                        self._connection_pool = course_service._connection_pool
+
+                        if self._connection_pool:
+                            logger.info(
+                                f"✅ [CourseAvailability] Got connection pool from Singleton: "
+                                f"{id(self._connection_pool)}"
+                            )
+                        else:
+                            logger.warning("⚠️ [CourseAvailability] Singleton returned None connection pool")
+                    except Exception as e:
+                        logger.error(f"❌ [CourseAvailability] Failed to get connection pool: {e}")
+                        self._connection_pool = None
 
                 if not self._connection_pool:
-                    raise Exception("No database connection pool available")
+                    # Return empty result instead of raising exception
+                    logger.error("❌ [CourseAvailability] No database connection available, returning empty result")
+                    return {
+                        "has_courses": False,
+                        "count": 0,
+                        "type_diversity": 0,
+                        "course_types": [],
+                        "course_ids": []
+                    }
 
                 async with self._connection_pool.acquire() as conn:
                     # pgvector already registered in connection pool init
