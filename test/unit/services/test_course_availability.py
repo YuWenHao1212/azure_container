@@ -804,13 +804,13 @@ class TestCourseAvailability:
         os.environ['ENABLE_DEFICIT_FILLING'] = 'true'
         reload(ca_module)
 
-        # Create new checker to pick up the environment change
-        checker2 = ca_module.CourseAvailabilityChecker(connection_pool=checker._connection_pool)
-
         # With deficit filling enabled, should apply quotas and reserves
-        # Note: The actual behavior depends on the _apply_deficit_filling implementation
-        # For now, just verify the flag is working
+        # Verify the flag is working after environment change
         assert ca_module.ENABLE_DEFICIT_FILLING is True
+
+        # Could create new checker here to test with deficit filling enabled
+        # checker2 = ca_module.CourseAvailabilityChecker(connection_pool=checker._connection_pool)
+        # But for now, just verifying the flag change is sufficient
 
         # Clean up
         del os.environ['ENABLE_DEFICIT_FILLING']

@@ -5,7 +5,9 @@ Stage 3 verification
 """
 import asyncio
 import json
+import tempfile
 from datetime import datetime
+from pathlib import Path
 
 import aiohttp
 
@@ -155,10 +157,11 @@ async def test_deficit_filling():
                 for indicator in indicators:
                     print(f"   {indicator}")
 
-                # Save detailed response
-                with open('/tmp/deficit_filling_test_result.json', 'w') as f:
+                # Save detailed response using secure temp file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
                     json.dump(result, f, indent=2)
-                print("\n💾 Full response saved to /tmp/deficit_filling_test_result.json")
+                    temp_path = f.name
+                print(f"\n💾 Full response saved to {temp_path}")
 
             else:
                 print(f"❌ API Error: {result.get('error', {}).get('message', 'Unknown error')}")
