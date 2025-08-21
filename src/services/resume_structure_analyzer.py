@@ -31,20 +31,29 @@ class StandardSections(BaseModel):
 
 
 class StructureMetadata(BaseModel):
-    """Resume structure metadata."""
+    """Resume structure metadata with Education Enhancement metrics."""
 
     total_experience_entries: int = Field(0, description="Number of job positions")
     total_education_entries: int = Field(0, description="Number of education entries")
     has_quantified_achievements: bool = Field(False, description="Contains metrics/numbers")
     estimated_length: str = Field("unknown", description="Estimated page length")
 
+    # Education Enhancement metrics
+    years_of_experience: int = Field(0, description="Years of full-time work experience (excluding internships)")
+    is_current_student: bool = Field(False, description="Currently enrolled in education program")
+    months_since_graduation: int | None = Field(None, description="Months since most recent graduation")
+    has_only_internships: bool = Field(False, description="All work experience is internships/traineeships")
+
 
 class ResumeStructure(BaseModel):
-    """Resume structure analysis result."""
+    """Resume structure analysis result with Education Enhancement decision."""
 
     standard_sections: StandardSections = Field(..., description="Standard section mappings")
     custom_sections: list[str] = Field(default_factory=list, description="Non-standard sections")
     metadata: StructureMetadata = Field(..., description="Structure metadata")
+    education_enhancement_needed: bool = Field(
+        False, description="Whether education section enhancement is recommended"
+    )
 
 
 class ResumeStructureAnalyzer:
@@ -67,7 +76,7 @@ class ResumeStructureAnalyzer:
         # Use Prompt Management System
         self.prompt_manager = SimplePromptManager()
         # Use RESUME_STRUCTURE_PROMPT_VERSION for consistency with CI/CD naming
-        prompt_version = os.getenv("RESUME_STRUCTURE_PROMPT_VERSION", "v1.0.1")
+        prompt_version = os.getenv("RESUME_STRUCTURE_PROMPT_VERSION", "v1.0.2")
 
         try:
             # Load prompt from YAML
@@ -179,7 +188,7 @@ class ResumeStructureAnalyzer:
 
     async def _analyze_once(self, resume_html: str) -> ResumeStructure:
         """
-        Single attempt at structure analysis.
+        Single attempt at structure analysis with Education Enhancement logic.
 
         Test ID: RS-003-UT - JSON parsing validation
 
@@ -187,7 +196,7 @@ class ResumeStructureAnalyzer:
             resume_html: Resume content in HTML format
 
         Returns:
-            ResumeStructure parsed from LLM response
+            ResumeStructure parsed from LLM response with Education Enhancement decision
 
         Raises:
             asyncio.TimeoutError: If analysis exceeds timeout
@@ -233,16 +242,24 @@ class ResumeStructureAnalyzer:
             content = content.strip()
             data = json.loads(content)
 
+            # Create metadata with Education Enhancement metrics
+            metadata = StructureMetadata(**data.get("metadata", {}))
+
+            # Calculate Education Enhancement decision
+            education_enhancement_needed = self._should_enhance_education(metadata)
+
             # Validate and convert to model
             structure = ResumeStructure(
                 standard_sections=StandardSections(**data.get("standard_sections", {})),
                 custom_sections=data.get("custom_sections", []),
-                metadata=StructureMetadata(**data.get("metadata", {})),
+                metadata=metadata,
+                education_enhancement_needed=education_enhancement_needed
             )
 
             total_duration_ms = int((time.time() - start_time) * 1000)
             logger.debug(
-                f"Structure analysis completed (total={total_duration_ms}ms, llm={llm_duration_ms}ms)"
+                f"Structure analysis completed (total={total_duration_ms}ms, llm={llm_duration_ms}ms, "
+                f"education_enhancement={education_enhancement_needed})"
             )
 
             return structure
@@ -261,6 +278,29 @@ class ResumeStructureAnalyzer:
             logger.error(f"Unexpected error in structure analysis: {e}")
             raise
 
+    def _should_enhance_education(self, metadata: StructureMetadata) -> bool:
+        """
+        Determine if Education Enhancement is needed based on career metrics.
+
+        Education Enhancement is recommended when:
+        - Years of experience < 2, OR
+        - Currently a student, OR
+        - Graduated within last 12 months, OR
+        - Only has internship experience
+
+        Args:
+            metadata: Structure metadata containing career metrics
+
+        Returns:
+            True if Education Enhancement is recommended, False otherwise
+        """
+        return any([
+            metadata.years_of_experience < 2,
+            metadata.is_current_student,
+            metadata.months_since_graduation is not None and metadata.months_since_graduation < 12,
+            metadata.has_only_internships
+        ])
+
     def _get_fallback_structure(self) -> ResumeStructure:
         """
         Return basic structure when analysis fails.
@@ -268,8 +308,24 @@ class ResumeStructureAnalyzer:
         Test ID: RS-005-UT - Fallback structure validation
 
         Returns:
-            Basic ResumeStructure with common defaults
+            Basic ResumeStructure with common defaults and Education Enhancement decision
         """
+        # Create default metadata
+        metadata = StructureMetadata(
+            total_experience_entries=0,
+            total_education_entries=0,
+            has_quantified_achievements=False,
+            estimated_length="unknown",
+            # Education Enhancement defaults - conservative approach
+            years_of_experience=0,
+            is_current_student=False,
+            months_since_graduation=None,
+            has_only_internships=False
+        )
+
+        # Calculate Education Enhancement decision based on fallback metadata
+        education_enhancement_needed = self._should_enhance_education(metadata)
+
         return ResumeStructure(
             standard_sections=StandardSections(
                 summary="Professional Summary",
@@ -280,12 +336,8 @@ class ResumeStructureAnalyzer:
                 projects=None,
             ),
             custom_sections=[],
-            metadata=StructureMetadata(
-                total_experience_entries=0,
-                total_education_entries=0,
-                has_quantified_achievements=False,
-                estimated_length="unknown",
-            ),
+            metadata=metadata,
+            education_enhancement_needed=education_enhancement_needed
         )
 
     def _get_fallback_prompt(self) -> dict[str, str]:
@@ -293,10 +345,11 @@ class ResumeStructureAnalyzer:
         Get fallback prompt template if YAML loading fails.
 
         Returns:
-            Basic prompt template dictionary
+            Basic prompt template dictionary with Education Enhancement fields
         """
         return {
-            "system": """You are a Resume Structure Analyzer. Identify resume sections and return JSON with:
+            "system": """You are a Resume Structure Analyzer with Education Enhancement capability.
+Identify resume sections and return JSON with:
 {
   "standard_sections": {
     "summary": null, "skills": null, "experience": null,
@@ -305,8 +358,10 @@ class ResumeStructureAnalyzer:
   "custom_sections": [],
   "metadata": {
     "total_experience_entries": 0, "total_education_entries": 0,
-    "has_quantified_achievements": false, "estimated_length": "unknown"
+    "has_quantified_achievements": false, "estimated_length": "unknown",
+    "years_of_experience": 0, "is_current_student": false,
+    "months_since_graduation": null, "has_only_internships": false
   }
 }""",
-            "user": "Analyze structure of: {resume_html}",
+            "user": "Analyze structure and calculate Education Enhancement metrics: {resume_html}",
         }

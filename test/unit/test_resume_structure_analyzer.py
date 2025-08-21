@@ -1,6 +1,6 @@
 """
 Unit tests for Resume Structure Analyzer Service.
-Test IDs: RS-001-UT to RS-005-UT
+Test IDs: RS-001-UT to RS-009-UT (includes Education Enhancement tests)
 """
 
 import asyncio
@@ -45,9 +45,9 @@ class TestResumeStructureAnalyzer:
     async def test_RS_001_UT_basic_structure_analysis(self, analyzer, sample_resume_html):
         """
         Test ID: RS-001-UT - Basic structure analysis functionality.
-        Verify that the analyzer correctly identifies resume sections.
+        Verify that the analyzer correctly identifies resume sections and Education Enhancement.
         """
-        # Mock LLM response with proper structure
+        # Mock LLM response with proper structure including Education Enhancement fields
         mock_response = {
             "choices": [
                 {
@@ -68,6 +68,10 @@ class TestResumeStructureAnalyzer:
                                     "total_education_entries": 1,
                                     "has_quantified_achievements": True,
                                     "estimated_length": "2 pages",
+                                    "years_of_experience": 5,
+                                    "is_current_student": False,
+                                    "months_since_graduation": 24,
+                                    "has_only_internships": False,
                                 },
                             }
                         )
@@ -103,6 +107,15 @@ class TestResumeStructureAnalyzer:
             assert result.metadata.total_education_entries == 1
             assert result.metadata.has_quantified_achievements is True
             assert result.metadata.estimated_length == "2 pages"
+
+            # Verify Education Enhancement fields
+            assert result.metadata.years_of_experience == 5
+            assert result.metadata.is_current_student is False
+            assert result.metadata.months_since_graduation == 24
+            assert result.metadata.has_only_internships is False
+
+            # With 5 years experience and graduated 24 months ago, no enhancement needed
+            assert result.education_enhancement_needed is False
 
     @pytest.mark.asyncio
     async def test_RS_002_UT_prompt_template_validation(self, analyzer):
@@ -226,6 +239,14 @@ class TestResumeStructureAnalyzer:
             assert result.metadata.total_education_entries == 0
             assert result.metadata.has_quantified_achievements is False
 
+            # Verify Education Enhancement fields in fallback
+            assert result.metadata.years_of_experience == 0
+            assert result.metadata.is_current_student is False
+            assert result.metadata.months_since_graduation is None
+            assert result.metadata.has_only_internships is False
+            # With years_of_experience=0, education enhancement should be True
+            assert result.education_enhancement_needed is True
+
     @pytest.mark.asyncio
     async def test_timeout_handling(self, analyzer, sample_resume_html):
         """Test timeout handling in structure analysis."""
@@ -280,8 +301,8 @@ class TestResumeStructureAnalyzer:
             assert "... [content truncated] ..." in user_message
 
     def test_model_validation(self):
-        """Test Pydantic model validation."""
-        # Test valid structure
+        """Test Pydantic model validation with Education Enhancement fields."""
+        # Test valid structure with all new fields
         valid_structure = ResumeStructure(
             standard_sections=StandardSections(summary="Summary"),
             custom_sections=["Custom"],
@@ -290,11 +311,19 @@ class TestResumeStructureAnalyzer:
                 total_education_entries=1,
                 has_quantified_achievements=True,
                 estimated_length="2 pages",
+                years_of_experience=1,
+                is_current_student=False,
+                months_since_graduation=6,
+                has_only_internships=False
             ),
+            education_enhancement_needed=True
         )
         assert valid_structure.standard_sections.summary == "Summary"
+        assert valid_structure.education_enhancement_needed is True
+        assert valid_structure.metadata.years_of_experience == 1
+        assert valid_structure.metadata.is_current_student is False
 
-        # Test with missing optional fields
+        # Test with missing optional fields (should use defaults)
         minimal_structure = ResumeStructure(
             standard_sections=StandardSections(),
             custom_sections=[],
@@ -302,3 +331,158 @@ class TestResumeStructureAnalyzer:
         )
         assert minimal_structure.standard_sections.summary is None
         assert minimal_structure.metadata.total_experience_entries == 0
+        assert minimal_structure.metadata.years_of_experience == 0
+        assert minimal_structure.metadata.is_current_student is False
+        assert minimal_structure.metadata.months_since_graduation is None
+        assert minimal_structure.metadata.has_only_internships is False
+        assert minimal_structure.education_enhancement_needed is False
+
+    def test_RS_006_UT_education_enhancement_logic(self):
+        """
+        Test ID: RS-006-UT - Education Enhancement decision logic validation.
+        Verify that Education Enhancement triggers under the correct 4 conditions.
+        """
+        analyzer = ResumeStructureAnalyzer()
+
+        # Test case 1: Years of experience < 2
+        metadata1 = StructureMetadata(
+            years_of_experience=1,
+            is_current_student=False,
+            months_since_graduation=24,
+            has_only_internships=False
+        )
+        assert analyzer._should_enhance_education(metadata1) is True
+
+        # Test case 2: Current student
+        metadata2 = StructureMetadata(
+            years_of_experience=3,
+            is_current_student=True,
+            months_since_graduation=None,
+            has_only_internships=False
+        )
+        assert analyzer._should_enhance_education(metadata2) is True
+
+        # Test case 3: Recent graduate (< 12 months)
+        metadata3 = StructureMetadata(
+            years_of_experience=5,
+            is_current_student=False,
+            months_since_graduation=6,
+            has_only_internships=False
+        )
+        assert analyzer._should_enhance_education(metadata3) is True
+
+        # Test case 4: Only internships
+        metadata4 = StructureMetadata(
+            years_of_experience=2,
+            is_current_student=False,
+            months_since_graduation=24,
+            has_only_internships=True
+        )
+        assert analyzer._should_enhance_education(metadata4) is True
+
+        # Test case 5: Experienced professional (no enhancement needed)
+        metadata5 = StructureMetadata(
+            years_of_experience=5,
+            is_current_student=False,
+            months_since_graduation=24,
+            has_only_internships=False
+        )
+        assert analyzer._should_enhance_education(metadata5) is False
+
+    def test_RS_007_UT_education_enhancement_with_null_graduation(self):
+        """
+        Test ID: RS-007-UT - Education Enhancement null value handling.
+        Verify proper handling when months_since_graduation is null.
+        """
+        analyzer = ResumeStructureAnalyzer()
+
+        # Test with null months_since_graduation but meets other criteria
+        metadata = StructureMetadata(
+            years_of_experience=1,
+            is_current_student=False,
+            months_since_graduation=None,
+            has_only_internships=False
+        )
+        assert analyzer._should_enhance_education(metadata) is True
+
+        # Test with null months_since_graduation and doesn't meet other criteria
+        metadata2 = StructureMetadata(
+            years_of_experience=5,
+            is_current_student=False,
+            months_since_graduation=None,
+            has_only_internships=False
+        )
+        assert analyzer._should_enhance_education(metadata2) is False
+
+    @pytest.mark.asyncio
+    @patch.object(ResumeStructureAnalyzer, '_should_enhance_education')
+    async def test_RS_008_UT_education_enhancement_integration(self, mock_enhance):
+        """
+        Test ID: RS-008-UT - Education Enhancement pipeline integration.
+        Verify Education Enhancement integration in the analysis pipeline.
+        """
+        mock_enhance.return_value = True
+
+        # Mock LLM response with new fields
+        mock_response = {
+            "choices": [
+                {
+                    "message": {
+                        "content": json.dumps({
+                            "standard_sections": {
+                                "summary": "Professional Summary",
+                                "skills": "Technical Skills",
+                                "experience": "Work Experience",
+                                "education": "Education",
+                                "certifications": None,
+                                "projects": None
+                            },
+                            "custom_sections": [],
+                            "metadata": {
+                                "total_experience_entries": 1,
+                                "total_education_entries": 1,
+                                "has_quantified_achievements": False,
+                                "estimated_length": "1 page",
+                                "years_of_experience": 1,
+                                "is_current_student": False,
+                                "months_since_graduation": 6,
+                                "has_only_internships": False
+                            }
+                        })
+                    }
+                }
+            ]
+        }
+
+        analyzer = ResumeStructureAnalyzer()
+
+        with patch.object(analyzer.llm_client, 'chat_completion', new_callable=AsyncMock) as mock_llm:
+            mock_llm.return_value = mock_response
+
+            result = await analyzer._analyze_once("<html>Resume content</html>")
+
+            # Verify Education Enhancement was calculated
+            assert result.education_enhancement_needed is True
+            assert result.metadata.years_of_experience == 1
+            assert result.metadata.months_since_graduation == 6
+
+            # Verify _should_enhance_education was called
+            mock_enhance.assert_called_once()
+
+    def test_RS_009_UT_fallback_structure_education_enhancement(self):
+        """
+        Test ID: RS-009-UT - Education Enhancement fallback mechanism.
+        Verify fallback structure includes correct Education Enhancement fields.
+        """
+        analyzer = ResumeStructureAnalyzer()
+        fallback = analyzer._get_fallback_structure()
+
+        # Verify fallback structure has education enhancement fields
+        assert hasattr(fallback, 'education_enhancement_needed')
+        assert fallback.metadata.years_of_experience == 0
+        assert fallback.metadata.is_current_student is False
+        assert fallback.metadata.months_since_graduation is None
+        assert fallback.metadata.has_only_internships is False
+
+        # With default values (years_of_experience=0), enhancement should be True
+        assert fallback.education_enhancement_needed is True

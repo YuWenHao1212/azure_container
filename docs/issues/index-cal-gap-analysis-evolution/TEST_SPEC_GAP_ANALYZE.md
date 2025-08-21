@@ -1406,6 +1406,52 @@ P2 (Nice to have): 3/3 (100%)
   - 返回預設結構（基本區段）
   - metadata 顯示 unknown/0 值
 
+#### RS-006-UT: Education Enhancement 決策邏輯測試
+- **名稱**: Education Enhancement 決策邏輯驗證
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證 Education Enhancement 的 4 種決策條件
+- **測試內容**: 測試所有決策場景：年資不足、在學、應屆畢業、僅實習經驗
+- **判斷標準**: 
+  - years_of_experience < 2 觸發增強
+  - is_current_student = True 觸發增強
+  - months_since_graduation < 12 觸發增強
+  - has_only_internships = True 觸發增強
+  - 資深專業人士不觸發增強
+
+#### RS-007-UT: Education Enhancement Null 值處理測試
+- **名稱**: Education Enhancement 空值處理驗證
+- **優先級**: P1
+- **類型**: 單元測試
+- **測試目標**: 驗證 months_since_graduation 為 null 時的邏輯處理
+- **測試內容**: 測試 null graduation date 配合其他條件的決策
+- **判斷標準**: 
+  - null 值不會導致程式錯誤
+  - 其他條件仍能正確判斷
+  - null 值本身不觸發增強
+
+#### RS-008-UT: Education Enhancement 整合管道測試
+- **名稱**: Education Enhancement 分析管道整合驗證
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證 Education Enhancement 與分析管道的整合
+- **測試內容**: 模擬完整的分析流程，測試決策邏輯調用
+- **判斷標準**: 
+  - LLM 提取的 metadata 正確傳入決策函數
+  - _should_enhance_education 被正確調用
+  - education_enhancement_needed 欄位正確設置
+
+#### RS-009-UT: Education Enhancement Fallback 測試
+- **名稱**: Education Enhancement Fallback 機制驗證
+- **優先級**: P0
+- **類型**: 單元測試
+- **測試目標**: 驗證 fallback 結構包含 Education Enhancement 欄位
+- **測試內容**: 測試 fallback 結構的 Education Enhancement 預設值
+- **判斷標準**: 
+  - fallback 結構包含 education_enhancement_needed 欄位
+  - 預設的 metadata 欄位值正確
+  - years_of_experience=0 觸發增強（保守策略）
+
 ### 6.2 整合測試 (RS-xxx-IT)
 
 #### RS-001-IT: 並行執行時間測試
@@ -1462,6 +1508,18 @@ P2 (Nice to have): 3/3 (100%)
   - 所有服務回應正確整合
   - metadata 包含 structure_analysis_enabled
   - 完整回應結構包含所有必要欄位
+
+#### RS-006-IT: Education Enhancement 情境測試
+- **名稱**: Education Enhancement 多重情境整合驗證
+- **優先級**: P0
+- **類型**: 整合測試
+- **測試目標**: 驗證不同履歷情境的 Education Enhancement 決策
+- **測試內容**: 測試新鮮人、在學生、資深工程師等不同履歷場景
+- **判斷標準**: 
+  - 新鮮人履歷觸發 Education Enhancement
+  - 資深工程師履歷不觸發增強
+  - API 回應包含正確的 education_enhancement_needed 欄位
+  - 不同情境的 metadata 欄位正確提取
 
 ### 6.3 測試實作位置
 
@@ -2043,6 +2101,36 @@ curl -X GET https://airesumeadvisor-api-production.calmisland-ea7fe91e.japaneast
    - 關注 P50 而非平均值（更穩定）
    - P95 用於評估最差情況
    - 觀察趨勢而非單次結果
+
+## 測試統計總覽
+
+### Resume Structure Analysis 測試統計
+
+| 測試類型 | 測試 ID 範圍 | 總數 | P0 | P1 | P2 | 狀態 |
+|---------|-------------|------|----|----|----|----|
+| 單元測試 (UT) | RS-001-UT ~ RS-009-UT | 9 | 6 | 3 | 0 | ✅ 完成 |
+| 整合測試 (IT) | RS-001-IT ~ RS-006-IT | 6 | 5 | 1 | 0 | ✅ 完成 |
+| **總計** | **RS-xxx-xx** | **15** | **11** | **4** | **0** | **✅ 完成** |
+
+#### Education Enhancement 測試覆蓋
+
+| 功能 | 測試 ID | 測試內容 | 狀態 |
+|------|---------|---------|------|
+| 決策邏輯 | RS-006-UT | 4種觸發條件驗證 | ✅ |
+| Null 處理 | RS-007-UT | months_since_graduation 空值處理 | ✅ |
+| 管道整合 | RS-008-UT | 分析管道中的整合驗證 | ✅ |
+| Fallback 機制 | RS-009-UT | 預設值與保守策略 | ✅ |
+| 多情境整合 | RS-006-IT | 不同履歷場景的決策驗證 | ✅ |
+
+#### 測試檔案位置
+
+```
+test/
+├── unit/
+│   └── test_resume_structure_analyzer.py     # RS-001-UT ~ RS-009-UT (9個測試)
+└── integration/
+    └── test_resume_structure_integration.py  # RS-001-IT ~ RS-006-IT (6個測試)
+```
 
 ---
 
