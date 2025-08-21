@@ -3,7 +3,7 @@ metadata:
   author: Claude Code + WenHao
   description: Resume structure analysis prompt for multi-language resumes
   created_at: "2025-08-16"
-  status: active
+  status: "inactive"
 
 llm_config:
   temperature: 0.3
