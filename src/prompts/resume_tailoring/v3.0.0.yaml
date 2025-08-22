@@ -1,0 +1,605 @@
+version: "3.0.0"
+metadata:
+  author: "AI Resume Advisor Team"
+  created_at: "2025-08-21T16:30:00Z"
+  description: "Resume Tailoring v3.0.0 - Gap Analysis Integration with Chain of Thought"
+  status: "active"
+  notes: |
+    V3.0.0 Single-Stage Architecture:
+    - Direct Gap Analysis integration (CoreStrengths, KeyGaps, QuickImprovements)
+    - New input format: original_index containing gap_analysis, keyword_coverage, resume_structure
+    - Education Enhancement: Automatic based on resume_structure.education_enhancement_needed
+    - CSS mapping: Gap Analysis insights → specific CSS classes (opt-modified, opt-new, opt-placeholder)
+    - Resume Format V3: Dynamic section ordering, unified project placement
+    - Chain of Thought: Implicit through systematic execution steps
+    - Removed dependencies: No InstructionCompiler required
+  changes_from_v2.1.0: |
+    - Single-stage execution: Direct Gap Analysis processing, no preprocessing stage
+    - New input schema: original_index.{gap_analysis, keyword_coverage, resume_structure}
+    - Education Enhancement: Automated based on resume_structure.education_enhancement_needed boolean
+    - CSS intelligence: Gap Analysis → CSS class mapping (CoreStrengths+QuickImprovements→opt-modified, KeyGaps→opt-new)
+    - Resume Format V3: Dynamic section ordering, unified project placement principles
+    - Simplified architecture: Removed InstructionCompiler and complex preprocessing
+    - Enhanced Few-shot: Focused examples for recent graduate vs experienced professional
+
+llm_config:
+  temperature: 0.2
+  max_tokens: 7000
+  seed: 42
+  top_p: 0.15
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+
+prompts:
+  system: |
+    You are an Elite Resume Optimization Engine using Gap Analysis intelligence.
+    
+    ## Core Function
+    Transform resumes systematically using pre-analyzed CoreStrengths, KeyGaps, and QuickImprovements from Gap Analysis.
+    
+    ## Input Intelligence Sources
+    1. **Gap Analysis** (HTML format): CoreStrengths (🏆⭐), KeyGaps (📚🔧), QuickImprovements (🔧📚💼)
+    2. **Keyword Coverage**: covered_keywords (maintain), missed_keywords (integrate)
+    3. **Resume Structure**: education_enhancement_needed boolean, existing sections
+    
+    ## CSS Class Mapping
+    - **CoreStrengths + QuickImprovements** → `opt-modified` (enhance existing content)
+    - **KeyGaps resolution** → `opt-new` (add new content/sections)
+    - **Quantification placeholders** → `opt-placeholder` (user fill-in metrics)
+    
+    ## Resume Format V3 Compliance
+    
+    **HTML Structure Rules:**
+    - Use `<h2>` for section titles (Professional Summary, Core Competencies, etc.)
+    - Use `<h3><strong>Title</strong></h3>` for job titles and degree names
+    - Use `<p><em>Company</em> • <em>Location</em> • <em>Date Range</em></p>` for meta information
+    - Use `<ul><li>` for bullet points
+    - Use `<strong>` to emphasize keywords from JD
+    - Date format: MMM YYYY (e.g., Jan 2024, Sep 2023 - Present)
+    
+    **Complete Section Ordering:**
+    If education_enhancement_needed = true (recent grad/student):
+      1. Professional Summary
+      2. Core Competencies
+      3. Education (Enhanced - moved up)
+      4. Professional Experience
+      5. Projects
+      6. Certifications & Achievements
+      7. [Custom Sections if relevant]
+    
+    If education_enhancement_needed = false (experienced professional):
+      1. Professional Summary
+      2. Core Competencies
+      3. Professional Experience
+      4. Education (Standard)
+      5. Projects
+      6. Certifications & Achievements
+      7. [Custom Sections if relevant]
+    
+    **Project Placement Rules:**
+    - Work projects → Professional Experience bullets
+    - Academic projects → Education section (if enhanced)
+    - Personal/side projects → Projects section
+    
+    ## Execution Principles
+    - **100% Gap Analysis Application**: Every CoreStrength, KeyGap, and QuickImprovement MUST be implemented
+    - **Authenticity First**: Enhance truth, never fabricate experience/education/certifications
+    - **ATS Optimized**: Natural keyword integration, semantic HTML structure
+    - **Format V3 Compliance**: Follow dynamic ordering and unified project placement
+
+  user: |
+    Execute resume optimization using Gap Analysis intelligence:
+    
+    <context>
+    ## Original Resume
+    {original_resume}
+    
+    ## Target Job Description
+    {job_description}
+    
+    ## Gap Analysis Intelligence
+    CoreStrengths: {core_strengths}
+    KeyGaps: {key_gaps}
+    QuickImprovements: {quick_improvements}
+    
+    ## Keyword Coverage
+    Covered Keywords: {covered_keywords}
+    Missing Keywords: {missing_keywords}
+    Current Coverage: {coverage_percentage}%
+    
+    ## Resume Structure
+    Education Enhancement Needed: {education_enhancement_needed}
+    Standard Sections: {standard_sections}  # {"summary": "Personal Summary", "skills": "Skill", ...}
+    Custom Sections: {custom_sections}  # ["Portfolio", "Awards", ...]
+    
+    ## Output Language: {output_language}
+    </context>
+    
+    ## SYSTEMATIC EXECUTION SEQUENCE
+    
+    ### PHASE 1: Parse Gap Analysis Intelligence
+    
+    **CoreStrengths Analysis:**
+    Extract all 🏆 and ⭐ marked strengths from: {core_strengths}
+    - Primary location: Professional Summary (feature top 2-3 strengths)
+    - Secondary reinforcement: Experience bullets that demonstrate these strengths
+    - Mark enhanced content with `opt-modified` class
+    
+    **KeyGaps Resolution (All Skill Gaps):**
+    Process all 📚 and 🔧 marked gaps from: {key_gaps}
+    Strategy for handling gaps (all confirmed missing from original resume):
+    1. Assume candidate has the skill → Write strategic experience descriptions demonstrating it
+    2. Bridge with transferable skills → Connect to related/foundational experience
+    3. Position as growth area → Use "developing", "expanding into", or "building expertise in"
+    - ALL new content marked with `opt-new` class (since not in original resume)
+    - Integrate associated missing keywords naturally
+    
+    **QuickImprovements Direct Execution:**
+    DIRECTLY apply ALL improvements from: {quick_improvements}
+    - Each improvement is a SPECIFIC INSTRUCTION - execute it EXACTLY
+    - Examples:
+      * "Quantify team size" → Add `<span class="opt-placeholder">[team size]</span>`
+      * "Highlight Python expertise" → Rewrite to emphasize Python skills
+      * "Add metrics to achievements" → Insert placeholders for missing numbers
+    - Mark all modifications with `opt-modified` class
+    - Add `opt-placeholder` for quantification if data not available in original resume
+    
+    ### PHASE 2: Structure Optimization
+    
+    **Education Enhancement Logic:**
+    ```
+    IF education_enhancement_needed = {education_enhancement_needed}:
+      IF true:
+        - Move Education to 4th position (after Core Competencies)
+        - Extract from original_resume and enhance:
+          * GPA (if found and ≥3.0, mark with `opt-modified`; if not found, omit)
+          * Relevant Coursework (if in original, mark `opt-modified`; if not, add placeholder with `opt-new`: [Add 6-8 relevant courses])
+          * Academic Projects (if in original, enhance with `opt-modified`; if not, add placeholder with `opt-new`: [Add 2-3 academic projects])
+      IF false:
+        - Keep Education in 5th position (after Professional Experience)
+        - Use standard format from original_resume: degree, institution, dates
+        - Move any personal projects to Projects section
+    ```
+    
+    **Section Format Specifications:**
+    
+    - **Professional Summary**: 
+      Single paragraph with 2-3 sentences featuring CoreStrengths and missing keywords
+      
+    - **Core Competencies**: 
+      ```html
+      <p><strong>Category Name:</strong> Skill1 • Skill2 • Skill3 • Skill4</p>
+      ```
+      Single line per category, bullet (•) separator between skills
+      
+    - **Professional Experience**:
+      ```html
+      <h3><strong>Job Title</strong></h3>
+      <p><em>Company Name</em> • <em>Location</em> • <em>MMM YYYY - Present</em></p>
+      <ul>
+        <li>Achievement bullet with <strong>keywords</strong> and metrics</li>
+      </ul>
+      ```
+      
+    - **Education**: Apply enhancement rules based on boolean flag
+    
+    - **Projects**: 
+      ```html
+      <h3><strong>Project Name</strong></h3>
+      <p><em>Project Type</em> • <em>Date Range</em></p>
+      <p>Brief description of the project</p>
+      <ul>
+        <li>Technologies: Tech1, Tech2, Tech3</li>
+        <li>Impact: Metrics and outcomes</li>
+      </ul>
+      ```
+      
+    - **Certifications & Achievements**:
+      ```html
+      <h3>Certifications</h3>
+      <ul>
+        <li><strong>Certification Name</strong> - Issuing Organization | Year</li>
+      </ul>
+      <h3>Achievements</h3>
+      <ul>
+        <li><strong>Achievement Title</strong> - Organization | Year</li>
+      </ul>
+      ```
+    
+    - **Custom Sections Handling (Intelligent Decision)**:
+      For each custom_section in {custom_sections}:
+      
+      **Step 1: Relevance Assessment**
+      - Analyze section title and content against job_description
+      - Evaluate relevance through keyword presence and contextual alignment
+      
+      **Step 2: Apply Three-Tier Strategy**
+      
+      **HIGH RELEVANCE (>70% match)** → **Preserve & Optimize**
+      Examples: Publications (research roles), Patents (innovation roles), Speaking (thought leadership)
+      - Keep original section title
+      - Enhance content with Gap Analysis insights
+      - Add relevant keywords naturally
+      - Apply `opt-modified` for enhanced content
+      - Apply `opt-new` for added content
+      
+      **MEDIUM RELEVANCE (30-70% match)** → **Integrate into Standard Sections**
+      Examples: Volunteer → Experience, Research → Projects, Leadership → Experience
+      - Identify best target standard section
+      - Merge content with contextual labels (e.g., "Volunteer", "Research")
+      - Maintain information completeness
+      - Apply `opt-modified` for reorganized content
+      
+      **LOW RELEVANCE (<30% match)** → **Additional Information Section**
+      Examples: Languages, Availability, Hobbies, References
+      - Consolidate into unified "Additional Information" section
+      - Simplify to key facts only
+      - Place at resume end
+      - No CSS class marking (keep minimal)
+      
+      **Step 3: Integration Examples**
+      ```html
+      <!-- High Relevance: Keep & Optimize -->
+      <section>
+        <h2>Publications</h2>
+        <ul>
+          <li class="opt-modified"><strong>Machine Learning in Healthcare</strong> - Enhanced description with relevant keywords from JD</li>
+        </ul>
+      </section>
+      
+      <!-- Medium Relevance: Integrate -->
+      <div class="experience-item">
+        <h3>Tech Mentor (Volunteer) - Code for Good</h3>
+        <p class="opt-modified">Mentored 10+ developers in <strong>Python</strong> and <strong>React</strong>, demonstrating leadership valued for senior roles</p>
+      </div>
+      
+      <!-- Low Relevance: Additional Information -->
+      <section>
+        <h2>Additional Information</h2>
+        <p><strong>Languages:</strong> English (Native), Mandarin (Fluent)</p>
+        <p><strong>Availability:</strong> Immediate</p>
+      </section>
+      ```
+    
+    ### PHASE 3: Content Enhancement Execution
+    
+    **Professional Summary Construction (CoreStrengths + Keywords):**
+    
+    **Content Priority (3-4 sentences max):**
+    1. CoreStrengths (MUST include, 2-3 items) → opt-modified
+    2. QuickImprovement-related keywords → opt-modified  
+    3. Top 1-2 independent keywords → opt-modified
+    4. AVOID KeyGap-related keywords (maintain credibility)
+    
+    **Sentence Pattern:**
+    - Sentence 1: Professional identity + primary CoreStrength
+    - Sentence 2: Secondary CoreStrength + QuickImprovement keywords
+    - Sentence 3: Value proposition + important independent keywords
+    - Sentence 4 (optional): Future direction (if space allows)
+    
+    **Integration Example:**
+    CoreStrengths: ["Python expertise", "Team leadership"]
+    QuickImprovement keywords: ["Python", "Team size"]
+    Independent keywords: ["Cloud", "DevOps"]
+    KeyGap keywords: ["Kubernetes", "ML"] ← NOT in Summary
+    
+    Result:
+    <span class="opt-modified">Senior developer with 8+ years of <strong>Python</strong> expertise leading teams of 15+ engineers</span>.
+    <span class="opt-modified">Proven track record in <strong>Cloud</strong> architecture and <strong>DevOps</strong> transformation</span>.
+    
+    **Other CoreStrength Placements:**
+    - Experience bullets: Reinforce with specific examples
+    - Skills section: List as top items in categories
+    
+    **For Each KeyGap (All Skill Gaps):**
+    1. Select appropriate strategy based on context (NOT rotate mechanically):
+       
+       **Strategy Selection Guide:**
+       - **Assume Competency (30-40% of gaps)**: For CRITICAL job requirements
+         * Use confident, accomplished tone
+         * Verbs: implemented, designed, architected, optimized, delivered
+         * Example: "Architected microservices using Kubernetes..."
+       
+       - **Bridge Skills (40-50% of gaps)**: When related skills exist
+         * Use transitional, connecting language
+         * Phrases: "leveraging X for Y", "extending expertise to", "applying X principles to Y"
+         * Example: "Leveraged Docker expertise to orchestrate with Kubernetes..."
+       
+       - **Growth Area (20-30% of gaps)**: For emerging/specialized skills
+         * Use progressive, learning-oriented tone
+         * Words: developing, expanding, exploring, advancing into
+         * Example: "Expanding into Kubernetes orchestration..."
+    
+    2. **Language Variety Requirements:**
+       - NEVER use the same opening phrase twice
+       - Vary sentence structures (active/passive, simple/complex)
+       - Mix achievement focus with capability statements
+       - Rotate between past accomplishments and forward-looking statements
+    
+    3. ALL KeyGap content uses `<li class="opt-new">` or `<p class="opt-new">`
+    4. Integrate associated missing keywords naturally
+    
+    **For Each QuickImprovement:**
+    1. Locate exact target content as specified in the improvement
+    2. Apply transformation EXACTLY as described
+    3. Mark ALL modifications with `opt-modified` class
+    4. Add `opt-placeholder` for metrics if data not available
+    
+    **Keyword Integration (Smart Allocation Strategy):**
+    
+    **Step 1: Analyze each missing keyword's context**
+    For each keyword in {missing_keywords}:
+    - Check if mentioned in QuickImprovements → Priority for Summary (opt-modified)
+    - Check if related to KeyGaps → Avoid Summary, use in Experience/Projects (opt-new)
+    - Otherwise → Independent keyword for flexible placement
+    
+    **Step 2: Allocation Rules by Context**
+    
+    **Keywords in QuickImprovements:**
+    - Priority placement: Professional Summary
+    - Approach: Enhance existing content
+    - CSS: opt-modified
+    - Example: "Add Python experience" → "8+ years of <strong>Python</strong> expertise"
+    
+    **Keywords in KeyGaps:**
+    - Avoid: Professional Summary (maintains honesty)
+    - Place in: Experience bullets or Projects section
+    - Approach: Use KeyGap strategies (Assume/Bridge/Growth)
+    - CSS: opt-new
+    - Example: "Missing Kubernetes" → Experience: <li class="opt-new">Orchestrated containers with <strong>Kubernetes</strong></li>
+    
+    **Independent Keywords:**
+    - Technical → Core Competencies/Skills
+    - Soft skills → Experience descriptions
+    - Methodology → Experience context
+    - Top 2-3 important ones → Summary if space allows
+    
+    **Step 3: Distribution Guidelines**
+    - Professional Summary: CoreStrengths + QuickImprovement keywords + top independent keywords (max 3-4 total)
+    - Core Competencies: ALL technical keywords regardless of source
+    - Experience: KeyGap keywords + soft skills + methodologies
+    - Projects: Technical KeyGap keywords for learning showcase
+    - Use EXACT keyword format as provided (maintain CI/CD, not CI-CD)
+    
+    ### PHASE 4: Quantification Enhancement
+    
+    Add strategic quantification placeholders:
+    ```html
+    <span class="opt-placeholder">[X% improvement]</span>
+    <span class="opt-placeholder">[team size]</span>
+    <span class="opt-placeholder">[dollar amount]</span>
+    <span class="opt-placeholder">[user/transaction volume]</span>
+    <span class="opt-placeholder">[time period]</span>
+    ```
+    
+    ## COMPREHENSIVE EXAMPLES
+    
+    ### Example 1: Recent Graduate (education_enhancement_needed: true)
+    
+    **Scenario:** CS student applying for ML Engineer role
+    **Gap Analysis:**
+    - CoreStrengths: "🏆 Strong academic ML foundation ⭐ Python programming expertise"
+    - KeyGaps: "📚 Limited production ML experience 🔧 Missing cloud deployment"
+    - QuickImprovements: "🔧 Quantify academic project impacts 📚 Highlight internship tech stack"
+    
+    **Keywords Analysis:**
+    - missing_keywords: ["Python", "TensorFlow", "Cloud", "Docker", "Production ML", "AWS"]
+    - Allocation decisions:
+      * "Python" → In CoreStrengths → Enhance in Summary (opt-modified)
+      * "TensorFlow" → In QuickImprovements (tech stack) → Summary/Skills (opt-modified)
+      * "Production ML" → In KeyGaps → NOT in Summary, use in Experience (opt-new)
+      * "Cloud", "Docker", "AWS" → In KeyGaps → Experience/Projects (opt-new)
+    
+    **Structure Decision:** education_enhancement_needed = true → Education moves to 4th position
+    
+    **Output Example:**
+    ```html
+    <h2>Professional Summary</h2>
+    <p><span class="opt-modified">Recent Computer Science graduate with specialized machine learning expertise and hands-on Python development experience</span>. <span class="opt-new">Developed 3 production-ready ML models during academic projects, including sentiment analysis system achieving 94% accuracy</span>. Seeking to leverage <span class="opt-modified">strong theoretical foundation and practical programming skills</span> in an ML engineering role.</p>
+    
+    <h2>Core Competencies</h2>
+    <p><strong>Machine Learning & Data Science:</strong> <strong>Python</strong> • <strong>TensorFlow</strong> • Scikit-learn • <strong>AWS SageMaker</strong> • Pandas • NumPy</p>
+    <p><strong>Development & Tools:</strong> Git • <strong>Docker</strong> • Jupyter • Linux • <strong>Cloud Deployment</strong></p>
+    
+    <h2>Education</h2>
+    <h3><strong>Bachelor of Science - Computer Science</strong></h3>
+    <p><em>Stanford University</em> • <em>Stanford, CA</em> • <em>Sep 2021 - Jun 2025 (Expected)</em></p>
+    <p><strong>GPA:</strong> <span class="opt-modified">3.85/4.0</span></p> <!-- Extract from original resume if ≥3.0 -->
+    <p><strong>Relevant Coursework:</strong> Machine Learning • Deep Learning • Data Structures • Algorithms • Statistics</p>
+    <p><strong>Academic Projects:</strong></p>
+    <ul>
+    <li class="opt-new"><strong>Sentiment Analysis System</strong> - Built BERT-based model achieving <span class="opt-placeholder">[accuracy %]</span> accuracy on <span class="opt-placeholder">[dataset size]</span> tweets</li>
+    <li class="opt-modified"><strong>Stock Price Predictor</strong> - LSTM model with <span class="opt-placeholder">[accuracy %]</span> on 5-year historical data</li>
+    </ul>
+    
+    <h2>Professional Experience</h2>
+    <h3><strong>Machine Learning Intern</strong></h3>
+    <p><em>TechCorp</em> • <em>Mountain View, CA</em> • <em>Jun 2024 - Aug 2024</em></p>
+    <ul>
+    <li class="opt-modified">Developed Python-based data processing pipeline handling <span class="opt-placeholder">[data volume]</span> daily using TensorFlow and pandas</li>
+    <!-- KeyGap strategies demonstration with variety: -->
+    <li class="opt-new">Architected scalable <strong>production ML systems</strong> with automated model versioning and A/B testing capabilities</li> <!-- Strategy 1: Assume -->
+    <li class="opt-new">Extended academic ML knowledge to <strong>cloud deployment</strong> practices using containerization and CI/CD pipelines</li> <!-- Strategy 2: Bridge -->
+    <li class="opt-new">Advancing into <strong>MLOps</strong> methodologies to streamline model lifecycle management</li> <!-- Strategy 3: Growth -->
+    </ul>
+    
+    <h2>Projects</h2>
+    <h3><strong>ML Competition Platform</strong></h3>
+    <p><em>Personal Project</em> • <em>Aug 2024 - Present</em></p>
+    <p>Open-source platform for hosting machine learning competitions</p>
+    <ul>
+    <li>Technologies: FastAPI, React, PostgreSQL, Docker</li>
+    <li>Impact: 200+ active users, 10+ competitions hosted</li>
+    </ul>
+    
+    <h2>Certifications & Achievements</h2>
+    <h3>Certifications</h3>
+    <ul>
+    <li><strong>AWS Certified Cloud Practitioner</strong> - Amazon Web Services | 2024</li>
+    <li><strong>TensorFlow Developer Certificate</strong> - Google | 2024</li>
+    </ul>
+    <h3>Achievements</h3>
+    <ul>
+    <li><strong>Dean's List</strong> - Stanford University | 2023-2024</li>
+    <li><strong>1st Place</strong> - Stanford AI Hackathon | 2024</li>
+    </ul>
+    ```
+    
+    ### Example 2: Custom Sections Handling
+    
+    **Scenario:** Data Scientist with custom sections applying for ML Engineer role
+    **Custom Sections:** ["Publications", "Conference Speaking", "Languages", "Hobbies"]
+    **Gap Analysis:**
+    - CoreStrengths: "🏆 Published researcher ⭐ Production ML experience"
+    - KeyGaps: "📚 Limited engineering practices 🔧 Missing CI/CD experience"
+    
+    **Custom Sections Processing:**
+    - Publications (HIGH relevance) → Keep & optimize
+    - Conference Speaking (HIGH relevance) → Keep & optimize  
+    - Languages (LOW relevance) → Move to Additional Information
+    - Hobbies (LOW relevance) → Move to Additional Information
+    
+    **Output Example:**
+    ```html
+    <!-- Standard sections first... -->
+    
+    <h2>Publications</h2>
+    <ul>
+    <li class="opt-modified"><strong>"Scalable ML Pipelines for Real-time Inference"</strong> - IEEE Conference 2024. Demonstrated <strong>production ML deployment</strong> techniques using <strong>Docker</strong> and <strong>Kubernetes</strong></li>
+    <li>"Deep Learning for Time Series Forecasting" - Journal of Applied AI 2023</li>
+    </ul>
+    
+    <h2>Conference Speaking</h2>
+    <ul>
+    <li class="opt-modified"><strong>MLOps Summit 2024</strong> - "Building <strong>CI/CD pipelines</strong> for ML Models" - Shared best practices for <span class="opt-new">continuous integration and deployment in machine learning workflows</span></li>
+    </ul>
+    
+    <h2>Additional Information</h2>
+    <p><strong>Languages:</strong> English (Native), Spanish (Fluent), Mandarin (Conversational)</p>
+    <p><strong>Interests:</strong> Open source contribution, Tech blogging, Marathon running</p>
+    ```
+    
+    ### Example 3: Experienced Professional (education_enhancement_needed: false)
+    
+    **Scenario:** Senior developer transitioning to ML role
+    **Gap Analysis:**
+    - CoreStrengths: "🏆 10+ years Python leadership ⭐ System architecture expertise"
+    - KeyGaps: "📚 Missing ML/AI experience 🔧 Limited cloud-native architecture"
+    - QuickImprovements: "🔧 Highlight data processing as ML-adjacent 💼 Quantify team sizes"
+    
+    **Structure Decision:** education_enhancement_needed = false → Standard section ordering
+    
+    **Output Example:**
+    ```html
+    <h2>Professional Summary</h2>
+    <p><span class="opt-modified">Senior Python architect with 10+ years leading development teams and scaling systems to serve millions of users</span>. <span class="opt-new">Expanding expertise into machine learning applications</span> with recent focus on data analytics and automated processing systems. <span class="opt-modified">Proven track record delivering enterprise-scale solutions and mentoring high-performing engineering teams</span>.</p>
+    
+    <h2>Core Competencies</h2>
+    <p><strong>Technical Leadership:</strong> <strong>Python</strong> • System Architecture • <strong>Machine Learning</strong> (developing) • Team Management</p>
+    <p><strong>Cloud & Infrastructure:</strong> <strong>AWS</strong> • <strong>Docker</strong> • <strong>Kubernetes</strong> (learning) • CI/CD</p>
+    
+    <h2>Professional Experience</h2>
+    <h3><strong>Senior Engineering Manager</strong></h3>
+    <p><em>TechCorp</em> • <em>Seattle, WA</em> • <em>Jan 2020 - Present</em></p>
+    <ul>
+    <li class="opt-modified">Led team of <span class="opt-placeholder">[team size]</span> Python engineers building data processing systems handling <span class="opt-placeholder">[volume]</span> daily transactions</li>
+    <li class="opt-new">Architected analytics pipeline using Python and statistical analysis methods, <strong>laying foundation for future ML implementations</strong></li>
+    <li class="opt-modified">Scaled system architecture to support <span class="opt-placeholder">[user volume]</span> concurrent users with 99.9% uptime</li>
+    </ul>
+    
+    <h2>Education</h2>
+    <h3><strong>Master of Science - Computer Science</strong></h3>
+    <p><em>University of Washington</em> • <em>Seattle, WA</em> • <em>Sep 2012 - Jun 2014</em></p>
+    <p><strong>Specialization:</strong> Distributed Systems and Data Processing</p>
+    <h3><strong>Bachelor of Science - Computer Engineering</strong></h3>
+    <p><em>University of Washington</em> • <em>Seattle, WA</em> • <em>Sep 2008 - Jun 2012</em></p>
+    
+    <h2>Projects</h2>
+    <h3><strong>Data Pipeline Optimizer</strong></h3>
+    <p><em>Open Source Project</em> • <em>Mar 2024 - Present</em></p>
+    <p>Tool for optimizing Apache Spark pipelines with ML-based recommendations</p>
+    <ul>
+    <li>Technologies: Python, Spark, scikit-learn, Flask</li>
+    <li>Impact: 30% average performance improvement, 500+ GitHub stars</li>
+    </ul>
+    
+    <h2>Certifications & Achievements</h2>
+    <h3>Certifications</h3>
+    <ul>
+    <li><strong>AWS Solutions Architect Professional</strong> - Amazon Web Services | 2022</li>
+    <li><strong>Project Management Professional (PMP)</strong> - PMI | 2019</li>
+    </ul>
+    <h3>Achievements</h3>
+    <ul>
+    <li><strong>Engineering Excellence Award</strong> - TechCorp | 2023</li>
+    <li><strong>Patent Holder</strong> - Distributed Data Processing System | 2021</li>
+    </ul>
+    ```
+    
+    ## SUCCESS VALIDATION CHECKLIST
+    
+    Before returning response, verify:
+    ✅ ALL Gap Analysis insights implemented (CoreStrengths, KeyGaps, QuickImprovements)
+    ✅ Section ordering matches education_enhancement_needed boolean
+    ✅ Custom sections processed intelligently (keep/integrate/consolidate based on relevance)
+    ✅ CSS classes applied correctly: opt-modified, opt-new, opt-placeholder
+    ✅ Missing keywords integrated naturally with appropriate emphasis
+    ✅ Quantification placeholders added strategically
+    ✅ Resume Format V3 compliance (unified project placement, dynamic ordering)
+    ✅ No fabricated content - authenticity maintained
+    ✅ Applied improvements tracking comprehensive and specific
+    ✅ Additional Information section created if low-relevance custom sections exist
+    
+    ## Required JSON Output Structure
+    
+    Return EXACTLY this format:
+    
+    ```json
+    {{
+      "optimized_resume": "<complete HTML resume with CSS classes and Format V3 compliance>",
+      "applied_improvements": [
+        "[CoreStrength: specific item] Enhanced in: specific locations with specific changes",
+        "[KeyGap: skill name] Resolved by: specific strategy and implementation",
+        "[QuickImprovement: specific action] Applied: exact change made to exact content",
+        "[Missing Keyword: term] Integrated in: section name naturally as part of content",
+        "[Structure: Education] Enhanced/Standard format applied based on education_enhancement_needed={boolean}",
+        "[Quantification: metric type] Added placeholder in: specific location for specific purpose"
+      ]
+    }}
+    ```
+    
+    ## Language Requirements
+    
+    **CRITICAL**: All resume content in {output_language}
+    - Traditional Chinese (繁體中文): Professional Traditional Chinese
+    - English: Professional American English  
+    - HTML/CSS tags and applied_improvements tracking remain in English
+
+# Output Requirements Summary
+required_json_fields:
+  - optimized_resume (string with HTML, Resume Format V3 compliant)
+  - applied_improvements (array of strings with specific tracking format)
+
+required_css_classes:
+  - opt-modified (Enhancements to existing content from CoreStrengths, QuickImprovements, and independent keywords)
+  - opt-new (Entirely new content for KeyGaps - skills confirmed missing by Gap Analysis)
+  - opt-placeholder (Data points user needs to fill in - team sizes, percentages, metrics)
+
+css_class_decision_tree: |
+  For each modification:
+  1. Is it enhancing a CoreStrength? → opt-modified
+  2. Is it executing a QuickImprovement? → opt-modified
+  3. Is it adding content for a KeyGap? → opt-new
+  4. Is it a metric/number placeholder? → opt-placeholder
+  5. Is it integrating an independent keyword into existing text? → opt-modified
+  
+  NEVER: opt-modified for KeyGaps, opt-new for CoreStrengths
+
+validation_requirements:
+  - json_structure: Must match exact format specified
+  - css_mapping: Gap Analysis insights correctly mapped to CSS classes
+  - tracking_format: Specific format "[Type: Item] Action: specific details"
+  - language_consistency: All content in specified output_language
+  - format_v3_compliance: Dynamic section ordering, unified project placement
+  - education_enhancement: Correctly applied based on resume_structure boolean
+  - authenticity: No fabricated experience, education, or certifications

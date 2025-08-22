@@ -263,6 +263,18 @@ X-API-Key: [YOUR_API_KEY]
 - 包含各階段執行時間：keyword_matching, embedding_generation, index_calculation, gap_analysis, course_availability, structure_analysis, pgvector_warmup
 - 總執行時間和並行處理效率指標
 
+**版本更新 (2025-08-21 - Education Enhancement)** 🎓
+- **Education Enhancement 智慧決策**：新增履歷結構分析中的教育背景強化邏輯
+- **四大判斷條件**：工作經驗 < 2年、目前學生、畢業未滿12個月、僅有實習經驗
+- **metadata 欄位擴充**：
+  - `years_of_experience`: 全職工作年數（排除實習）
+  - `is_current_student`: 是否為在學學生
+  - `months_since_graduation`: 畢業月數（可為 null）
+  - `has_only_internships`: 是否只有實習經驗
+- **education_enhancement_needed**: 最終 Education Enhancement 決策結果
+- **Prompt v1.0.2 啟用**：整合 Education Enhancement 指標計算邏輯
+- **V3 True Parallel 架構**：真正並行處理，structure_analysis 與其他任務同步執行
+
 **請求參數**
 ```json
 {
@@ -278,84 +290,93 @@ X-API-Key: [YOUR_API_KEY]
 {
   "success": true,
   "data": {
-    "raw_similarity_percentage": 65,
-    "similarity_percentage": 75,
+    "raw_similarity_percentage": 41,
+    "similarity_percentage": 63,
     "keyword_coverage": {
-      "total_keywords": 20,
-      "covered_count": 15,
-      "coverage_percentage": 75,
-      "covered_keywords": ["Python", "API development"],
-      "missed_keywords": ["Docker", "Kubernetes"]
+      "total_keywords": 5,
+      "covered_count": 1,
+      "coverage_percentage": 20,
+      "covered_keywords": ["Python"],
+      "missed_keywords": ["FastAPI", "REST API", "Cloud", "Docker"]
     },
     "gap_analysis": {
-      "CoreStrengths": "<ul><li>Strong Python background</li><li>API development experience</li></ul>",
-      "KeyGaps": "<ul><li>[Skill Gap] Container orchestration (Docker/Kubernetes) - No orchestration experience found</li><li>[Presentation Gap] Cloud deployment - Has AWS experience but not explicitly mentioned</li></ul>",
-      "QuickImprovements": "<ul><li>Add 'AWS' explicitly to skills section</li><li>Complete Docker fundamentals course</li></ul>",
-      "OverallAssessment": "<p>Good foundation with 75% match. Focus on DevOps skills to reach 90%+.</p>",
+      "CoreStrengths": "<ol><li>🏆 Top Match: Demonstrated expertise in data processing, visualization, and interpretation, supporting executive decision-making and business growth through advanced analytics and KPI dashboards.</li><li>⭐ Key Strength: Strong SQL and MySQL proficiency, evidenced by hands-on experience in data management projects and the design of P&L databases and dashboards for large-scale product lines.</li><li>⭐ Key Strength: Deep experience in project management and cross-functional collaboration, including leading teams, coordinating with IT, and managing complex product development initiatives in automotive and consumer sectors.</li></ol>",
+      "KeyGaps": "<ol><li>🔧 <b>FastAPI & REST API</b>: Not evident in resume. If experienced, add immediately. Otherwise, budget 2-3 months to learn modern API frameworks and integration.</li><li>🔧 <b>Cloud Platforms</b>: No trace found. Either a resume gap to fix, or requires 3-4 months training in AWS, Azure, or GCP for data management and deployment.</li><li>🔧 <b>Docker & Containerization</b>: Absent from current resume. Possibly overlooked? Add it, or plan 2-3 months to develop containerization and orchestration skills.</li></ol>",
+      "QuickImprovements": "<ol><li>🔧 <b>Highlight \"REST API\" Experience</b>: If you have worked with APIs during data integration or dashboard development, add \"REST API integration for data pipelines and reporting\" to your Skills section and reference in relevant project bullet points.</li><li>🔧 <b>Surface \"Cloud\" Experience</b>: If you have used cloud-based tools (e.g., Tableau Online, cloud-hosted databases), specify \"Cloud data analytics platforms (e.g., Tableau Online, MySQL Cloud)\" in your Skills section and mention cloud deployment in project descriptions.</li><li>🔧 <b>Add \"Docker\" to Skills Section</b>: If you have automated deployment or managed environments, include \"Docker: Container deployment and orchestration\" in Skills and reference any related automation in project management bullets.</li></ol>",
+      "OverallAssessment": "[V2.1.8-100W] You have good alignment for the Data Analyst role, with strong data analysis, SQL, and project management experience. However, gaps in modern API frameworks (FastAPI, REST API), cloud platforms, and containerization (Docker) must be addressed for full readiness. First, optimize your resume to surface any hidden experience with APIs, cloud, or containerization. Then, invest 3-6 months in targeted upskilling through hands-on projects and online courses. With focused effort, you can strengthen your technical profile and become a competitive candidate for data-driven roles in SaaS and life sciences.",
       // Skill categories explanation (v2.1.8+):
       // - SKILL: Quick-learn skills via single course (1-3 months)
       // - FIELD: Requires specialization/certification (6+ months)
       "SkillSearchQueries": [
         {
-          "skill_name": "React",
+          "skill_name": "FastAPI & REST API Frameworks",
           "skill_category": "SKILL",
-          "description": "Frontend framework for building interactive user interfaces required for full-stack role",
+          "description": "Learn to design, build, and integrate modern APIs for scalable data pipelines and analytics applications.",
           "has_available_courses": true,
           "course_count": 25,
           "available_course_ids": [
-            "coursera_crse:v1-2598",
-            "coursera_crse:v1-2599",
-            "coursera_spzn:react-basics",
-            "coursera_crse:v1-2601",
-            "coursera_crse:v1-2602"
+            "coursera_crse:dQxbeqjfEeywagovoAKHOQ",
+            "coursera_crse:BEUHr70KEe-LvhIuPUA7nw",
+            "coursera_crse:JCbeFVUAEeulPAroU7-MFQ",
+            "coursera_crse:Eg_J1V1hEe-vHBLsSjPJnw",
+            "coursera_crse:veV0Fh6fEfC5wQ7Ux-t3bw"
             // ... up to 25 course IDs
           ]
         },
         {
-          "skill_name": "Kubernetes",
-          "skill_category": "FIELD", 
-          "description": "Container orchestration platform essential for modern DevOps practices",
+          "skill_name": "Cloud Platforms (AWS, Azure, GCP)",
+          "skill_category": "SKILL",
+          "description": "Gain proficiency in deploying, managing, and analyzing data using leading cloud services for enterprise solutions.",
           "has_available_courses": true,
-          "course_count": 12,
+          "course_count": 25,
           "available_course_ids": [
-            "coursera_spzn:kubernetes-engine",
-            "coursera_crse:v1-1234",
-            "coursera_crse:v1-1235"
+            "coursera_crse:oI7VwBJ6Ee-r_Ar_6dbL9Q",
+            "coursera_spzn:QroLL3-XEeu17gr5PLNEuQ",
+            "coursera_crse:ALMS0NyJEe6J_wr_0biVVQ",
+            "coursera_crse:PrflEV_QEe-vHBLsSjPJnw",
+            "coursera_crse:9txV54HFEe-uPQ6cY8b-gw"
+            // ... up to 25 course IDs
           ]
         },
         {
-          "skill_name": "AWS",
-          "skill_category": "FIELD",
-          "description": "Cloud platform knowledge required for deploying and managing applications", 
+          "skill_name": "Docker & Containerization",
+          "skill_category": "SKILL",
+          "description": "Master container creation, orchestration, and deployment workflows for efficient data operations and reproducible environments.",
           "has_available_courses": true,
-          "course_count": 18,
+          "course_count": 25,
           "available_course_ids": [
-            "coursera_spzn:aws-fundamentals",
-            "coursera_crse:v1-3001",
-            "coursera_crse:v1-3002",
-            "coursera_crse:v1-3003"
+            "coursera_crse:bkM_lRGtEe-zqA6_zzhdJQ",
+            "coursera_crse:IftJTkUoEfClyxI_Dgx85Q",
+            "coursera_crse:bjkOnvoIEe-glg6vww23RQ",
+            "coursera_crse:FVsG5P-dEe-m2BKpUCEabw",
+            "coursera_crse:UQ1bm74iEe-LvhIuPUA7nw"
+            // ... up to 25 course IDs
           ]
         }
       ]
     },
     "resume_structure": {
       "standard_sections": {
-        "summary": "Professional Summary",
-        "skills": "Technical Skills",
+        "summary": "Personal Summary",
+        "skills": "Skill", 
         "experience": "Work Experience",
-        "education": "Education",
-        "certifications": null,
-        "projects": null
+        "education": "Education Background",
+        "certifications": "Certification",
+        "projects": "Personal Project"
       },
-      "custom_sections": ["Languages", "Publications"],
+      "custom_sections": [],
       "metadata": {
-        "total_experience_entries": 3,
-        "total_education_entries": 1,
+        "total_experience_entries": 5,
+        "total_education_entries": 3,
         "has_quantified_achievements": true,
-        "estimated_length": "2 pages"
-      }
-    }
-  },
+        "estimated_length": "long",
+        "years_of_experience": 19,
+        "is_current_student": true,
+        "months_since_graduation": null,
+        "has_only_internships": false
+      },
+      "education_enhancement_needed": true
+    },
   "error": {
     "has_error": false,
     "code": "",
@@ -369,20 +390,49 @@ X-API-Key: [YOUR_API_KEY]
     "actual_extracted": 0,
     "suggestion": ""
   },
-  "timestamp": "2025-08-15T10:30:00.000Z",
+  "timestamp": "2025-08-21T05:29:56.574338",
   "metadata": {
+    "version": "3.0",
+    "language_detected": "en",
+    "processing_approach": "v3_true_parallel",
+    "optimization": "Plan B - Gap starts after keywords only",
     "phase_timings_ms": {
-      "keyword_matching": 15,
-      "embedding_generation": 450,
-      "index_calculation": 320,
-      "gap_analysis": 1800,
-      "course_availability": 250,
-      "structure_analysis": 180,
-      "pgvector_warmup": 45
+      "embedding_generation": 154.5,
+      "index_calculation": 152.86,
+      "gap_analysis": 7969.78
     },
-    "total_time_ms": 3060,
-    "parallel_efficiency": 85.2,
-    "resource_pool_used": true
+    "detailed_timings_ms": {
+      "total_time": 8277.15,
+      "keyword_matching_time": 15.97,
+      "embedding_time": 154.5,
+      "index_calculation_time": 152.86,
+      "gap_analysis_time": 7969.78,
+      "course_availability_time": 1493.54,
+      "structure_analysis_time": 1767.76,
+      "structure_wait_time": 8003.01,
+      "pgvector_warmup_time": 1229.05
+    },
+    "execution_timeline": {
+      "parallel_tasks": {
+        "keywords": {"start": 0, "end": 15.97},
+        "embeddings": {"start": 0, "end": 154.5},
+        "structure_analysis": {
+          "start": 0,
+          "end": 1767.76,
+          "wait_time": 8003.01,
+          "actual_completed": true
+        },
+        "pgvector_warmup": {"start": 0, "end": 1229.05}
+      },
+      "sequential_tasks": {
+        "index_calculation": {"start": 154.5, "end": 307.36},
+        "gap_analysis": {"start": 307.36, "end": 8277.14},
+        "course_availability": {"start": 8277.14, "end": 8277.15}
+      }
+    },
+    "parallel_efficiency": 0,
+    "resource_pool_used": true,
+    "structure_analysis_enabled": true
   }
 }
 ```
