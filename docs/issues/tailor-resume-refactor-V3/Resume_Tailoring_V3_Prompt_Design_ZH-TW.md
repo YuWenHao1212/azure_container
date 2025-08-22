@@ -357,9 +357,20 @@ user: |
 
 ### 處理責任
 - **Education** (根據 enhancement flag)
-- **Projects** 
+- **Projects** (ONLY personal/side projects)
 - **Certifications**
 - **所有 Custom Sections**
+
+### 🚨 專案放置核心規則
+```
+┌─────────────────────────────────────────────┐
+│ Project Type → Correct Section              │
+├─────────────────────────────────────────────┤
+│ Work/Client → Experience ✓ (DON'T MOVE)     │
+│ Academic    → Education ✓ (IF ENHANCED)     │
+│ Personal    → Projects ✓ (ONLY THESE)       │
+└─────────────────────────────────────────────┘
+```
 
 ### 決策流程圖
 
@@ -368,24 +379,27 @@ graph TD
     Start[LLM 2 開始] --> ProcessEdu[Step 1: 處理 Education]
     
     ProcessEdu --> CheckEnhance{Enhancement Flag?}
-    CheckEnhance -->|true| UseEnhanced[使用 Enhanced 模板<br/>加入 GPA, Coursework<br/>Academic Projects, Activities<br/>標記 opt-new/modified]
+    CheckEnhance -->|true| UseEnhanced[使用 Enhanced 模板<br/>**僅最高學歷**<br/>加入 GPA, Coursework<br/>Academic Projects, Activities<br/>標記 opt-new/modified]
     CheckEnhance -->|false| UseStandard[使用 Standard 模板<br/>基本學歷資訊<br/>標記 opt-modified]
     
     UseEnhanced --> ProcessProjects
     UseStandard --> ProcessProjects
     
-    ProcessProjects[Step 2: 處理 Projects] --> CheckProjects{有 Projects?}
-    CheckProjects -->|Yes| UpdateProj[更新現有<br/>class=opt-modified]
-    CheckProjects -->|No & KeyGaps需要| CreateProj[建立展示學習<br/>class=opt-new]
-    CheckProjects -->|No| SkipProj[跳過]
+    ProcessProjects[Step 2: 處理 Projects] --> PreCheck[⚠️ PRE-CHECK:<br/>Projects = Personal ONLY<br/>NO work projects<br/>NO academic projects]
+    
+    PreCheck --> FilterProjects[過濾專案類型]
+    FilterProjects --> CheckPersonal{有個人專案?}
+    CheckPersonal -->|Yes| UpdateProj[更新現有個人專案<br/>class=opt-modified]
+    CheckPersonal -->|No & KeyGaps需要| CreateLearning[建立學習專案<br/>展示主動學習<br/>class=opt-new]
+    CheckPersonal -->|No| SkipProj[跳過 Projects section]
     
     UpdateProj --> ProcessCert
-    CreateProj --> ProcessCert
+    CreateLearning --> ProcessCert
     SkipProj --> ProcessCert
     
     ProcessCert[Step 3: 處理 Certifications] --> CheckCert{有認證?}
     CheckCert -->|Yes| UpdateCert[更新優化<br/>class=opt-modified]
-    CheckCert -->|No| SuggestCert[建議相關認證<br/>class=opt-new]
+    CheckCert -->|No| SuggestCert[建議相關認證<br/>標記 In Progress/Planned<br/>class=opt-new]
     
     UpdateCert --> ProcessCustom
     SuggestCert --> ProcessCustom
@@ -393,16 +407,32 @@ graph TD
     ProcessCustom[Step 4: 處理 Custom Sections] --> EachCustom[逐個評估]
     
     EachCustom --> Evaluate{與 JD 相關性?}
-    Evaluate -->|High| Keep[保留優化<br/>可能重命名<br/>class=opt-modified]
-    Evaluate -->|Low| Remove[刪除]
+    Evaluate -->|Score ≥ 7| Keep[保留優化<br/>可能重命名<br/>class=opt-modified]
+    Evaluate -->|Score 4-6| Consider[評估整合<br/>有用內容移到<br/>其他 sections]
+    Evaluate -->|Score < 4| Remove[刪除]
     
     Keep --> Next{更多 Custom?}
+    Consider --> Next
     Remove --> Next
     Next -->|Yes| EachCustom
     Next -->|No| Track
     
-    Track[生成 tracking] --> OutputXML[輸出 XML with CSS]
+    Track[生成 tracking:<br/>記錄過濾的專案<br/>記錄保留/刪除的 sections] --> OutputXML[輸出 XML with CSS]
 ```
+
+### 📝 Education Enhancement 重要說明
+
+**關鍵規則**：Education Enhancement (無論 Standard 或 Enhanced 模式) **只適用於最高學歷**
+- **最高學歷**：獲得完整優化處理
+  - Standard 模式：加入相關課程 (Coursework) 和論文/專案
+  - Enhanced 模式：加入 GPA、Coursework、Academic Projects、Leadership & Activities
+- **其他學歷**：僅保留基本資訊 (學位、學校、日期)
+  - 不加入任何額外內容
+  - 保持簡潔格式
+
+**範例**：如果有碩士和學士學位
+- 碩士（最高學歷）→ 完整優化處理
+- 學士（其他學歷）→ 僅基本資訊
 
 ### LLM 2 Prompt 結構
 
@@ -411,11 +441,26 @@ system: |
   You are an Additional Content Manager handling Education, Projects, 
   Certifications, and ALL Custom Sections.
   
+  ## 🚨 CRITICAL PROJECT PLACEMENT RULES 🚨
+  ┌─────────────────────────────────────────────┐
+  │ Project Type → Correct Section              │
+  ├─────────────────────────────────────────────┤
+  │ Work/Client → Experience ✓ (DON'T MOVE)     │
+  │ Academic    → Education ✓ (IF ENHANCED)     │
+  │ Personal    → Projects ✓ (ONLY THESE)       │
+  └─────────────────────────────────────────────┘
+  
   ## Your Responsibilities
   1. Process Education based on enhancement flag
-  2. Handle Projects section (create if needed for KeyGaps)
+  2. Handle Projects section (ONLY personal/side projects)
   3. Optimize Certifications
   4. Evaluate and manage ALL Custom Sections
+  
+  ## Common Mistakes to AVOID ❌
+  1. DON'T move work projects from Experience to Projects
+  2. DON'T duplicate academic projects in Projects section
+  3. DON'T include internship projects in Projects
+  4. DON'T create Projects if only work/academic projects exist
   
   ## CSS Marking Rules
   - opt-modified: Enhanced existing content
@@ -450,7 +495,7 @@ user: |
     Use Enhanced Template:
     - Add GPA (if >= 3.0)
     - Add Relevant Coursework (6-8 courses)
-    - Add Academic Projects (max 3)
+    - Add Academic Projects (max 3) → STAY IN EDUCATION
     - Add Leadership & Activities
     - Mark new content with opt-new
   else:
@@ -460,26 +505,30 @@ user: |
     - Mark modifications with opt-modified
   
   ### Step 2: Projects Processing
-  1. Check if Projects section exists
-  2. If KeyGaps need demonstration → Create Projects
-  3. Showcase learning initiatives or side projects
-  4. Mark appropriately
+  ⚠️ PRE-CHECK: Filter project types first!
+  1. EXCLUDE work projects (keep in Experience)
+  2. EXCLUDE academic projects (keep in Education if Enhanced)
+  3. INCLUDE ONLY personal/side/open-source projects
+  4. If no personal projects but KeyGaps exist → Create learning projects
+  5. Mark appropriately (opt-modified or opt-new)
   
   ### Step 3: Certifications Processing
   1. Update existing certifications
   2. Suggest relevant certifications for KeyGaps
-  3. Mark changes
+  3. Mark as "In Progress" or "Planned"
+  4. Mark changes (opt-modified or opt-new)
   
   ### Step 4: Custom Sections Processing
   For each custom section:
-    1. Evaluate relevance to job description
-    2. High relevance → Keep and optimize (may rename)
-    3. Low relevance → Remove
-    4. Mark all changes
+    1. Calculate relevance score (0-10)
+    2. Score ≥ 7 → Keep and optimize (may rename)
+    3. Score 4-6 → Consider integration elsewhere
+    4. Score < 4 → Remove
+    5. Mark all changes
   
   ## Output Format
   <education class="...">...</education>
-  <projects class="...">...</projects>
+  <projects class="..."><!-- Only personal projects --></projects>
   <certifications class="...">...</certifications>
   <custom>
     <section title="Publications" class="opt-modified">...</section>
@@ -488,10 +537,12 @@ user: |
   
   ## Tracking Format
   [
-    "[Education] Enhanced: Added GPA, coursework, and activities",
-    "[Projects] Created: Added 2 learning projects for KeyGaps",
-    "[Custom: Publications] Retained: High relevance to research role",
-    "[Custom: Hobbies] Removed: Low relevance"
+    "[Education] Enhanced: Added GPA, 6 courses, 2 academic projects, 2 activities",
+    "[Projects] Filtered: excluded work and academic projects",
+    "[Projects] Enhanced: 1 personal project updated, 1 learning project created",
+    "[Certifications] Suggested: AWS and Docker certifications for gaps",
+    "[Custom: Publications] Retained: High relevance (score 8/10)",
+    "[Custom: Hobbies] Removed: Low relevance (score 2/10)"
   ]
 ```
 
@@ -673,11 +724,19 @@ def post_process(llm1_output, llm2_output, request):
 
 ## 📝 版本歷史
 
-- **v3.1.0** (2025-08-22): 2 LLM Pipeline 架構設計
+- **v3.1.0** (2025-08-22): 2 LLM Pipeline 架構設計，加強專案放置規則
 - **v3.0.0** (2025-08-21): 單 LLM 架構（已廢棄）
 - **v2.1.0** (2025-08): 雙階段架構（現有）
+
+### v3.1.0 重要更新
+- ✅ 加入視覺化專案放置規則卡
+- ✅ LLM 2 決策流程加入 PRE-CHECK 步驟
+- ✅ 明確區分 Work/Academic/Personal 專案處理
+- ✅ Custom Sections 相關性評分機制 (0-10)
+- ✅ Tracking 記錄過濾的專案類型
+- ✅ 明確 Education Enhancement 只適用於最高學歷
 
 ---
 
 **維護者**: AIResumeAdvisor Team
-**狀態**: 架構設計完成，待實作
+**狀態**: 架構設計完成，Prompt YAML 已實作
