@@ -91,13 +91,29 @@ class ResumeTailoringServiceV31:
             logger.info("Starting v3.1.0 pre-processing")
 
             # Extract components from original_index
-            keyword_coverage = original_index.get("keyword_coverage", {})
-            gap_analysis = original_index.get("gap_analysis", {})
-            resume_structure = original_index.get("resume_structure", {})
-
-            # Extract keywords
-            covered_keywords = keyword_coverage.get("covered_keywords", [])
-            missed_keywords = keyword_coverage.get("missed_keywords", [])
+            # Handle both formats: nested (from Gap Analysis API) and flat (from Bubble.io)
+            if "keyword_coverage" in original_index:
+                # Nested format from Gap Analysis API
+                keyword_coverage = original_index.get("keyword_coverage", {})
+                gap_analysis = original_index.get("gap_analysis", {})
+                resume_structure = original_index.get("resume_structure", {})
+                covered_keywords = keyword_coverage.get("covered_keywords", [])
+                missed_keywords = keyword_coverage.get("missed_keywords", [])
+            else:
+                # Flat format from Bubble.io
+                keyword_coverage = {
+                    "covered_keywords": original_index.get("covered_keywords", []),
+                    "missed_keywords": original_index.get("missing_keywords", []),
+                    "coverage_percentage": original_index.get("coverage_percentage", 0)
+                }
+                gap_analysis = {
+                    "core_strengths": original_index.get("core_strengths", []),
+                    "key_gaps": original_index.get("key_gaps", []),
+                    "quick_improvements": original_index.get("quick_improvements", [])
+                }
+                resume_structure = {}  # Not provided in flat format
+                covered_keywords = original_index.get("covered_keywords", [])
+                missed_keywords = original_index.get("missing_keywords", [])
 
             # Prepare data bundles for parallel LLMs
             bundle1, bundle2 = self._allocate_bundles(
@@ -560,8 +576,19 @@ class ResumeTailoringServiceV31:
 
         try:
             # Get before metrics from original_index
-            keyword_coverage_before = original_index.get("keyword_coverage", {})
-            similarity_before = original_index.get("similarity_percentage", 0)
+            # Handle both formats: nested and flat
+            if "keyword_coverage" in original_index:
+                # Nested format from Gap Analysis API
+                keyword_coverage_before = original_index.get("keyword_coverage", {})
+                similarity_before = original_index.get("similarity_percentage", 0)
+            else:
+                # Flat format from Bubble.io
+                keyword_coverage_before = {
+                    "covered_keywords": original_index.get("covered_keywords", []),
+                    "missed_keywords": original_index.get("missing_keywords", []),
+                    "coverage_percentage": original_index.get("coverage_percentage", 0)
+                }
+                similarity_before = original_index.get("similarity_percentage", 0)
 
             # Calculate after metrics using IndexCalculationServiceV2
             after_result = await self.index_service.calculate_index(
@@ -574,9 +601,9 @@ class ResumeTailoringServiceV31:
             # Extract after metrics
             keyword_coverage_after = after_result["keyword_coverage"]
 
-            # Apply sigmoid transform to similarity (like in IndexCalculationServiceV2)
-            raw_similarity_after = after_result.get("raw_similarity", 0)
-            similarity_after = self.index_service._sigmoid_transform(raw_similarity_after)
+            # Get similarity from after_result (already transformed by IndexCalculationServiceV2)
+            # IndexCalculationServiceV2 returns both raw and transformed similarity
+            similarity_after = after_result.get("similarity_percentage", 0)
 
             # Build Keywords metrics
             kw_before_covered = keyword_coverage_before.get("covered_keywords", [])
