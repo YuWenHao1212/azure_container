@@ -10,7 +10,7 @@ def ensure_bubble_compatibility(data: dict[str, Any]) -> dict[str, Any]:
     Ensure response format is compatible with Bubble.io requirements.
 
     Key behaviors:
-    - Preserves empty arrays (doesn't convert to null)
+    - Converts empty arrays to [""] for Bubble.io schema consistency
     - Ensures consistent field structure
     - Maintains type consistency for schema inference
 
@@ -24,9 +24,12 @@ def ensure_bubble_compatibility(data: dict[str, Any]) -> dict[str, Any]:
     def process_value(value: Any) -> Any:
         """Recursively process values to ensure compatibility."""
         if isinstance(value, list):
-            # Always preserve lists, even if empty
-            # This helps Bubble.io infer the correct schema
-            return value if value is not None else []
+            # Convert empty arrays to [""] for Bubble.io compatibility
+            # Bubble.io has issues with empty arrays in schema inference
+            if len(value) == 0:
+                return [""]
+            # Process list items recursively
+            return [process_value(item) for item in value]
         elif isinstance(value, dict):
             # Recursively process nested dictionaries
             return {k: process_value(v) for k, v in value.items()}

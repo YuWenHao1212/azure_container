@@ -1,0 +1,17 @@
+{
+  "job_description": "We are seeking a Python developer with Django expertise for backend development. The ideal candidate should have experience with Python and Django framework.",
+  "original_resume": "<html><body><div><h1>Software Engineer</h1><p>Experienced Python developer with Django framework expertise.</p></div></body></html>",
+  "original_index": {
+    "core_strengths": "<ul><li>Python and Django expertise</li></ul>",
+    "key_gaps": "<ul><li>No specific gaps identified</li></ul>",
+    "quick_improvements": "<ul><li>Consider adding more metrics</li></ul>",
+    "covered_keywords": ["Python", "Django"],
+    "missing_keywords": [],
+    "coverage_percentage": 100,
+    "similarity_percentage": 85
+  },
+  "options": {
+    "language": "en",
+    "include_visual_markers": true
+  }
+}
