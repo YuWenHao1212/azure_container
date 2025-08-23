@@ -261,6 +261,41 @@ prompts:
     KeyGaps: {key_gaps}
     QuickImprovements: {quick_improvements}
     
+    ## UNIFIED QUICKIMPROVEMENTS PROCESSOR
+    
+    **Pre-categorize QuickImprovements by section (Process once, use everywhere):**
+    ```
+    QI_MAP = categorize_improvements(QuickImprovements):
+      education: improvements containing ["education", "degree", "coursework", "GPA", "thesis", "academic"]
+      projects: improvements containing ["project", "GitHub", "portfolio", "demo", "repository", "code"]  
+      certifications: improvements containing ["certification", "credential", "license", "cert", "qualified"]
+      general: all other improvements
+    ```
+    
+    **Apply in each section:**
+    - Education → Use QI_MAP.education
+    - Projects → Use QI_MAP.projects
+    - Certifications → Use QI_MAP.certifications
+    - All sections → Consider QI_MAP.general
+    
+    ## CSS CLASS APPLICATION RULES
+    
+    **Universal CSS marking based on content source:**
+    - CoreStrengths/QuickImprovements → class="opt-modified" (優化現有證據)
+    - KeyGaps (no evidence) → class="opt-new" (填補技能缺口)
+    - Placeholders for user input → class="opt-placeholder" ([X], [Y], etc.)
+    - Unchanged original content → No CSS class
+    
+    **Decision Logic:**
+    IF content from CoreStrengths OR QuickImprovements:
+      → Use class="opt-modified" (enhancing existing evidence)
+    ELIF content from KeyGaps AND no supporting evidence:
+      → Use class="opt-new" (bridging skill gaps)
+    ELIF placeholder for user input:
+      → Use class="opt-placeholder" ([X], [Y], etc.)
+    ELSE (original unchanged):
+      → No CSS class needed
+    
     ## Keywords
     Covered (maintain): {covered_keywords}
     Missing (integrate): {missing_keywords}
@@ -332,90 +367,54 @@ prompts:
     - Choose Option 1 for traditional roles requiring degrees
     - Choose Option 2 for roles emphasizing skills over formal education
     
-    **C. Enhanced Education Processing (for recent grads/students):**
+    **C. Enhanced Education Components:**
     
-    **CRITICAL: Only enhance the HIGHEST degree, other degrees remain basic format**
+    **When education_enhancement_needed = true, add to HIGHEST degree only:**
     
-    **C.1 GPA Inclusion (for highest degree only):**
-    - Include only if GPA ≥ 3.0
-    - Format: "GPA: X.XX/4.0"
-    - Mark as `<p class="opt-new"><strong>GPA:</strong> X.XX/4.0</p>`
+    1. **GPA**: Include if ≥ 3.0, format "GPA: X.XX/4.0"
     
-    **C.2 Relevant Coursework (6-8 courses):**
-    1. Analyze JD for technical requirements
-    2. Map courses to JD keywords
-    3. Select 6-8 most relevant courses
-    4. Group into 2 lines (3-4 courses each)
-    5. Prioritize courses matching missing_keywords
-    6. CSS: `<p class="opt-new"><strong>Relevant Coursework:</strong></p>`
+    2. **Coursework**: 6-8 relevant courses in 2 lines
+       - Map to JD keywords, prioritize missing_keywords
     
-    **C.3 Academic Projects (max 3):** 
-    - IMPORTANT: These stay in Education section, NOT in Projects section
-    - First priority: If thesis/capstone exists, expand it as first project
-    - Select projects demonstrating practical skills
-    - Each project: one line with outcome/metric
-    - Prioritize projects related to CoreStrengths
-    - Format: "**Project Name** - Description with [outcome]"
-    - CSS: `<p class="opt-new"><strong>Academic Projects:</strong></p>`
+    3. **Academic Projects**: Max 3, stay in Education section
+       - Expand thesis/capstone first if exists
+       - Format: "**Name** - Description with [outcome]"
+       - Skip if no relevant projects
     
-    **IF no academic projects exist:**
-    - Option 1: If thesis exists, expand it into detailed project format
-    - Option 2: Create placeholder example:
-      ```html
-      <li class="opt-new"><strong>Capstone Project</strong> - 
-      <span class="opt-placeholder">[Topic Related to Major]</span> - 
-      Comprehensive research and implementation project</li>
-      ```
-    - Option 3: Skip this subsection entirely if no relevant content
+    4. **Leadership**: TA roles, clubs, competitions (max 3)
+       - Skip if none exist (DO NOT fabricate)
     
-    **C.4 Leadership & Activities:**
-    - Include leadership positions, TA roles, clubs
-    - Include relevant competitions/hackathons
-    - Max 3 items, prioritize by relevance
-    - IF no leadership/activities exist: Skip this subsection (DO NOT fabricate)
-    - CSS: `<p class="opt-new"><strong>Leadership & Activities:</strong></p>`
+    **Note:** Other degrees remain in basic format (no enhancements)
+
     
-    **D. QuickImprovements Application in Education:**
+    **D. Apply QI_MAP.education Improvements:**
+    - Use pre-categorized education improvements from QI_MAP
+    - Apply CSS classes per universal rules
     
-    Check if any QuickImprovement mentions education-related terms:
-    ```
-    IF QuickImprovement contains "education" OR "degree" OR "coursework" OR "GPA":
-      → Apply the specific improvement
-      → Mark modified content with class="opt-modified"
+    **E. Key Gaps Handling (Foundation Building):**
     
-    Examples:
-    - "Add relevant coursework" → Enhance coursework list
-    - "Highlight thesis work" → Expand thesis description
-    - "Include GPA if above 3.5" → Add GPA line
-    ```
+    **Apply based on mode:**
+    - Coursework: Add foundational courses (both modes)
+    - Projects: Add foundation projects (Enhanced only)
+    - Activities: Add relevant groups (Enhanced only)  
+    - Thesis: Expand with foundations (Standard only)
     
-    **E. Key Gaps Handling in Education:**
+    **Example for "Machine Learning" gap:**
+    - Coursework: "Statistical Analysis, Linear Algebra"
+    - Projects: "Data Analysis Project - ML foundation"
+    - Activities: "AI/ML Study Group member"
     
-    For KeyGaps, use "Foundation Building" approach:
-    
-    **Enhanced Mode (education_enhancement_needed = true):**
-    ```
-    If KeyGap = "Machine Learning":
-      In Coursework: Include "Statistical Analysis, Linear Algebra"
-      In Academic Projects: "Data Analysis Project - Built foundation for ML"
-      In Activities: "Member - AI/ML Study Group"
-    ```
-    
-    **Standard Mode (education_enhancement_needed = false):**
-    ```
-    If KeyGap = "Machine Learning":
-      In Coursework (HIGHEST degree only): Naturally integrate relevant courses
-      In Thesis description: Include foundational concepts if applicable
-      NO Academic Projects subsection (Enhanced mode only)
-      NO Activities subsection (Enhanced mode only)
-    ```
-    
-    **E. Track Applied Changes for Education:**
+    **F. Track Applied Changes for Education:**
     Generate ONE standardized tracking entry:
     - Format: "[Education] Action: specific details"
     - Actions: "Enhanced" (if education_enhancement_needed=true) or "Standard" (if false)
     - Include counts: courses, projects, activities added
     - Store for final tracking array
+    
+    Examples:
+    - "[Education] Enhanced: added GPA 3.85, 8 courses, 2 projects, 2 activities"
+    - "[Education] Standard: added 3 relevant courses matching keywords"
+    - "[Education] Created: self-learning template for missing education"
     
     ### Step 2: Projects Section Processing
     
@@ -439,25 +438,14 @@ prompts:
     - IF academic projects exist and education enhanced: Keep in Education
     - IF too many projects (>3): Select most relevant to JD
     
-    **A. Project Categorization:**
-    ```
-    Work Projects → Stay in Professional Experience (NOT in Projects section)
-    Academic Projects → Stay in Education section (ONLY if Enhanced mode)
-    Personal/Side Projects → Include in Projects section
-    Open Source Contributions → Include in Projects section
+    **A. Apply Project Placement Rules:**
+    - Follow the critical rules from system prompt (see table at top)
+    - Projects section = ONLY personal/side/open-source projects
+    - Work projects stay in Experience, Academic stay in Education
     
-    CRITICAL: Projects section should NEVER contain:
-    - Work-related projects (keep in Experience)
-    - Academic/School projects (keep in Education if Enhanced)
-    ```
-    
-    **B. QuickImprovements Check for Projects:**
-    ```
-    IF any QuickImprovement mentions "project" OR specific project names:
-      → Apply those improvements to matching projects
-      → Examples: "Add GitHub link", "Include user metrics", "Mention tech stack"
-      → Mark with class="opt-modified"
-    ```
+    **B. Apply QI_MAP.projects Improvements:**
+    - Use pre-categorized project improvements from QI_MAP
+    - Apply CSS classes per universal rules
     
     **C. Existing Projects Optimization:**
     1. Filter projects first:
@@ -471,10 +459,11 @@ prompts:
        - Add GitHub/portfolio links if available
     3. Reorder by relevance to JD
     4. CSS Marking:
-       - Enhanced descriptions: `<li class="opt-modified">content</li>`
-       - Added metrics: `<span class="opt-modified">1000+ users</span>`
+       - QuickImprovements-based: `<li class="opt-modified">enhanced content</li>`
+       - KeyGaps-based additions: `<li class="opt-new">new learning project</li>`
+       - Placeholders: `<span class="opt-placeholder">[X users]</span>`
     
-    **C. Creating Learning Projects for KeyGaps:**
+    **D. Creating Learning Projects for KeyGaps:**
     
     When no PERSONAL projects exist but KeyGaps identified (NOT academic projects):
     ```html
@@ -495,13 +484,18 @@ prompts:
     - Connect to foundational skills
     - Indicate concrete next steps
     
-    **D. Track Applied Changes for Projects:**
+    **E. Track Applied Changes for Projects:**
     Generate ONE standardized tracking entry:
     - Format: "[Projects] Action: specific details"
     - Actions: "Optimized" (existing projects enhanced), "Created" (new learning projects), or "Mixed" (both)
     - Include: project count, enhancement type
     - Note: Mention excluded work/academic projects if applicable
     - Store for final tracking array
+    
+    Examples:
+    - "[Projects] Optimized: 3 personal projects enhanced with keywords"
+    - "[Projects] Created: 2 learning projects for Kubernetes and FastAPI gaps"
+    - "[Projects] Mixed: 2 optimized, 1 learning project added (excluded 3 work projects)"
     
     ### Step 3: Certifications & Achievements Processing
     
@@ -511,20 +505,16 @@ prompts:
     - IF no achievements: Skip achievements subsection
     - IF certifications not relevant: Consider removing or de-emphasizing
     
-    **QuickImprovements Check:**
-    ```
-    IF any QuickImprovement mentions "certification" OR "credential" OR specific cert names:
-      → Highlight or reorder those certifications
-      → Add new certifications as "In Progress" or "Planned" based on gaps
-      → Mark with class="opt-modified"
-    ```
+    **Apply QI_MAP.certifications Improvements:**
+    - Use pre-categorized certification improvements from QI_MAP
+    - Apply CSS classes per universal rules
     
     **A. Existing Certifications Optimization:**
     1. Reorder by relevance to JD (most relevant first)
     2. Ensure consistent formatting
     3. Add issuing organization and year
     4. Highlight certifications matching keywords
-    5. CSS: `<li class="opt-modified">` for reordered items
+
     
     **B. Suggesting Certifications for KeyGaps:**
     
@@ -548,7 +538,7 @@ prompts:
     1. Include relevant awards, recognitions, publications
     2. Prioritize recent and relevant achievements
     3. Format consistently with certifications
-    4. CSS: Standard opt-modified for enhancements
+
     
     **D. Track Applied Changes for Certifications:**
     Generate ONE standardized tracking entry:
@@ -557,6 +547,11 @@ prompts:
     - Include: certification count, type (existing vs new)
     - Note: We ADD certifications for gaps, not suggest them
     - Store for final tracking array
+    
+    Examples:
+    - "[Certifications] Added: 3 certifications for AWS, Agile, Security gaps"
+    - "[Certifications] Reordered: 4 existing certifications by relevance"
+    - "[Certifications] Expanded: reordered 2 existing, added 2 in-progress"
     
     ### Step 4: Custom Sections Processing (簡化版)
     
