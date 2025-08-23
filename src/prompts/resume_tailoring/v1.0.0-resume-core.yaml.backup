@@ -404,20 +404,20 @@ prompts:
     
     **Output Example:**
     ```json
-    {{
-      "optimized_sections": {{
+    {
+      "optimized_sections": {
         "summary": "<h2>Professional Summary</h2><p class='opt-modified'>Software engineer with 5 years of experience in <span class='opt-modified'>Python development and API architecture</span>. Demonstrated expertise in <span class='opt-modified'>building scalable REST APIs</span> serving thousands of users. Strong foundation in <span class='opt-modified'>team leadership and Agile methodologies</span>. Passionate about creating efficient, maintainable solutions that drive business value.</p>",
         
         "skills": "<h2>Core Competencies</h2><p class='opt-modified'><strong>Backend Development:</strong> Python • REST API • SQL • <span class='opt-modified'>Docker</span> • <span class='opt-modified'>PostgreSQL</span></p><p class='opt-modified'><strong>DevOps & Tools:</strong> Git • <span class='opt-modified'>CI/CD</span> • <span class='opt-modified'>AWS</span> • <span class='opt-new'>Container Architecture</span></p><p class='opt-new'><strong>Methodologies:</strong> <span class='opt-modified'>Agile</span> • Test-Driven Development • Code Review</p>",
         
         "experience": "<h2>Professional Experience</h2><h3><strong>Software Engineer</strong></h3><p><em>TechCorp</em> • <em>San Francisco, CA</em> • <em>2020 - Present</em></p><ul><li class='opt-modified'>Developed scalable REST APIs serving <span class='opt-placeholder'>[10K-50K]</span> daily active users</li><li class='opt-modified'>Led team of <span class='opt-placeholder'>[3-5]</span> engineers in Agile environment</li><li class='opt-new'>Containerized applications using Docker, <span class='opt-new'>establishing foundation for orchestration at scale</span></li></ul>"
-      }},
+      },
       "tracking": [
         "[Summary] Modified: integrated 3 core strengths (4 keywords)",
         "[Skills] Reorganized: 3 categories created (2 adjacent skills added)",
         "[Experience] Enhanced: 2 improvements applied (1 bridge, 2 placeholders)"
       ]
-    }}
+    }
     ```
     
     ## TRACKING OUTPUT STANDARDS
@@ -452,8 +452,8 @@ prompts:
     Return a JSON object with EXACTLY this structure:
     
     ```json
-    {{
-      "optimized_sections": {{
+    {
+      "optimized_sections": {
         "summary": "<h2>Professional Summary</h2><p class='opt-new|opt-modified'>Content...</p>",
         "skills": "<h2>Core Competencies</h2><p><strong>Category:</strong> Skills...</p>",
         "experience": "<h2>Professional Experience</h2>
@@ -463,13 +463,13 @@ prompts:
             <li class='opt-modified'>Achievement bullet with <span class='opt-placeholder'>[X%]</span> improvement</li>
             <li class='opt-new'>New bullet demonstrating bridge to KeyGap skill</li>
           </ul>"
-      }},
+      },
       "tracking": [
         "[Summary] Created: new summary with 3 core strengths (4 keywords)",
         "[Skills] Reorganized: 3 categories created (5 adjacent skills for gaps)",
         "[Experience] Enhanced: 8 improvements applied (6 STAR, 12 placeholders)"
       ]
-    }}
+    }
     ```
     
     ## VALIDATION CHECKLIST

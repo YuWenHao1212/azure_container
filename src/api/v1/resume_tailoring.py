@@ -10,18 +10,15 @@ from fastapi import APIRouter, Depends
 from ...core.config import Settings, get_settings
 from ...decorators.error_handler import handle_tailor_resume_errors
 from ...models.api.resume_tailoring import (
-    CoverageDetails,
-    CoverageStats,
-    KeywordTracking,
-    SimilarityStats,
+    KeywordsMetrics,
+    SimilarityMetrics,
+    TailoringMetadata,
     TailoringResponse,
     TailoringResult,
-    TailoringStatistics,
     TailorResumeRequest,
-    VisualMarkerStats,
     WarningInfo,
 )
-from ...services.resume_tailoring import ResumeTailoringService
+from ...services.resume_tailoring_v31 import ResumeTailoringServiceV31
 from ...utils.bubble_compatibility import (
     BUBBLE_ARRAY_FIELDS,
     ensure_bubble_compatibility,
@@ -32,8 +29,15 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/tailor-resume")
 
-# Initialize service
-tailoring_service = ResumeTailoringService()
+# Service will be initialized lazily
+tailoring_service = None
+
+def get_tailoring_service():
+    """Get or create the tailoring service instance."""
+    global tailoring_service
+    if tailoring_service is None:
+        tailoring_service = ResumeTailoringServiceV31()
+    return tailoring_service
 
 
 @router.post("")
@@ -43,11 +47,11 @@ async def tailor_resume(
     settings: Settings = Depends(get_settings)
 ) -> TailoringResponse:
     """
-    Tailor a resume to better match a job description.
+    Tailor a resume to better match a job description (v3.1.0).
 
     This endpoint uses gap analysis results to:
-    - Create or optimize Summary section
-    - Convert experience bullets to STAR/PAR format
+    - Create or optimize Summary section (LLM1)
+    - Add missing Projects/Education sections (LLM2)
     - Integrate missing keywords naturally
     - Highlight core strengths
     - Add metric placeholders where needed
@@ -57,28 +61,24 @@ async def tailor_resume(
     start_time = time.time()
 
     logger.info(
-        f"Resume tailoring request for language: {request.options.language}"
+        f"Resume tailoring v3.1.0 request for language: {request.options.language}"
     )
 
-    # Extract keywords from gap analysis
-    covered_keywords = request.gap_analysis.covered_keywords or []
-    missing_keywords = request.gap_analysis.missing_keywords or []
-
-    # Call service with keywords
-    result = await tailoring_service.tailor_resume(
+    # Call the new v3.1.0 service
+    service = get_tailoring_service()
+    result = await service.tailor_resume(
         job_description=request.job_description,
         original_resume=request.original_resume,
-        gap_analysis=request.gap_analysis.model_dump(),
-        covered_keywords=covered_keywords,
-        missing_keywords=missing_keywords,
-        output_language=request.options.language,
+        original_index=request.original_index,
+        output_language=request.options.language
     )
 
-    # Extract keyword tracking info
-    keyword_tracking = result.get("keyword_tracking", {})
-    removed_keywords = keyword_tracking.get("removed", [])
+    # Extract metrics from result
+    keywords_metrics = result.get("Keywords", {})
+    similarity_metrics = result.get("similarity", {})
 
-    # Create warning if keywords were removed
+    # Get warning info if keywords were removed
+    removed_keywords = keywords_metrics.get("kw_removed", [])
     warning = WarningInfo()
     if removed_keywords:
         warning = WarningInfo(
@@ -88,118 +88,44 @@ async def tailor_resume(
         )
         logger.warning(f"Keywords removed during optimization: {removed_keywords}")
 
-    # Build tailoring result
-    # Check if service returned real metrics (using IndexCalculationServiceV2)
-    similarity_metrics = result.get("similarity_metrics")
-    coverage_metrics = result.get("coverage_metrics")
-
-    # Use real metrics if available, otherwise use estimates
-    if similarity_metrics:
-        similarity = SimilarityStats(
-            before=similarity_metrics["before"],
-            after=similarity_metrics["after"],
-            improvement=similarity_metrics["improvement"]
-        )
-    else:
-        # Fallback to estimation
-        similarity = SimilarityStats(
-            before=request.gap_analysis.similarity_percentage,
-            after=min(100, request.gap_analysis.similarity_percentage + 20),
-            improvement=20
-        )
-
-    if coverage_metrics:
-        coverage = CoverageStats(
-            before=CoverageDetails(
-                percentage=coverage_metrics["before"]["percentage"],
-                covered=coverage_metrics["before"]["covered"],
-                missed=coverage_metrics["before"]["missed"]
-            ),
-            after=CoverageDetails(
-                percentage=coverage_metrics["after"]["percentage"],
-                covered=coverage_metrics["after"]["covered"],
-                missed=coverage_metrics["after"]["missed"]
-            ),
-            improvement=coverage_metrics["improvement"],
-            newly_added=coverage_metrics["newly_added"],
-            removed=coverage_metrics["removed"]
-        )
-    else:
-        # Fallback to estimation
-        coverage = CoverageStats(
-            before=CoverageDetails(
-                percentage=request.gap_analysis.coverage_percentage,
-                covered=covered_keywords,
-                missed=missing_keywords
-            ),
-            after=CoverageDetails(
-                percentage=min(100, request.gap_analysis.coverage_percentage +
-                             len(keyword_tracking.get("newly_added", [])) * 5),
-                covered=keyword_tracking.get("still_covered", []) +
-                       keyword_tracking.get("newly_added", []),
-                missed=keyword_tracking.get("still_missing", [])
-            ),
-            improvement=len(keyword_tracking.get("newly_added", [])) * 5,
-            newly_added=keyword_tracking.get("newly_added", []),
-            removed=keyword_tracking.get("removed", [])
-        )
-
-    # Calculate improvement count
-    improvement_count = result.get("improvement_count", 0)
-    if improvement_count == 0:
-        # Estimate based on keyword changes
-        improvement_count = len(keyword_tracking.get("newly_added", [])) + \
-                          len(keyword_tracking.get("still_covered", []))
-
-    # Get timing information if available
+    # Calculate total processing time
     processing_time_ms = int((time.time() - start_time) * 1000)
-    stage_timings = result.get("stage_timings", {
-        "gap_analysis": 0,
-        "llm_processing": processing_time_ms,
-        "keyword_detection": 0,
-        "html_generation": 0
-    })
 
-    # Create statistics object for backward compatibility
-    statistics = TailoringStatistics(
-        markers=VisualMarkerStats(
-            keyword_new=len(keyword_tracking.get("newly_added", [])),
-            keyword_existing=len(keyword_tracking.get("still_covered", [])),
-            placeholder=0,  # TODO: count from HTML
-            new_section=0,  # TODO: count from HTML
-            modified=result.get("improvement_count", 0)
-        ),
-        similarity=similarity
-    )
+    # Extract timing information from result
+    stage_timings = result.get("stage_timings", {})
 
-    # Update stage timings to match expected format
-    if not stage_timings or not stage_timings.get("instruction_compilation_ms"):
-        stage_timings = {
-            "instruction_compilation_ms": int(processing_time_ms * 0.1),
-            "resume_writing_ms": int(processing_time_ms * 0.9)
-        }
+    # Build the response in v3.1.0 format
 
     tailoring_result = TailoringResult(
         optimized_resume=result.get("optimized_resume", ""),
-        applied_improvements=result.get("applied_improvements", ""),
-        improvement_count=improvement_count,
-        keyword_tracking=KeywordTracking(
-            still_covered=keyword_tracking.get("still_covered", []),
-            removed=keyword_tracking.get("removed", []),
-            newly_added=keyword_tracking.get("newly_added", []),
-            still_missing=keyword_tracking.get("still_missing", []),
-            warnings=keyword_tracking.get("warnings", [])
-        ),
-        coverage=coverage,
-        processing_time_ms=processing_time_ms,
+        applied_improvements=result.get("applied_improvements", []),
+        total_processing_time_ms=result.get("total_processing_time_ms", processing_time_ms),
+        pre_processing_ms=result.get("pre_processing_ms", 0),
+        llm1_processing_time_ms=result.get("llm1_processing_time_ms", 0),
+        llm2_processing_time_ms=result.get("llm2_processing_time_ms", 0),
+        post_processing_ms=result.get("post_processing_ms", 0),
         stage_timings=stage_timings,
-        # Include markers and similarity at root level
-        markers=statistics.markers,
-        similarity=statistics.similarity
+        Keywords=KeywordsMetrics(**keywords_metrics) if keywords_metrics else KeywordsMetrics(
+            kcr_improvement=0,
+            kcr_before=0,
+            kcr_after=0,
+            kw_before_covered=[],
+            kw_before_missed=[],
+            kw_after_covered=[],
+            kw_after_missed=[],
+            newly_added=[],
+            kw_removed=[]
+        ),
+        similarity=SimilarityMetrics(**similarity_metrics) if similarity_metrics else SimilarityMetrics(
+            SS_improvement=0,
+            SS_before=0,
+            SS_after=0
+        ),
+        metadata=result.get("metadata", TailoringMetadata())
     )
 
     logger.info(
-        f"Resume tailoring completed: {len(keyword_tracking.get('newly_added', []))} keywords added, "
+        f"Resume tailoring v3.1.0 completed: {len(keywords_metrics.get('newly_added', []))} keywords added, "
         f"{len(removed_keywords)} removed"
     )
 

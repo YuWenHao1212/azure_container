@@ -347,7 +347,7 @@ async def index_cal_and_gap_analysis_endpoint(
     # - Converting string to list if needed
     # - Stripping whitespace
     # - Ensuring non-empty
-    keywords_list = request.keywords if isinstance(request.keywords, list) else request.keywords
+    keywords_list = request.keywords  # Already guaranteed to be a list by validator
 
     # Use V2 implementation (optimized path)
     return await _execute_v2_analysis(request, keywords_list, start_time)

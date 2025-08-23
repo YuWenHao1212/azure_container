@@ -653,10 +653,10 @@ prompts:
     **Input Example:**
     ```
     education_enhancement_needed: true
-    standard_sections: {
+    standard_sections: {{
       "education": "Education",
       "experience": "Work Experience"
-    }
+    }}
     custom_sections: ["Portfolio", "Volunteer Work", "Hobbies"]
     CoreStrengths: ["Data analysis", "Team leadership", "Python programming"]
     KeyGaps: ["Cloud Computing", "Machine Learning", "DevOps"]
@@ -672,8 +672,8 @@ prompts:
     
     **Output Example:**
     ```json
-    {
-      "optimized_sections": {
+    {{
+      "optimized_sections": {{
         "education": "<h2>Education</h2><h3>Bachelor of Science - Computer Science</h3><p><em>State University</em> • <em>San Francisco, CA</em> • <em>Sep 2021 - May 2025 (Expected)</em></p><p class='opt-new'><strong>GPA:</strong> 3.75/4.0</p><p class='opt-new'><strong>Relevant Coursework:</strong></p><ul><li>Data Structures • Algorithms • Database Systems</li><li>Cloud Computing • Distributed Systems • Software Engineering</li></ul><p class='opt-new'><strong>Academic Projects:</strong></p><ul><li><strong>Distributed Data Pipeline</strong> - Built scalable pipeline processing 1M+ records</li><li><strong>ML Sentiment Analyzer</strong> - Achieved 89% accuracy on Twitter dataset</li></ul><p class='opt-new'><strong>Leadership & Activities:</strong></p><ul><li>Teaching Assistant - CS101 Python Programming (100+ students)</li><li>Vice President - Computer Science Club (50+ members)</li></ul>",
         
         "projects": "<!-- NOTE: E-commerce Platform stays in Experience, ML Sentiment Analyzer stays in Education --><h2>Projects</h2><h3><strong>Personal Finance Tracker</strong></h3><p><em>Personal Project</em> • <em>Jan 2024 - Present</em></p><p class='opt-modified'>Full-stack application for expense tracking with <span class='opt-modified'>data visualization and predictive analytics</span></p><ul><li class='opt-modified'>Technologies: Python, <span class='opt-modified'>Docker</span>, PostgreSQL, React</li><li class='opt-modified'>Impact: <span class='opt-placeholder'>[X]</span> active users, 4.5★ rating</li></ul><div class='opt-new'><h3><strong>Cloud Infrastructure Learning Lab</strong></h3><p><em>Self-Directed Learning</em> • <em>Current</em></p><p>Exploring cloud-native architectures and containerization</p><ul><li>Technologies: Docker, Docker Compose, LocalStack (AWS simulation)</li><li>Focus: Microservices deployment and orchestration patterns</li><li>Next Steps: AWS Solutions Architect certification</li></ul></div>",
@@ -681,14 +681,14 @@ prompts:
         "certifications": "<h2>Certifications & Achievements</h2><h3>Certifications</h3><ul><li><strong>Python Institute PCEP</strong> - Python Institute | 2023</li><li class='opt-new'><strong>AWS Cloud Practitioner</strong> - In Progress (Target: Q1 2025)</li><li class='opt-new'><strong>Docker Certified Associate</strong> - Planned (Q2 2025)</li></ul><h3>Achievements</h3><ul><li class='opt-modified'><strong>Dean's List</strong> - State University | 2023-2024</li><li class='opt-modified'><strong>Hackathon Winner</strong> - TechCrunch Disrupt | 2023</li></ul>",
         
         "supplementary_details": "<h2>Supplementary Details</h2><div class='opt-modified'><h3>Professional Information</h3><ul><li><strong>Languages:</strong> English (Native), Mandarin (Fluent)</li><li><strong>Availability:</strong> Immediate</li></ul><h3>Community Involvement</h3><ul><li>Code Mentor - Girls Who Code | Teaching Python to high school students</li><li>Tech Lead - Habitat for Humanity Website Redesign | Led team of 5 developers</li></ul></div>"
-      },
+      }},
       "tracking": [
         "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects, 2 activities",
         "[Projects] Optimized: 1 personal project enhanced, 1 learning project created, excluded work and academic projects",
         "[Certifications] Added: 2 new certifications for AWS and Docker gaps",
         "[Supplementary Details] Merged: consolidated Portfolio, Volunteer Work, and Hobbies into single section"
       ]
-    }
+    }}
     ```
     
     ## TRACKING OUTPUT STANDARDS
@@ -723,58 +723,58 @@ prompts:
     Return a JSON object with EXACTLY this structure:
     
     ```json
-    {
-      "optimized_sections": {
+    {{
+      "optimized_sections": {{
         "education": "<h2>Education</h2>...",
         "projects": "<h2>Projects</h2>... or empty string",
         "certifications": "<h2>Certifications & Achievements</h2>... or empty string",
         "supplementary_details": "<h2>Supplementary Details</h2>... or empty string"
-      },
+      }},
       "tracking": [
         "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects",
         "[Projects] Optimized: 1 personal project enhanced, excluded 2 work projects",
         "[Certifications] Added: 2 new certifications for AWS and Docker gaps",
         "[Supplementary Details] Merged: consolidated 3 custom sections with relevant content"
       ]
-    }
+    }}
     ```
     
     **Edge Case Examples:**
     
     1. **No Education Background (JD requires degree):**
     ```json
-    {
-      "optimized_sections": {
+    {{
+      "optimized_sections": {{
         "education": "<h2>Education</h2><h3>Self-Directed Learning in Computer Science</h3><p><em>Continuous Professional Development</em> • <em>2020 - Present</em></p><ul><li>Focused Studies: Cloud Computing, DevOps, Machine Learning</li><li>Completed Courses: AWS Solutions Architect, Docker Mastery, Python Advanced</li><li>Key Technologies: AWS, Docker, Kubernetes, Python, TensorFlow</li></ul>",
         "projects": "...",
         "certifications": "...",
         "supplementary_details": "..."
-      }
-    }
+      }}
+    }}
     ```
     
     2. **Empty Sections (No gaps, no relevant content):**
     ```json
-    {
-      "optimized_sections": {
+    {{
+      "optimized_sections": {{
         "education": "<h2>Education</h2>...",
         "projects": "",  // No personal projects, no gaps requiring demo
         "certifications": "",  // No certs, no gaps to address
         "supplementary_details": ""  // No P1/P2 content, all P3 filtered
-      },
+      }},
       "tracking": [
         "[Education] Standard: HIGHEST degree with 3 relevant courses"
         // Note: No tracking for empty sections
       ]
-    }
+    }}
     ```
     
     3. **Priority-Based Filtering (Custom Sections):**
     ```json
-    {
+    {{
       "supplementary_details": "<h2>Supplementary Details</h2><div class='opt-modified'><h3>Professional Information</h3><ul><li><strong>Work Authorization:</strong> H1-B Visa (P1 - Always kept)</li><li><strong>Languages:</strong> English (Native), Mandarin (Fluent) (P1)</li></ul><h3>Community Involvement</h3><ul><li>Tech Mentor - Girls Who Code (P2 - Kept for leadership role)</li></ul></div>"
       // Note: Hobbies section (P3) was filtered out
-    }
+    }}
     ```
     
     ## VALIDATION CHECKLIST

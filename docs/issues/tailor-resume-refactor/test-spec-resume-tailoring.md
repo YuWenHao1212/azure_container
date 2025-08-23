@@ -1,14 +1,15 @@
 # Resume Tailoring API 測試規格文檔
 
 ## 文檔資訊
-- **版本**: 1.1.0
+- **版本**: 3.1.0
 - **建立日期**: 2025-08-11
-- **最後更新**: 2025-08-12
+- **最後更新**: 2025-08-23
 - **維護者**: 測試團隊
 - **測試總數**: 13 個（原15個，移除2個重複錯誤處理測試）
 - **Mock測試**: 10 個（6 UT + 4 IT，移除2個IT）
 - **Real API測試**: 3 個效能測試（保持不變）
 - **更新說明**: 
+  - v3.1.0: 更新為支援平行 LLM 架構，調整資料模型和測試斷言
   - v1.1.0: 移除 API-TLR-523/524-IT，合併至ERROR_HANDLER
   - v1.0.0: 初始版本，基於 v2.1.0-simplified 混合 CSS 標記系統
 
@@ -29,6 +30,28 @@
   - 執行 `ruff check test/ --line-length=120` 必須顯示 "All checks passed!"
   - 不得有任何 Ruff 錯誤或警告
   - 遵循專案的 `pyproject.toml` 中定義的 Ruff 規則
+
+## v3.1.0 重要變更 ⚠️
+
+### API 模型變更
+1. **請求模型變更**：
+   - `gap_analysis` → `original_index`：現在使用來自前一個 API 的完整結果
+   - 保留 `options` 參數，支援語言和視覺標記選項
+
+2. **回應模型變更**：
+   - `applied_improvements`：從 HTML 字串改為字串列表格式
+   - **新增 Keywords 模型**：包含 `kcr_*` 和 `kw_*` 前綴的詳細關鍵字指標
+   - **新增 SimilarityMetrics**：包含 `SS_*` 前綴的相似度指標
+   - **新增時間追蹤**：`llm1_processing_time_ms`、`llm2_processing_time_ms` 等
+
+3. **測試資料調整**：
+   - Mock 資料需使用新的模型格式
+   - 斷言需檢查新的字段名稱
+
+### 架構變更
+- **平行 LLM 處理**：LLM1 (Core Optimizer) 和 LLM2 (Additional Manager) 並行執行
+- **懶載入初始化**：服務使用 `get_tailoring_service()` 工廠函數避免匯入時錯誤
+- **移除 fallback 機制**：服務錯誤時直接傳播異常，不使用估算值
 
 ## 1. 測試案例編號系統
 
@@ -153,12 +176,12 @@ API-TLR-[序號]-[類型]
 - **類型**: 整合測試
 - **測試目標**: 驗證 API 端點正常運作，關鍵字追蹤功能正確
 - **測試內容**: 使用有效輸入測試完整的 API 流程
-- **測試資料**:
+- **測試資料** (v3.1.0 格式):
   ```yaml
   request:
     job_description: "Looking for Python developer..." # 300+ chars
     original_resume: "<html><body>Python developer...</body></html>" # 250+ chars
-    gap_analysis:
+    original_index:  # 改自 gap_analysis
       core_strengths: ["Python", "Leadership"]
       key_gaps: ["[Skill Gap] Docker"]
       quick_improvements: ["Add Docker certification"]
@@ -166,14 +189,27 @@ API-TLR-[序號]-[類型]
       missing_keywords: ["Docker", "Kubernetes"]
       coverage_percentage: 50
       similarity_percentage: 60
+    options:
+      language: "en"
+      include_visual_markers: true
   expected:
     status: 200
     success: true
-    keyword_tracking:
-      still_covered: ["Python"]
-      removed: ["Django"]
-      newly_added: ["Docker"]
-      still_missing: ["Kubernetes"]
+    data:
+      Keywords:  # v3.1.0 新格式
+        kcr_before: 50
+        kcr_after: 80
+        kcr_improvement: 30
+        kw_after_covered: ["Python", "Docker"]
+        kw_removed: ["Django"]
+        newly_added: ["Docker"]
+        kw_after_missed: ["Kubernetes"]
+      similarity:  # v3.1.0 新格式
+        SS_before: 60
+        SS_after: 85
+        SS_improvement: 25
+      applied_improvements:  # 改為列表格式
+        - "[Skill Gap] Added Docker containerization"
   ```
 - **判斷標準**: 
   - 返回 200 狀態碼
@@ -192,7 +228,7 @@ API-TLR-[序號]-[類型]
   - warning.details 為空陣列
 
 #### API-TLR-523-IT: 輸入長度驗證測試 [已合併至ERROR_HANDLER]
-- **狀態**: ⚠️ **已移除** - 合併至 ERR-016-UT (通用驗證錯誤處理)
+- **狀態**: ⚠️ **已移除** - 合併至 ERROR_HANDLER 測試套件 (ERR-016-UT 通用驗證錯誤處理)
 - **名稱**: Resume 或 JD 太短的錯誤處理
 - **優先級**: P0
 - **類型**: 整合測試
@@ -216,7 +252,7 @@ API-TLR-[序號]-[類型]
   - 錯誤碼為 VALIDATION_TOO_SHORT
 
 #### API-TLR-524-IT: 外部服務錯誤處理測試 [已合併至ERROR_HANDLER]
-- **狀態**: ⚠️ **已移除** - 合併至 ERR-017-UT (通用外部服務錯誤分類)
+- **狀態**: ⚠️ **已移除** - 合併至 ERROR_HANDLER 測試套件 (ERR-017-UT 通用外部服務錯誤分類)
 - **名稱**: LLM 服務錯誤處理
 - **優先級**: P0
 - **類型**: 整合測試
@@ -564,18 +600,24 @@ pytest test/performance/test_resume_tailoring_performance.py::test_keyword_detec
 
 ## 附錄：測試執行結果
 
-### 最新測試結果 (2025-08-11)
+### 最新測試結果 (2025-08-23)
 
-#### ❌ 測試尚未實作
+#### ✅ v3.1.0 測試實作完成
 ```
-狀態: 所有測試檔案尚未建立
-測試總數: 15 個 (6 單元測試 + 6 整合測試 + 3 效能測試)
-實作狀態: 待開發
+狀態: 所有測試已更新支援 v3.1.0
+測試總數: 13 個 (6 單元測試 + 4 整合測試 + 3 效能測試)
+實作狀態: 已完成並通過
 
-待實作檔案:
-❌ test/unit/services/test_resume_tailoring_metrics.py (6 個測試)
-❌ test/integration/test_resume_tailoring_api.py (6 個測試)
-❌ test/performance/test_resume_tailoring_performance.py (3 個測試)
+測試檔案狀態:
+✅ test/unit/services/test_resume_tailoring_metrics.py (6 個測試)
+✅ test/integration/test_resume_tailoring_api.py (4 個測試通過，2 個跳過)
+✅ test/performance/test_resume_tailoring_performance.py (3 個測試)
+
+v3.1.0 更新內容:
+- 更新 mock 路徑支援懶載入模式
+- 調整資料模型為 original_index
+- 更新回應格式為新的 Keywords 和 SimilarityMetrics 模型
+- applied_improvements 改為列表格式
 ```
 
 #### 🎯 實作優先級

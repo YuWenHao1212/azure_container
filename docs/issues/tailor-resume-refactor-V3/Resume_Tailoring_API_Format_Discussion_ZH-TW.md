@@ -72,12 +72,51 @@
       "[Structure: Section] Created/Modified for purpose"
     ],
     // 新增 timing tracking 功能
-    "total_processing_time_ms": 2480,
+    "total_processing_time_ms": 8880,
+    "pre_processing_ms": 280,
+    "llm1_processing_time_ms": 6080,
+    "llm2_processing_time_ms": 4080,
+    "post_processing_ms": 2600,
     "stage_timings": {
-      "pre_processing_ms": 280,
-      "resume_writing_ms": 2100,
-      "post_processing_ms": 100
-    }
+      "llm1_start_time_ms": 280,
+      "llm1_finish_time_ms": 6360,
+      "llm2_start_time_ms": 280,
+      "llm1_finish_time_ms": 4360,
+    },
+    "Keywords": 
+    {
+      "kcr_improvement": 50,
+      "kcr_before": 40,
+      "kcr_after": 90,  // 上限 100%
+      "kw_before_covered": ["Python","JavaScript", "CI/CD", "PHP"],
+      "kw_before_missed": ["Docker", "Kubernetes", "Machine Learning", "GraphQL", "Rust","SQL"],
+      "kw_after_covered": ["Python", "JavaScript", "CI/CD", "PHP","Docker", "Kubernetes", "Machine Learning", "GraphQL", "Rust","SQL"],
+      "kw_after_missed": ["Python"],
+      "newly_added": ["Docker", "Kubernetes", "Machine Learning", "GraphQL", "Rust"],
+      "kw_removed": ["Python"]  // 被移除的關鍵字（如果有的話）
+    },
+    "similarity": {
+      "SS_improvement": 25,
+      "SS_before": 60,
+      "SS_after": 85, 
+    },
+  },
+  
+  "metadata": 
+  {
+    "llm1_prompt_version": "v1.0.0-resume-additional",
+    "llm2_prompt_version": "v1.0.0-resume-core",
+    "llm1_models": "gpt-4.1",
+    "llm2_models": "gpt-4.1"
+  },
+}
+  
+  
+  
+  
+  
+  
+  
   },
   "warning": {
     "has_warning": false,

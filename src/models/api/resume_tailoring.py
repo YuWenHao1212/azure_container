@@ -18,6 +18,10 @@ class TailoringOptions(BaseModel):
         default="en",
         description="Output language for the tailored resume"
     )
+    format_version: str = Field(
+        default="v3",
+        description="API format version (v3 for new parallel LLM architecture)"
+    )
 
 
 class GapAnalysisInput(BaseModel):
@@ -78,7 +82,7 @@ class GapAnalysisInput(BaseModel):
 
 
 class TailorResumeRequest(BaseModel):
-    """Request model for resume tailoring"""
+    """Request model for resume tailoring v3.1.0"""
     job_description: str = Field(
         description="Target job description",
         min_length=50,
@@ -89,8 +93,8 @@ class TailorResumeRequest(BaseModel):
         min_length=100,
         max_length=50000
     )
-    gap_analysis: GapAnalysisInput = Field(
-        description="Gap analysis results"
+    original_index: dict = Field(
+        description="Complete index calculation and gap analysis results from previous API"
     )
     options: TailoringOptions = Field(
         default_factory=TailoringOptions,
@@ -98,7 +102,77 @@ class TailorResumeRequest(BaseModel):
     )
 
 
-# OptimizationStats removed in v2.1 - merged with VisualMarkerStats
+# Keywords metrics for v3.1.0
+class KeywordsMetrics(BaseModel):
+    """Keywords metrics for before/after comparison"""
+    kcr_improvement: int = Field(
+        description="Keyword coverage rate improvement percentage"
+    )
+    kcr_before: int = Field(
+        description="Keyword coverage rate before optimization (0-100)"
+    )
+    kcr_after: int = Field(
+        description="Keyword coverage rate after optimization (0-100)"
+    )
+    kw_before_covered: list[str] = Field(
+        default_factory=list,
+        description="Keywords covered before optimization"
+    )
+    kw_before_missed: list[str] = Field(
+        default_factory=list,
+        description="Keywords missed before optimization"
+    )
+    kw_after_covered: list[str] = Field(
+        default_factory=list,
+        description="Keywords covered after optimization"
+    )
+    kw_after_missed: list[str] = Field(
+        default_factory=list,
+        description="Keywords missed after optimization"
+    )
+    newly_added: list[str] = Field(
+        default_factory=list,
+        description="Keywords newly added during optimization"
+    )
+    kw_removed: list[str] = Field(
+        default_factory=list,
+        description="Keywords removed during optimization"
+    )
+
+
+# Similarity metrics for v3.1.0
+class SimilarityMetrics(BaseModel):
+    """Similarity metrics for before/after comparison"""
+    SS_improvement: int = Field(
+        description="Similarity score improvement percentage"
+    )
+    SS_before: int = Field(
+        description="Similarity score before optimization (0-100)"
+    )
+    SS_after: int = Field(
+        description="Similarity score after optimization (0-100)"
+    )
+
+
+# Metadata for v3.1.0
+class TailoringMetadata(BaseModel):
+    """Metadata about the tailoring process"""
+    llm1_prompt_version: str = Field(
+        default="v1.0.0-resume-core",
+        description="Prompt version for LLM1 (Core Optimizer)"
+    )
+    llm2_prompt_version: str = Field(
+        default="v1.0.0-resume-additional",
+        description="Prompt version for LLM2 (Additional Manager)"
+    )
+    llm1_models: str = Field(
+        default="gpt-4.1",
+        description="Model used for LLM1"
+    )
+    llm2_models: str = Field(
+        default="gpt-4.1",
+        description="Model used for LLM2"
+    )
 
 
 class VisualMarkerStats(BaseModel):
@@ -251,46 +325,63 @@ class TailoringStatistics(BaseModel):
 
 
 class TailoringResult(BaseModel):
-    """Result of resume tailoring - Bubble.io compatible format"""
-    # Core fields required by Bubble.io
+    """Result of resume tailoring v3.1.0 - Bubble.io compatible format"""
+    # Core fields
     optimized_resume: str = Field(
         description="Optimized resume HTML with visual markers"
     )
-    applied_improvements: str = Field(
-        default="",
-        description="HTML formatted list of improvements for direct display"
+    applied_improvements: list[str] = Field(
+        default_factory=list,
+        description="List of improvements applied with categorization"
     )
-    improvement_count: int = Field(
-        default=0,
-        description="Number of improvements applied"
-    )
-    keyword_tracking: KeywordTracking = Field(
-        default_factory=KeywordTracking,
-        description="Detailed keyword tracking information"
-    )
-    coverage: CoverageStats = Field(
-        description="Keyword coverage statistics"
-    )
-    processing_time_ms: int = Field(
+
+    # Timing metrics
+    total_processing_time_ms: int = Field(
         default=0,
         description="Total processing time in milliseconds"
     )
+    pre_processing_ms: int = Field(
+        default=0,
+        description="Pre-processing time in milliseconds"
+    )
+    llm1_processing_time_ms: int = Field(
+        default=0,
+        description="LLM1 (Core Optimizer) processing time"
+    )
+    llm2_processing_time_ms: int = Field(
+        default=0,
+        description="LLM2 (Additional Manager) processing time"
+    )
+    post_processing_ms: int = Field(
+        default=0,
+        description="Post-processing time in milliseconds"
+    )
     stage_timings: dict[str, int] = Field(
         default_factory=lambda: {
-            "instruction_compilation_ms": 0,
-            "resume_writing_ms": 0
+            "llm1_start_time_ms": 0,
+            "llm1_finish_time_ms": 0,
+            "llm2_start_time_ms": 0,
+            "llm2_finish_time_ms": 0
         },
-        description="Timing breakdown by processing stage (milliseconds)"
+        description="Detailed timing breakdown"
     )
 
-    # Keep these at root level for backward compatibility
-    markers: VisualMarkerStats = Field(
-        default_factory=VisualMarkerStats,
-        description="Statistics about visual markers"
+    # Keywords metrics
+    Keywords: KeywordsMetrics = Field(
+        default_factory=KeywordsMetrics,
+        description="Keywords coverage metrics before and after"
     )
-    similarity: SimilarityStats = Field(
-        default_factory=lambda: SimilarityStats(before=0, after=0, improvement=0),
-        description="Similarity statistics"
+
+    # Similarity metrics
+    similarity: SimilarityMetrics = Field(
+        default_factory=SimilarityMetrics,
+        description="Similarity metrics before and after"
+    )
+
+    # Metadata
+    metadata: TailoringMetadata = Field(
+        default_factory=TailoringMetadata,
+        description="Process metadata including prompt versions and models"
     )
 
 

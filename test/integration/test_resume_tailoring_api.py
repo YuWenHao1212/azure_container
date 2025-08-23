@@ -26,7 +26,7 @@ class TestResumeTailoringAPI:
         request_data = {
             "job_description": "We are looking for a Python developer with experience in Django, Docker, and AWS. " * 10,
             "original_resume": "<html><body><p>Python developer with Django expertise</p></body></html>" * 5,
-            "gap_analysis": {
+            "original_index": {
                 "core_strengths": ["Python expertise", "Django framework", "Team leadership"],
                 "key_gaps": ["[Skill Gap] Docker containerization", "[Skill Gap] AWS cloud services"],
                 "quick_improvements": ["Add Docker certification", "Include AWS projects"],
@@ -41,50 +41,51 @@ class TestResumeTailoringAPI:
             }
         }
 
-        # Mock the tailoring service to return a predictable result
+        # Mock the tailoring service to return a predictable result (v3.1.0 format)
         mock_result = {
             "optimized_resume": "<html><body><p>Python developer with Docker and AWS expertise</p></body></html>",
-            "applied_improvements": "<ul><li>Added Docker</li><li>Added AWS</li></ul>",
-            "improvement_count": 2,
-            "keyword_tracking": {
-                "still_covered": ["Python"],
-                "removed": ["Django"],
-                "newly_added": ["Docker", "AWS"],
-                "still_missing": ["Kubernetes"],
-                "warnings": ["Warning: 1 originally covered keywords were removed during optimization: Django"]
-            },
-            # 新增: 真實計算的 metrics (使用 IndexCalculationServiceV2)
-            "similarity_metrics": {
-                "before": 60,
-                "after": 85,
-                "improvement": 25
-            },
-            "coverage_metrics": {
-                "before": {"percentage": 40, "covered": ["Python", "Django"], "missed": ["Docker", "AWS", "Kubernetes"]},
-                "after": {"percentage": 80, "covered": ["Python", "Docker", "AWS"], "missed": ["Kubernetes"]},
-                "improvement": 40,
-                "newly_added": ["Docker", "AWS"],
-                "removed": ["Django"]
-            },
-            "gap_analysis_insights": {
-                "structure_found": {
-                    "sections": {"summary": "Summary", "experience": "Experience"},
-                    "metadata": {"total_sections": 2}
-                },
-                "improvements_applied": 2
-            },
-            "processing_time_ms": 3000,
+            "applied_improvements": [
+                "[Skill Gap] Added Docker containerization experience",
+                "[Skill Gap] Added AWS cloud services expertise"
+            ],
+            "total_processing_time_ms": 3000,
+            "pre_processing_ms": 100,
+            "llm1_processing_time_ms": 1500,
+            "llm2_processing_time_ms": 1200,
+            "post_processing_ms": 200,
             "stage_timings": {
-                "instruction_compilation_ms": 300,
-                "resume_writing_ms": 2000
+                "llm1_start_time_ms": 100,
+                "llm1_finish_time_ms": 1600,
+                "llm2_start_time_ms": 1600,
+                "llm2_finish_time_ms": 2800
+            },
+            "Keywords": {
+                "kcr_improvement": 40,
+                "kcr_before": 40,
+                "kcr_after": 80,
+                "kw_before_covered": ["Python", "Django"],
+                "kw_before_missed": ["Docker", "AWS", "Kubernetes"],
+                "kw_after_covered": ["Python", "Docker", "AWS"],
+                "kw_after_missed": ["Kubernetes"],
+                "newly_added": ["Docker", "AWS"],
+                "kw_removed": ["Django"]
+            },
+            "similarity": {
+                "SS_before": 60,
+                "SS_after": 85,
+                "SS_improvement": 25
             },
             "metadata": {
-                "metrics_calculation": "IndexCalculationServiceV2"
+                "prompt_version": "v1.0.0",
+                "llm1_model": "gpt-4.1",
+                "llm2_model": "gpt-4.1"
             }
         }
 
-        with patch('src.api.v1.resume_tailoring.tailoring_service.tailor_resume',
-                   new_callable=AsyncMock, return_value=mock_result):
+        with patch('src.api.v1.resume_tailoring.get_tailoring_service') as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.tailor_resume = AsyncMock(return_value=mock_result)
+            mock_get_service.return_value = mock_service
             async with AsyncClient(app=app, base_url="http://test") as client:
                 response = await client.post(
                     "/api/v1/tailor-resume",
@@ -101,31 +102,33 @@ class TestResumeTailoringAPI:
         assert "error" not in data or data.get("error") is None
         assert data["warning"]["has_warning"] is True  # Django was removed
 
-        # Check keyword tracking
-        assert "keyword_tracking" in data["data"]
-        tracking = data["data"]["keyword_tracking"]
-        assert "Python" in tracking["still_covered"]
-        assert "Django" in tracking["removed"]
-        assert "Docker" in tracking["newly_added"]
-        assert "AWS" in tracking["newly_added"]
-        assert "Kubernetes" in tracking["still_missing"]
+        # Check Keywords metrics (v3.1.0 format)
+        assert "Keywords" in data["data"]
+        keywords = data["data"]["Keywords"]
+        assert "Python" in keywords["kw_after_covered"]
+        assert "Django" in keywords["kw_removed"]
+        assert "Docker" in keywords["newly_added"]
+        assert "AWS" in keywords["newly_added"]
+        assert "Kubernetes" in keywords["kw_after_missed"]
+        assert keywords["kcr_before"] == 40
+        assert keywords["kcr_after"] == 80
+        assert keywords["kcr_improvement"] == 40
 
         # Check warning about removed keyword
         assert data["warning"]["message"] == "Optimization successful but 1 keywords removed"
         assert "Django" in data["warning"]["details"]
 
-        # Check real metrics calculation (IndexCalculationServiceV2)
+        # Check similarity metrics (v3.1.0 format)
         similarity = data["data"]["similarity"]
-        assert similarity["before"] == 60
-        assert similarity["after"] == 85  # 真實計算, 不是簡單的 +20
-        assert similarity["improvement"] == 25
+        assert similarity["SS_before"] == 60
+        assert similarity["SS_after"] == 85
+        assert similarity["SS_improvement"] == 25
 
-        coverage = data["data"]["coverage"]
-        assert coverage["before"]["percentage"] == 40
-        assert coverage["after"]["percentage"] == 80
-        assert coverage["improvement"] == 40
-        assert set(coverage["newly_added"]) == {"Docker", "AWS"}
-        assert set(coverage["removed"]) == {"Django"}
+        # Check applied improvements
+        improvements = data["data"]["applied_improvements"]
+        assert len(improvements) == 2
+        assert any("Docker" in imp for imp in improvements)
+        assert any("AWS" in imp for imp in improvements)
 
     # Test ID: API-TLR-522-IT
     @pytest.mark.asyncio
@@ -139,7 +142,7 @@ class TestResumeTailoringAPI:
         request_data = {
             "job_description": "Python developer role with Django framework experience required. " * 10,
             "original_resume": "<html><body><p>Python and Django developer</p></body></html>" * 5,
-            "gap_analysis": {
+            "original_index": {
                 "core_strengths": ["Python", "Django"],
                 "key_gaps": ["[Skill Gap] Docker"],
                 "quick_improvements": ["Add Docker experience"],
@@ -152,23 +155,45 @@ class TestResumeTailoringAPI:
 
         mock_result = {
             "optimized_resume": "<html><body><p>Python and Django developer with Docker</p></body></html>",
-            "applied_improvements": "<ul><li>Added Docker</li></ul>",
-            "improvement_count": 1,
-            "keyword_tracking": {
-                "still_covered": ["Python", "Django"],
-                "removed": [],
-                "newly_added": ["Docker"],
-                "still_missing": [],
-                "warnings": []
+            "applied_improvements": ["[Skill Gap] Added Docker containerization"],
+            "total_processing_time_ms": 2500,
+            "pre_processing_ms": 100,
+            "llm1_processing_time_ms": 1200,
+            "llm2_processing_time_ms": 1000,
+            "post_processing_ms": 200,
+            "stage_timings": {
+                "llm1_start_time_ms": 100,
+                "llm1_finish_time_ms": 1300,
+                "llm2_start_time_ms": 1300,
+                "llm2_finish_time_ms": 2300
             },
-            "gap_analysis_insights": {
-                "structure_found": {"sections": {}, "metadata": {}},
-                "improvements_applied": 1
+            "Keywords": {
+                "kcr_improvement": 34,
+                "kcr_before": 66,
+                "kcr_after": 100,
+                "kw_before_covered": ["Python", "Django"],
+                "kw_before_missed": ["Docker"],
+                "kw_after_covered": ["Python", "Django", "Docker"],
+                "kw_after_missed": [],
+                "newly_added": ["Docker"],
+                "kw_removed": []
+            },
+            "similarity": {
+                "SS_before": 75,
+                "SS_after": 90,
+                "SS_improvement": 15
+            },
+            "metadata": {
+                "prompt_version": "v1.0.0",
+                "llm1_model": "gpt-4.1",
+                "llm2_model": "gpt-4.1"
             }
         }
 
-        with patch('src.api.v1.resume_tailoring.tailoring_service.tailor_resume',
-                   new_callable=AsyncMock, return_value=mock_result):
+        with patch('src.api.v1.resume_tailoring.get_tailoring_service') as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.tailor_resume = AsyncMock(return_value=mock_result)
+            mock_get_service.return_value = mock_service
             async with AsyncClient(app=app, base_url="http://test") as client:
                 response = await client.post(
                     "/api/v1/tailor-resume",
@@ -196,7 +221,7 @@ class TestResumeTailoringAPI:
         request_data = {
             "job_description": "Short job description for validation testing purposes only that meets minimum Pydantic requirements but fails service validation due to insufficient length for meaningful processing and analysis of requirements",  # 200+ chars for service validation
             "original_resume": "<html><body><p>Short resume for testing validation purposes only, containing minimal content that meets basic Pydantic requirements but insufficient for meaningful analysis</p></body></html>",  # 100+ chars
-            "gap_analysis": {
+            "original_index": {
                 "core_strengths": ["Python"],
                 "key_gaps": ["[Skill Gap] Docker"],
                 "quick_improvements": ["Add Docker"],
@@ -205,8 +230,10 @@ class TestResumeTailoringAPI:
             }
         }
 
-        with patch('src.api.v1.resume_tailoring.tailoring_service.tailor_resume',
-                   side_effect=ValueError("Job description too short (minimum 200 characters)")):
+        with patch('src.api.v1.resume_tailoring.get_tailoring_service') as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.tailor_resume = AsyncMock(side_effect=ValueError("Job description too short (minimum 200 characters)"))
+            mock_get_service.return_value = mock_service
             async with AsyncClient(app=app, base_url="http://test") as client:
                 response = await client.post(
                     "/api/v1/tailor-resume",
@@ -238,7 +265,7 @@ class TestResumeTailoringAPI:
         request_data = {
             "job_description": "Valid job description " * 20,
             "original_resume": "<html><body><p>Valid resume</p></body></html>" * 10,
-            "gap_analysis": {
+            "original_index": {
                 "core_strengths": ["Python"],
                 "key_gaps": ["[Skill Gap] Docker"],
                 "quick_improvements": ["Add Docker"],
@@ -247,8 +274,10 @@ class TestResumeTailoringAPI:
             }
         }
 
-        with patch('src.api.v1.resume_tailoring.tailoring_service.tailor_resume',
-                   side_effect=HTTPException(status_code=429, detail="Rate limit exceeded")):
+        with patch('src.api.v1.resume_tailoring.get_tailoring_service') as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.tailor_resume = AsyncMock(side_effect=HTTPException(status_code=429, detail="Rate limit exceeded"))
+            mock_get_service.return_value = mock_service
             async with AsyncClient(app=app, base_url="http://test") as client:
                 response = await client.post(
                     "/api/v1/tailor-resume",
@@ -275,7 +304,7 @@ class TestResumeTailoringAPI:
         request_data = {
             "job_description": "Valid job description " * 20,
             "original_resume": "<html><body><p>Valid resume</p></body></html>" * 10,
-            "gap_analysis": {
+            "original_index": {
                 "core_strengths": ["Python"],
                 "key_gaps": ["[Skill Gap] Docker"],
                 "quick_improvements": ["Add Docker"],
@@ -284,8 +313,10 @@ class TestResumeTailoringAPI:
             }
         }
 
-        with patch('src.api.v1.resume_tailoring.tailoring_service.tailor_resume',
-                   side_effect=Exception("Unexpected error")):
+        with patch('src.api.v1.resume_tailoring.get_tailoring_service') as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.tailor_resume = AsyncMock(side_effect=Exception("Unexpected error"))
+            mock_get_service.return_value = mock_service
             async with AsyncClient(app=app, base_url="http://test") as client:
                 response = await client.post(
                     "/api/v1/tailor-resume",
@@ -314,7 +345,7 @@ class TestResumeTailoringAPI:
         request_data = {
             "job_description": "Python Django Docker AWS developer needed. " * 15,
             "original_resume": "<html><body><p>Python Django developer</p></body></html>" * 10,
-            "gap_analysis": {
+            "original_index": {
                 "core_strengths": ["Python", "Django"],
                 "key_gaps": ["[Skill Gap] Docker", "[Skill Gap] AWS"],
                 "quick_improvements": ["Add Docker", "Add AWS"],
@@ -326,9 +357,10 @@ class TestResumeTailoringAPI:
         }
 
         # Mock tailoring service to raise ServiceError (from IndexCalculationServiceV2)
-        with patch('src.api.v1.resume_tailoring.tailoring_service.tailor_resume',
-                   new_callable=AsyncMock) as mock_tailor:
-            mock_tailor.side_effect = ServiceError("IndexCalculationServiceV2: Azure OpenAI connection timeout")
+        with patch('src.api.v1.resume_tailoring.get_tailoring_service') as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.tailor_resume = AsyncMock(side_effect=ServiceError("IndexCalculationServiceV2: Azure OpenAI connection timeout"))
+            mock_get_service.return_value = mock_service
 
             async with AsyncClient(app=app, base_url="http://test") as client:
                 response = await client.post(
