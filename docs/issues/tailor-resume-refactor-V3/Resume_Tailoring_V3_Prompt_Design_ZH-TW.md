@@ -378,46 +378,82 @@ user: |
 graph TD
     Start[LLM 2 開始] --> ProcessEdu[Step 1: 處理 Education]
     
-    ProcessEdu --> CheckEnhance{Enhancement Flag?}
-    CheckEnhance -->|true| UseEnhanced[使用 Enhanced 模板<br/>**僅最高學歷**<br/>加入 GPA, Coursework<br/>Academic Projects, Activities<br/>標記 opt-new/modified]
-    CheckEnhance -->|false| UseStandard[使用 Standard 模板<br/>基本學歷資訊<br/>標記 opt-modified]
+    %% === EDUCATION PROCESSING ===
+    ProcessEdu --> CheckEduExist{原履歷有 Education?}
     
-    UseEnhanced --> ProcessProjects
-    UseStandard --> ProcessProjects
+    CheckEduExist -->|No| CreateMinimal["建立 Minimal Education<br/>使用 placeholder template<br/>標記 class=opt-new"]
+    CheckEduExist -->|Yes| CheckEnhance{Enhancement Flag?}
     
-    ProcessProjects[Step 2: 處理 Projects] --> PreCheck[⚠️ PRE-CHECK:<br/>Projects = Personal ONLY<br/>NO work projects<br/>NO academic projects]
+    CreateMinimal --> ProcessProjects
+    
+    CheckEnhance -->|true| EnhancedMode["Enhanced 模式<br/>⚠️ ONLY HIGHEST DEGREE ⚠️"]
+    CheckEnhance -->|false| StandardMode["Standard 模式<br/>⚠️ ONLY HIGHEST DEGREE ⚠️"]
+    
+    %% Enhanced Mode Processing
+    EnhancedMode --> ProcessHighest["處理最高學歷：<br/>• 加入 GPA if ≥3.0<br/>• Coursework 6-8門<br/>• Academic Projects max 3<br/>• Leadership & Activities<br/>標記 opt-new/modified"]
+    ProcessHighest --> ProcessOthers["處理其他學歷：<br/>僅保留基本資訊<br/>學位、學校、日期"]
+    
+    %% Standard Mode Processing  
+    StandardMode --> ProcessHighestStd["處理最高學歷：<br/>• 加入相關 Coursework 3-5門<br/>• Thesis/Capstone if exists<br/>• Keywords 自然融入<br/>標記 opt-modified"]
+    ProcessHighestStd --> ProcessOthersStd["處理其他學歷：<br/>僅保留基本資訊<br/>學位、學校、日期"]
+    
+    ProcessOthers --> ProcessProjects
+    ProcessOthersStd --> ProcessProjects
+    
+    %% === PROJECTS PROCESSING ===
+    ProcessProjects[Step 2: 處理 Projects] --> PreCheck["⚠️ PRE-CHECK:<br/>Projects = Personal ONLY<br/>排除 work projects<br/>排除 academic projects"]
     
     PreCheck --> FilterProjects[過濾專案類型]
     FilterProjects --> CheckPersonal{有個人專案?}
-    CheckPersonal -->|Yes| UpdateProj[更新現有個人專案<br/>class=opt-modified]
-    CheckPersonal -->|No & KeyGaps需要| CreateLearning[建立學習專案<br/>展示主動學習<br/>class=opt-new]
-    CheckPersonal -->|No| SkipProj[跳過 Projects section]
+    
+    CheckPersonal -->|Yes| UpdateProj["更新現有個人專案<br/>加入 QuickImprovements<br/>class=opt-modified"]
+    CheckPersonal -->|No| CheckKeyGaps{有 KeyGaps 需要展示?}
+    
+    CheckKeyGaps -->|Yes| ConsiderLearning{考慮建立學習專案?}
+    CheckKeyGaps -->|No| SkipProj["完全跳過 Projects section<br/>回傳空字串"]
+    
+    ConsiderLearning -->|適合| CreateLearning["建立 1-2 個學習專案<br/>誠實標註學習狀態<br/>class=opt-new"]
+    ConsiderLearning -->|不適合| SkipProj
     
     UpdateProj --> ProcessCert
     CreateLearning --> ProcessCert
     SkipProj --> ProcessCert
     
+    %% === CERTIFICATIONS PROCESSING ===
     ProcessCert[Step 3: 處理 Certifications] --> CheckCert{有認證?}
-    CheckCert -->|Yes| UpdateCert[更新優化<br/>class=opt-modified]
-    CheckCert -->|No| SuggestCert[建議相關認證<br/>標記 In Progress/Planned<br/>class=opt-new]
+    
+    CheckCert -->|Yes| UpdateCert["更新優化：<br/>• 重新排序<br/>• 應用 QuickImprovements<br/>class=opt-modified"]
+    CheckCert -->|No| CheckGapsNeedCert{KeyGaps 需要認證?}
+    
+    CheckGapsNeedCert -->|Yes| SuggestCert["建議相關認證<br/>標記 In Progress/Planned<br/>class=opt-new"]
+    CheckGapsNeedCert -->|No| SkipCert[跳過 Certifications]
     
     UpdateCert --> ProcessCustom
     SuggestCert --> ProcessCustom
+    SkipCert --> ProcessCustom
     
-    ProcessCustom[Step 4: 處理 Custom Sections] --> EachCustom[逐個評估]
+    %% === CUSTOM SECTIONS PROCESSING (SIMPLIFIED) ===
+    ProcessCustom[Step 4: 處理 Custom Sections] --> CheckHasCustom{有 custom sections?}
     
-    EachCustom --> Evaluate{與 JD 相關性?}
-    Evaluate -->|Score ≥ 7| Keep[保留優化<br/>可能重命名<br/>class=opt-modified]
-    Evaluate -->|Score 4-6| Consider[評估整合<br/>有用內容移到<br/>其他 sections]
-    Evaluate -->|Score < 4| Remove[刪除]
+    CheckHasCustom -->|No| NoCustom[不輸出 custom section]
+    CheckHasCustom -->|Yes| AnalyzeTypes["分析 section 類型<br/>例如: Awards, Volunteer,<br/>Availability, Work Visa,<br/>Languages, Publications"]
     
-    Keep --> Next{更多 Custom?}
-    Consider --> Next
-    Remove --> Next
-    Next -->|Yes| EachCustom
-    Next -->|No| Track
+    AnalyzeTypes --> SetName["設定統一名稱：<br/>'Supplementary Details'"]
     
-    Track[生成 tracking:<br/>記錄過濾的專案<br/>記錄保留/刪除的 sections] --> OutputXML[輸出 XML with CSS]
+    SetName --> MergeContent["合併所有內容：<br/>• Awards & Honors<br/>• Volunteer Experience<br/>• Availability info<br/>• Work Authorization<br/>• Languages<br/>• Other relevant items"]
+    
+    MergeContent --> FilterByJD["根據 JD 過濾：<br/>• 保留相關成就/技能<br/>• 保留實用資訊<br/>(Visa, Availability)<br/>• 移除無關內容"]
+    
+    FilterByJD --> CheckContent{過濾後有內容?}
+    
+    CheckContent -->|Yes| OutputSupplementary["輸出 Supplementary Details<br/>class=opt-modified"]
+    CheckContent -->|No| NoCustom
+    
+    OutputSupplementary --> Track
+    NoCustom --> Track
+    
+    %% === TRACKING & OUTPUT ===
+    Track["生成 tracking 記錄：<br/>• Education: 最高學歷處理方式<br/>• Projects: 過濾結果統計<br/>• Certifications: 建議內容<br/>• Custom → Supplementary Details"] --> OutputJSON["輸出 JSON：<br/>• optimized_sections<br/>• tracking array"]
 ```
 
 ### 📝 Education Enhancement 重要說明
@@ -518,13 +554,15 @@ user: |
   3. Mark as "In Progress" or "Planned"
   4. Mark changes (opt-modified or opt-new)
   
-  ### Step 4: Custom Sections Processing
-  For each custom section:
-    1. Calculate relevance score (0-10)
-    2. Score ≥ 7 → Keep and optimize (may rename)
-    3. Score 4-6 → Consider integration elsewhere
-    4. Score < 4 → Remove
-    5. Mark all changes
+  ### Step 4: Custom Sections Processing (簡化版)
+  1. 分析所有 custom_sections 名稱
+  2. 決定統一名稱："Supplementary Details"
+  3. 合併所有內容並過濾：
+     - 保留與 JD 相關的成就/技能
+     - 保留實用資訊 (Availability, Work Visa, Languages)
+     - 移除無關內容
+  4. 二元決策：有內容則保留，無內容則移除
+  5. 標記為 opt-modified
   
   ## Output Format
   <education class="...">...</education>
@@ -537,12 +575,13 @@ user: |
   
   ## Tracking Format
   [
-    "[Education] Enhanced: Added GPA, 6 courses, 2 academic projects, 2 activities",
-    "[Projects] Filtered: excluded work and academic projects",
+    "[Education] Enhanced: HIGHEST degree only - Added GPA, 6 courses, 2 academic projects",
+    "[Education] Standard: Other 2 degrees kept basic format",
+    "[Projects] Filtered: excluded 3 work and 2 academic projects",
     "[Projects] Enhanced: 1 personal project updated, 1 learning project created",
     "[Certifications] Suggested: AWS and Docker certifications for gaps",
-    "[Custom: Publications] Retained: High relevance (score 8/10)",
-    "[Custom: Hobbies] Removed: Low relevance (score 2/10)"
+    "[Custom → Supplementary Details] Merged: 3 sections consolidated with relevant content",
+    "[Custom] Removed: Irrelevant hobbies and outdated memberships"
   ]
 ```
 

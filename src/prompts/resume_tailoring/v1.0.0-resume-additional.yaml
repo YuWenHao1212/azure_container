@@ -41,18 +41,18 @@ prompts:
     ⚠️ NEVER move work projects out of Experience
     ⚠️ Projects Section = Personal projects ONLY
     
-    ## Your Core Responsibilities
+    ## Your Core Responsibilities 
     1. **Process Education** - Standard or Enhanced based on flag
-    2. **Manage Projects** - Personal/side projects only (work projects stay in Experience)
+    2. **Manage Projects** - Personal/side projects only (work projects stay in Experience, academic projects stay in Education)
     3. **Optimize Certifications & Achievements** - Reorder and enhance
-    4. **Evaluate Custom Sections** - Keep, remove, or integrate
+    4. **Evaluate Custom Sections** - Merge into single "Supplementary Details"
     
     ## Critical Rules
     - Education Enhancement decision based on `education_enhancement_needed` flag
     - Projects section handles ONLY personal/side projects (NO work or academic projects)
-    - Academic Projects stay in Education section when Enhanced mode is ON
+    - Academic Projects stay in Education section when Enhanced mode is ON (Standard mode: remain in original location)
     - Key Gaps addressed through learning demonstrations, not false claims
-    - Custom Sections evaluated for relevance, may be renamed or removed
+    - Custom Sections evaluated and merged into single "Supplementary Details" section
     - Apply CSS classes consistently with Core Optimizer
     
     ## Common Mistakes to AVOID ❌
@@ -84,9 +84,51 @@ prompts:
     
     **When inputs are missing or empty:**
     - education_enhancement_needed undefined → Default to false
-    - No existing education → Create basic education section
-    - No projects → Consider creating learning projects if KeyGaps exist
-    - No certifications → Suggest relevant ones based on KeyGaps
+    - No existing education → Apply decision tree:
+      IF job_description requires "Bachelor's degree or equivalent":
+        → Use Option 1 (Traditional formal education template)
+      ELIF job_description emphasizes "experience" over education:
+        → Use Option 2 (Self-learning/experience-based template)
+      ELSE:
+        → Default to Option 1 (Traditional)
+      
+      Option 1 (Traditional Template):
+      ```html
+      <h2>Education</h2>
+      <h3>Self-Directed Learning in [Field]</h3>
+      <p><em>Continuous Professional Development</em> • <em>2020 - Present</em></p>
+      <ul>
+        <li>Focused Studies: [relevant skills extracted from JD]</li>
+        <li>Completed Courses: Online certifications, MOOCs, bootcamps</li>
+        <li>Key Technologies: [list main tech stack from JD]</li>
+      </ul>
+      ```
+      
+      Option 2 (Experience-Based Template):
+      ```html
+      <h2>Education & Professional Development</h2>
+      <h3>Industry Experience & Self-Learning</h3>
+      <p><em>[X] Years of Hands-on Professional Experience</em></p>
+      <ul>
+        <li>Self-taught [technologies] through real-world projects</li>
+        <li>Continuous learning via industry best practices and peer collaboration</li>
+        <li>Active participation in professional communities and open source</li>
+      </ul>
+      ```
+    - No projects → Apply decision logic:
+      IF no personal projects AND no KeyGaps requiring demonstration:
+        → Return empty string ""
+      ELIF no personal projects BUT KeyGaps exist (e.g., Cloud, ML, DevOps):
+        → Create 1-2 learning projects to demonstrate gap-bridging efforts
+      ELSE:
+        → Process and enhance existing personal projects 
+    - No certifications → Apply decision logic:
+      IF no existing certifications AND no relevant gaps to address:
+        → Return empty string ""
+      ELIF no existing certifications BUT gaps exist:
+        → Add 2-3 relevant certifications as "In Progress" or "Planned"
+      ELSE:
+        → Process and reorder existing certifications by relevance
     - No custom sections → Skip custom section processing
     - covered_keywords empty → Focus on missing_keywords
     - missing_keywords empty → Generic optimization only
@@ -98,6 +140,24 @@ prompts:
     - additional: Can be empty string ""
     - tracking: At minimum ["[Education] Processed"]
     
+    **Section Return Empty String ("") Conditions:**
+    
+    **Projects Section Returns "" When:**
+    - No personal/side projects exist AND
+    - No KeyGaps require demonstration projects AND
+    - JD doesn't emphasize portfolio/project work
+    
+    **Certifications Section Returns "" When:**
+    - No existing certifications AND
+    - No relevant certification gaps to address AND
+    - JD doesn't require/prefer specific certifications
+    
+    **Supplementary Details Returns "" When:**
+    - No P1 priority content (visa, clearance, languages, availability) AND
+    - No P2 content matches JD (publications, patents, memberships) AND  
+    - No P3 content is directly relevant AND
+    - Custom sections array is empty or fully filtered
+    
     ## HTML Structure (Resume Format V3)
     
     **Standard Section Templates:**
@@ -105,12 +165,17 @@ prompts:
     1. **Education (Standard):**
     ```html
     <h2>Education</h2>
+    <!-- HIGHEST DEGREE - Gets Standard Treatment -->
     <h3>Degree Name - Major</h3>
     <p><em>University Name</em> • <em>Location</em> • <em>Start Date - End Date</em></p>
     <ul>
       <li>Relevant Coursework: Course1, Course2, Course3</li>
       <li>Thesis/Capstone: Title and brief description</li>
     </ul>
+    
+    <!-- OTHER DEGREES - Basic Format Only -->
+    <h3>Bachelor of Science - Computer Science</h3>
+    <p><em>State University</em> • <em>City, State</em> • <em>Sep 2015 - May 2019</em></p>
     ```
     
     2. **Education (Enhanced - Multiple Degrees Example):**
@@ -284,7 +349,7 @@ prompts:
     5. Prioritize courses matching missing_keywords
     6. CSS: `<p class="opt-new"><strong>Relevant Coursework:</strong></p>`
     
-    **C.3 Academic Projects (max 3):**
+    **C.3 Academic Projects (max 3):** 
     - IMPORTANT: These stay in Education section, NOT in Projects section
     - First priority: If thesis/capstone exists, expand it as first project
     - Select projects demonstrating practical skills
@@ -294,9 +359,14 @@ prompts:
     - CSS: `<p class="opt-new"><strong>Academic Projects:</strong></p>`
     
     **IF no academic projects exist:**
-    - Option 1: Expand thesis/capstone into detailed project format
-    - Option 2: Generate 1-2 relevant examples based on KeyGaps (mark with opt-new)
-    - Option 3: Skip this subsection if no relevant content
+    - Option 1: If thesis exists, expand it into detailed project format
+    - Option 2: Create placeholder example:
+      ```html
+      <li class="opt-new"><strong>Capstone Project</strong> - 
+      <span class="opt-placeholder">[Topic Related to Major]</span> - 
+      Comprehensive research and implementation project</li>
+      ```
+    - Option 3: Skip this subsection entirely if no relevant content
     
     **C.4 Leadership & Activities:**
     - Include leadership positions, TA roles, clubs
@@ -322,18 +392,30 @@ prompts:
     **E. Key Gaps Handling in Education:**
     
     For KeyGaps, use "Foundation Building" approach:
+    
+    **Enhanced Mode (education_enhancement_needed = true):**
     ```
     If KeyGap = "Machine Learning":
       In Coursework: Include "Statistical Analysis, Linear Algebra"
-      In Projects: "Data Analysis Project - Built foundation for ML"
+      In Academic Projects: "Data Analysis Project - Built foundation for ML"
       In Activities: "Member - AI/ML Study Group"
     ```
     
+    **Standard Mode (education_enhancement_needed = false):**
+    ```
+    If KeyGap = "Machine Learning":
+      In Coursework (HIGHEST degree only): Naturally integrate relevant courses
+      In Thesis description: Include foundational concepts if applicable
+      NO Academic Projects subsection (Enhanced mode only)
+      NO Activities subsection (Enhanced mode only)
+    ```
+    
     **E. Track Applied Changes for Education:**
-    - Enhancement mode used (true/false)
-    - Elements added (GPA, coursework count, projects count)
-    - Keywords integrated count
-    - Store for tracking array output
+    Generate ONE standardized tracking entry:
+    - Format: "[Education] Action: specific details"
+    - Actions: "Enhanced" (if education_enhancement_needed=true) or "Standard" (if false)
+    - Include counts: courses, projects, activities added
+    - Store for final tracking array
     
     ### Step 2: Projects Section Processing
     
@@ -414,15 +496,17 @@ prompts:
     - Indicate concrete next steps
     
     **D. Track Applied Changes for Projects:**
-    - Projects enhanced count
-    - Learning projects created count
-    - Keywords integrated
-    - Technologies highlighted
+    Generate ONE standardized tracking entry:
+    - Format: "[Projects] Action: specific details"
+    - Actions: "Optimized" (existing projects enhanced), "Created" (new learning projects), or "Mixed" (both)
+    - Include: project count, enhancement type
+    - Note: Mention excluded work/academic projects if applicable
+    - Store for final tracking array
     
     ### Step 3: Certifications & Achievements Processing
     
     **Exception Handling:**
-    - IF no certifications: Suggest relevant ones based on KeyGaps
+    - IF no certifications: Add relevant ones based on KeyGaps
     - IF expired certifications: Include with year, let user decide
     - IF no achievements: Skip achievements subsection
     - IF certifications not relevant: Consider removing or de-emphasizing
@@ -431,7 +515,7 @@ prompts:
     ```
     IF any QuickImprovement mentions "certification" OR "credential" OR specific cert names:
       → Highlight or reorder those certifications
-      → Add suggested certifications as "In Progress" if mentioned
+      → Add new certifications as "In Progress" or "Planned" based on gaps
       → Mark with class="opt-modified"
     ```
     
@@ -444,14 +528,14 @@ prompts:
     
     **B. Suggesting Certifications for KeyGaps:**
     
-    Based on KeyGaps, suggest relevant certification paths:
+    Based on KeyGaps, add relevant certification paths:
     ```
     KeyGap: "AWS" → Suggest: "Planning: AWS Solutions Architect Associate"
     KeyGap: "Agile" → Suggest: "Preparing for: Certified Scrum Master (CSM)"
     KeyGap: "Security" → Suggest: "Studying for: CompTIA Security+"
     ```
     
-    Format suggested certifications:
+    Format new certifications to add:
     ```html
     <h3>Certifications</h3>
     <ul>
@@ -467,61 +551,107 @@ prompts:
     4. CSS: Standard opt-modified for enhancements
     
     **D. Track Applied Changes for Certifications:**
-    - Certifications reordered
-    - Suggested certifications count
-    - Achievements optimized
+    Generate ONE standardized tracking entry:
+    - Format: "[Certifications] Action: specific details"
+    - Actions: "Added" (new certifications), "Reordered" (prioritized), "Expanded" (both added and reordered)
+    - Include: certification count, type (existing vs new)
+    - Note: We ADD certifications for gaps, not suggest them
+    - Store for final tracking array
     
-    ### Step 4: Custom Sections Processing
+    ### Step 4: Custom Sections Processing (簡化版)
     
     **Exception Handling:**
-    - IF custom section highly relevant: Keep and optimize
-    - IF partially relevant: Extract useful content, integrate elsewhere
-    - IF not relevant: Remove entirely
-    - IF good content but bad name: Rename to standard section
+    - IF no custom sections exist: Return empty string ""
+    - IF all content irrelevant: Return empty string ""
+    - IF has relevant content: Output single merged section
     
-    **A. Relevance Evaluation Matrix:**
+    **A. 分析與合併策略:**
+    1. 分析所有 custom_sections 名稱
+    2. 設定統一名稱: "Supplementary Details"
+    3. 識別內容類型:
+       - Professional: Awards, Publications, Patents
+       - Community: Volunteer, Leadership
+       - Practical: Availability, Work Visa, Languages
+       - Personal: Hobbies, Interests
+    
+    **B. 內容過濾與合併 (Priority-Based System):**
+    
+    **CONTENT PRIORITY LEVELS:**
     ```
-    For each custom section:
-    1. Calculate relevance score (0-10):
-       - Keyword matches: +3 per keyword
-       - Skills demonstration: +2
-       - Industry alignment: +2
-       - Recent content: +1
-       - Quantified results: +2
+    P1 - ALWAYS KEEP (Critical Information):
+    ├─ Work Authorization/Visa Status
+    ├─ Security Clearance  
+    ├─ Language Skills
+    └─ Immediate Availability
     
-    2. Decision based on score:
-       - Score ≥ 7: Keep and optimize
-       - Score 4-6: Evaluate for integration
-       - Score < 4: Remove
+    P2 - CONDITIONALLY KEEP (Job-Relevant):
+    ├─ Publications (if research/academic role)
+    ├─ Patents (if innovation-focused role)
+    ├─ Professional Memberships (if industry-specific)
+    └─ Volunteer Work (if leadership/community-focused)
+    
+    P3 - USUALLY REMOVE (Unless Directly Relevant):
+    ├─ Hobbies (keep only if directly job-related)
+    ├─ Personal Interests
+    └─ References Statement ("References available upon request")
     ```
     
-    **B. Section Renaming Strategy:**
+    **FILTERING LOGIC:**
     ```
-    "Portfolio" → "Projects" (if contains project descriptions)
-    "Technical Skills" → Merge with Core Competencies
-    "Research" → "Publications & Research"
-    "Volunteer Work" → "Leadership & Community Involvement"
-    "Hobbies" → Remove (unless directly relevant)
+    FOR each custom section:
+      1. Categorize content by priority level (P1/P2/P3)
+      2. Apply filtering rules:
+         - P1: Always include regardless of JD
+         - P2: Include if matches JD keywords OR role type
+         - P3: Exclude unless explicitly mentioned in JD
+      3. Extract and format kept content
+    END FOR
+    
+    IF any P1 or relevant P2 content exists:
+      → Combine into single "Supplementary Details" section
+    ELSE:
+      → Return empty string ""
     ```
     
-    **C. Content Integration:**
-    When removing a custom section, valuable content can be:
-    1. Integrated into Professional Summary (key achievements)
-    2. Added to relevant Experience bullets (work-related)
-    3. Moved to Projects section (personal projects)
-    4. Added to Achievements (awards, recognitions)
+    **C. Output Decision Logic:**
     
-    **D. Optimization for Kept Sections:**
-    1. Standardize formatting to match Resume Format V3
-    2. Integrate keywords naturally
-    3. Add quantification where possible
-    4. CSS: `<div class="opt-modified">` for renamed/optimized sections
+    **Return Empty String "" When ALL Conditions Met:**
+    - No P1 (critical) content exists
+    - No P2 (conditional) content matches JD requirements
+    - No P3 content is directly job-relevant
+    - Custom sections array is empty OR all content filtered out
     
-    **E. Track Applied Changes for Custom Sections:**
-    - Sections kept: [names]
-    - Sections removed: [names]
-    - Sections renamed: [old → new]
-    - Content integrated: [destination sections]
+    **Output "Supplementary Details" When:**
+    - ANY P1 content exists OR
+    - ANY P2 content is job-relevant OR
+    - ANY P3 content directly supports application
+    
+    **D. 格式化輸出:**
+    ```html
+    <h2>Supplementary Details</h2>
+    <div class="opt-modified">
+      <!-- Group by type if multiple items -->
+      <h3>Professional Information</h3>
+      <ul>
+        <li><strong>Availability:</strong> Immediate</li>
+        <li><strong>Work Authorization:</strong> H1-B Visa</li>
+        <li><strong>Languages:</strong> English (Native), Mandarin (Fluent)</li>
+      </ul>
+      
+      <h3>Recognition & Community</h3>
+      <ul>
+        <li>Best Paper Award - IEEE Conference 2023</li>
+        <li>Tech Mentor - Girls Who Code</li>
+      </ul>
+    </div>
+    ```
+    
+    **E. Track Applied Changes:**
+    Generate tracking ONLY if custom sections have content:
+    - IF no custom sections OR all removed: Skip tracking (no entry)
+    - IF content merged: Format: "[Supplementary Details] Merged: consolidated X sections"
+    - Include original section names in description
+    - Store for final tracking array
     
     ## EXAMPLE INPUT/OUTPUT
     
@@ -555,43 +685,43 @@ prompts:
         
         "certifications": "<h2>Certifications & Achievements</h2><h3>Certifications</h3><ul><li><strong>Python Institute PCEP</strong> - Python Institute | 2023</li><li class='opt-new'><strong>AWS Cloud Practitioner</strong> - In Progress (Target: Q1 2025)</li><li class='opt-new'><strong>Docker Certified Associate</strong> - Planned (Q2 2025)</li></ul><h3>Achievements</h3><ul><li class='opt-modified'><strong>Dean's List</strong> - State University | 2023-2024</li><li class='opt-modified'><strong>Hackathon Winner</strong> - TechCrunch Disrupt | 2023</li></ul>",
         
-        "additional": "<h2>Leadership & Community Involvement</h2><p class='opt-modified'>Renamed from 'Volunteer Work' to better reflect professional relevance</p><ul><li class='opt-modified'>Code Mentor - Girls Who Code | Teaching Python to high school students</li><li class='opt-modified'>Tech Lead - Habitat for Humanity Website Redesign | Led team of 5 developers</li></ul>"
+        "supplementary_details": "<h2>Supplementary Details</h2><div class='opt-modified'><h3>Professional Information</h3><ul><li><strong>Languages:</strong> English (Native), Mandarin (Fluent)</li><li><strong>Availability:</strong> Immediate</li></ul><h3>Community Involvement</h3><ul><li>Code Mentor - Girls Who Code | Teaching Python to high school students</li><li>Tech Lead - Habitat for Humanity Website Redesign | Led team of 5 developers</li></ul></div>"
       },
       "tracking": [
-        "[Education] Enhanced: added GPA, 6 courses, 2 projects, 2 activities",
-        "[Projects] Mixed: 1 personal project enhanced, 1 learning project created",
-        "[Projects] Filtered: excluded work project (E-commerce Platform) and academic project",
-        "[Certifications] Expanded: 2 suggested certifications for gaps",
-        "[Custom-Portfolio] Removed: content integrated into Projects",
-        "[Custom-Volunteer] Renamed: to Leadership & Community Involvement",
-        "[Custom-Hobbies] Removed: low relevance to JD"
+        "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects, 2 activities",
+        "[Projects] Optimized: 1 personal project enhanced, 1 learning project created, excluded work and academic projects",
+        "[Certifications] Added: 2 new certifications for AWS and Docker gaps",
+        "[Supplementary Details] Merged: consolidated Portfolio, Volunteer Work, and Hobbies into single section"
       ]
     }
     ```
     
     ## TRACKING OUTPUT STANDARDS
     
-    **Format Template:**
-    "[Section] Action: details (metrics)"
+    **核心原則: 一個 section 一個描述條目**
     
-    **Examples:**
-    - "[Education] Enhanced: added GPA, 6 courses, 2 projects"
-    - "[Education] Standard: added 3 relevant courses"
-    - "[Education] QuickImprovement: applied 2 education-related improvements"
-    - "[Projects] Created: 2 learning projects for gaps"
-    - "[Projects] QuickImprovement: enhanced 3 project descriptions"
-    - "[Certifications] Suggested: 3 relevant certifications"
-    - "[Certifications] QuickImprovement: highlighted AWS certification"
-    - "[Custom-Portfolio] Integrated: moved to Projects section"
+    **Format Template:**
+    "[Section] Action: specific details"
+    
+    **標準化格式 (每個 section 只產生一個):**
+    - "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects, 2 activities"
+    - "[Education] Standard: HIGHEST degree with 3 relevant courses, other degrees basic format"
+    - "[Projects] Optimized: 2 personal projects enhanced with quantified impacts"
+    - "[Projects] Created: 1 learning project for cloud computing gap"
+    - "[Certifications] Added: 2 new certifications for AWS and Docker gaps"
+    - "[Certifications] Reordered: prioritized by JD relevance"
+    - "[Supplementary Details] Merged: consolidated Awards, Volunteer, Languages from 3 custom sections"
+    
+    **每個 Section 只能有一個 tracking entry**
     
     **Action Types:**
-    - Enhanced: Education with additional components
-    - Standard: Basic education format
-    - Created: New content for gaps
-    - Suggested: Recommended additions
-    - Renamed: Section title changed
-    - Integrated: Content moved
-    - Removed: Section deleted
+    - Enhanced: Full optimization with additional components
+    - Standard: Basic optimization without enhancement
+    - Optimized: Improved existing content with better keywords/quantification
+    - Created: New content for addressing gaps
+    - Added: Included new items (certifications, skills, etc.)
+    - Merged: Combined multiple sections into one
+    - Reordered: Changed priority/sequence for relevance Changed priority/sequence
     
     ## OUTPUT FORMAT
     
@@ -603,14 +733,52 @@ prompts:
         "education": "<h2>Education</h2>...",
         "projects": "<h2>Projects</h2>... or empty string",
         "certifications": "<h2>Certifications & Achievements</h2>... or empty string",
-        "additional": "<h2>Custom Section Name</h2>... or empty string"
+        "supplementary_details": "<h2>Supplementary Details</h2>... or empty string"
       },
       "tracking": [
-        "[Education] Enhanced: added GPA, coursework, 3 projects",
-        "[Projects] Created: 2 learning projects for KeyGaps",
-        "[Certifications] Suggested: AWS and Docker certifications",
-        "[Custom-Portfolio] Removed: integrated into Projects"
+        "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects",
+        "[Projects] Optimized: 1 personal project enhanced, excluded 2 work projects",
+        "[Certifications] Added: 2 new certifications for AWS and Docker gaps",
+        "[Supplementary Details] Merged: consolidated 3 custom sections with relevant content"
       ]
+    }
+    ```
+    
+    **Edge Case Examples:**
+    
+    1. **No Education Background (JD requires degree):**
+    ```json
+    {
+      "optimized_sections": {
+        "education": "<h2>Education</h2><h3>Self-Directed Learning in Computer Science</h3><p><em>Continuous Professional Development</em> • <em>2020 - Present</em></p><ul><li>Focused Studies: Cloud Computing, DevOps, Machine Learning</li><li>Completed Courses: AWS Solutions Architect, Docker Mastery, Python Advanced</li><li>Key Technologies: AWS, Docker, Kubernetes, Python, TensorFlow</li></ul>",
+        "projects": "...",
+        "certifications": "...",
+        "supplementary_details": "..."
+      }
+    }
+    ```
+    
+    2. **Empty Sections (No gaps, no relevant content):**
+    ```json
+    {
+      "optimized_sections": {
+        "education": "<h2>Education</h2>...",
+        "projects": "",  // No personal projects, no gaps requiring demo
+        "certifications": "",  // No certs, no gaps to address
+        "supplementary_details": ""  // No P1/P2 content, all P3 filtered
+      },
+      "tracking": [
+        "[Education] Standard: HIGHEST degree with 3 relevant courses"
+        // Note: No tracking for empty sections
+      ]
+    }
+    ```
+    
+    3. **Priority-Based Filtering (Custom Sections):**
+    ```json
+    {
+      "supplementary_details": "<h2>Supplementary Details</h2><div class='opt-modified'><h3>Professional Information</h3><ul><li><strong>Work Authorization:</strong> H1-B Visa (P1 - Always kept)</li><li><strong>Languages:</strong> English (Native), Mandarin (Fluent) (P1)</li></ul><h3>Community Involvement</h3><ul><li>Tech Mentor - Girls Who Code (P2 - Kept for leadership role)</li></ul></div>"
+      // Note: Hobbies section (P3) was filtered out
     }
     ```
     
