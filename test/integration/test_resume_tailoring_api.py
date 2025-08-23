@@ -206,7 +206,8 @@ class TestResumeTailoringAPI:
         # Should have no warning
         assert data["warning"]["has_warning"] is False
         assert data["warning"]["message"] == ""
-        assert data["warning"]["details"] == []
+        # Bubble.io compatibility: empty arrays become [""]
+        assert data["warning"]["details"] == [""]
 
     # Test ID: API-TLR-523-IT
     @pytest.mark.asyncio
