@@ -182,6 +182,36 @@ class ResumeTailoringServiceV31:
             post_processing_ms = int((time.time() - post_start) * 1000)
             total_processing_ms = int((time.time() - start_time) * 1000)
 
+            # Check if LLM2 had issues and add warnings
+            warnings = []
+            if llm2_result.get("fallback_used"):
+                warnings.append({
+                    "type": "LLM2_FALLBACK_USED",
+                    "message": ("Education/Projects/Certifications sections using original content "
+                                "due to LLM2 parsing failure"),
+                    "details": {
+                        "parse_error": llm2_result.get("parse_error"),
+                        "had_core_strengths": bool(bundle2.get("core_strengths")),
+                        "had_key_gaps": bool(bundle2.get("key_gaps"))
+                    }
+                })
+                logger.warning(f"LLM2 fallback was used: {llm2_result.get('parse_error')}")
+
+            # Check if LLM2 sections are empty
+            llm2_sections = llm2_result.get("optimized_sections", {})
+            if not any([llm2_sections.get("education"),
+                       llm2_sections.get("projects"),
+                       llm2_sections.get("certifications")]):
+                warnings.append({
+                    "type": "LLM2_CONTENT_MISSING",
+                    "message": "Some sections may be incomplete",
+                    "details": {
+                        "education_present": bool(llm2_sections.get("education")),
+                        "projects_present": bool(llm2_sections.get("projects")),
+                        "certifications_present": bool(llm2_sections.get("certifications"))
+                    }
+                })
+
             # Build response
             response = {
                 "optimized_resume": final_html,
@@ -206,6 +236,10 @@ class ResumeTailoringServiceV31:
                     "llm2_models": "gpt-4.1"
                 }
             }
+
+            # Add warnings if any exist
+            if warnings:
+                response["warnings"] = warnings
 
             logger.info(
                 f"Resume tailoring v3.1.0 completed in {total_processing_ms}ms "
@@ -249,18 +283,19 @@ class ResumeTailoringServiceV31:
         # Bundle for LLM1 (Core Optimizer)
         bundle1 = {
             **common_data,
-            "core_strengths": gap_analysis.get("CoreStrengths", ""),
-            "key_gaps": gap_analysis.get("KeyGaps", ""),
-            "quick_improvements": gap_analysis.get("QuickImprovements", ""),
+            "core_strengths": gap_analysis.get("CoreStrengths") or gap_analysis.get("core_strengths", ""),
+            "key_gaps": gap_analysis.get("KeyGaps") or gap_analysis.get("key_gaps", ""),
+            "quick_improvements": gap_analysis.get("QuickImprovements") or gap_analysis.get("quick_improvements", ""),
             "focus": "Professional Summary, Core Competencies/Skills, Professional Experience"
         }
 
         # Bundle for LLM2 (Additional Manager)
         bundle2 = {
             **common_data,
-            "core_strengths": gap_analysis.get("CoreStrengths", ""),  # May need for context
-            "key_gaps": gap_analysis.get("KeyGaps", ""),
-            "quick_improvements": gap_analysis.get("QuickImprovements", ""),
+            # May need for context
+            "core_strengths": gap_analysis.get("CoreStrengths") or gap_analysis.get("core_strengths", ""),
+            "key_gaps": gap_analysis.get("KeyGaps") or gap_analysis.get("key_gaps", ""),
+            "quick_improvements": gap_analysis.get("QuickImprovements") or gap_analysis.get("quick_improvements", ""),
             "education_enhancement_needed": resume_structure.get("education_enhancement_needed", False),
             "standard_sections": resume_structure.get("standard_sections", {}),
             "custom_sections": resume_structure.get("custom_sections", []),
@@ -365,10 +400,15 @@ class ResumeTailoringServiceV31:
 
             # Parse response
             content = response["choices"][0]["message"]["content"].strip()
-            result = self._parse_llm_response(content)
+            # Pass is_llm2=True and original_resume for fallback
+            result = self._parse_llm_response(content, is_llm2=True, original_resume=bundle.get("original_resume", ""))
             result["processing_time_ms"] = processing_time_ms
 
-            logger.info(f"LLM2 (Additional Manager) completed in {processing_time_ms}ms")
+            # Log diagnostic information
+            logger.info(f"LLM2 completed in {processing_time_ms}ms")
+            logger.debug(f"LLM2 bundle had: core_strengths={bool(bundle.get('core_strengths'))}, "
+                        f"key_gaps={bool(bundle.get('key_gaps'))}, "
+                        f"quick_improvements={bool(bundle.get('quick_improvements'))}")
 
             return result
 
@@ -376,8 +416,44 @@ class ResumeTailoringServiceV31:
             logger.error(f"LLM2 call failed: {e}")
             raise
 
-    def _parse_llm_response(self, content: str) -> dict:
-        """Parse JSON response from LLM."""
+    def _extract_original_section(self, section_name: str, original_resume: str = "") -> str:
+        """Extract a section from the original resume as fallback."""
+
+        from bs4 import BeautifulSoup
+
+        if not original_resume:
+            return ""
+
+        soup = BeautifulSoup(original_resume, 'html.parser')
+
+        # Common section headers to look for
+        section_headers = {
+            "education": ["education", "學歷", "educational background", "academic"],
+            "projects": ["project", "專案", "portfolio", "work samples"],
+            "certifications": ["certification", "證照", "certificate", "qualification", "license"]
+        }
+
+        headers = section_headers.get(section_name.lower(), [section_name])
+
+        # Try to find the section
+        for header in headers:
+            # Look for headers containing the keyword
+            for tag in soup.find_all(['h1', 'h2', 'h3', 'h4']):
+                if header.lower() in tag.get_text().lower():
+                    # Get content after this header until next header
+                    content_parts = []
+                    for sibling in tag.find_next_siblings():
+                        if sibling.name and sibling.name.startswith('h'):
+                            break
+                        content_parts.append(str(sibling))
+
+                    if content_parts:
+                        return f"<h2>{tag.get_text()}</h2>\n" + "\n".join(content_parts)
+
+        return ""
+
+    def _parse_llm_response(self, content: str, is_llm2: bool = False, original_resume: str = "") -> dict:
+        """Parse JSON response from LLM with robust error handling."""
 
         try:
             # Extract JSON from response
@@ -400,16 +476,35 @@ class ResumeTailoringServiceV31:
             if "tracking" not in result:
                 result["tracking"] = []
 
+            # Log successful parsing for LLM2
+            if is_llm2:
+                sections = result.get("optimized_sections", {})
+                logger.info(f"LLM2 sections parsed successfully: {list(sections.keys())}")
+
             return result
 
         except (json.JSONDecodeError, ValueError) as e:
-            logger.error(f"Failed to parse LLM response: {e}")
-            logger.debug(f"Raw response: {content[:500]}...")
+            logger.error(f"Failed to parse {'LLM2' if is_llm2 else 'LLM'} response: {e}")
+            logger.debug(f"Raw response preview: {content[:500]}...")
 
-            # Return a fallback response
+            # For LLM2, try to provide fallback with original content
+            if is_llm2 and original_resume:
+                logger.warning("Using fallback content from original resume for LLM2 sections")
+                return {
+                    "optimized_sections": {
+                        "education": self._extract_original_section("education", original_resume),
+                        "projects": self._extract_original_section("projects", original_resume),
+                        "certifications": self._extract_original_section("certifications", original_resume)
+                    },
+                    "tracking": ["LLM2 parsing failed - using original content as fallback"],
+                    "parse_error": str(e),
+                    "fallback_used": True
+                }
+
+            # Return a minimal fallback response
             return {
                 "optimized_sections": {},
-                "tracking": ["Failed to parse LLM response"],
+                "tracking": [f"Failed to parse {'LLM2' if is_llm2 else 'LLM'} response"],
                 "parse_error": str(e)
             }
 
@@ -486,13 +581,15 @@ class ResumeTailoringServiceV31:
 
         soup = BeautifulSoup(html, 'html.parser')
 
-        # Function to check if a node is inside any span
-        def is_inside_span(element):
-            """Check if element is inside any span tag."""
+        # Function to check if a node is inside a keyword span
+        def is_inside_keyword_span(element):
+            """Check if element is inside a keyword span tag."""
             parent = element.parent
             while parent:
-                if parent.name == 'span':
-                    return True
+                if parent.name == 'span' and parent.get('class'):
+                    classes = parent.get('class')
+                    if 'opt-keyword-existing' in classes or 'opt-keyword-add' in classes:
+                        return True
                 parent = parent.parent
             return False
 
@@ -511,12 +608,12 @@ class ResumeTailoringServiceV31:
 
         # Process all text nodes
         for text_node in soup.find_all(text=True):
-            # Skip if parent is script, style, or if already inside a span
+            # Skip if parent is script, style
             if text_node.parent.name in ['script', 'style']:
                 continue
 
-            # IMPORTANT: Skip if already inside any span to prevent nesting
-            if is_inside_span(text_node):
+            # IMPORTANT: Skip only if already inside a keyword span (not just any span)
+            if is_inside_keyword_span(text_node):
                 continue
 
             original_text = str(text_node)
@@ -533,7 +630,7 @@ class ResumeTailoringServiceV31:
                 for keyword in covered_keywords:
                     # Check if this keyword is not already marked as newly added
                     if keyword not in newly_added:
-                        pattern = re.compile(rf'\b{re.escape(keyword)}\b', re.IGNORECASE)
+                        pattern = re.compile(rf'{re.escape(keyword)}', re.IGNORECASE)
 
                         def replacer(match):
                             # Check if this match is not already inside a span

@@ -815,11 +815,11 @@ if __name__ == "__main__":
     elif args.pytest:
         # Run with pytest
         import subprocess
-        subprocess.run([  # noqa: S607
+        subprocess.run([  # noqa: S603, S607
             "python", "-m", "pytest",
             "test/performance/test_language_detection_performance.py",
             "-v", "-s"
-        ], check=False)
+        ], check=False, shell=False)
     else:
         print("Language Detection Performance Test Suite")
         print("Usage:")
