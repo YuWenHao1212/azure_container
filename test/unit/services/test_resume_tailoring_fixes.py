@@ -105,18 +105,21 @@ class TestResumeTailoringFixes(unittest.TestCase):
 
         result = self.service._apply_keyword_css(html, covered, newly_added)
 
-        # First paragraph should keep opt-modified without nesting
+        # First paragraph should keep opt-modified class
         assert 'class="opt-modified"' in result
 
-        # Python and Java inside opt-modified paragraph should NOT be marked (prevented nesting)
-        assert '<span class="opt-keyword' not in result.split('</p>')[0]  # First paragraph should have no keyword spans
+        # Keywords SHOULD NOW be marked inside opt-modified (we only prevent keyword-inside-keyword)
+        # Since Python and Java are not in our covered/newly_added lists, they won't be marked
+        # But if they were, they would be allowed inside opt-modified
 
-        # Second paragraph should have keyword spans (not inside opt-* class)
+        # Second paragraph should have keyword spans
         second_paragraph = result.split('<p>')[2] if len(result.split('<p>')) > 2 else result
+        assert 'class="opt-keyword-existing">Docker</span>' in second_paragraph
         assert 'class="opt-keyword-add">Kubernetes</span>' in second_paragraph
 
-        # No nested opt-* spans
-        assert not re.search(r'<span class="opt-[^"]+">.*?<span class="opt-', result)
+        # No nested keyword spans (but other opt-* nesting is allowed)
+        # Look for actual nesting (one keyword span inside another)
+        assert not re.search(r'<span class="opt-keyword-[^"]+">(?:(?!</span>).)*<span class="opt-keyword-', result)
 
 
 if __name__ == '__main__':

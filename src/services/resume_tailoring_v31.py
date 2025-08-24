@@ -429,7 +429,7 @@ class ResumeTailoringServiceV31:
         # Common section headers to look for
         section_headers = {
             "education": ["education", "學歷", "educational background", "academic"],
-            "projects": ["project", "專案", "portfolio", "work samples"],
+            "projects": ["personal project", "project", "專案", "portfolio", "work samples", "side project"],
             "certifications": ["certification", "證照", "certificate", "qualification", "license"]
         }
 
@@ -456,6 +456,13 @@ class ResumeTailoringServiceV31:
         """Parse JSON response from LLM with robust error handling."""
 
         try:
+            # Add detailed logging for LLM2
+            if is_llm2:
+                logger.info(f"LLM2 raw response length: {len(content)}")
+                logger.debug(f"LLM2 response preview (first 1000 chars): {content[:1000]}")
+                if "```json" not in content and "{" not in content:
+                    logger.error("LLM2 response contains no JSON markers")
+
             # Extract JSON from response
             if "```json" in content:
                 json_str = content.split("```json")[1].split("```")[0].strip()
@@ -480,12 +487,21 @@ class ResumeTailoringServiceV31:
             if is_llm2:
                 sections = result.get("optimized_sections", {})
                 logger.info(f"LLM2 sections parsed successfully: {list(sections.keys())}")
+                # Log section content lengths for debugging
+                for section_name, section_content in sections.items():
+                    if section_content:
+                        logger.debug(f"LLM2 {section_name} length: {len(section_content)} chars")
 
             return result
 
         except (json.JSONDecodeError, ValueError) as e:
             logger.error(f"Failed to parse {'LLM2' if is_llm2 else 'LLM'} response: {e}")
             logger.debug(f"Raw response preview: {content[:500]}...")
+
+            # Log more details for LLM2 failure
+            if is_llm2:
+                logger.error(f"LLM2 parsing error details: {type(e).__name__}: {e!s}")
+                logger.debug(f"LLM2 full response for debugging (first 2000 chars): {content[:2000]}")
 
             # For LLM2, try to provide fallback with original content
             if is_llm2 and original_resume:
@@ -581,15 +597,16 @@ class ResumeTailoringServiceV31:
 
         soup = BeautifulSoup(html, 'html.parser')
 
-        # Enhanced function to check if inside ANY opt-* class span
-        def is_inside_opt_span(element):
-            """Check if element is inside any opt-* span tag to prevent nesting."""
+        # Function to check if a node is inside a keyword span
+        def is_inside_keyword_span(element):
+            """Check if element is inside a keyword span tag."""
             parent = element.parent
             while parent:
                 if parent.name == 'span' and parent.get('class'):
                     classes = parent.get('class')
-                    # Check for ALL opt-* classes, not just keyword ones
-                    if any(cls.startswith('opt-') for cls in classes):
+                    # Only check keyword-specific classes to prevent keyword nesting
+                    # Allow keywords inside opt-modified and opt-new spans
+                    if 'opt-keyword-existing' in classes or 'opt-keyword-add' in classes:
                         return True
                 parent = parent.parent
             return False
@@ -613,8 +630,8 @@ class ResumeTailoringServiceV31:
             if text_node.parent.name in ['script', 'style']:
                 continue
 
-            # IMPORTANT: Skip if inside ANY opt-* span to prevent nesting
-            if is_inside_opt_span(text_node):
+            # IMPORTANT: Skip only if already inside a keyword span (not just any span)
+            if is_inside_keyword_span(text_node):
                 continue
 
             original_text = str(text_node)
@@ -631,7 +648,7 @@ class ResumeTailoringServiceV31:
                 for keyword in covered_keywords:
                     # Check if this keyword is not already marked as newly added
                     if keyword not in newly_added:
-                        pattern = re.compile(rf'{re.escape(keyword)}', re.IGNORECASE)
+                        pattern = re.compile(rf'\b{re.escape(keyword)}\b', re.IGNORECASE)
 
                         def replacer(match):
                             # Check if this match is not already inside a span
@@ -652,29 +669,24 @@ class ResumeTailoringServiceV31:
 
     def _get_newly_added_keywords(self, html: str, missed_keywords: list[str]) -> list[str]:
         """
-        Detect which missing keywords were successfully added to the HTML.
-        Uses word boundary detection for accurate matching.
+        Identify which missing keywords were successfully added to the resume.
 
         Args:
-            html: Optimized HTML content
-            missed_keywords: Keywords that were missing in original resume
+            html: The optimized resume HTML
+            missed_keywords: List of keywords that were missing from original
 
         Returns:
-            List of keywords that were successfully added
+            List of keywords that are now present in the optimized resume
         """
-        import re
-
         from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(html, 'html.parser')
-        text_content = soup.get_text(separator=' ', strip=True)
+        text_content = soup.get_text().lower()
 
         newly_added = []
         for keyword in missed_keywords:
-            # Use word boundary regex for accurate matching
-            # This prevents "Java" from matching "JavaScript"
-            pattern = re.compile(rf'\b{re.escape(keyword)}\b', re.IGNORECASE)
-            if pattern.search(text_content):
+            # Check if the keyword is now present
+            if keyword.lower() in text_content:
                 newly_added.append(keyword)
 
         return newly_added
