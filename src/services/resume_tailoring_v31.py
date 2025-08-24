@@ -155,7 +155,7 @@ class ResumeTailoringServiceV31:
             post_start = time.time()
 
             # Merge sections from both LLMs
-            merged_sections = self._merge_sections(llm1_result, llm2_result, resume_structure)
+            merged_sections = self._merge_sections(llm1_result, llm2_result, resume_structure, original_resume)
 
             # Build final HTML
             final_html = self._build_final_html(merged_sections, resume_structure)
@@ -524,11 +524,41 @@ class ResumeTailoringServiceV31:
                 "parse_error": str(e)
             }
 
-    def _merge_sections(self, llm1_result: dict, llm2_result: dict, resume_structure: dict) -> dict:
-        """Merge sections from both LLM outputs."""
+    def _merge_sections(
+        self, llm1_result: dict, llm2_result: dict, resume_structure: dict, original_resume: str
+    ) -> dict:
+        """Merge sections from both LLM outputs with fallback support for empty LLM2 sections."""
 
         sections1 = llm1_result.get("optimized_sections", {})
         sections2 = llm2_result.get("optimized_sections", {})
+
+        # Check if LLM2 sections are empty and use fallback if needed
+        if not sections2.get("education"):
+            logger.warning("LLM2 education section is empty, using fallback from original resume")
+            fallback_education = self._extract_original_section("education", original_resume)
+            if fallback_education:
+                sections2["education"] = fallback_education
+                llm2_result["fallback_used"] = True
+                logger.info(f"Successfully extracted education fallback content ({len(fallback_education)} chars)")
+
+        if not sections2.get("projects"):
+            logger.warning("LLM2 projects section is empty, using fallback from original resume")
+            fallback_projects = self._extract_original_section("projects", original_resume)
+            if fallback_projects:
+                sections2["projects"] = fallback_projects
+                llm2_result["fallback_used"] = True
+                logger.info(f"Successfully extracted projects fallback content ({len(fallback_projects)} chars)")
+
+        if not sections2.get("certifications"):
+            logger.warning("LLM2 certifications section is empty, using fallback from original resume")
+            fallback_certifications = self._extract_original_section("certifications", original_resume)
+            if fallback_certifications:
+                sections2["certifications"] = fallback_certifications
+                llm2_result["fallback_used"] = True
+                logger.info(
+                    f"Successfully extracted certifications fallback content "
+                    f"({len(fallback_certifications)} chars)"
+                )
 
         # Merge all sections
         merged = {
@@ -536,7 +566,7 @@ class ResumeTailoringServiceV31:
             "summary": sections1.get("summary", ""),
             "skills": sections1.get("skills", ""),
             "experience": sections1.get("experience", ""),
-            # From LLM2
+            # From LLM2 (now with fallback content if needed)
             "education": sections2.get("education", ""),
             "projects": sections2.get("projects", ""),
             "certifications": sections2.get("certifications", ""),

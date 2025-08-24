@@ -31,6 +31,51 @@ class TestResumeTailoringFixes(unittest.TestCase):
         assert 'NEVER move personal projects into Experience' in prompt_content
         assert 'Project Boundary Rules' in prompt_content
 
+    def test_llm2_empty_sections_trigger_fallback(self):
+        """Verify that empty LLM2 sections trigger fallback and warnings."""
+        # Test data
+        original_resume = """
+        <h3>Education:</h3>
+        <p>Master of Science in Data Analytics</p>
+        <h3>Personal Project:</h3>
+        <p>Built a Python dashboard</p>
+        <h3>Certification:</h3>
+        <p>Tableau Desktop Specialist</p>
+        """
+
+        # Simulate LLM2 returning empty sections
+        llm2_result = {
+            "optimized_sections": {
+                "education": "",  # Empty!
+                "projects": "",   # Empty!
+                "certifications": ""  # Empty!
+            }
+        }
+
+        llm1_result = {
+            "optimized_sections": {
+                "summary": "Test summary",
+                "skills": "Test skills",
+                "experience": "Test experience"
+            }
+        }
+
+        resume_structure = {}
+
+        # The merge should detect empty sections and use fallback
+        merged = self.service._merge_sections(llm1_result, llm2_result, resume_structure, original_resume)
+
+        # Check that fallback_used was set
+        assert llm2_result.get("fallback_used") is True
+
+        # Check that sections now have content from original resume
+        assert "education" in merged
+        assert "Master of Science" in merged["education"]
+        assert "projects" in merged
+        assert "Python dashboard" in merged["projects"]
+        assert "certifications" in merged
+        assert "Tableau Desktop" in merged["certifications"]
+
     def test_no_css_nesting(self):
         """Verify CSS classes don't nest within each other."""
         # HTML with existing opt-modified class
