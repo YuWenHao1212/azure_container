@@ -581,14 +581,15 @@ class ResumeTailoringServiceV31:
 
         soup = BeautifulSoup(html, 'html.parser')
 
-        # Function to check if a node is inside a keyword span
-        def is_inside_keyword_span(element):
-            """Check if element is inside a keyword span tag."""
+        # Enhanced function to check if inside ANY opt-* class span
+        def is_inside_opt_span(element):
+            """Check if element is inside any opt-* span tag to prevent nesting."""
             parent = element.parent
             while parent:
                 if parent.name == 'span' and parent.get('class'):
                     classes = parent.get('class')
-                    if 'opt-keyword-existing' in classes or 'opt-keyword-add' in classes:
+                    # Check for ALL opt-* classes, not just keyword ones
+                    if any(cls.startswith('opt-') for cls in classes):
                         return True
                 parent = parent.parent
             return False
@@ -612,8 +613,8 @@ class ResumeTailoringServiceV31:
             if text_node.parent.name in ['script', 'style']:
                 continue
 
-            # IMPORTANT: Skip only if already inside a keyword span (not just any span)
-            if is_inside_keyword_span(text_node):
+            # IMPORTANT: Skip if inside ANY opt-* span to prevent nesting
+            if is_inside_opt_span(text_node):
                 continue
 
             original_text = str(text_node)
