@@ -469,59 +469,114 @@ class ResumeTailoringServiceV31:
         return "\n\n".join(html_parts)
 
     def _apply_keyword_css(self, html: str, covered_keywords: list[str], newly_added: list[str]) -> str:
-        """Apply keyword CSS classes to the HTML."""
-
+        """
+        Apply keyword CSS classes with proper nesting prevention.
+        
+        Args:
+            html: HTML content to process
+            covered_keywords: Keywords from original resume (mark as opt-keyword-existing)
+            newly_added: Newly added keywords (mark as opt-keyword-add)
+            
+        Returns:
+            HTML with keyword CSS classes applied
+        """
         import re
 
         from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(html, 'html.parser')
 
-        # Function to add CSS class to keyword occurrences
-        def mark_keyword(text, keyword, css_class):
-            # Create pattern for the keyword
-            pattern = re.compile(rf'\b{re.escape(keyword)}\b', re.IGNORECASE)
+        # Function to check if a node is inside any span
+        def is_inside_span(element):
+            """Check if element is inside any span tag."""
+            parent = element.parent
+            while parent:
+                if parent.name == 'span':
+                    return True
+                parent = parent.parent
+            return False
 
-            # Replace with marked version
-            def replacer(match):
-                return f'<span class="{css_class}">{match.group()}</span>'
+        # Function to mark keywords in text
+        def mark_keywords_in_text(text, keywords, css_class):
+            """Mark all occurrences of keywords with CSS class."""
+            for keyword in keywords:
+                # Use word boundary to match complete words only
+                pattern = re.compile(rf'\b{re.escape(keyword)}\b', re.IGNORECASE)
 
-            return pattern.sub(replacer, text)
+                def replacer(match):
+                    return f'<span class="{css_class}">{match.group()}</span>'
+
+                text = pattern.sub(replacer, text)
+            return text
 
         # Process all text nodes
         for text_node in soup.find_all(text=True):
-            if text_node.parent.name not in ['script', 'style']:
-                original_text = str(text_node)
-                modified_text = original_text
+            # Skip if parent is script, style, or if already inside a span
+            if text_node.parent.name in ['script', 'style']:
+                continue
 
-                # Mark newly added keywords
-                for keyword in newly_added:
-                    if keyword.lower() in modified_text.lower():
-                        modified_text = mark_keyword(modified_text, keyword, "opt-keyword-add")
+            # IMPORTANT: Skip if already inside any span to prevent nesting
+            if is_inside_span(text_node):
+                continue
 
-                # Mark existing keywords (but not if already marked)
+            original_text = str(text_node)
+            modified_text = original_text
+
+            # First mark newly added keywords (higher priority)
+            if newly_added:
+                modified_text = mark_keywords_in_text(modified_text, newly_added, "opt-keyword-add")
+
+            # Then mark existing keywords (but not if already marked)
+            if covered_keywords:
+                # Only mark if not already marked with opt-keyword-add
+                temp_text = modified_text
                 for keyword in covered_keywords:
-                    if keyword.lower() in modified_text.lower() and "opt-keyword-add" not in modified_text:
-                        modified_text = mark_keyword(modified_text, keyword, "opt-keyword-existing")
+                    # Check if this keyword is not already marked as newly added
+                    if keyword not in newly_added:
+                        pattern = re.compile(rf'\b{re.escape(keyword)}\b', re.IGNORECASE)
 
-                # Replace the text node if modified
-                if modified_text != original_text:
-                    new_soup = BeautifulSoup(modified_text, 'html.parser')
-                    text_node.replace_with(new_soup)
+                        def replacer(match):
+                            # Check if this match is not already inside a span
+                            return f'<span class="opt-keyword-existing">{match.group()}</span>'
+
+                        temp_text = pattern.sub(replacer, temp_text)
+                modified_text = temp_text
+
+            # Replace the text node if modified
+            if modified_text != original_text:
+                new_soup = BeautifulSoup(modified_text, 'html.parser')
+                # Extract all children from new_soup and insert them
+                for element in list(new_soup.children):
+                    text_node.insert_before(element)
+                text_node.extract()
 
         return str(soup)
 
     def _get_newly_added_keywords(self, html: str, missed_keywords: list[str]) -> list[str]:
-        """Detect which missing keywords were successfully added to the HTML."""
+        """
+        Detect which missing keywords were successfully added to the HTML.
+        Uses word boundary detection for accurate matching.
+        
+        Args:
+            html: Optimized HTML content
+            missed_keywords: Keywords that were missing in original resume
+            
+        Returns:
+            List of keywords that were successfully added
+        """
+        import re
 
         from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(html, 'html.parser')
-        text_content = soup.get_text(separator=' ', strip=True).lower()
+        text_content = soup.get_text(separator=' ', strip=True)
 
         newly_added = []
         for keyword in missed_keywords:
-            if keyword.lower() in text_content:
+            # Use word boundary regex for accurate matching
+            # This prevents "Java" from matching "JavaScript"
+            pattern = re.compile(rf'\b{re.escape(keyword)}\b', re.IGNORECASE)
+            if pattern.search(text_content):
                 newly_added.append(keyword)
 
         return newly_added
