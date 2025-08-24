@@ -1,0 +1,79 @@
+{
+  "test_name": "LLM2 Fallback Detection Test",
+  "description": "Test data to verify fallback warnings are generated when LLM2 returns empty sections",
+  "test_cases": [
+    {
+      "name": "empty_sections",
+      "description": "LLM2 returns valid JSON but with empty sections",
+      "llm2_response": {
+        "optimized_sections": {
+          "education": "",
+          "projects": "",
+          "certifications": "",
+          "supplementary_details": ""
+        },
+        "tracking": []
+      },
+      "expected_behavior": {
+        "fallback_used": true,
+        "warning_type": "LLM2_FALLBACK_USED",
+        "sections_with_content": ["education", "projects", "certifications"]
+      }
+    },
+    {
+      "name": "partial_empty_sections",
+      "description": "LLM2 returns some empty sections",
+      "llm2_response": {
+        "optimized_sections": {
+          "education": "<h2>Education</h2><p>Master of Science in Data Analytics</p>",
+          "projects": "",
+          "certifications": "",
+          "supplementary_details": "<h2>Additional Info</h2><p>Available immediately</p>"
+        },
+        "tracking": ["[Education] Standard: added relevant courses"]
+      },
+      "expected_behavior": {
+        "fallback_used": true,
+        "warning_type": "LLM2_FALLBACK_USED",
+        "sections_with_content": ["projects", "certifications"]
+      }
+    },
+    {
+      "name": "all_sections_present",
+      "description": "LLM2 returns all sections with content",
+      "llm2_response": {
+        "optimized_sections": {
+          "education": "<h2>Education</h2><p class='opt-modified'>Master of Science in Data Analytics with focus on Machine Learning</p>",
+          "projects": "<h2>Projects</h2><p class='opt-new'>Built Python dashboard for financial analytics</p>",
+          "certifications": "<h2>Certifications</h2><p>Tableau Desktop Specialist • AWS Cloud Practitioner</p>",
+          "supplementary_details": "<h2>Additional Details</h2><p>Immediate availability</p>"
+        },
+        "tracking": [
+          "[Education] Enhanced: added relevant coursework",
+          "[Projects] Optimized: 1 personal project enhanced",
+          "[Certifications] Added: AWS certification"
+        ]
+      },
+      "expected_behavior": {
+        "fallback_used": false,
+        "warning_type": null,
+        "sections_with_content": []
+      }
+    }
+  ],
+  "sample_original_resume": {
+    "html": "<h3>Education:</h3><p>Master of Science in Data Analytics from State University</p><h3>Personal Project:</h3><p>Built a Python dashboard for personal finance tracking</p><h3>Certification:</h3><p>Tableau Desktop Specialist, AWS Cloud Practitioner</p>",
+    "sections": {
+      "education": "<h2>Education:</h2>\n<p>Master of Science in Data Analytics from State University</p>",
+      "projects": "<h2>Personal Project:</h2>\n<p>Built a Python dashboard for personal finance tracking</p>",
+      "certifications": "<h2>Certification:</h2>\n<p>Tableau Desktop Specialist, AWS Cloud Practitioner</p>"
+    }
+  },
+  "validation_points": [
+    "When LLM2 sections are empty, _merge_sections should use fallback",
+    "fallback_used flag should be set to true",
+    "Warnings should be generated with type LLM2_FALLBACK_USED",
+    "Original content should be preserved in the final output",
+    "Keyword CSS can still be applied to fallback content"
+  ]
+}
