@@ -471,12 +471,12 @@ class ResumeTailoringServiceV31:
     def _apply_keyword_css(self, html: str, covered_keywords: list[str], newly_added: list[str]) -> str:
         """
         Apply keyword CSS classes with proper nesting prevention.
-        
+
         Args:
             html: HTML content to process
             covered_keywords: Keywords from original resume (mark as opt-keyword-existing)
             newly_added: Newly added keywords (mark as opt-keyword-add)
-            
+
         Returns:
             HTML with keyword CSS classes applied
         """
@@ -556,11 +556,11 @@ class ResumeTailoringServiceV31:
         """
         Detect which missing keywords were successfully added to the HTML.
         Uses word boundary detection for accurate matching.
-        
+
         Args:
             html: Optimized HTML content
             missed_keywords: Keywords that were missing in original resume
-            
+
         Returns:
             List of keywords that were successfully added
         """
