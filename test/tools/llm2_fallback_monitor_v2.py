@@ -99,37 +99,105 @@ def extract_original_sections(html_content: str) -> dict[str, str]:
 
 
 def detect_content_similarity(original_text: str, optimized_html: str, threshold: float = 0.8) -> float:
-    """檢測優化後的HTML中有多少內容來自原始簡歷（相似度檢測）"""
+    """
+    改進的相似度檢測, 考慮格式變化、CSS classes 和新增內容
+    Returns:
+        0.0 - 完全不同(有優化)
+        0.3 - 部分相似但有明顯改變(格式變化)
+        0.6 - 內容相似但有新增或修改
+        1.0 - 完全相同(真正的 fallback)
+    """
     if not original_text or not optimized_html:
         return 0.0
 
-    # 清理HTML標籤
-    soup = BeautifulSoup(optimized_html, 'html.parser')
-    optimized_text = soup.get_text().strip()
+    # 1. 最重要: 檢查是否有 opt-* CSS classes (表示 LLM2 已優化)
+    if 'opt-new' in optimized_html or 'opt-modified' in optimized_html or 'opt-' in optimized_html:
+        # 有優化標記, 絕對不是 fallback
+        return 0.0
 
-    # 分割成句子或短語
-    original_phrases = set(filter(None, re.split(r'[;.\n]', original_text)))
-    optimized_phrases = set(filter(None, re.split(r'[;.\n]', optimized_text)))
+    # 2. 檢查 HTML 結構是否改變 (格式優化的重要指標)
+    # 原始簡歷通常使用 <p> 標籤, 優化後常用 <ul><li>
+    original_has_p = '<p>' in original_text
+    original_has_list = '<ul>' in original_text or '<li>' in original_text
+    optimized_has_p = '<p>' in optimized_html
+    optimized_has_list = '<ul>' in optimized_html or '<li>' in optimized_html
 
-    # 計算相似度
+    # 如果格式從段落變成列表, 或反之, 表示有優化
+    if (original_has_p and not original_has_list) and (optimized_has_list and not optimized_has_p):
+        # 格式明顯改變, 最多返回 0.3
+        return 0.3
+
+    # 3. 清理 HTML 標籤進行內容比較
+    soup_orig = BeautifulSoup(original_text, 'html.parser')
+    soup_opt = BeautifulSoup(optimized_html, 'html.parser')
+
+    original_clean = soup_orig.get_text().strip()
+    optimized_clean = soup_opt.get_text().strip()
+
+    # 4. 檢查是否有新增內容 (長度增加 20% 以上通常表示有新增)
+    if len(optimized_clean) > len(original_clean) * 1.2:
+        # 有明顯新增內容, 不太可能是 fallback
+        return 0.4
+
+    # 5. 精確比較: 使用更嚴格的相似度算法
+    # 分割成短語進行比較
+    original_phrases = list(filter(None, [p.strip().lower() for p in re.split(r'[;.\n•]', original_clean)]))
+    optimized_phrases = list(filter(None, [p.strip().lower() for p in re.split(r'[;.\n•]', optimized_clean)]))
+
     if not optimized_phrases:
         return 0.0
 
-    matched = 0
+    # 計算精確匹配的短語數量
+    exact_matches = 0
+    partial_matches = 0
+
     for opt_phrase in optimized_phrases:
-        opt_clean = opt_phrase.strip().lower()
+        if len(opt_phrase) < 10:  # 忽略太短的短語
+            continue
+
+        found_exact = False
+        found_partial = False
+
         for orig_phrase in original_phrases:
-            orig_clean = orig_phrase.strip().lower()
-            # 如果80%以上的文字相同,認為是來自原始簡歷
-            if len(opt_clean) > 20 and orig_clean in opt_clean:
-                matched += 1
+            if len(orig_phrase) < 10:
+                continue
+
+            # 完全匹配
+            if opt_phrase == orig_phrase:
+                exact_matches += 1
+                found_exact = True
+                break
+            # 部分匹配(原始短語是優化短語的子串)
+            elif len(orig_phrase) > 20 and orig_phrase in opt_phrase:
+                partial_matches += 1
+                found_partial = True
                 break
 
-    return matched / len(optimized_phrases)
+        # 如果某個短語完全沒有匹配, 表示是新內容
+        if not found_exact and not found_partial:
+            # 有新內容, 降低相似度
+            return max(0.5, (exact_matches + partial_matches * 0.5) / len(optimized_phrases))
+
+    # 6. 計算最終相似度分數
+    # 只有當大部分內容完全匹配時, 才可能是 fallback
+    total_phrases = len([p for p in optimized_phrases if len(p) >= 10])
+    if total_phrases == 0:
+        return 0.0
+
+    # 精確匹配佔比
+    exact_ratio = exact_matches / total_phrases if total_phrases > 0 else 0
+    # 部分匹配佔比(權重較低)
+    partial_ratio = partial_matches / total_phrases if total_phrases > 0 else 0
+
+    # 綜合分數: 精確匹配權重高, 部分匹配權重低
+    similarity_score = exact_ratio * 1.0 + partial_ratio * 0.3
+
+    # 7. 最終判斷: 只有相似度極高且無格式變化時才可能是 fallback
+    return min(similarity_score, 1.0)
 
 
 def analyze_response_enhanced(response_json: dict, original_resume: str) -> dict:
-    """增強的API響應分析，包含多種fallback檢測方法"""
+    """增強的API響應分析, 包含多種fallback檢測方法"""
     if not response_json.get("success") or "data" not in response_json:
         return None
 
@@ -166,7 +234,7 @@ def analyze_response_enhanced(response_json: dict, original_resume: str) -> dict
         if original_sections.get('education'):
             similarity = detect_content_similarity(original_sections['education'], education_text)
             section_similarities['education'] = similarity
-            if similarity > 0.7:  # 70%以上相似度認為是fallback
+            if similarity > 0.9:  # 90%以上相似度才認為是fallback(更嚴格)
                 sections_with_fallback.append('education')
 
     # 檢查Projects section
@@ -183,7 +251,7 @@ def analyze_response_enhanced(response_json: dict, original_resume: str) -> dict
         if original_sections.get('projects'):
             similarity = detect_content_similarity(original_sections['projects'], projects_text)
             section_similarities['projects'] = similarity
-            if similarity > 0.7:
+            if similarity > 0.9:  # 提高門檻到 90%
                 sections_with_fallback.append('projects')
 
     # 檢查Certifications section
@@ -200,18 +268,19 @@ def analyze_response_enhanced(response_json: dict, original_resume: str) -> dict
         if original_sections.get('certifications'):
             similarity = detect_content_similarity(original_sections['certifications'], cert_text)
             section_similarities['certifications'] = similarity
-            if similarity > 0.7:
+            if similarity > 0.9:  # 提高門檻到 90%
                 sections_with_fallback.append('certifications')
 
     # 4. 檢查是否缺少opt-classes(表示沒有優化)
     has_opt_classes = "opt-" in optimized_resume
 
-    # 5. 綜合判斷是否使用了fallback
-    has_llm2_fallback = (
-        has_warning_fallback or
-        len(sections_with_fallback) > 0 or
-        (not has_opt_classes and len(section_similarities) > 0)
-    )
+    # 5. 綜合判斷是否使用了fallback(改進的邏輯)
+    # 只有當有明確的警告, 或者相似度極高且無優化標記時, 才判定為 fallback
+    has_llm2_fallback = False
+
+    # 條件1: 有明確的 fallback 警告
+    if has_warning_fallback or len(sections_with_fallback) >= 2 and not has_opt_classes or any(sim >= 1.0 for sim in section_similarities.values()) and not has_opt_classes:
+        has_llm2_fallback = True
 
     return {
         "has_llm2_fallback": has_llm2_fallback,
