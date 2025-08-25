@@ -234,13 +234,13 @@ SELECT
     array_agg(
         json_build_object(
             'id', id,
-            'name', name,
-            'type', course_type_standard,
-            'provider_standardized', provider_standardized,
-            'description', LEFT(description, 200),
+            'name', COALESCE(name, ''),
+            'type', COALESCE(course_type_standard, 'course'),
+            'provider_standardized', COALESCE(provider_standardized, 'Coursera'),
+            'description', COALESCE(LEFT(description, 200), ''),
             'similarity', similarity
         ) ORDER BY similarity DESC
-    ) as course_details
+    ) FILTER (WHERE id IS NOT NULL) as course_details
 FROM quota_applied
 LIMIT 25;
 """
@@ -393,6 +393,7 @@ class CourseAvailabilityChecker:
                         skill["has_available_courses"] = False
                         skill["course_count"] = 0
                         skill["available_course_ids"] = []  # Always provide empty list on error
+                        skill["course_details"] = []  # Also provide empty list for course details
 
                         # Send alert to Operations
                         monitoring_service.track_event("CourseAvailabilityCheckFailed", {
@@ -472,6 +473,7 @@ class CourseAvailabilityChecker:
                 skill["has_available_courses"] = False
                 skill["course_count"] = 0
                 skill["available_course_ids"] = []  # Always provide empty list on error
+                skill["course_details"] = []  # Also provide empty list for course details
 
             return skill_queries
 
@@ -540,7 +542,8 @@ class CourseAvailabilityChecker:
                         "count": 0,
                         "type_diversity": 0,
                         "course_types": [],
-                        "course_ids": []
+                        "course_ids": [],
+                        "course_details": []  # Return empty course details
                     }
 
                 async with self._connection_pool.acquire() as conn:
@@ -587,7 +590,8 @@ class CourseAvailabilityChecker:
                                 "count": 0,
                                 "type_diversity": 0,
                                 "course_types": [],
-                                "course_ids": []
+                                "course_ids": [],
+                                "course_details": []  # Return empty course details
                             }
 
                         # Check if deficit filling is enabled
