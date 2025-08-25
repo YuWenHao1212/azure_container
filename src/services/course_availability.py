@@ -558,6 +558,13 @@ class CourseAvailabilityChecker:
                     min_threshold = MIN_SIMILARITY_THRESHOLD
 
                     # Execute availability check query with quota-based diversity
+                    # DEBUG: Log query parameters
+                    logger.debug("[DEBUG] SQL Query parameters:")
+                    logger.debug(f"  - embedding length: {len(embedding) if embedding else 0}")
+                    logger.debug(f"  - min_threshold: {min_threshold}")
+                    logger.debug(f"  - skill_category: {skill_category}")
+                    logger.debug(f"  - SKILL threshold: {SIMILARITY_THRESHOLDS.get('SKILL', SIMILARITY_THRESHOLDS['DEFAULT'])}")
+
                     result = await conn.fetchrow(
                         AVAILABILITY_QUERY,
                         embedding,                                              # $1
@@ -567,6 +574,15 @@ class CourseAvailabilityChecker:
                         SIMILARITY_THRESHOLDS.get("FIELD", SIMILARITY_THRESHOLDS["DEFAULT"]),    # $5 = 0.30
                         SIMILARITY_THRESHOLDS.get("DEFAULT", SIMILARITY_THRESHOLDS["DEFAULT"])  # $6 = 0.35
                     )
+
+                    # DEBUG: Log raw SQL result
+                    if result:
+                        logger.debug(f"[DEBUG] SQL result keys: {list(result.keys())}")
+                        logger.debug(f"[DEBUG] course_ids count: {len(result.get('course_ids', [])) if result.get('course_ids') else 0}")
+                        logger.debug(f"[DEBUG] course_details type: {type(result.get('course_details'))}")
+                        logger.debug(f"[DEBUG] course_details count: {len(result.get('course_details', [])) if result.get('course_details') else 0}")
+                        if result.get('course_details') and len(result.get('course_details', [])) > 0:
+                            logger.debug(f"[DEBUG] First course_detail: {result.get('course_details')[0]}")
 
                     # Process course data - SIMPLIFIED VERSION FOR TESTING
                     # First check if we have course_ids directly (like old version)
