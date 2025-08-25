@@ -304,7 +304,19 @@ jobs:
         KEYWORD_VERSION=$(find_active_version "keyword_extraction")
         INDEX_VERSION=$(find_active_version "index_calculation")
         FORMAT_VERSION=$(find_active_version "resume_format")
-        TAILOR_VERSION=$(find_active_version "resume_tailor")
+        # Special handling for Resume Tailor dual-file architecture
+        if [ -f "src/prompts/resume_tailoring/v1.0.0-resume-core.yaml" ] && \
+           [ -f "src/prompts/resume_tailoring/v1.0.0-resume-additional.yaml" ]; then
+          CORE_ACTIVE=$(grep -c 'status:.*active' "src/prompts/resume_tailoring/v1.0.0-resume-core.yaml" 2>/dev/null || echo 0)
+          ADDITIONAL_ACTIVE=$(grep -c 'status:.*active' "src/prompts/resume_tailoring/v1.0.0-resume-additional.yaml" 2>/dev/null || echo 0)
+          if [ "$CORE_ACTIVE" -gt 0 ] && [ "$ADDITIONAL_ACTIVE" -gt 0 ]; then
+            TAILOR_VERSION="1.0.0-dual"
+          else
+            TAILOR_VERSION=$(find_active_version "resume_tailoring")
+          fi
+        else
+          TAILOR_VERSION=$(find_active_version "resume_tailoring")
+        fi
         # Add resume structure analyzer (instruction_compiler directory)
         STRUCTURE_VERSION=$(find_active_version "instruction_compiler")
         
@@ -322,7 +334,12 @@ jobs:
         echo "  - Keyword Extraction: $(find_active_versions 'keyword_extraction' || echo 'latest')"
         echo "  - Index Calculation: ${INDEX_VERSION:-latest}"
         echo "  - Resume Format: $(find_active_versions 'resume_format' || echo 'latest')"
-        echo "  - Resume Tailor: ${TAILOR_VERSION:-latest}"
+        # Special output for Resume Tailor
+        if [ "$TAILOR_VERSION" = "1.0.0-dual" ]; then
+          echo "  - Resume Tailor: 1.0.0 (Dual-LLM: v1.0.0-resume-core + v1.0.0-resume-additional)"
+        else
+          echo "  - Resume Tailor: ${TAILOR_VERSION:-latest}"
+        fi
         echo "  - Resume Structure: ${STRUCTURE_VERSION:-v1.0.1}"
         
     - name: Deploy to Container App

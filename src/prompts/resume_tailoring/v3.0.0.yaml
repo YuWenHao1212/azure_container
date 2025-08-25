@@ -3,7 +3,7 @@ metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-08-21T16:30:00Z"
   description: "Resume Tailoring v3.0.0 - Gap Analysis Integration with Chain of Thought"
-  status: "active"
+  status: "inactive"
   notes: |
     V3.0.0 Single-Stage Architecture:
     - Direct Gap Analysis integration (CoreStrengths, KeyGaps, QuickImprovements)

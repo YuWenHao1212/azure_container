@@ -3,7 +3,7 @@ metadata:
   author: "Claude"
   created_at: "2025-01-10T00:00:00Z"
   description: "Resume tailoring with gap analysis - Section-by-section optimization"
-  status: "active"
+  status: "inactive"
 
 llm_config:
   model: gpt-4o-2

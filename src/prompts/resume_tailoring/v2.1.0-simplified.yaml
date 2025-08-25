@@ -3,7 +3,7 @@ metadata:
   author: "AI Resume Advisor Team"
   created_at: "2025-01-16T00:00:00Z"
   description: "Resume Tailoring v2.1.0 - Simplified Execution Engine with Output Standards"
-  status: "active"
+  status: "inactive"
   notes: |
     V2.1.0 Simplified - Streamlined execution engine:
     - Reduced from 717 to ~380 lines (47% reduction)

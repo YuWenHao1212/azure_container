@@ -3,7 +3,7 @@ metadata:
   author: "Claude"
   created_at: "2025-01-12T00:00:00Z"
   description: "Resume tailoring with gap analysis - Simplified marking strategy"
-  status: "active"
+  status: "inactive"
   changes_from_v1.0.0: |
     - Removed opt-strength marking (simplified LLM cognitive load)
     - Updated opt-modified to require <span> wrapping
