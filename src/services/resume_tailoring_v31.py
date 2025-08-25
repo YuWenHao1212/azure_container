@@ -464,59 +464,48 @@ class ResumeTailoringServiceV31:
         return ""
 
     def _safe_json_fix_for_llm2(self, json_str: str) -> str:
-        """
+        r"""
         Comprehensive JSON fix for LLM2 quote escaping issues.
         Handles multiple escaping patterns that LLM2 might produce.
+        Focus on fixing \&quot; which is the main issue.
         """
         import re
 
         original = json_str
 
-        # Pattern 1: Fix \&quot; → " (HTML entity with backslash)
-        json_str = json_str.replace('\\&quot;', '"')
+        # Critical fix: Handle the main problematic pattern first
+        # Pattern 1: Fix class="\&quot;...&quot;" pattern (most common issue)
+        json_str = re.sub(r'class="\\&quot;([^"]+)\\&quot;"', r'class="\1"', json_str)
 
-        # Pattern 2: Fix &quot; → " (HTML entity without backslash)
+        # Pattern 2: Fix \&quot; → \" (this is the core issue causing JSONDecodeError)
+        # This MUST come before other replacements to avoid interference
+        json_str = json_str.replace('\\&quot;', '\\"')
+
+        # Pattern 3: Fix remaining &quot; → " (HTML entities that shouldn't be there)
         json_str = json_str.replace('&quot;', '"')
 
-        # Pattern 3: Fix &lt; and &gt; → < and >
+        # Pattern 4: Fix other HTML entities that shouldn't be in JSON
         json_str = json_str.replace('&lt;', '<')
         json_str = json_str.replace('&gt;', '>')
-
-        # Pattern 4: Fix &amp; → &
         json_str = json_str.replace('&amp;', '&')
 
-        # Pattern 5: Fix class='\"...' → class="..." (single quotes with escaped double)
+        # Pattern 5: Fix single quotes with escaped double quotes
         json_str = json_str.replace("'\\\"", '"')
         json_str = json_str.replace("\\\"'", '"')
 
-        # Pattern 6: Fix class="\&quot;...\&quot;" → class="..."
-        json_str = re.sub(r'class="\\&quot;([^"]+)\\&quot;"', r'class="\1"', json_str)
-
-        # Pattern 7: Fix class='\\\"...\\\"' → class="..."
+        # Pattern 6: Fix nested escaping patterns
         json_str = re.sub(r"class='\\\\\"([^'\"]+)\\\\\"'", r'class="\1"', json_str)
 
-        # Pattern 8: Fix nested escaping like \\" → "
-        json_str = json_str.replace('\\\\"', '"')
-        json_str = json_str.replace('\\"', '"')
-
-        # Pattern 9: Fix improper single quotes in JSON keys/values
-        # This is risky but necessary for some cases
-        # Only apply if we detect single-quoted JSON structure
-        if "': '" in json_str or "': {" in json_str:
-            # Try to convert single quotes to double quotes for JSON keys
-            # But preserve single quotes inside HTML content
-            import re
-            # Match JSON keys (before colon)
-            json_str = re.sub(r"'([^']+)'(\s*:)", r'"\1"\2', json_str)
-
-        # Pattern 10: Clean up any remaining double escaping
-        json_str = json_str.replace('\\\\', '\\')
+        # Pattern 7: Clean up double escaping (but be careful not to break valid escapes)
+        # Only replace \\\\ with \\ if it's not part of a valid escape sequence
+        if '\\\\' in json_str and '\\\\n' not in json_str and '\\\\t' not in json_str:
+            json_str = json_str.replace('\\\\', '\\')
 
         # Log the changes if any
         if json_str != original:
             change_count = sum(1 for a, b in zip(original, json_str, strict=False) if a != b)
             logger.info(f"Applied comprehensive JSON fix for LLM2 ({change_count} characters changed)")
-            logger.debug("Fixed patterns included: HTML entities, quote escaping, nested escaping")
+            logger.debug("Primary fix: \\&quot; → \\\" conversion applied")
 
         return json_str
 
