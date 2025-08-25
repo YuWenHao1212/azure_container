@@ -231,16 +231,19 @@ SELECT
         ) ORDER BY similarity DESC
     ) as course_data,
     -- NEW: Return detailed course information for resume enhancement
-    array_agg(
-        json_build_object(
-            'id', id,
-            'name', COALESCE(name, ''),
-            'type', COALESCE(course_type_standard, 'course'),
-            'provider_standardized', COALESCE(provider_standardized, 'Coursera'),
-            'description', COALESCE(LEFT(description, 200), ''),
-            'similarity', similarity
-        ) ORDER BY similarity DESC
-    ) FILTER (WHERE id IS NOT NULL) as course_details
+    COALESCE(
+        array_agg(
+            json_build_object(
+                'id', id,
+                'name', COALESCE(name, ''),
+                'type', COALESCE(course_type_standard, 'course'),
+                'provider_standardized', COALESCE(provider_standardized, 'Coursera'),
+                'description', COALESCE(LEFT(description, 200), ''),
+                'similarity', similarity
+            ) ORDER BY similarity DESC
+        ),
+        ARRAY[]::json[]
+    ) as course_details
 FROM quota_applied
 LIMIT 25;
 """
