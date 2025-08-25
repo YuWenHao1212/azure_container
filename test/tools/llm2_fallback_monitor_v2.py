@@ -4,7 +4,7 @@ LLM2 Fallback Monitor Tool V2 - Enhanced Detection
 
 Tool ID: TOOL-LLM2-MON-02
 Version: 2.0
-Changes: 
+Changes:
 - 增強了fallback檢測邏輯
 - 檢測空內容觸發的fallback
 - 比對原始簡歷內容
@@ -18,7 +18,6 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 import requests
 from bs4 import BeautifulSoup
@@ -121,7 +120,7 @@ def detect_content_similarity(original_text: str, optimized_html: str, threshold
         opt_clean = opt_phrase.strip().lower()
         for orig_phrase in original_phrases:
             orig_clean = orig_phrase.strip().lower()
-            # 如果80%以上的文字相同，認為是來自原始簡歷
+            # 如果80%以上的文字相同,認為是來自原始簡歷
             if len(opt_clean) > 20 and orig_clean in opt_clean:
                 matched += 1
                 break
@@ -136,7 +135,7 @@ def analyze_response_enhanced(response_json: dict, original_resume: str) -> dict
 
     data = response_json["data"]
 
-    # 1. 檢查warnings字段（原始方法）
+    # 1. 檢查warnings字段(原始方法)
     warnings = data.get("warnings", [])
     has_warning_fallback = any("LLM2" in w or "fallback" in w.lower() for w in warnings)
 
@@ -204,7 +203,7 @@ def analyze_response_enhanced(response_json: dict, original_resume: str) -> dict
             if similarity > 0.7:
                 sections_with_fallback.append('certifications')
 
-    # 4. 檢查是否缺少opt-classes（表示沒有優化）
+    # 4. 檢查是否缺少opt-classes(表示沒有優化)
     has_opt_classes = "opt-" in optimized_resume
 
     # 5. 綜合判斷是否使用了fallback

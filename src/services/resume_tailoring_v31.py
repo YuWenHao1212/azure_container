@@ -524,15 +524,19 @@ class ResumeTailoringServiceV31:
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     error_preview = content[:300] if 'content' in locals() else 'No content available'
 
-                    debug_html = f"""<div style='background:#fff3cd;border:2px solid #ffc107;padding:15px;margin:10px 0;border-radius:5px;'>
-<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 JSON Parse Failed - Debug Mode</h3>
-<p><strong>Timestamp:</strong> {timestamp}</p>
-<p><strong>Error Type:</strong> {type(e).__name__}</p>
-<p><strong>Error Message:</strong> {e!s}</p>
-<p><strong>Response Preview:</strong></p>
-<pre style='background:#f8f9fa;padding:10px;overflow-x:auto;'>{error_preview}</pre>
-<p><strong>Diagnostic:</strong> LLM2 response could not be parsed as valid JSON. Check prompt output format.</p>
-</div>"""
+                    debug_html = (
+                        f"<div style='background:#fff3cd;border:2px solid #ffc107;"
+                        f"padding:15px;margin:10px 0;border-radius:5px;'>"
+                        f"<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 JSON Parse Failed - Debug Mode</h3>"
+                        f"<p><strong>Timestamp:</strong> {timestamp}</p>"
+                        f"<p><strong>Error Type:</strong> {type(e).__name__}</p>"
+                        f"<p><strong>Error Message:</strong> {e!s}</p>"
+                        f"<p><strong>Response Preview:</strong></p>"
+                        f"<pre style='background:#f8f9fa;padding:10px;overflow-x:auto;'>{error_preview}</pre>"
+                        f"<p><strong>Diagnostic:</strong> LLM2 response could not be parsed as valid JSON. "
+                        f"Check prompt output format.</p>"
+                        f"</div>"
+                    )
 
                     return {
                         "optimized_sections": {
@@ -587,24 +591,25 @@ class ResumeTailoringServiceV31:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 education_enhanced = resume_structure.get("education_enhancement_needed", False)
 
-                debug_html = f"""<div style='background:#fff3cd;border:2px solid #ffc107;padding:15px;margin:10px 0;border-radius:5px;'>
-<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Education Empty - Debug Mode</h3>
-<p><strong>Timestamp:</strong> {timestamp}</p>
-<p><strong>Parameters:</strong></p>
-<ul style='list-style-type:none;padding-left:0;'>
-<li>📊 education_enhancement_needed: <code>{education_enhanced}</code></li>
-<li>📊 Years of experience: {resume_structure.get('metadata', {}).get('years_of_experience', 'Unknown')}</li>
-<li>📊 Student status: {resume_structure.get('metadata', {}).get('is_current_student', 'Unknown')}</li>
-</ul>
-<p><strong>Likely Cause:</strong> {
-    'Education enhancement disabled for experienced professionals (≥2 years)' if not education_enhanced
-    else 'LLM2 returned empty content despite enhancement flag'
-}</p>
-<p><strong>Recommendation:</strong> {
-    'Consider adjusting education_enhancement threshold in ResumeStructureAnalyzer' if not education_enhanced
-    else 'Check LLM2 prompt logic for enhanced education processing'
-}</p>
-</div>"""
+                debug_html = (
+                    f"<div style='background:#fff3cd;border:2px solid #ffc107;"
+                    f"padding:15px;margin:10px 0;border-radius:5px;'>"
+                    f"<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Education Empty - Debug Mode</h3>"
+                    f"<p><strong>Timestamp:</strong> {timestamp}</p>"
+                    f"<p><strong>Parameters:</strong></p>"
+                    f"<ul style='list-style-type:none;padding-left:0;'>"
+                    f"<li>📊 education_enhancement_needed: <code>{education_enhanced}</code></li>"
+                    f"<li>📊 Years of experience: "
+                    f"{resume_structure.get('metadata', {}).get('years_of_experience', 'Unknown')}</li>"
+                    f"<li>📊 Student status: "
+                    f"{resume_structure.get('metadata', {}).get('is_current_student', 'Unknown')}</li>"
+                    f"</ul>"
+                    f"<p><strong>Likely Cause:</strong> "
+                    f"{'Enhancement disabled (≥2 yrs)' if not education_enhanced else 'LLM2 empty'}</p>"
+                    f"<p><strong>Recommendation:</strong> "
+                    f"{'Adjust threshold' if not education_enhanced else 'Check LLM2'}</p>"
+                    f"</div>"
+                )
                 sections2["education"] = f"<h2>Education</h2>{debug_html}"
                 llm2_result["fallback_used"] = True
                 llm2_result["debug_info"] = llm2_result.get("debug_info", {})
@@ -628,19 +633,24 @@ class ResumeTailoringServiceV31:
                 from datetime import datetime
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                debug_html = f"""<div style='background:#fff3cd;border:2px solid #ffc107;padding:15px;margin:10px 0;border-radius:5px;'>
-<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Projects Empty - Debug Mode</h3>
-<p><strong>Timestamp:</strong> {timestamp}</p>
-<p><strong>Possible Reasons:</strong></p>
-<ol>
-<li>🔍 All projects are work/client projects (correctly kept in Experience section)</li>
-<li>🔍 Academic projects kept in Education section (if enhanced)</li>
-<li>🔍 No personal/side projects found in original resume</li>
-<li>🔍 LLM2 filtered out all projects based on strict rules</li>
-</ol>
-<p><strong>Note:</strong> Projects section should ONLY contain personal/side projects. Work projects must stay in Experience.</p>
-<p><strong>Recommendation:</strong> This may be correct behavior if no personal projects exist. Consider adding learning projects for skill gaps.</p>
-</div>"""
+                debug_html = (
+                    f"<div style='background:#fff3cd;border:2px solid #ffc107;"
+                    f"padding:15px;margin:10px 0;border-radius:5px;'>"
+                    f"<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Projects Empty - Debug Mode</h3>"
+                    f"<p><strong>Timestamp:</strong> {timestamp}</p>"
+                    f"<p><strong>Possible Reasons:</strong></p>"
+                    f"<ol>"
+                    f"<li>🔍 All projects are work/client projects (correctly kept in Experience section)</li>"
+                    f"<li>🔍 Academic projects kept in Education section (if enhanced)</li>"
+                    f"<li>🔍 No personal/side projects found in original resume</li>"
+                    f"<li>🔍 LLM2 filtered out all projects based on strict rules</li>"
+                    f"</ol>"
+                    f"<p><strong>Note:</strong> Projects section should ONLY contain personal/side projects. "
+                    f"Work projects must stay in Experience.</p>"
+                    f"<p><strong>Recommendation:</strong> This may be correct behavior if no personal projects exist. "
+                    f"Consider adding learning projects for skill gaps.</p>"
+                    f"</div>"
+                )
                 sections2["projects"] = f"<h2>Projects</h2>{debug_html}"
                 llm2_result["fallback_used"] = True
                 llm2_result["debug_info"] = llm2_result.get("debug_info", {})
@@ -664,18 +674,22 @@ class ResumeTailoringServiceV31:
                 from datetime import datetime
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                debug_html = f"""<div style='background:#fff3cd;border:2px solid #ffc107;padding:15px;margin:10px 0;border-radius:5px;'>
-<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Certifications Empty - Debug Mode</h3>
-<p><strong>Timestamp:</strong> {timestamp}</p>
-<p><strong>Possible Reasons:</strong></p>
-<ol>
-<li>🔍 No certifications in original resume</li>
-<li>🔍 Certifications filtered as irrelevant to job</li>
-<li>🔍 LLM2 expected to add new certifications but didn't</li>
-</ol>
-<p><strong>Key Gaps:</strong> {', '.join(llm2_result.get('bundle', {}).get('key_gaps', ['Not available'])[:3])}</p>
-<p><strong>Recommendation:</strong> Check if certifications should be suggested for skill gaps.</p>
-</div>"""
+                debug_html = (
+                    f"<div style='background:#fff3cd;border:2px solid #ffc107;"
+                    f"padding:15px;margin:10px 0;border-radius:5px;'>"
+                    f"<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Certifications Empty - Debug Mode</h3>"
+                    f"<p><strong>Timestamp:</strong> {timestamp}</p>"
+                    f"<p><strong>Possible Reasons:</strong></p>"
+                    f"<ol>"
+                    f"<li>🔍 No certifications in original resume</li>"
+                    f"<li>🔍 Certifications filtered as irrelevant to job</li>"
+                    f"<li>🔍 LLM2 expected to add new certifications but didn't</li>"
+                    f"</ol>"
+                    f"<p><strong>Key Gaps:</strong> "
+                    f"{', '.join(llm2_result.get('bundle', {}).get('key_gaps', ['Not available'])[:3])}</p>"
+                    f"<p><strong>Recommendation:</strong> Check if certs should be suggested for gaps.</p>"
+                    f"</div>"
+                )
                 sections2["certifications"] = f"<h2>Certifications</h2>{debug_html}"
                 llm2_result["fallback_used"] = True
                 llm2_result["debug_info"] = llm2_result.get("debug_info", {})
