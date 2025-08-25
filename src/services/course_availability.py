@@ -456,11 +456,21 @@ class CourseAvailabilityChecker:
                 skill_queries, skill_queries
             )
 
+            # Log enhancement data for debugging
+            logger.info(
+                f"[CourseAvailability] Enhancement data built: "
+                f"projects={len(enhancement_project)}, "
+                f"certifications={len(enhancement_certification)}"
+            )
+
             # Add enhancement data to the first skill for backward compatibility
             # This ensures the data is accessible from the API response
             if skill_queries:
                 skill_queries[0]["resume_enhancement_project"] = enhancement_project
                 skill_queries[0]["resume_enhancement_certification"] = enhancement_certification
+                logger.info(
+                    "[CourseAvailability] Enhancement data added to first skill query"
+                )
 
             return skill_queries
 

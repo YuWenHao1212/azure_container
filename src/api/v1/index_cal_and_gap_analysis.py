@@ -255,6 +255,21 @@ async def _execute_v2_analysis(
             }
         )
 
+        # Extract enhancement data from first skill query (if available)
+        skill_queries = gap_result.get("SkillSearchQueries", [])
+        resume_enhancement_project = {}
+        resume_enhancement_certification = {}
+
+        if skill_queries and len(skill_queries) > 0:
+            first_skill = skill_queries[0]
+            resume_enhancement_project = first_skill.get("resume_enhancement_project", {})
+            resume_enhancement_certification = first_skill.get("resume_enhancement_certification", {})
+            # Log extraction for debugging
+            logger.info(
+                f"[Enhancement] Extracted project count: {len(resume_enhancement_project)}, "
+                f"certification count: {len(resume_enhancement_certification)}"
+            )
+
         # Create response data
         response_data = IndexCalAndGapAnalysisData(
             raw_similarity_percentage=index_result["raw_similarity_percentage"],
@@ -267,11 +282,14 @@ async def _execute_v2_analysis(
                 OverallAssessment=gap_result.get("OverallAssessment", ""),
                 SkillSearchQueries=[
                     SkillQuery(**skill)
-                    for skill in gap_result.get("SkillSearchQueries", [])
+                    for skill in skill_queries
                 ]
             ),
             # V4 Enhancement: Add resume structure if available
-            resume_structure=result.get("resume_structure")
+            resume_structure=result.get("resume_structure"),
+            # V5 Enhancement: Add resume enhancement fields
+            resume_enhancement_project=resume_enhancement_project,
+            resume_enhancement_certification=resume_enhancement_certification
         )
 
         logger.info(
