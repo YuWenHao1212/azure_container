@@ -558,13 +558,13 @@ class CourseAvailabilityChecker:
                     min_threshold = MIN_SIMILARITY_THRESHOLD
 
                     # Execute availability check query with quota-based diversity
-                    # DEBUG: Log query parameters
-                    logger.debug("[DEBUG] SQL Query parameters:")
-                    logger.debug(f"  - embedding length: {len(embedding) if embedding else 0}")
-                    logger.debug(f"  - min_threshold: {min_threshold}")
-                    logger.debug(f"  - skill_category: {skill_category}")
+                    # DEBUG: Log query parameters (using INFO for production visibility)
+                    logger.info("[COURSE_DEBUG] SQL Query parameters:")
+                    logger.info(f"  - embedding length: {len(embedding) if embedding else 0}")
+                    logger.info(f"  - min_threshold: {min_threshold}")
+                    logger.info(f"  - skill_category: {skill_category}")
                     skill_threshold = SIMILARITY_THRESHOLDS.get('SKILL', SIMILARITY_THRESHOLDS['DEFAULT'])
-                    logger.debug(f"  - SKILL threshold: {skill_threshold}")
+                    logger.info(f"  - SKILL threshold: {skill_threshold}")
 
                     result = await conn.fetchrow(
                         AVAILABILITY_QUERY,
@@ -576,16 +576,16 @@ class CourseAvailabilityChecker:
                         SIMILARITY_THRESHOLDS.get("DEFAULT", SIMILARITY_THRESHOLDS["DEFAULT"])  # $6 = 0.35
                     )
 
-                    # DEBUG: Log raw SQL result
+                    # DEBUG: Log raw SQL result (using INFO for production visibility)
                     if result:
-                        logger.debug(f"[DEBUG] SQL result keys: {list(result.keys())}")
+                        logger.info(f"[COURSE_DEBUG] SQL result keys: {list(result.keys())}")
                         course_ids = result.get('course_ids', [])
                         course_details = result.get('course_details', [])
-                        logger.debug(f"[DEBUG] course_ids count: {len(course_ids) if course_ids else 0}")
-                        logger.debug(f"[DEBUG] course_details type: {type(course_details)}")
-                        logger.debug(f"[DEBUG] course_details count: {len(course_details) if course_details else 0}")
+                        logger.info(f"[COURSE_DEBUG] course_ids count: {len(course_ids) if course_ids else 0}")
+                        logger.info(f"[COURSE_DEBUG] course_details type: {type(course_details)}")
+                        logger.info(f"[COURSE_DEBUG] course_details count: {len(course_details) if course_details else 0}")
                         if course_details and len(course_details) > 0:
-                            logger.debug(f"[DEBUG] First course_detail: {course_details[0]}")
+                            logger.info(f"[COURSE_DEBUG] First course_detail: {course_details[0]}")
 
                     # Process course data - SIMPLIFIED VERSION FOR TESTING
                     # First check if we have course_ids directly (like old version)
