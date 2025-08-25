@@ -405,6 +405,8 @@ class CourseAvailabilityChecker:
                         skill["has_available_courses"] = result["has_courses"]
                         skill["course_count"] = result["count"]
                         skill["available_course_ids"] = result.get("course_ids", [])
+                        # NEW: Store course details for resume enhancement
+                        skill["course_details"] = result.get("course_details", [])
 
                         # Add diversity metrics (v2.0)
                         if result.get("type_diversity") is not None:
@@ -418,7 +420,8 @@ class CourseAvailabilityChecker:
                                 "course_count": result["count"],
                                 "available_course_ids": result.get("course_ids", []),
                                 "type_diversity": result.get("type_diversity", 0),
-                                "course_types": result.get("course_types", [])
+                                "course_types": result.get("course_types", []),
+                                "course_details": result.get("course_details", [])  # NEW: Cache course details
                             })
 
             # 3. Record performance metrics
