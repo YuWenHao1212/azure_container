@@ -156,7 +156,9 @@ WITH initial_candidates AS (
         id,
         course_type_standard,
         name,
-        1 - (embedding <=> $1::vector) as similarity
+        1 - (embedding <=> $1::vector) as similarity,
+    provider_standardized,
+    description
     FROM courses
     WHERE platform = 'coursera'
     AND embedding IS NOT NULL
@@ -227,7 +229,18 @@ SELECT
             'similarity', similarity,
             'type', course_type_standard
         ) ORDER BY similarity DESC
-    ) as course_data
+    ) as course_data,
+    -- NEW: Return detailed course information for resume enhancement
+    array_agg(
+        json_build_object(
+            'id', id,
+            'name', name,
+            'type', course_type_standard,
+            'provider_standardized', provider_standardized,
+            'description', LEFT(description, 200),
+            'similarity', similarity
+        ) ORDER BY similarity DESC
+    ) as course_details
 FROM quota_applied
 LIMIT 25;
 """
@@ -431,6 +444,17 @@ class CourseAvailabilityChecker:
                 f"[CourseAvailability] Checked {len(skill_queries)} skills in {duration_ms}ms {cache_info}"
             )
 
+            # Build enhancement data from all skills
+            enhancement_project, enhancement_certification = self._build_enhancement_data(
+                skill_queries, skill_queries
+            )
+
+            # Add enhancement data to the first skill for backward compatibility
+            # This ensures the data is accessible from the API response
+            if skill_queries:
+                skill_queries[0]["resume_enhancement_project"] = enhancement_project
+                skill_queries[0]["resume_enhancement_certification"] = enhancement_certification
+
             return skill_queries
 
         except Exception as e:
@@ -577,13 +601,20 @@ class CourseAvailabilityChecker:
                     type_diversity = result.get("type_diversity", 0)
                     course_types = result.get("course_types", [])
 
+                    # NEW: Get course details for resume enhancement
+                    course_details = result.get("course_details", [])
+                    # Filter out None values
+                    if course_details:
+                        course_details = [c for c in course_details if c and isinstance(c, dict)]
+
                     # Return enhanced result with diversity metrics
                     return {
                         "has_courses": len(final_course_ids) > 0,
                         "count": len(final_course_ids),
                         "type_diversity": type_diversity,
                         "course_types": course_types,
-                        "course_ids": final_course_ids
+                        "course_ids": final_course_ids,
+                        "course_details": course_details  # NEW: Include course details
                     }
 
         except TimeoutError:
@@ -677,6 +708,71 @@ class CourseAvailabilityChecker:
 
         # Extract and return course IDs
         return [course['id'] for course in final_courses]
+
+    def _build_enhancement_data(
+        self,
+        enhanced_skills: list[dict],
+        skill_queries: list[dict]
+    ) -> tuple[dict, dict]:
+        """
+        Build resume enhancement data structure
+
+        Args:
+            enhanced_skills: Skills with course availability data
+            skill_queries: Original skill queries with names
+
+        Returns:
+            Tuple of (resume_enhancement_project, resume_enhancement_certification)
+        """
+        projects = {}
+        certifications = {}
+
+        for idx, skill in enumerate(enhanced_skills):
+            if idx >= len(skill_queries):
+                continue
+
+            skill_name = skill_queries[idx].get("skill_name", "")
+            course_details = skill.get("course_details", [])
+
+            if not course_details:
+                continue
+
+            # Process courses by type with quotas
+            project_count = 0
+            cert_count = 0
+
+            for course in course_details:
+                if not course or not isinstance(course, dict):
+                    continue
+
+                course_id = course.get("id")
+                course_type = course.get("type", "")
+
+                if not course_id:
+                    continue
+
+                # Projects: max 2 per skill
+                if course_type == "project" and project_count < 2:
+                    projects[course_id] = {
+                        "name": course.get("name", ""),
+                        "provider": course.get("provider_standardized", "Coursera"),
+                        "description": course.get("description", "")[:200],
+                        "related_skill": skill_name
+                    }
+                    project_count += 1
+
+                # Certifications and Specializations: max 4 per skill
+                elif course_type in ["certification", "specialization"] and cert_count < 4:
+                    certifications[course_id] = {
+                        "name": course.get("name", ""),
+                        "provider": course.get("provider_standardized", "Coursera"),
+                        "description": course.get("description", "")[:200],
+                        "related_skill": skill_name
+                    }
+                    cert_count += 1
+
+        # Return empty dict {} if no courses found (Bubble.io compatibility)
+        return projects if projects else {}, certifications if certifications else {}
 
 
 # Global instance

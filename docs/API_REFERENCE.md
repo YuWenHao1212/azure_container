@@ -377,6 +377,40 @@ X-API-Key: [YOUR_API_KEY]
       },
       "education_enhancement_needed": true
     },
+    "resume_enhancement_project": {
+      "coursera_prjt:BEUHr70KEe-LvhIuPUA7nw": {
+        "name": "Build REST API with FastAPI",
+        "provider": "Google",
+        "description": "Hands-on project to build and deploy production-ready REST APIs using FastAPI framework, including authentication, database integration, and deployment",
+        "related_skill": "FastAPI & REST API Frameworks"
+      },
+      "coursera_prjt:IftJTkUoEfClyxI_Dgx85Q": {
+        "name": "Docker Containerization Fundamentals",
+        "provider": "IBM",
+        "description": "Learn to containerize applications, manage Docker images and containers, and implement multi-container applications with Docker Compose",
+        "related_skill": "Docker & Containerization"
+      }
+    },
+    "resume_enhancement_certification": {
+      "coursera_spzn:QroLL3-XEeu17gr5PLNEuQ": {
+        "name": "Google Cloud Professional Cloud Architect",
+        "provider": "Google",
+        "description": "Comprehensive certification path covering GCP services, architecture patterns, security, and best practices for designing scalable cloud solutions",
+        "related_skill": "Cloud Platforms (AWS, Azure, GCP)"
+      },
+      "coursera_cert:ALMS0NyJEe6J_wr_0biVVQ": {
+        "name": "AWS Solutions Architect Associate",
+        "provider": "Amazon",
+        "description": "Learn to design distributed systems on AWS, implement secure and scalable architectures, and optimize cloud infrastructure for performance and cost",
+        "related_skill": "Cloud Platforms (AWS, Azure, GCP)"
+      },
+      "coursera_spzn:bjkOnvoIEe-glg6vww23RQ": {
+        "name": "Docker and Kubernetes Specialization",
+        "provider": "Google",
+        "description": "Master container orchestration with Kubernetes, including deployment strategies, service mesh, monitoring, and production-ready configurations",
+        "related_skill": "Docker & Containerization"
+      }
+    },
   "error": {
     "has_error": false,
     "code": "",

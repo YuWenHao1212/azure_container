@@ -168,6 +168,14 @@ class IndexCalAndGapAnalysisData(BaseModel):
         default=None,
         description="Resume structure analysis (V4 enhancement)"
     )
+    resume_enhancement_project: dict[str, dict[str, str]] = Field(
+        default_factory=dict,
+        description="Recommended projects for resume enhancement (course_id as key)"
+    )
+    resume_enhancement_certification: dict[str, dict[str, str]] = Field(
+        default_factory=dict,
+        description="Recommended certifications for resume enhancement (course_id as key)"
+    )
 
 
 # Setup logging

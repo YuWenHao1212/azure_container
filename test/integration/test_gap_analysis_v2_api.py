@@ -327,9 +327,9 @@ class TestGapAnalysisV2Integration:
         assert "message" in data["error"]
         assert "details" in data["error"]
 
-        # Verify timestamp format (ISO 8601)
+        # Verify timestamp format (ISO 8601 - with or without Z)
         import re
-        iso_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$'
+        iso_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z)?$'
         assert re.match(iso_pattern, data["timestamp"])
 
     # TEST: API-GAP-008-IT

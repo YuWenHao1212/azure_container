@@ -386,6 +386,105 @@ ENABLE_COURSE_CACHE=true         # 預設：true
 
 ---
 
+## 📚 Resume Enhancement Data Structure
+
+### 功能概述
+為 Resume Tailoring 服務提供詳細的課程推薦資訊，協助優化履歷內容。系統會根據識別的技能差距，推薦相關的專案課程（projects）和認證課程（certifications/specializations）。
+
+### 資料結構設計
+
+#### 結構特點
+- **Key**: `course_id`（唯一識別碼，如 `coursera_prjt:abc123`）
+- **Value**: 課程詳細資訊物件
+- **分組**: 
+  - `resume_enhancement_project`: 專案類課程
+  - `resume_enhancement_certification`: 認證和專業課程
+- **配額限制**: 
+  - 每個技能最多 2 個 projects
+  - 每個技能最多 4 個 certifications/specializations
+  - 總數依技能數量動態調整（3-6 個技能）
+
+#### 資料欄位說明
+```json
+{
+  "course_id": {
+    "name": "課程完整名稱",
+    "provider": "標準化提供者名稱（Google, Meta, IBM 等）",
+    "description": "課程描述（最多 200 字元）",
+    "related_skill": "關聯的技能名稱"
+  }
+}
+```
+
+### 實作細節
+
+#### SQL 查詢增強
+```sql
+-- 在 AVAILABILITY_QUERY 中新增 course_details
+array_agg(
+  json_build_object(
+    'id', id,
+    'name', name,
+    'type', course_type_standard,
+    'provider_standardized', provider_standardized,
+    'description', LEFT(description, 200),
+    'similarity', similarity
+  ) ORDER BY similarity DESC
+) as course_details
+```
+
+#### Python 處理邏輯
+1. **資料提取**: 從 SQL 查詢結果取得 `course_details`
+2. **類型分組**: 區分 project 和 certification/specialization
+3. **配額應用**: 每個技能限制課程數量
+4. **字典建立**: 以 course_id 為 key 建立結構
+5. **技能關聯**: 添加 `related_skill` 標記來源技能
+
+### 使用場景
+
+#### Resume Tailoring 整合
+Resume Tailoring 服務可以：
+1. 直接使用 course_id 查詢課程詳情
+2. 根據 `related_skill` 了解課程對應的技能差距
+3. 在履歷優化時加入相關課程建議
+4. 使用 provider 資訊顯示權威來源
+
+#### 範例輸出
+```json
+{
+  "resume_enhancement_project": {
+    "coursera_prjt:BEUHr70KEe-LvhIuPUA7nw": {
+      "name": "Build REST API with FastAPI",
+      "provider": "Google",
+      "description": "Hands-on project to build and deploy production-ready REST APIs...",
+      "related_skill": "FastAPI & REST API Frameworks"
+    }
+  },
+  "resume_enhancement_certification": {
+    "coursera_spzn:QroLL3-XEeu17gr5PLNEuQ": {
+      "name": "Google Cloud Professional Cloud Architect",
+      "provider": "Google",
+      "description": "Comprehensive certification covering GCP services...",
+      "related_skill": "Cloud Platforms (AWS, Azure, GCP)"
+    }
+  }
+}
+```
+
+### 效能考量
+- 重用現有的課程查詢邏輯
+- 單次 SQL 查詢取得所有資料
+- 利用現有的快取機制
+- 最小化額外處理開銷
+
+### 向後相容性
+- 保留現有的 `available_course_ids` 欄位
+- 新欄位為可選（optional）
+- 不影響現有 API 消費者
+- 空值時返回 `{}`
+
+---
+
 ## 📎 附錄：課程 IDs 消失問題的根本原因分析與修復
 
 ### 問題背景

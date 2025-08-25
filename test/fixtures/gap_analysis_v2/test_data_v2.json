@@ -53,8 +53,7 @@
   },
   "mock_responses": {
     "successful_response": {
-      "success": true,
-      "data": {
+      "index_calculation": {
         "raw_similarity_percentage": 68,
         "similarity_percentage": 78,
         "keyword_coverage": {
@@ -63,42 +62,26 @@
           "coverage_percentage": 38,
           "covered_keywords": ["Python", "FastAPI", "Docker"],
           "missed_keywords": ["React", "Kubernetes", "AWS", "CI/CD", "DevOps"]
-        },
-        "gap_analysis": {
-          "CoreStrengths": "<ol><li>Strong Python backend expertise with FastAPI framework</li><li>8+ years of software engineering experience exceeding requirements</li><li>Leadership experience managing development teams</li></ol>",
-          "KeyGaps": "<ol><li>Missing React frontend development experience</li><li>No demonstrated Kubernetes container orchestration skills</li><li>Lack of AWS cloud platform experience</li><li>No mention of CI/CD pipeline implementation</li></ol>",
-          "QuickImprovements": "<ol><li>Add specific React projects or mention any frontend JavaScript experience</li><li>Include Docker experience and mention any container-related work</li><li>Highlight any cloud platform experience (Azure, GCP) as transferable skills</li><li>Add any automation or deployment pipeline experience</li></ol>",
-          "OverallAssessment": "<p>The candidate shows strong backend development skills with 60% higher experience than required. However, significant gaps exist in frontend (React), DevOps (Kubernetes, CI/CD), and cloud (AWS) technologies. With a 38% keyword match, the candidate would need 3-6 months of focused learning to become competitive. Immediate resume improvements and highlighting transferable skills could increase match to 50-60%. Currently positioned as a backend specialist rather than full-stack developer.</p>",
-          "SkillSearchQueries": [
-            {
-              "skill_name": "React",
-              "skill_category": "TECHNICAL",
-              "description": "Frontend framework for building interactive user interfaces required for full-stack role"
-            },
-            {
-              "skill_name": "Kubernetes",
-              "skill_category": "TECHNICAL",
-              "description": "Container orchestration platform essential for modern DevOps practices"
-            },
-            {
-              "skill_name": "AWS",
-              "skill_category": "TECHNICAL",
-              "description": "Cloud platform knowledge required for deploying and managing applications"
-            }
-          ]
-        },
-        "processing_time_ms": 2500,
-        "service_timings": {
-          "index_calculation_ms": 800,
-          "gap_analysis_ms": 1700
         }
       },
-      "error": {
-        "code": "",
-        "message": "",
-        "details": ""
+      "gap_analysis": {
+        "CoreStrengths": "• Python Programming\n• Web Development",
+        "KeyGaps": "• Cloud Platform Expertise\n• Container Orchestration",
+        "QuickImprovements": "• Learn AWS basics\n• Docker certification",
+        "OverallAssessment": "Strong foundation with room for cloud skills improvement",
+        "SkillSearchQueries": [
+          {
+            "skill_name": "AWS Cloud Services",
+            "search_query": "AWS certification cloud computing EC2 S3 Lambda"
+          },
+          {
+            "skill_name": "Kubernetes",
+            "search_query": "Kubernetes container orchestration DevOps Docker"
+          }
+        ]
       },
-      "timestamp": "2025-08-03T10:30:00.000Z"
+      "resume_enhancement_project": {},
+      "resume_enhancement_certification": {}
     },
     "partial_success_response": {
       "success": true,

@@ -598,6 +598,17 @@ class CombinedAnalysisServiceV2(BaseService):
         if resume_structure:
             result["resume_structure"] = resume_structure.dict()
 
+        # V5 Enhancement: Extract resume enhancement data if available
+        if gap_result and "SkillSearchQueries" in gap_result:
+            skill_queries = gap_result["SkillSearchQueries"]
+            if skill_queries and len(skill_queries) > 0:
+                # Enhancement data is stored in the first skill for transport
+                first_skill = skill_queries[0]
+                if "resume_enhancement_project" in first_skill:
+                    result["resume_enhancement_project"] = first_skill["resume_enhancement_project"]
+                if "resume_enhancement_certification" in first_skill:
+                    result["resume_enhancement_certification"] = first_skill["resume_enhancement_certification"]
+
         return result
 
     async def _generate_embeddings_parallel(
