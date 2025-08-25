@@ -118,6 +118,10 @@ class SkillQuery(BaseModel):
         default=None,
         description="List of available course IDs for direct lookup (max 25)"
     )
+    course_details: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Detailed course information including name, type, provider, and description"
+    )
 
 
 class GapAnalysisData(BaseModel):
