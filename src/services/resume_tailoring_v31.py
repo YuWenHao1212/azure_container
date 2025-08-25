@@ -12,6 +12,7 @@ Note: No backward compatibility with v2.x. Direct upgrade to v3.1.0.
 import asyncio
 import json
 import logging
+import os
 import time
 from typing import Any
 
@@ -61,7 +62,10 @@ class ResumeTailoringServiceV31:
         # Initialize metrics service
         self.index_service = get_index_calculation_service_v2()
 
-        logger.info("ResumeTailoringServiceV31 initialized with parallel LLM pipeline")
+        # Debug mode flag
+        self.debug_mode = os.getenv("LLM2_DEBUG_MODE", "false").lower() == "true"
+
+        logger.info(f"ResumeTailoringServiceV31 initialized with parallel LLM pipeline (debug_mode={self.debug_mode})")
 
     async def tailor_resume(
         self,
@@ -403,6 +407,13 @@ class ResumeTailoringServiceV31:
             # Pass is_llm2=True and original_resume for fallback
             result = self._parse_llm_response(content, is_llm2=True, original_resume=bundle.get("original_resume", ""))
             result["processing_time_ms"] = processing_time_ms
+            # Store bundle info for debug purposes
+            result["bundle"] = {
+                "education_enhancement_needed": bundle.get("education_enhancement_needed"),
+                "key_gaps": bundle.get("key_gaps", "")[:200] if bundle.get("key_gaps") else "",
+                "standard_sections": bundle.get("standard_sections", {}),
+                "custom_sections": bundle.get("custom_sections", [])
+            }
 
             # Log diagnostic information
             logger.info(f"LLM2 completed in {processing_time_ms}ms")
@@ -506,16 +517,50 @@ class ResumeTailoringServiceV31:
             # For LLM2, try to provide fallback with original content
             if is_llm2 and original_resume:
                 logger.warning("Using fallback content from original resume for LLM2 sections")
-                return {
-                    "optimized_sections": {
-                        "education": self._extract_original_section("education", original_resume),
-                        "projects": self._extract_original_section("projects", original_resume),
-                        "certifications": self._extract_original_section("certifications", original_resume)
-                    },
-                    "tracking": ["LLM2 parsing failed - using original content as fallback"],
-                    "parse_error": str(e),
-                    "fallback_used": True
-                }
+
+                if self.debug_mode:
+                    # Debug mode: Return diagnostic messages
+                    from datetime import datetime
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    error_preview = content[:300] if 'content' in locals() else 'No content available'
+
+                    debug_html = f"""<div style='background:#fff3cd;border:2px solid #ffc107;padding:15px;margin:10px 0;border-radius:5px;'>
+<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 JSON Parse Failed - Debug Mode</h3>
+<p><strong>Timestamp:</strong> {timestamp}</p>
+<p><strong>Error Type:</strong> {type(e).__name__}</p>
+<p><strong>Error Message:</strong> {e!s}</p>
+<p><strong>Response Preview:</strong></p>
+<pre style='background:#f8f9fa;padding:10px;overflow-x:auto;'>{error_preview}</pre>
+<p><strong>Diagnostic:</strong> LLM2 response could not be parsed as valid JSON. Check prompt output format.</p>
+</div>"""
+
+                    return {
+                        "optimized_sections": {
+                            "education": f"<h2>Education</h2>{debug_html}",
+                            "projects": f"<h2>Projects</h2>{debug_html}",
+                            "certifications": f"<h2>Certifications</h2>{debug_html}"
+                        },
+                        "tracking": [f"LLM2 DEBUG: JSON parsing failed - {type(e).__name__}"],
+                        "parse_error": str(e),
+                        "fallback_used": True,
+                        "debug_info": {
+                            "mode": "json_parse_failure",
+                            "error": str(e),
+                            "timestamp": timestamp
+                        }
+                    }
+                else:
+                    # Production mode: Use original content
+                    return {
+                        "optimized_sections": {
+                            "education": self._extract_original_section("education", original_resume),
+                            "projects": self._extract_original_section("projects", original_resume),
+                            "certifications": self._extract_original_section("certifications", original_resume)
+                        },
+                        "tracking": ["LLM2 parsing failed - using original content as fallback"],
+                        "parse_error": str(e),
+                        "fallback_used": True
+                    }
 
             # Return a minimal fallback response
             return {
@@ -535,30 +580,119 @@ class ResumeTailoringServiceV31:
         # Check if LLM2 sections are empty and use fallback if needed
         if not sections2.get("education"):
             logger.warning("LLM2 education section is empty, using fallback from original resume")
-            fallback_education = self._extract_original_section("education", original_resume)
-            if fallback_education:
-                sections2["education"] = fallback_education
+
+            if self.debug_mode:
+                # Debug mode: Show why education is empty
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                education_enhanced = resume_structure.get("education_enhancement_needed", False)
+
+                debug_html = f"""<div style='background:#fff3cd;border:2px solid #ffc107;padding:15px;margin:10px 0;border-radius:5px;'>
+<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Education Empty - Debug Mode</h3>
+<p><strong>Timestamp:</strong> {timestamp}</p>
+<p><strong>Parameters:</strong></p>
+<ul style='list-style-type:none;padding-left:0;'>
+<li>📊 education_enhancement_needed: <code>{education_enhanced}</code></li>
+<li>📊 Years of experience: {resume_structure.get('metadata', {}).get('years_of_experience', 'Unknown')}</li>
+<li>📊 Student status: {resume_structure.get('metadata', {}).get('is_current_student', 'Unknown')}</li>
+</ul>
+<p><strong>Likely Cause:</strong> {
+    'Education enhancement disabled for experienced professionals (≥2 years)' if not education_enhanced
+    else 'LLM2 returned empty content despite enhancement flag'
+}</p>
+<p><strong>Recommendation:</strong> {
+    'Consider adjusting education_enhancement threshold in ResumeStructureAnalyzer' if not education_enhanced
+    else 'Check LLM2 prompt logic for enhanced education processing'
+}</p>
+</div>"""
+                sections2["education"] = f"<h2>Education</h2>{debug_html}"
                 llm2_result["fallback_used"] = True
-                logger.info(f"Successfully extracted education fallback content ({len(fallback_education)} chars)")
+                llm2_result["debug_info"] = llm2_result.get("debug_info", {})
+                llm2_result["debug_info"]["education_empty"] = {
+                    "education_enhancement_needed": education_enhanced,
+                    "timestamp": timestamp
+                }
+            else:
+                # Production mode: Use original content
+                fallback_education = self._extract_original_section("education", original_resume)
+                if fallback_education:
+                    sections2["education"] = fallback_education
+                    llm2_result["fallback_used"] = True
+                    logger.info(f"Successfully extracted education fallback content ({len(fallback_education)} chars)")
 
         if not sections2.get("projects"):
             logger.warning("LLM2 projects section is empty, using fallback from original resume")
-            fallback_projects = self._extract_original_section("projects", original_resume)
-            if fallback_projects:
-                sections2["projects"] = fallback_projects
+
+            if self.debug_mode:
+                # Debug mode: Show why projects is empty
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                debug_html = f"""<div style='background:#fff3cd;border:2px solid #ffc107;padding:15px;margin:10px 0;border-radius:5px;'>
+<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Projects Empty - Debug Mode</h3>
+<p><strong>Timestamp:</strong> {timestamp}</p>
+<p><strong>Possible Reasons:</strong></p>
+<ol>
+<li>🔍 All projects are work/client projects (correctly kept in Experience section)</li>
+<li>🔍 Academic projects kept in Education section (if enhanced)</li>
+<li>🔍 No personal/side projects found in original resume</li>
+<li>🔍 LLM2 filtered out all projects based on strict rules</li>
+</ol>
+<p><strong>Note:</strong> Projects section should ONLY contain personal/side projects. Work projects must stay in Experience.</p>
+<p><strong>Recommendation:</strong> This may be correct behavior if no personal projects exist. Consider adding learning projects for skill gaps.</p>
+</div>"""
+                sections2["projects"] = f"<h2>Projects</h2>{debug_html}"
                 llm2_result["fallback_used"] = True
-                logger.info(f"Successfully extracted projects fallback content ({len(fallback_projects)} chars)")
+                llm2_result["debug_info"] = llm2_result.get("debug_info", {})
+                llm2_result["debug_info"]["projects_empty"] = {
+                    "reason": "No personal projects or filtered out",
+                    "timestamp": timestamp
+                }
+            else:
+                # Production mode: Use original content
+                fallback_projects = self._extract_original_section("projects", original_resume)
+                if fallback_projects:
+                    sections2["projects"] = fallback_projects
+                    llm2_result["fallback_used"] = True
+                    logger.info(f"Successfully extracted projects fallback content ({len(fallback_projects)} chars)")
 
         if not sections2.get("certifications"):
             logger.warning("LLM2 certifications section is empty, using fallback from original resume")
-            fallback_certifications = self._extract_original_section("certifications", original_resume)
-            if fallback_certifications:
-                sections2["certifications"] = fallback_certifications
+
+            if self.debug_mode:
+                # Debug mode: Show why certifications is empty
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                debug_html = f"""<div style='background:#fff3cd;border:2px solid #ffc107;padding:15px;margin:10px 0;border-radius:5px;'>
+<h3 style='color:#856404;margin-top:0;'>⚠️ LLM2 Certifications Empty - Debug Mode</h3>
+<p><strong>Timestamp:</strong> {timestamp}</p>
+<p><strong>Possible Reasons:</strong></p>
+<ol>
+<li>🔍 No certifications in original resume</li>
+<li>🔍 Certifications filtered as irrelevant to job</li>
+<li>🔍 LLM2 expected to add new certifications but didn't</li>
+</ol>
+<p><strong>Key Gaps:</strong> {', '.join(llm2_result.get('bundle', {}).get('key_gaps', ['Not available'])[:3])}</p>
+<p><strong>Recommendation:</strong> Check if certifications should be suggested for skill gaps.</p>
+</div>"""
+                sections2["certifications"] = f"<h2>Certifications</h2>{debug_html}"
                 llm2_result["fallback_used"] = True
-                logger.info(
-                    f"Successfully extracted certifications fallback content "
-                    f"({len(fallback_certifications)} chars)"
-                )
+                llm2_result["debug_info"] = llm2_result.get("debug_info", {})
+                llm2_result["debug_info"]["certifications_empty"] = {
+                    "reason": "No certifications or filtered out",
+                    "timestamp": timestamp
+                }
+            else:
+                # Production mode: Use original content
+                fallback_certifications = self._extract_original_section("certifications", original_resume)
+                if fallback_certifications:
+                    sections2["certifications"] = fallback_certifications
+                    llm2_result["fallback_used"] = True
+                    logger.info(
+                        f"Successfully extracted certifications fallback content "
+                        f"({len(fallback_certifications)} chars)"
+                    )
 
         # Merge all sections
         merged = {
