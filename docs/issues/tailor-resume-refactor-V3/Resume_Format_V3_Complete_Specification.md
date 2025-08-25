@@ -601,6 +601,61 @@ def apply_optimization_markup(text: str, keyword_tracking: dict) -> str:
 
 ---
 
+## 9. LLM2 Fallback 監控與診斷
+
+### 9.1 背景說明
+LLM2 (Additional Manager) 負責處理 Education、Projects、Certifications 三個 sections。當 LLM2 返回空白內容時，系統會使用原始履歷內容作為 fallback，並生成警告訊息。
+
+### 9.2 監控工具
+專用監控工具位於：`test/tools/llm2_fallback_monitor.py`
+
+### 9.3 使用方式
+
+#### 基本使用
+```bash
+# 執行 10 次測試（預設）
+python test/tools/llm2_fallback_monitor.py
+
+# 執行 100 次測試，延遲 1 秒
+python test/tools/llm2_fallback_monitor.py -n 100 --delay 1
+
+# 儲存完整 API 回應以供分析
+python test/tools/llm2_fallback_monitor.py -n 20 --save-responses --verbose
+```
+
+#### 命令參數
+- `-n, --num-tests`: 測試次數（預設 10）
+- `--delay`: 測試間隔秒數（預設 2）
+- `--verbose`: 顯示詳細輸出
+- `--save-responses`: 儲存完整 API 回應到獨立 JSON 檔案
+
+#### 輸出說明
+- **摘要報告**：儲存至 `/tmp/llm2_fallback_test_results_{N}tests_{timestamp}.json`
+- **完整回應**：儲存至 `/tmp/llm2_fallback_test_{timestamp}/`
+  - `test_config.json`：測試配置和元資料
+  - `response_XXX.json`：包含完整 request/response 對，便於比對和重現測試
+- **Console 輸出**：即時顯示每次測試結果和統計
+
+使用 `--save-responses` 時，每個回應檔案包含：
+- **request**：完整的 API 請求參數（JD、Resume、Gap Analysis、Options）
+- **response**：完整的 API 回應
+- **metadata**：測試編號、時間戳記、回應時間、API URL
+
+### 9.4 診斷指標
+- **Fallback Rate**: LLM2 fallback 發生率（目標 < 5%）
+- **Response Time**: 平均回應時間（目標 < 15s）
+- **CSS Class Detection**: 檢測 opt-* 類別是否正確應用
+
+### 9.5 常見問題診斷
+
+| 症狀 | 可能原因 | 診斷方法 |
+|------|----------|----------|
+| 高 fallback 率 | LLM2 模型問題或 prompt 不明確 | 檢查完整回應中的 LLM2 sections |
+| 無警告但內容空白 | 警告機制失效 | 檢查 warnings 欄位 |
+| CSS 類別遺失 | 後處理錯誤 | 檢查 has_opt_classes 欄位 |
+
+---
+
 ## 🚀 實作注意事項
 
 ### API 整合

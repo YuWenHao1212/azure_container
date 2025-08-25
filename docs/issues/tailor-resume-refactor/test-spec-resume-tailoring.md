@@ -679,9 +679,65 @@ All checks passed!
 - ✅ 不再使用不準確的 fallback 估算值
 - ✅ 真實 metrics 計算正常運作
 
-## 8. 測試實作狀態
+## 8. 生產環境監控工具
 
-### 8.1 測試檔案位置
+### 8.1 LLM2 Fallback 監控工具
+
+#### 工具位置
+`test/tools/llm2_fallback_monitor.py`
+
+#### 用途
+- 監控生產環境 LLM2 fallback 發生率
+- 診斷 Resume Tailoring API 的穩定性
+- 收集完整 API 回應以供分析
+
+#### 測試案例編號
+- **TOOL-LLM2-MON-01**: LLM2 Fallback 監控工具
+
+#### 執行範例
+```bash
+# 日常監控（10 次測試）
+python test/tools/llm2_fallback_monitor.py
+
+# 深度診斷（100 次測試，儲存回應）
+python test/tools/llm2_fallback_monitor.py -n 100 --save-responses
+
+# 快速檢查（3 次測試，詳細輸出）
+python test/tools/llm2_fallback_monitor.py -n 3 --verbose
+```
+
+#### 整合到 CI/CD
+```yaml
+# .github/workflows/monitor.yml
+- name: LLM2 Fallback Monitor
+  run: |
+    python test/tools/llm2_fallback_monitor.py -n 10
+    # 檢查 fallback 率
+    python -c "import json; data=json.load(open('/tmp/llm2_fallback_test_results_10tests.json')); exit(1 if float(data['summary']['fallback_rate'].strip('%')) > 5 else 0)"
+```
+
+#### 關鍵指標
+- **Fallback Rate 閾值**: < 5%（警告）、< 10%（錯誤）
+- **P50 回應時間**: < 12s
+- **P95 回應時間**: < 20s
+
+### 8.2 工具維護指南
+
+#### 更新測試資料
+當 Resume 或 JD 格式變更時，更新工具中的：
+- `ORIGINAL_RESUME`: 確保符合最新 HTML 格式
+- `JOB_DESCRIPTION`: 確保包含最新關鍵字
+- `GAP_ANALYSIS`: 確保欄位與 API 一致
+
+#### 擴展功能建議
+1. 加入 Slack/Email 通知
+2. 整合到 Grafana dashboard
+3. 支援多環境（dev/staging/prod）切換
+4. 加入歷史趨勢分析
+
+## 9. 測試實作狀態
+
+### 9.1 測試檔案位置
 
 | Test ID 範圍 | 類型 | 實作檔案 | 狀態 |
 |-------------|------|----------|------|
