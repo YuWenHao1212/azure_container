@@ -563,7 +563,8 @@ class CourseAvailabilityChecker:
                     logger.debug(f"  - embedding length: {len(embedding) if embedding else 0}")
                     logger.debug(f"  - min_threshold: {min_threshold}")
                     logger.debug(f"  - skill_category: {skill_category}")
-                    logger.debug(f"  - SKILL threshold: {SIMILARITY_THRESHOLDS.get('SKILL', SIMILARITY_THRESHOLDS['DEFAULT'])}")
+                    skill_threshold = SIMILARITY_THRESHOLDS.get('SKILL', SIMILARITY_THRESHOLDS['DEFAULT'])
+                    logger.debug(f"  - SKILL threshold: {skill_threshold}")
 
                     result = await conn.fetchrow(
                         AVAILABILITY_QUERY,
@@ -578,15 +579,17 @@ class CourseAvailabilityChecker:
                     # DEBUG: Log raw SQL result
                     if result:
                         logger.debug(f"[DEBUG] SQL result keys: {list(result.keys())}")
-                        logger.debug(f"[DEBUG] course_ids count: {len(result.get('course_ids', [])) if result.get('course_ids') else 0}")
-                        logger.debug(f"[DEBUG] course_details type: {type(result.get('course_details'))}")
-                        logger.debug(f"[DEBUG] course_details count: {len(result.get('course_details', [])) if result.get('course_details') else 0}")
-                        if result.get('course_details') and len(result.get('course_details', [])) > 0:
-                            logger.debug(f"[DEBUG] First course_detail: {result.get('course_details')[0]}")
+                        course_ids = result.get('course_ids', [])
+                        course_details = result.get('course_details', [])
+                        logger.debug(f"[DEBUG] course_ids count: {len(course_ids) if course_ids else 0}")
+                        logger.debug(f"[DEBUG] course_details type: {type(course_details)}")
+                        logger.debug(f"[DEBUG] course_details count: {len(course_details) if course_details else 0}")
+                        if course_details and len(course_details) > 0:
+                            logger.debug(f"[DEBUG] First course_detail: {course_details[0]}")
 
                     # Process course data - SIMPLIFIED VERSION FOR TESTING
                     # First check if we have course_ids directly (like old version)
-                    course_ids = result.get("course_ids", [])
+                    # course_ids already extracted above for debugging
 
                     # Check if course_ids is not None and not empty
                     if course_ids is not None and len(course_ids) > 0 and course_ids[0] is not None:
