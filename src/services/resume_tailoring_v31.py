@@ -463,6 +463,63 @@ class ResumeTailoringServiceV31:
 
         return ""
 
+    def _safe_json_fix_for_llm2(self, json_str: str) -> str:
+        """
+        Comprehensive JSON fix for LLM2 quote escaping issues.
+        Handles multiple escaping patterns that LLM2 might produce.
+        """
+        import re
+
+        original = json_str
+
+        # Pattern 1: Fix \&quot; → " (HTML entity with backslash)
+        json_str = json_str.replace('\\&quot;', '"')
+
+        # Pattern 2: Fix &quot; → " (HTML entity without backslash)
+        json_str = json_str.replace('&quot;', '"')
+
+        # Pattern 3: Fix &lt; and &gt; → < and >
+        json_str = json_str.replace('&lt;', '<')
+        json_str = json_str.replace('&gt;', '>')
+
+        # Pattern 4: Fix &amp; → &
+        json_str = json_str.replace('&amp;', '&')
+
+        # Pattern 5: Fix class='\"...' → class="..." (single quotes with escaped double)
+        json_str = json_str.replace("'\\\"", '"')
+        json_str = json_str.replace("\\\"'", '"')
+
+        # Pattern 6: Fix class="\&quot;...\&quot;" → class="..."
+        json_str = re.sub(r'class="\\&quot;([^"]+)\\&quot;"', r'class="\1"', json_str)
+
+        # Pattern 7: Fix class='\\\"...\\\"' → class="..."
+        json_str = re.sub(r"class='\\\\\"([^'\"]+)\\\\\"'", r'class="\1"', json_str)
+
+        # Pattern 8: Fix nested escaping like \\" → "
+        json_str = json_str.replace('\\\\"', '"')
+        json_str = json_str.replace('\\"', '"')
+
+        # Pattern 9: Fix improper single quotes in JSON keys/values
+        # This is risky but necessary for some cases
+        # Only apply if we detect single-quoted JSON structure
+        if "': '" in json_str or "': {" in json_str:
+            # Try to convert single quotes to double quotes for JSON keys
+            # But preserve single quotes inside HTML content
+            import re
+            # Match JSON keys (before colon)
+            json_str = re.sub(r"'([^']+)'(\s*:)", r'"\1"\2', json_str)
+
+        # Pattern 10: Clean up any remaining double escaping
+        json_str = json_str.replace('\\\\', '\\')
+
+        # Log the changes if any
+        if json_str != original:
+            change_count = sum(1 for a, b in zip(original, json_str, strict=False) if a != b)
+            logger.info(f"Applied comprehensive JSON fix for LLM2 ({change_count} characters changed)")
+            logger.debug("Fixed patterns included: HTML entities, quote escaping, nested escaping")
+
+        return json_str
+
     def _parse_llm_response(self, content: str, is_llm2: bool = False, original_resume: str = "") -> dict:
         """Parse JSON response from LLM with robust error handling."""
 
@@ -484,21 +541,30 @@ class ResumeTailoringServiceV31:
             else:
                 raise ValueError("No JSON found in response")
 
-            # Apply intelligent JSON fix for LLM2 quote escaping issues
+            # Apply comprehensive JSON fix for LLM2
             if is_llm2:
-                import re
-                # Fix common quote escaping errors: class='\"opt-modified\"' → class='opt-modified'
-                original_json = json_str
-                json_str = json_str.replace("'\\\"", "'")
-                json_str = json_str.replace("\\\"'", "'")
+                json_str = self._safe_json_fix_for_llm2(json_str)
 
-                # Fix nested quote issues using regex
-                json_str = re.sub(r"class='\\\"([^'\"]+)\\\"'", r"class='\1'", json_str)
+                # Try to fix truncated JSON if needed
+                if not json_str.rstrip().endswith('}'):
+                    logger.warning("LLM2 JSON appears truncated, attempting to fix...")
+                    # Count opening and closing braces
+                    open_braces = json_str.count('{')
+                    close_braces = json_str.count('}')
 
-                # Log if we applied fixes
-                if json_str != original_json:
-                    logger.info("Applied JSON quote escaping fix for LLM2 response")
-                    logger.debug(f"Quote fix applied, changed {len(original_json) - len(json_str)} characters")
+                    # Add missing closing braces
+                    if open_braces > close_braces:
+                        missing = open_braces - close_braces
+                        json_str = json_str + ('}' * missing)
+                        logger.info(f"Added {missing} missing closing braces to LLM2 JSON")
+
+                    # Ensure arrays are closed
+                    open_brackets = json_str.count('[')
+                    close_brackets = json_str.count(']')
+                    if open_brackets > close_brackets:
+                        missing = open_brackets - close_brackets
+                        json_str = json_str + (']' * missing)
+                        logger.info(f"Added {missing} missing closing brackets to LLM2 JSON")
 
             # Parse JSON
             result = json.loads(json_str)

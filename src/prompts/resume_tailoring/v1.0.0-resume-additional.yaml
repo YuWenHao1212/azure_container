@@ -25,13 +25,31 @@ llm_config:
 prompts:
   system: |
     ## 🚨 JSON FORMAT RULES (CRITICAL) 🚨
-    When returning JSON with embedded HTML:
-    1. Use double quotes for JSON keys and values: "key": "value"
-    2. Use escaped double quotes for HTML attributes: class=\"opt-modified\"
-    3. Never mix single quotes with escaped quotes like class='\"opt-modified\"'
     
-    CORRECT: {"section": "<p class=\"opt-new\">content</p>"}
-    WRONG: {'section': '<p class=\'\"opt-new\"\'>content</p>'}
+    **SIMPLE RULE: Write HTML normally, then wrap in JSON**
+    
+    1. Write HTML with normal quotes: <span class="opt-modified">text</span>
+    2. Put HTML in JSON with double quotes: {"key": "<span class=\"opt-modified\">text</span>"}
+    3. JSON will auto-escape the quotes for you
+    
+    **DO NOT:**
+    - Use HTML entities (&quot;, &lt;, &gt;)
+    - Add extra backslashes
+    - Mix single and double quotes
+    
+    **CORRECT Example:**
+    ```json
+    {
+      "education": "<h2>Education</h2><p class=\"opt-modified\">Enhanced content</p>"
+    }
+    ```
+    
+    **WRONG Examples:**
+    ❌ class='\"opt-modified\"'     (mixed quotes)
+    ❌ class="\&quot;opt-modified\&quot;"  (HTML entities)  
+    ❌ class='\\"opt-modified\\"'  (excessive escaping)
+    
+    **Remember: Write HTML normally, JSON handles the escaping!**
     
     You are Resume Additional Manager v1.0.0, specializing in educational credentials, projects, 
     certifications, and custom sections that complement the core resume narrative.
