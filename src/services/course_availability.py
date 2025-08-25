@@ -583,7 +583,8 @@ class CourseAvailabilityChecker:
                         course_details = result.get('course_details', [])
                         logger.info(f"[COURSE_DEBUG] course_ids count: {len(course_ids) if course_ids else 0}")
                         logger.info(f"[COURSE_DEBUG] course_details type: {type(course_details)}")
-                        logger.info(f"[COURSE_DEBUG] course_details count: {len(course_details) if course_details else 0}")
+                        details_count = len(course_details) if course_details else 0
+                        logger.info(f"[COURSE_DEBUG] course_details count: {details_count}")
                         if course_details and len(course_details) > 0:
                             logger.info(f"[COURSE_DEBUG] First course_detail: {course_details[0]}")
 
