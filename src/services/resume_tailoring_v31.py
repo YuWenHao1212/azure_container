@@ -484,6 +484,22 @@ class ResumeTailoringServiceV31:
             else:
                 raise ValueError("No JSON found in response")
 
+            # Apply intelligent JSON fix for LLM2 quote escaping issues
+            if is_llm2:
+                import re
+                # Fix common quote escaping errors: class='\"opt-modified\"' → class='opt-modified'
+                original_json = json_str
+                json_str = json_str.replace("'\\\"", "'")
+                json_str = json_str.replace("\\\"'", "'")
+
+                # Fix nested quote issues using regex
+                json_str = re.sub(r"class='\\\"([^'\"]+)\\\"'", r"class='\1'", json_str)
+
+                # Log if we applied fixes
+                if json_str != original_json:
+                    logger.info("Applied JSON quote escaping fix for LLM2 response")
+                    logger.debug(f"Quote fix applied, changed {len(original_json) - len(json_str)} characters")
+
             # Parse JSON
             result = json.loads(json_str)
 
