@@ -93,48 +93,8 @@ jobs:
         chmod +x test/scripts/pre_commit_check_advanced.py
         chmod +x .claude/hooks/pre-commit-check.sh
         
-        # Debug CI environment
-        echo "=== Debug CI Environment ==="
-        python test/scripts/diagnose_ci_env.py || true
-        echo ""
-        
-        # 執行完整測試套件 (包含所有測試) - 使用 Python 版本
-        echo "=== Running complete test suite with Python pre-commit check ==="
-        echo "This includes:"
-        echo "  - Ruff code style check (src/ and test/ directories)"
-        echo "  - Service modules tests (47 tests)"
-        echo "  - Error Handler System tests (30 tests)"
-        echo "  - Health & Keyword tests (16 tests)"
-        echo "  - Index Calculation tests (20 tests)"
-        echo "  - Gap Analysis tests (57 tests)"
-        echo "  - Course Availability tests (11 tests)"
-        echo "  - Course Batch Query tests (19 tests)"
-        echo "  - Resume Tailoring tests (16 tests)"
-        echo "Total: 217 tests + Ruff check"
-        echo ""
-        echo "📌 CI Mode: Using optimized test delays for faster execution"
-        echo ""
-        
-        # === STEP 1: Isolated Course Availability Test ===
-        echo "="
-        echo "=== ISOLATED TEST: Running Course Availability tests in isolation ==="
-        echo "="
-        # Clean Python cache
-        find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-        find . -type f -name "*.pyc" -delete 2>/dev/null || true
-        
-        # Run Course Availability tests in isolation
-        pytest test/integration/test_course_availability.py -xvs --tb=short
-        
-        if [ $? -eq 0 ]; then
-            echo "✅ Course Availability tests PASSED in isolation"
-        else
-            echo "❌ Course Availability tests FAILED even in isolation"
-            echo "This indicates the problem is NOT test order pollution"
-        fi
-        
-        echo ""
-        echo "=== STEP 2: Full Test Suite ==="
+        # 執行完整測試套件 - 使用簡潔輸出格式
+        echo "🚨 Starting comprehensive test validation..."
         echo ""
         
         # 優先使用 Python 版本
