@@ -145,7 +145,7 @@ class TestCourseAvailability:
 
         # Verify result - matches actual return structure
         assert result["has_courses"] is True
-        assert result["count"] == 15  # Uses 'count' not 'total_count'
+        assert result["total_count"] == 15  # Now uses 'total_count'
 
     @pytest.mark.asyncio
     async def test_CA_003_UT_cache_mechanism(self, checker):
@@ -170,11 +170,12 @@ class TestCourseAvailability:
             async def mock_check_skill(embedding, skill_name, skill_category="DEFAULT"):
                 return {
                     "has_courses": True,
-                    "count": 10,  # _check_single_skill returns count, not total_count
+                    "total_count": 10,  # _check_single_skill returns total_count
                     "type_diversity": 2,
                     "course_types": ["course", "project"],
                     "course_ids": [f"coursera_crse:v1-{skill_name.lower()}-001",
-                                  f"coursera_crse:v1-{skill_name.lower()}-002"]
+                                  f"coursera_crse:v1-{skill_name.lower()}-002"],
+                    "course_details": []  # Add course_details field
                 }
 
             checker._check_single_skill = mock_check_skill
@@ -252,10 +253,11 @@ class TestCourseAvailability:
                     raise TimeoutError("Query timeout")
                 return {
                     "has_courses": True,
-                    "count": 5,  # _check_single_skill returns count
+                    "total_count": 5,  # _check_single_skill returns total_count
                     "type_diversity": 2,
                     "course_types": ["course", "specialization"],
-                    "course_ids": [f"coursera_crse:v1-{skill_name.lower()}-001"]
+                    "course_ids": [f"coursera_crse:v1-{skill_name.lower()}-001"],
+                    "course_details": []  # Add course_details field
                 }
 
             checker._check_single_skill = mock_check_skill
@@ -331,10 +333,11 @@ class TestCourseAvailability:
                 await asyncio.sleep(0.01)  # Simulate query time
                 return {
                     "has_courses": True,
-                    "count": 5,
+                    "total_count": 5,
                     "type_diversity": 2,
                     "course_types": ["course", "project"],
-                    "course_ids": ["id1", "id2", "id3", "id4", "id5"]
+                    "course_ids": ["id1", "id2", "id3", "id4", "id5"],
+                    "course_details": []  # Add course_details field
                 }
 
             checker._check_single_skill = mock_check_skill
@@ -544,7 +547,7 @@ class TestCourseAvailability:
 
         # Verify result includes diversity
         assert result["has_courses"] is True
-        assert result["count"] == 25
+        assert result["total_count"] == 25
         assert result["type_diversity"] == 5
         assert len(result["course_ids"]) == 25
 
@@ -602,7 +605,7 @@ class TestCourseAvailability:
 
         # Verify FIELD-oriented distribution
         assert result["has_courses"] is True
-        assert result["count"] == 24
+        assert result["total_count"] == 24
         assert len(result["course_ids"]) == 24
 
         # Count course types in result
@@ -798,7 +801,7 @@ class TestCourseAvailability:
         )
 
         assert result["has_courses"] is True
-        assert result["count"] == 22  # All 22 courses
+        assert result["total_count"] == 22  # All 22 courses
 
         # Test case 2: Deficit filling enabled
         os.environ['ENABLE_DEFICIT_FILLING'] = 'true'

@@ -40,10 +40,9 @@ class TestCourseAvailabilityIntegration:
             async def mock_check_skill(embedding, skill_name, skill_category="DEFAULT"):
                 return {
                     "has_courses": True,
-                    "count": 15,  # Different from static cache for verification
-                    "preferred_count": 10,
-                    "other_count": 5,
-                    "course_ids": ["coursera_crse:v1-python-101", "coursera_crse:v1-python-102"]
+                    "total_count": 15,  # Different from static cache for verification
+                    "course_ids": ["coursera_crse:v1-python-101", "coursera_crse:v1-python-102"],
+                    "course_details": []  # Add course_details field
                 }
 
             checker._check_single_skill = mock_check_skill
@@ -85,11 +84,12 @@ class TestCourseAvailabilityIntegration:
                 # Simulate different response times and data for each skill
                 return {
                     "has_courses": True,
-                    "count": 10 if skill_name == "Python" else 8,
+                    "total_count": 10 if skill_name == "Python" else 8,
                     "type_diversity": 2,
                     "course_types": ["course", "project"],
                     "course_ids": [f"coursera_crse:v1-{skill_name.lower()}-001",
-                                  f"coursera_crse:v1-{skill_name.lower()}-002"]
+                                  f"coursera_crse:v1-{skill_name.lower()}-002"],
+                    "course_details": []  # Add course_details field
                 }
 
             checker._check_single_skill = mock_check_skill
