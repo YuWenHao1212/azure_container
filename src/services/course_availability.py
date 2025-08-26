@@ -425,7 +425,7 @@ class CourseAvailabilityChecker:
                     else:
                         # Success: update skill and cache result
                         skill["has_available_courses"] = result["has_courses"]
-                        skill["course_count"] = result["count"]
+                        skill["course_count"] = result.get("total_count", 0)
                         skill["available_course_ids"] = result.get("course_ids", [])
                         # NEW: Store course details for resume enhancement
                         skill["course_details"] = result.get("course_details", [])
@@ -447,7 +447,7 @@ class CourseAvailabilityChecker:
                         if self._cache_enabled and self._dynamic_cache and cache_key:
                             cache_data = {
                                 "has_available_courses": result["has_courses"],
-                                "course_count": result["count"],
+                                "course_count": result.get("total_count", 0),
                                 "available_course_ids": result.get("course_ids", []),
                                 "type_diversity": result.get("type_diversity", 0),
                                 "course_types": result.get("course_types", []),
@@ -605,7 +605,7 @@ class CourseAvailabilityChecker:
                     logger.error("❌ [CourseAvailability] No database connection available, returning empty result")
                     return {
                         "has_courses": False,
-                        "count": 0,
+                        "total_count": 0,  # Changed from "count" to "total_count"
                         "type_diversity": 0,
                         "course_types": [],
                         "course_ids": [],
@@ -751,7 +751,7 @@ class CourseAvailabilityChecker:
                     # Return enhanced result with diversity metrics
                     return {
                         "has_courses": len(final_course_ids) > 0,
-                        "count": len(final_course_ids),
+                        "total_count": len(final_course_ids),  # Changed from "count" to "total_count"
                         "type_diversity": type_diversity,
                         "course_types": course_types,
                         "course_ids": final_course_ids,

@@ -83,12 +83,20 @@ class TestCourseAvailabilityIntegration:
             mock_ctx.__aexit__.return_value = None
             mock_pool.acquire.return_value = mock_ctx
 
-            # Mock database response
+            # Mock database response with all required fields
             mock_conn.fetchrow = AsyncMock(return_value={
                 "has_courses": True,
                 "total_count": 10,
                 "preferred_count": 7,
-                "other_count": 3
+                "other_count": 3,
+                # Add required fields from AVAILABILITY_QUERY
+                "course_ids": [f"course_{i}" for i in range(1, 11)],  # 10 course IDs
+                "course_details": json.dumps([
+                    {"id": f"course_{i}", "name": f"Course {i}", "type": "course"}
+                    for i in range(1, 11)
+                ]),  # JSON string of course details
+                "type_diversity": 1,
+                "course_types": ["course"]
             })
 
             service._connection_pool = mock_pool
@@ -104,13 +112,13 @@ class TestCourseAvailabilityIntegration:
             rust_skill = result[0]
             assert rust_skill["has_available_courses"] is True
             assert rust_skill["course_count"] == 10
-            assert rust_skill.get("preferred_courses") == 7
+            # preferred_courses field is no longer used in the current implementation
 
             # Check Quantum Computing (FIELD)
             qc_skill = result[1]
             assert qc_skill["has_available_courses"] is True
             assert qc_skill["course_count"] == 10
-            assert qc_skill.get("preferred_courses") == 7
+            # preferred_courses field is no longer used in the current implementation
 
     async def test_CA_002_IT_parallel_processing(
         self,
@@ -160,7 +168,15 @@ class TestCourseAvailabilityIntegration:
                 "has_courses": True,
                 "total_count": 5,
                 "preferred_count": 3,
-                "other_count": 2
+                "other_count": 2,
+                # Add required fields from AVAILABILITY_QUERY
+                "course_ids": [f"course_{i}" for i in range(1, 6)],  # 5 course IDs
+                "course_details": json.dumps([
+                    {"id": f"course_{i}", "name": f"Course {i}", "type": "course"}
+                    for i in range(1, 6)
+                ]),  # JSON string of course details
+                "type_diversity": 1,
+                "course_types": ["course"]
             })
 
             service._connection_pool = mock_pool
