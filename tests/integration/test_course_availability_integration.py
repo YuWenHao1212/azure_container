@@ -100,7 +100,12 @@ class TestCourseAvailabilityIntegration:
                     for i in range(1, 11)
                 ]),  # JSON string of course details
                 "type_diversity": 1,
-                "course_types": ["course"]
+                "course_types": ["course"],
+                # Add course_data for fallback
+                "course_data": [
+                    {"id": f"course_{i}", "similarity": 0.9, "type": "course"}
+                    for i in range(1, 11)
+                ]
             })
 
             service._connection_pool = mock_pool
@@ -307,7 +312,13 @@ class TestCourseAvailabilityIntegration:
         assert result is not None
         assert len(result) == 1
 
-        # Skill should be marked as unavailable
+        # When database fails and skill not in cache, should return with default values
+        # The service should handle the error gracefully
+        assert "has_available_courses" in result[0]
+        assert "course_count" in result[0]
+        
+        # In CI environment without database, the result should have proper fields
+        # even when the database connection fails
         assert result[0]["has_available_courses"] is False
         assert result[0]["course_count"] == 0
 
