@@ -4,6 +4,10 @@ Integration tests for Course Availability Service
 import os
 import sys
 
+import pytest
+
+from src.services.course_availability import CourseAvailabilityChecker
+
 # ============================================================
 # DIAGNOSTIC CODE FOR CI/CD DEBUGGING
 # ============================================================
@@ -45,10 +49,6 @@ print("="*60 + "\n")
 # ============================================================
 # END DIAGNOSTIC CODE
 # ============================================================
-
-import pytest
-
-from src.services.course_availability import CourseAvailabilityChecker
 
 
 @pytest.fixture(autouse=True)
