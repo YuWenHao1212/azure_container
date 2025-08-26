@@ -818,3 +818,280 @@ class TestCourseAvailability:
         # Clean up
         del os.environ['ENABLE_DEFICIT_FILLING']
         reload(ca_module)
+
+    @pytest.mark.asyncio
+    async def test_CA_020_UT_enhancement_data_with_course_details_excluded(self, checker):
+        """
+        Test ID: CA-020-UT
+        Test that enhancement data is built correctly when course_details is excluded
+        Priority: P1
+
+        Verifies that the _build_enhancement_data method works correctly
+        regardless of the INCLUDE_COURSE_DETAILS environment variable setting.
+        """
+        import os
+        from unittest import mock
+
+        # Set environment variable to exclude course_details
+        with mock.patch.dict(os.environ, {'INCLUDE_COURSE_DETAILS': 'false'}):
+            # Create test data with course_details
+            skills_with_courses = [
+                {
+                    "skill_name": "Python Programming",
+                    "course_details": [
+                        {"id": "proj-1", "name": "Python Web Project", "type": "project",
+                         "provider_standardized": "Coursera", "description": "Build a web app"},
+                        {"id": "cert-1", "name": "Python Certification", "type": "certification",
+                         "provider_standardized": "Python.org", "description": "Official cert"},
+                        {"id": "spec-1", "name": "Python Specialization", "type": "specialization",
+                         "provider_standardized": "Coursera", "description": "5-course spec"},
+                        {"id": "course-1", "name": "Python Basics", "type": "course",
+                         "provider_standardized": "edX", "description": "Learn Python"}
+                    ]
+                },
+                {
+                    "skill_name": "Docker",
+                    "course_details": [
+                        {"id": "proj-2", "name": "Docker Project", "type": "project",
+                         "provider_standardized": "Docker", "description": "Container project"},
+                        {"id": "cert-2", "name": "Docker Cert", "type": "certification",
+                         "provider_standardized": "Docker", "description": "Docker certified"}
+                    ]
+                }
+            ]
+
+            skill_queries = [
+                {"skill_name": "Python Programming"},
+                {"skill_name": "Docker"}
+            ]
+
+            # Call _build_enhancement_data
+            projects, certifications = checker._build_enhancement_data(
+                skills_with_courses, skill_queries
+            )
+
+            # Verify projects are correctly extracted
+            assert "proj-1" in projects
+            assert projects["proj-1"]["name"] == "Python Web Project"
+            assert projects["proj-1"]["related_skill"] == "Python Programming"
+            assert "proj-2" in projects
+            assert projects["proj-2"]["related_skill"] == "Docker"
+
+            # Verify certifications are correctly extracted
+            assert "cert-1" in certifications
+            assert certifications["cert-1"]["name"] == "Python Certification"
+            assert "spec-1" in certifications  # Specialization should be in certifications
+            assert certifications["spec-1"]["name"] == "Python Specialization"
+            assert "cert-2" in certifications
+
+            # Verify regular courses are NOT included
+            assert "course-1" not in projects
+            assert "course-1" not in certifications
+
+            # Verify the method works regardless of INCLUDE_COURSE_DETAILS setting
+            assert len(projects) == 2  # proj-1, proj-2
+            assert len(certifications) == 3  # cert-1, spec-1, cert-2
+
+    @pytest.mark.asyncio
+    async def test_CA_021_UT_enhancement_project_quota_enforcement(self, checker):
+        """
+        Test ID: CA-021-UT
+        Test project quota limits are enforced (max 2 per skill)
+        Priority: P1
+
+        Verifies that each skill can contribute at most 2 projects to
+        the resume_enhancement_project dictionary.
+        """
+        # Create test data with excess projects
+        skills_with_courses = []
+        skill_queries = []
+
+        for skill_idx in range(6):
+            skill_name = f"Skill-{skill_idx}"
+            courses = []
+            # Add 5 projects per skill (exceeds quota of 2)
+            for proj_idx in range(5):
+                courses.append({
+                    "id": f"proj-{skill_idx}-{proj_idx}",
+                    "name": f"Project {proj_idx} for {skill_name}",
+                    "type": "project",
+                    "provider_standardized": "Provider",
+                    "description": f"Description for project {proj_idx}"
+                })
+
+            skills_with_courses.append({
+                "skill_name": skill_name,
+                "course_details": courses
+            })
+            skill_queries.append({"skill_name": skill_name})
+
+        # Call _build_enhancement_data
+        projects, certifications = checker._build_enhancement_data(
+            skills_with_courses, skill_queries
+        )
+
+        # Verify quota enforcement
+        # Count projects per skill
+        skill_project_count = {}
+        for _, proj_data in projects.items():
+            skill = proj_data["related_skill"]
+            skill_project_count[skill] = skill_project_count.get(skill, 0) + 1
+
+        # Each skill should have at most 2 projects
+        for skill, count in skill_project_count.items():
+            assert count <= 2, f"Skill {skill} has {count} projects, expected max 2"
+
+        # Total projects should not exceed 12 (6 skills * 2)
+        assert len(projects) <= 12, f"Total projects: {len(projects)}, expected max 12"
+
+        # Verify it takes the first 2 projects (maintains order)
+        assert "proj-0-0" in projects
+        assert "proj-0-1" in projects
+        assert "proj-0-2" not in projects  # Third project should be excluded
+
+    @pytest.mark.asyncio
+    async def test_CA_022_UT_enhancement_certification_quota_enforcement(self, checker):
+        """
+        Test ID: CA-022-UT
+        Test certification quota limits are enforced (max 4 per skill)
+        Priority: P1
+
+        Verifies that each skill can contribute at most 4 certifications/specializations
+        to the resume_enhancement_certification dictionary.
+        """
+        # Create test data with excess certifications
+        skills_with_courses = []
+        skill_queries = []
+
+        for skill_idx in range(6):
+            skill_name = f"Skill-{skill_idx}"
+            courses = []
+            # Add 3 certifications and 3 specializations per skill (total 6, exceeds quota of 4)
+            for cert_idx in range(3):
+                courses.append({
+                    "id": f"cert-{skill_idx}-{cert_idx}",
+                    "name": f"Certification {cert_idx} for {skill_name}",
+                    "type": "certification",
+                    "provider_standardized": "Provider",
+                    "description": f"Certification description {cert_idx}"
+                })
+            for spec_idx in range(3):
+                courses.append({
+                    "id": f"spec-{skill_idx}-{spec_idx}",
+                    "name": f"Specialization {spec_idx} for {skill_name}",
+                    "type": "specialization",
+                    "provider_standardized": "Provider",
+                    "description": f"Specialization description {spec_idx}"
+                })
+
+            skills_with_courses.append({
+                "skill_name": skill_name,
+                "course_details": courses
+            })
+            skill_queries.append({"skill_name": skill_name})
+
+        # Call _build_enhancement_data
+        projects, certifications = checker._build_enhancement_data(
+            skills_with_courses, skill_queries
+        )
+
+        # Verify quota enforcement
+        # Count certifications per skill
+        skill_cert_count = {}
+        for _, cert_data in certifications.items():
+            skill = cert_data["related_skill"]
+            skill_cert_count[skill] = skill_cert_count.get(skill, 0) + 1
+
+        # Each skill should have at most 4 certifications
+        for skill, count in skill_cert_count.items():
+            assert count <= 4, f"Skill {skill} has {count} certifications, expected max 4"
+
+        # Total certifications should not exceed 24 (6 skills * 4)
+        assert len(certifications) <= 24, f"Total certifications: {len(certifications)}, expected max 24"
+
+        # Verify it takes the first 4 (maintains order)
+        assert "cert-0-0" in certifications
+        assert "cert-0-1" in certifications
+        assert "cert-0-2" in certifications
+        assert "spec-0-0" in certifications
+        assert "spec-0-1" not in certifications  # Fifth item should be excluded
+
+        # Verify specializations are treated as certifications
+        spec_count = sum(1 for cert_id in certifications if cert_id.startswith("spec-"))
+        assert spec_count > 0, "Specializations should be included in certifications"
+
+    @pytest.mark.asyncio
+    async def test_CA_023_UT_enhancement_course_type_filtering(self, checker):
+        """
+        Test ID: CA-023-UT
+        Test that only specific course types are accepted for enhancement
+        Priority: P2
+
+        Verifies that only project, certification, and specialization types
+        are included in enhancement data, while other types are filtered out.
+        """
+        # Create test data with various course types
+        skills_with_courses = [
+            {
+                "skill_name": "Mixed Types Skill",
+                "course_details": [
+                    {"id": "proj-1", "name": "Valid Project", "type": "project",
+                     "provider_standardized": "Provider", "description": "Project desc"},
+                    {"id": "cert-1", "name": "Valid Cert", "type": "certification",
+                     "provider_standardized": "Provider", "description": "Cert desc"},
+                    {"id": "spec-1", "name": "Valid Spec", "type": "specialization",
+                     "provider_standardized": "Provider", "description": "Spec desc"},
+                    {"id": "course-1", "name": "Regular Course", "type": "course",
+                     "provider_standardized": "Provider", "description": "Course desc"},
+                    {"id": "workshop-1", "name": "Workshop", "type": "workshop",
+                     "provider_standardized": "Provider", "description": "Workshop desc"},
+                    {"id": "tutorial-1", "name": "Tutorial", "type": "tutorial",
+                     "provider_standardized": "Provider", "description": "Tutorial desc"},
+                    {"id": "webinar-1", "name": "Webinar", "type": "webinar",
+                     "provider_standardized": "Provider", "description": "Webinar desc"},
+                    {"id": "empty-type", "name": "Empty Type", "type": "",
+                     "provider_standardized": "Provider", "description": "No type"},
+                    {"id": "no-type", "name": "No Type Field",
+                     "provider_standardized": "Provider", "description": "Missing type"},
+                    {"name": "No ID Project", "type": "project",  # No id field
+                     "provider_standardized": "Provider", "description": "Missing ID"},
+                ]
+            }
+        ]
+
+        skill_queries = [{"skill_name": "Mixed Types Skill"}]
+
+        # Call _build_enhancement_data
+        projects, certifications = checker._build_enhancement_data(
+            skills_with_courses, skill_queries
+        )
+
+        # Verify only valid types are included
+        # Projects should only contain project type
+        assert "proj-1" in projects
+        assert len(projects) == 1  # Only one valid project
+
+        # Certifications should contain certification and specialization
+        assert "cert-1" in certifications
+        assert "spec-1" in certifications
+        assert len(certifications) == 2  # Only cert and spec
+
+        # Verify excluded types
+        all_ids = list(projects.keys()) + list(certifications.keys())
+        assert "course-1" not in all_ids, "Regular courses should be excluded"
+        assert "workshop-1" not in all_ids, "Workshops should be excluded"
+        assert "tutorial-1" not in all_ids, "Tutorials should be excluded"
+        assert "webinar-1" not in all_ids, "Webinars should be excluded"
+        assert "empty-type" not in all_ids, "Empty type should be excluded"
+        assert "no-type" not in all_ids, "Missing type should be excluded"
+        # Items without IDs won't be added
+
+        # Verify the filtering is strict
+        assert all(
+            proj_id.startswith("proj-") for proj_id in projects
+        ), "Projects should only contain project type"
+
+        assert all(
+            cert_id.startswith("cert-") or cert_id.startswith("spec-")
+            for cert_id in certifications
+        ), "Certifications should only contain certification and specialization types"
