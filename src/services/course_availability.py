@@ -679,7 +679,7 @@ class CourseAvailabilityChecker:
                         if not course_data:
                             return {
                                 "has_courses": False,
-                                "count": 0,
+                                "total_count": 0,  # Fixed: Use total_count instead of count
                                 "type_diversity": 0,
                                 "course_types": [],
                                 "course_ids": [],

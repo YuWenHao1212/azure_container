@@ -723,7 +723,7 @@ class TestCourseAvailability:
 
         # Should return empty result without error
         assert result["has_courses"] is False
-        assert result["count"] == 0
+        assert result["total_count"] == 0  # Fixed: Use total_count instead of count
         assert result["course_ids"] == []
 
     @pytest.mark.asyncio
