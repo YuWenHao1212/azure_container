@@ -28,10 +28,14 @@ class TestCourseAvailabilityIntegration:
 
         checker = CourseAvailabilityChecker()
 
-        # Ensure dynamic cache is initialized for testing
-        if not checker._dynamic_cache:
-            from src.services.dynamic_course_cache import get_course_cache
+        # Ensure dynamic cache is initialized and clean for testing
+        from src.services.dynamic_course_cache import get_course_cache
+        if not hasattr(checker, '_dynamic_cache') or checker._dynamic_cache is None:
             checker._dynamic_cache = get_course_cache()
+
+        # Clear cache to ensure clean test state
+        if checker._dynamic_cache:
+            await checker._dynamic_cache.clear()
 
         # Mock embedding client and database for integration test
         with patch('src.services.course_availability.get_embedding_client') as mock_get_client:
@@ -71,11 +75,14 @@ class TestCourseAvailabilityIntegration:
 
         checker = CourseAvailabilityChecker()
 
-        # Ensure dynamic cache is initialized and clear it for clean test
-        if not checker._dynamic_cache:
-            from src.services.dynamic_course_cache import get_course_cache
+        # Ensure dynamic cache is initialized and clean for testing
+        from src.services.dynamic_course_cache import get_course_cache
+        if not hasattr(checker, '_dynamic_cache') or checker._dynamic_cache is None:
             checker._dynamic_cache = get_course_cache()
-        await checker._dynamic_cache.clear()
+
+        # Clear cache to ensure clean test state
+        if checker._dynamic_cache:
+            await checker._dynamic_cache.clear()
 
         # Mock embedding client and database for integration test
         with patch('src.services.course_availability.get_embedding_client') as mock_get_client:
