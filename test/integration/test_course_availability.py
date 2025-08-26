@@ -6,6 +6,17 @@ import pytest
 from src.services.course_availability import CourseAvailabilityChecker
 
 
+@pytest.fixture(autouse=True)
+async def reset_global_cache():
+    """Reset global cache instance before and after each test to ensure isolation"""
+    import src.services.dynamic_course_cache as cache_module
+    # Reset before test
+    cache_module._cache_instance = None
+    yield
+    # Reset after test
+    cache_module._cache_instance = None
+
+
 @pytest.mark.asyncio
 class TestCourseAvailabilityIntegration:
     """Integration tests for Course Availability"""
@@ -28,14 +39,10 @@ class TestCourseAvailabilityIntegration:
 
         checker = CourseAvailabilityChecker()
 
-        # Ensure dynamic cache is initialized and clean for testing
-        from src.services.dynamic_course_cache import get_course_cache
-        if not hasattr(checker, '_dynamic_cache') or checker._dynamic_cache is None:
-            checker._dynamic_cache = get_course_cache()
-
-        # Clear cache to ensure clean test state
-        if checker._dynamic_cache:
-            await checker._dynamic_cache.clear()
+        # Force initialize cache to ensure consistent behavior across environments
+        from src.services.dynamic_course_cache import DynamicCourseCache
+        checker._dynamic_cache = DynamicCourseCache()  # Create new instance directly
+        await checker._dynamic_cache.clear()  # Ensure clean state
 
         # Mock embedding client and database for integration test
         with patch('src.services.course_availability.get_embedding_client') as mock_get_client:
@@ -75,14 +82,10 @@ class TestCourseAvailabilityIntegration:
 
         checker = CourseAvailabilityChecker()
 
-        # Ensure dynamic cache is initialized and clean for testing
-        from src.services.dynamic_course_cache import get_course_cache
-        if not hasattr(checker, '_dynamic_cache') or checker._dynamic_cache is None:
-            checker._dynamic_cache = get_course_cache()
-
-        # Clear cache to ensure clean test state
-        if checker._dynamic_cache:
-            await checker._dynamic_cache.clear()
+        # Force initialize cache to ensure consistent behavior across environments
+        from src.services.dynamic_course_cache import DynamicCourseCache
+        checker._dynamic_cache = DynamicCourseCache()  # Create new instance directly
+        await checker._dynamic_cache.clear()  # Ensure clean state
 
         # Mock embedding client and database for integration test
         with patch('src.services.course_availability.get_embedding_client') as mock_get_client:
