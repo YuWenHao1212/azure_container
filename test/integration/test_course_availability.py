@@ -9,12 +9,33 @@ from src.services.course_availability import CourseAvailabilityChecker
 @pytest.fixture(autouse=True)
 async def reset_global_cache():
     """Reset global cache instance before and after each test to ensure isolation"""
+    import os
+    import sys
+
     import src.services.dynamic_course_cache as cache_module
-    # Reset before test
+
+    # Save original state
+    original_instance = cache_module._cache_instance
+    original_env = os.environ.get('ENABLE_COURSE_CACHE')
+
+    # Force disable cache for test isolation
+    os.environ['ENABLE_COURSE_CACHE'] = 'false'
     cache_module._cache_instance = None
+
+    # Clear module cache to force re-initialization
+    modules_to_clear = ['src.services.course_availability']
+    for module_name in modules_to_clear:
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+
     yield
-    # Reset after test
-    cache_module._cache_instance = None
+
+    # Restore original state
+    cache_module._cache_instance = original_instance
+    if original_env is not None:
+        os.environ['ENABLE_COURSE_CACHE'] = original_env
+    else:
+        os.environ.pop('ENABLE_COURSE_CACHE', None)
 
 
 @pytest.mark.asyncio
