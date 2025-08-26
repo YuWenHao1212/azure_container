@@ -186,7 +186,7 @@ class TestEnhancementDataFlow:
             # Mock other services
             with patch('src.services.combined_analysis_v2.IndexCalculationServiceV2') as MockIndex, \
                  patch('src.services.combined_analysis_v2.GapAnalysisServiceV2') as MockGap, \
-                 patch('src.services.combined_analysis_v2.StructureAnalyzer') as MockStructure:
+                 patch('src.services.resume_structure_analyzer.ResumeStructureAnalyzer') as MockStructure:
 
                 # Setup mocks
                 mock_index_service = MockIndex.return_value
@@ -220,8 +220,8 @@ class TestEnhancementDataFlow:
 
                 # Call the service
                 result = await service.analyze(
-                    resume="Test resume with Python and ML experience",
-                    job_description="Looking for Python ML engineer",
+                    resume="Test resume with Python and ML experience" + " " * 200,
+                    job_description="Looking for Python ML engineer" + " " * 200,
                     keywords=["Python", "ML", "Cloud", "Docker"],
                     language="en"
                 )

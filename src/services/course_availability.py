@@ -231,18 +231,22 @@ SELECT
         ) ORDER BY similarity DESC
     ) as course_data,
     -- NEW: Return detailed course information for resume enhancement
-    -- IMPORTANT: Filter out NULL ids before aggregating to prevent entire NULL objects
+    -- Using simpler aggregation without FILTER to avoid empty results
     COALESCE(
         array_agg(
-            json_build_object(
-                'id', id,
-                'name', COALESCE(name, ''),
-                'type', COALESCE(course_type_standard, 'course'),
-                'provider_standardized', COALESCE(provider_standardized, 'Coursera'),
-                'description', COALESCE(LEFT(description, 200), ''),
-                'similarity', similarity
-            ) ORDER BY similarity DESC
-        ) FILTER (WHERE id IS NOT NULL),
+            CASE                WHEN id IS NOT NULL THEN
+                    json_build_object(
+                        'id', id,
+                        'name', COALESCE(name, ''),
+                        'type', COALESCE(course_type_standard, 'course'),
+                        'provider_standardized', COALESCE(provider_standardized, 'Coursera'),
+                        'description', COALESCE(LEFT(description, 200), ''),
+                        'similarity', similarity
+                    )
+                ELSE NULL
+            END
+            ORDER BY similarity DESC
+        ),
         ARRAY[]::json[]
     ) as course_details
 FROM quota_applied
@@ -688,6 +692,31 @@ class CourseAvailabilityChecker:
                     # Filter out None values
                     if course_details:
                         course_details = [c for c in course_details if c and isinstance(c, dict)]
+
+                    # FALLBACK: If course_details is empty but we have course_data, build basic details
+                    if not course_details and result.get("course_data"):
+                        logger.warning(
+                            f"[ENHANCEMENT_FALLBACK] course_details empty for '{skill_name}', "
+                            f"using course_data fallback"
+                        )
+                        course_data = result.get("course_data", [])
+                        if course_data and isinstance(course_data, list):
+                            # Build basic course details from course_data
+                            course_details = []
+                            for item in course_data[:25]:  # Limit to 25 items
+                                if item and isinstance(item, dict) and item.get("id"):
+                                    course_details.append({
+                                        "id": item["id"],
+                                        "name": "",  # Name not available in course_data
+                                        "type": item.get("type", "course"),
+                                        "provider_standardized": "Coursera",
+                                        "description": "",  # Description not available
+                                        "similarity": item.get("similarity", 0)
+                                    })
+                            logger.info(
+                                f"[ENHANCEMENT_FALLBACK] Built {len(course_details)} basic course_details "
+                                f"from course_data for '{skill_name}'"
+                            )
 
                     # DEBUG: Log course details before returning
                     logger.info(
