@@ -1026,3 +1026,20 @@ class CourseSearchService:
                     "details": str(e)
                 }
             )
+
+# Global singleton instance
+_service_instance: CourseSearchService | None = None
+
+
+def get_course_search_service() -> CourseSearchService:
+    """Get the singleton CourseSearchService instance
+
+    Returns:
+        The singleton CourseSearchService instance
+    """
+    global _service_instance
+
+    if not _service_instance:
+        _service_instance = CourseSearchService()
+
+    return _service_instance

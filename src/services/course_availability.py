@@ -157,8 +157,8 @@ WITH initial_candidates AS (
         course_type_standard,
         name,
         1 - (embedding <=> $1::vector) as similarity,
-    provider_standardized,
-    description
+        provider_standardized,
+        description
     FROM courses
     WHERE platform = 'coursera'
     AND embedding IS NOT NULL
@@ -236,11 +236,11 @@ SELECT
         JSON_AGG(
             JSON_BUILD_OBJECT(
                 'id', id,
-                'name', COALESCE(REGEXP_REPLACE(name, '[\x00-\x1F\x7F]', '', 'g'), ''),
+                'name', COALESCE(REGEXP_REPLACE(name, '[\\x00-\\x1F\\x7F]', '', 'g'), ''),
                 'type', COALESCE(course_type_standard, 'course'),
                 'provider_standardized', COALESCE(provider_standardized, 'Coursera'),
                 'description', COALESCE(
-                    REGEXP_REPLACE(LEFT(description, 200), '[\x00-\x1F\x7F]', '', 'g'),
+                    REGEXP_REPLACE(LEFT(description, 200), '[\\x00-\\x1F\\x7F]', '', 'g'),
                     ''
                 ),
                 'similarity', similarity
@@ -314,6 +314,16 @@ class CourseAvailabilityChecker:
         if not self._embedding_client:
             # Use course embedding client (embedding-3-small)
             self._embedding_client = get_embedding_client(api_name="course_search")
+
+        # Initialize connection pool if not provided
+        if not self._connection_pool:
+            # Try to get the pool from CourseSearchService singleton
+            from src.services.course_search import get_course_search_service
+
+            course_search = get_course_search_service()
+            if not course_search._connection_pool:
+                await course_search.initialize()
+            self._connection_pool = course_search._connection_pool
 
     async def check_course_availability(
         self,
@@ -600,8 +610,6 @@ class CourseAvailabilityChecker:
                     }
 
                 async with self._connection_pool.acquire() as conn:
-                    # pgvector already registered in connection pool init
-                    # No need to register again - saves 607ms per query!
 
                     # Use minimum threshold for initial query (optimization)
                     # The actual filtering happens in the SQL based on skill_category
@@ -962,6 +970,19 @@ async def check_course_availability(
     global _checker_instance
 
     if not _checker_instance:
-        _checker_instance = CourseAvailabilityChecker()
+        # Get connection pool from CourseSearchService singleton
+        from src.services.course_search import get_course_search_service
+
+        course_search = get_course_search_service()
+        if not course_search._connection_pool:
+            await course_search.initialize()
+
+        # Create checker with the properly initialized connection pool
+        _checker_instance = CourseAvailabilityChecker(
+            connection_pool=course_search._connection_pool
+        )
+
+        # Also initialize embedding client
+        await _checker_instance.initialize()
 
     return await _checker_instance.check_course_availability(skill_queries)
