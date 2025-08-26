@@ -231,6 +231,7 @@ SELECT
         ) ORDER BY similarity DESC
     ) as course_data,
     -- NEW: Return detailed course information for resume enhancement
+    -- IMPORTANT: Filter out NULL ids before aggregating to prevent entire NULL objects
     COALESCE(
         array_agg(
             json_build_object(
@@ -241,7 +242,7 @@ SELECT
                 'description', COALESCE(LEFT(description, 200), ''),
                 'similarity', similarity
             ) ORDER BY similarity DESC
-        ),
+        ) FILTER (WHERE id IS NOT NULL),
         ARRAY[]::json[]
     ) as course_details
 FROM quota_applied
@@ -412,6 +413,14 @@ class CourseAvailabilityChecker:
                         # NEW: Store course details for resume enhancement
                         skill["course_details"] = result.get("course_details", [])
 
+                        # DEBUG: Verify course_details was stored
+                        course_count = len(skill['course_details'])
+                        skill_name = skill['skill_name']
+                        logger.info(
+                            f"[ENHANCEMENT_DEBUG] Stored {course_count} course_details "
+                            f"for skill '{skill_name}'"
+                        )
+
                         # Add diversity metrics (v2.0)
                         if result.get("type_diversity") is not None:
                             skill["type_diversity"] = result["type_diversity"]
@@ -419,14 +428,23 @@ class CourseAvailabilityChecker:
 
                         # Cache the result for future use (if cache enabled)
                         if self._cache_enabled and self._dynamic_cache and cache_key:
-                            await self._dynamic_cache.set(cache_key, {
+                            cache_data = {
                                 "has_available_courses": result["has_courses"],
                                 "course_count": result["count"],
                                 "available_course_ids": result.get("course_ids", []),
                                 "type_diversity": result.get("type_diversity", 0),
                                 "course_types": result.get("course_types", []),
                                 "course_details": result.get("course_details", [])  # NEW: Cache course details
-                            })
+                            }
+                            await self._dynamic_cache.set(cache_key, cache_data)
+
+                            # DEBUG: Verify cache data includes course_details
+                            course_count = len(cache_data['course_details'])
+                            skill_name = skill['skill_name']
+                            logger.info(
+                                f"[ENHANCEMENT_DEBUG] Cached {course_count} course_details "
+                                f"for skill '{skill_name}'"
+                            )
 
             # 3. Record performance metrics
             duration_ms = int((datetime.now() - start_time).total_seconds() * 1000)
@@ -463,6 +481,12 @@ class CourseAvailabilityChecker:
                 f"certifications={len(enhancement_certification)}"
             )
 
+            # DEBUG: More detailed enhancement data logging
+            logger.info("[ENHANCEMENT_DEBUG] Enhancement data details:")
+            logger.info(f"  - Projects: {list(enhancement_project.keys())[:5] if enhancement_project else 'Empty'}")
+            cert_preview = list(enhancement_certification.keys())[:5] if enhancement_certification else 'Empty'
+            logger.info(f"  - Certifications: {cert_preview}")
+
             # Add enhancement data to the first skill for backward compatibility
             # This ensures the data is accessible from the API response
             if skill_queries:
@@ -471,6 +495,18 @@ class CourseAvailabilityChecker:
                 logger.info(
                     "[CourseAvailability] Enhancement data added to first skill query"
                 )
+
+                # DEBUG: Verify the data was actually added
+                logger.info("[ENHANCEMENT_DEBUG] Verifying first skill after adding enhancement:")
+                has_project = 'resume_enhancement_project' in skill_queries[0]
+                has_cert = 'resume_enhancement_certification' in skill_queries[0]
+                proj_count = len(skill_queries[0].get('resume_enhancement_project', {}))
+                cert_count = len(skill_queries[0].get('resume_enhancement_certification', {}))
+
+                logger.info(f"  - First skill has resume_enhancement_project: {has_project}")
+                logger.info(f"  - First skill has resume_enhancement_certification: {has_cert}")
+                logger.info(f"  - Project count in first skill: {proj_count}")
+                logger.info(f"  - Certification count in first skill: {cert_count}")
 
             return skill_queries
 
@@ -597,6 +633,12 @@ class CourseAvailabilityChecker:
                         logger.info(f"[COURSE_DEBUG] course_details count: {details_count}")
                         if course_details and len(course_details) > 0:
                             logger.info(f"[COURSE_DEBUG] First course_detail: {course_details[0]}")
+                        # NEW DEBUG: Check if course_details is None vs empty list
+                        logger.info(f"[ENHANCEMENT_DEBUG] course_details is None: {course_details is None}")
+                        empty_status = not course_details if course_details is not None else 'N/A'
+                        logger.info(f"[ENHANCEMENT_DEBUG] course_details empty: {empty_status}")
+                    else:
+                        logger.warning("[ENHANCEMENT_DEBUG] SQL query returned None result")
 
                     # Process course data - SIMPLIFIED VERSION FOR TESTING
                     # First check if we have course_ids directly (like old version)
@@ -646,6 +688,14 @@ class CourseAvailabilityChecker:
                     # Filter out None values
                     if course_details:
                         course_details = [c for c in course_details if c and isinstance(c, dict)]
+
+                    # DEBUG: Log course details before returning
+                    logger.info(
+                        f"[ENHANCEMENT_DEBUG] _check_single_skill returning "
+                        f"{len(course_details)} course_details for skill '{skill_name}'"
+                    )
+                    if course_details and len(course_details) > 0:
+                        logger.info(f"[ENHANCEMENT_DEBUG] Sample course detail: {course_details[0]}")
 
                     # Return enhanced result with diversity metrics
                     return {
@@ -767,6 +817,9 @@ class CourseAvailabilityChecker:
         projects = {}
         certifications = {}
 
+        # DEBUG: Log input data
+        logger.info(f"[ENHANCEMENT_DEBUG] _build_enhancement_data called with {len(enhanced_skills)} skills")
+
         for idx, skill in enumerate(enhanced_skills):
             if idx >= len(skill_queries):
                 continue
@@ -774,7 +827,16 @@ class CourseAvailabilityChecker:
             skill_name = skill_queries[idx].get("skill_name", "")
             course_details = skill.get("course_details", [])
 
+            # DEBUG: Log each skill's course details
+            logger.info(f"[ENHANCEMENT_DEBUG] Skill {idx} '{skill_name}':")
+            logger.info(f"  - course_details type: {type(course_details)}")
+            logger.info(f"  - course_details is None: {course_details is None}")
+            logger.info(f"  - course_details count: {len(course_details) if course_details else 0}")
+            if course_details and len(course_details) > 0:
+                logger.info(f"  - First course: {course_details[0]}")
+
             if not course_details:
+                logger.info(f"  - Skipping skill '{skill_name}' - no course_details")
                 continue
 
             # Process courses by type with quotas
@@ -783,12 +845,22 @@ class CourseAvailabilityChecker:
 
             for course in course_details:
                 if not course or not isinstance(course, dict):
+                    logger.info(f"  - Skipping invalid course: {course}")
                     continue
 
                 course_id = course.get("id")
                 course_type = course.get("type", "")
+                course_name = course.get("name", "")
+
+                # DEBUG: Log each course being processed
+                course_display_name = course_name[:50] if course_name else 'N/A'
+                logger.info(
+                    f"  - Processing course: id={course_id}, "
+                    f"type={course_type}, name={course_display_name}"
+                )
 
                 if not course_id:
+                    logger.info("  - Skipping course without ID")
                     continue
 
                 # Projects: max 2 per skill
@@ -800,6 +872,7 @@ class CourseAvailabilityChecker:
                         "related_skill": skill_name
                     }
                     project_count += 1
+                    logger.info(f"    - Added project: {course_id[:20]}")
 
                 # Certifications and Specializations: max 4 per skill
                 elif course_type in ["certification", "specialization"] and cert_count < 4:
@@ -810,9 +883,26 @@ class CourseAvailabilityChecker:
                         "related_skill": skill_name
                     }
                     cert_count += 1
+                    logger.info(f"    - Added certification: {course_id[:20]}")
+
+                # Skip regular courses - only project/certification/specialization allowed
+                # Based on specification requirement
 
         # Return empty dict {} if no courses found (Bubble.io compatibility)
-        return projects if projects else {}, certifications if certifications else {}
+        result_projects = projects if projects else {}
+        result_certifications = certifications if certifications else {}
+
+        # DEBUG: Log final enhancement data
+        logger.info("[ENHANCEMENT_DEBUG] _build_enhancement_data returning:")
+        logger.info(f"  - Projects count: {len(result_projects)}")
+        logger.info(f"  - Certifications count: {len(result_certifications)}")
+        if result_projects:
+            logger.info(f"  - Sample project: {next(iter(result_projects.items())) if result_projects else 'None'}")
+        if result_certifications:
+            sample_cert = next(iter(result_certifications.items())) if result_certifications else 'None'
+            logger.info(f"  - Sample certification: {sample_cert}")
+
+        return result_projects, result_certifications
 
 
 # Global instance

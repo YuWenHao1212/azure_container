@@ -601,13 +601,41 @@ class CombinedAnalysisServiceV2(BaseService):
         # V5 Enhancement: Extract resume enhancement data if available
         if gap_result and "SkillSearchQueries" in gap_result:
             skill_queries = gap_result["SkillSearchQueries"]
+            logger.info(f"[ENHANCEMENT_DEBUG] Extracting enhancement data from {len(skill_queries)} skill queries")
             if skill_queries and len(skill_queries) > 0:
                 # Enhancement data is stored in the first skill for transport
                 first_skill = skill_queries[0]
+                logger.info(f"[ENHANCEMENT_DEBUG] First skill keys: {list(first_skill.keys())}")
+                logger.info(
+                    f"[ENHANCEMENT_DEBUG] Has resume_enhancement_project: "
+                    f"{'resume_enhancement_project' in first_skill}"
+                )
+                logger.info(
+                    f"[ENHANCEMENT_DEBUG] Has resume_enhancement_certification: "
+                    f"{'resume_enhancement_certification' in first_skill}"
+                )
+
                 if "resume_enhancement_project" in first_skill:
                     result["resume_enhancement_project"] = first_skill["resume_enhancement_project"]
+                    count = len(first_skill['resume_enhancement_project'])
+                    logger.info(f"[ENHANCEMENT_DEBUG] Added {count} projects to result")
+                else:
+                    logger.warning("[ENHANCEMENT_DEBUG] No resume_enhancement_project in first_skill")
+
                 if "resume_enhancement_certification" in first_skill:
                     result["resume_enhancement_certification"] = first_skill["resume_enhancement_certification"]
+                    count = len(first_skill['resume_enhancement_certification'])
+                    logger.info(f"[ENHANCEMENT_DEBUG] Added {count} certifications to result")
+                else:
+                    logger.warning("[ENHANCEMENT_DEBUG] No resume_enhancement_certification in first_skill")
+            else:
+                logger.warning("[ENHANCEMENT_DEBUG] No skill queries available for enhancement data extraction")
+        else:
+            has_skill_queries = 'SkillSearchQueries' in gap_result if gap_result else False
+            logger.warning(
+                f"[ENHANCEMENT_DEBUG] Cannot extract enhancement data - "
+                f"gap_result: {bool(gap_result)}, has SkillSearchQueries: {has_skill_queries}"
+            )
 
         return result
 

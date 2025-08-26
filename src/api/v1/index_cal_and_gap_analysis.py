@@ -224,6 +224,17 @@ async def _execute_v2_analysis(
         gap_result = result["gap_analysis"]
         metadata = result.get("metadata", {})
 
+        # DEBUG: Check if enhancement data is in result
+        logger.info(f"[ENHANCEMENT_DEBUG API] Result keys: {list(result.keys())}")
+        logger.info(
+            f"[ENHANCEMENT_DEBUG API] Has resume_enhancement_project: "
+            f"{'resume_enhancement_project' in result}"
+        )
+        logger.info(
+            f"[ENHANCEMENT_DEBUG API] Has resume_enhancement_certification: "
+            f"{'resume_enhancement_certification' in result}"
+        )
+
         # Track V2 metrics
         processing_time = time.time() - start_time
         monitoring_service.track_event(
@@ -260,15 +271,46 @@ async def _execute_v2_analysis(
         resume_enhancement_project = {}
         resume_enhancement_certification = {}
 
+        # DEBUG: Log the extraction process
+        logger.info(f"[ENHANCEMENT_DEBUG API] Processing {len(skill_queries)} skill queries from gap_result")
+
         if skill_queries and len(skill_queries) > 0:
             first_skill = skill_queries[0]
+            logger.info(f"[ENHANCEMENT_DEBUG API] First skill keys: {list(first_skill.keys())}")
+
             resume_enhancement_project = first_skill.get("resume_enhancement_project", {})
             resume_enhancement_certification = first_skill.get("resume_enhancement_certification", {})
+
             # Log extraction for debugging
             logger.info(
                 f"[Enhancement] Extracted project count: {len(resume_enhancement_project)}, "
                 f"certification count: {len(resume_enhancement_certification)}"
             )
+
+            # DEBUG: More detailed logging
+            if resume_enhancement_project:
+                sample_id = next(iter(resume_enhancement_project.keys()))[:20]
+                logger.info(f"[ENHANCEMENT_DEBUG API] Sample project ID: {sample_id}")
+            else:
+                logger.warning("[ENHANCEMENT_DEBUG API] resume_enhancement_project is empty or missing")
+
+            if resume_enhancement_certification:
+                sample_id = next(iter(resume_enhancement_certification.keys()))[:20]
+                logger.info(f"[ENHANCEMENT_DEBUG API] Sample certification ID: {sample_id}")
+            else:
+                logger.warning("[ENHANCEMENT_DEBUG API] resume_enhancement_certification is empty or missing")
+        else:
+            logger.warning("[ENHANCEMENT_DEBUG API] No skill queries available in gap_result")
+
+        # Fallback: Try to get from result directly (if combined_analysis_v2 added it)
+        if not resume_enhancement_project and "resume_enhancement_project" in result:
+            resume_enhancement_project = result["resume_enhancement_project"]
+            logger.info(f"[ENHANCEMENT_DEBUG API] Got projects from result dict: {len(resume_enhancement_project)}")
+
+        if not resume_enhancement_certification and "resume_enhancement_certification" in result:
+            resume_enhancement_certification = result["resume_enhancement_certification"]
+            count = len(resume_enhancement_certification)
+            logger.info(f"[ENHANCEMENT_DEBUG API] Got certifications from result dict: {count}")
 
         # Create response data
         response_data = IndexCalAndGapAnalysisData(

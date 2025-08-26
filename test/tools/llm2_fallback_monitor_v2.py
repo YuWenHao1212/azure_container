@@ -279,7 +279,7 @@ def analyze_response_enhanced(response_json: dict, original_resume: str) -> dict
     has_llm2_fallback = False
 
     # 條件1: 有明確的 fallback 警告
-    if has_warning_fallback or len(sections_with_fallback) >= 2 and not has_opt_classes or any(sim >= 1.0 for sim in section_similarities.values()) and not has_opt_classes:
+    if has_warning_fallback or (len(sections_with_fallback) >= 2 and not has_opt_classes) or (any(sim >= 1.0 for sim in section_similarities.values()) and not has_opt_classes):
         has_llm2_fallback = True
 
     return {
