@@ -3,6 +3,7 @@ Combined Index Calculation and Gap Analysis API Endpoint.
 Handles both similarity calculation and gap analysis in a single request.
 """
 import logging
+import os
 import time
 from typing import Any, ClassVar
 
@@ -17,6 +18,13 @@ from src.models.response import (
     create_success_response,
 )
 
+
+# Environment variable control for course_details field exclusion
+# Default: false (exclude course_details for production optimization)
+# Set to "true" to include course_details in API response (development/debugging)
+def should_exclude_course_details() -> bool:
+    """Check if course_details should be excluded from API response."""
+    return os.getenv("INCLUDE_COURSE_DETAILS", "false").lower() != "true"
 
 # Request/Response Models
 class IndexCalAndGapAnalysisRequest(BaseModel):
@@ -123,6 +131,16 @@ class SkillQuery(BaseModel):
         description="Detailed course information including name, type, provider, and description"
     )
 
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        """Custom serialization that respects INCLUDE_COURSE_DETAILS environment variable."""
+        data = super().model_dump(**kwargs)
+
+        # Remove course_details if environment variable indicates exclusion
+        if should_exclude_course_details() and "course_details" in data:
+            del data["course_details"]
+
+        return data
+
 
 class GapAnalysisData(BaseModel):
     """Gap analysis response data."""
@@ -133,6 +151,18 @@ class GapAnalysisData(BaseModel):
     SkillSearchQueries: list[SkillQuery] = Field(
         default_factory=list, description="Skill development priorities"
     )
+
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        """Custom serialization that ensures SkillQuery course_details exclusion."""
+        data = super().model_dump(**kwargs)
+
+        # Ensure SkillSearchQueries respect environment variable
+        if "SkillSearchQueries" in data and should_exclude_course_details():
+            for skill in data["SkillSearchQueries"]:
+                if "course_details" in skill:
+                    del skill["course_details"]
+
+        return data
 
 
 class KeywordCoverageData(BaseModel):

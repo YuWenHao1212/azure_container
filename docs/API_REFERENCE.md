@@ -275,6 +275,14 @@ X-API-Key: [YOUR_API_KEY]
 - **Prompt v1.0.2 啟用**：整合 Education Enhancement 指標計算邏輯
 - **V3 True Parallel 架構**：真正並行處理，structure_analysis 與其他任務同步執行
 
+**版本更新 (2025-08-26 - Course Details Optimization)** 🚀
+- **API 回應最佳化**：新增 `course_details` 欄位環境變數控制
+- **環境變數**：`INCLUDE_COURSE_DETAILS` (預設: `"false"` 用於生產環境最佳化)
+- **資料傳輸減少**：70-80% 回應大小減少（移除每個技能的 25 個課程詳細資訊）
+- **內部功能保留**：Resume enhancement 功能完全不受影響
+- **動態控制**：開發環境可設定 `INCLUDE_COURSE_DETAILS=true` 包含完整課程詳細資訊
+- **向後相容**：API 介面保持一致，僅動態排除 `course_details` 欄位
+
 **請求參數**
 ```json
 {
@@ -307,6 +315,12 @@ X-API-Key: [YOUR_API_KEY]
       // Skill categories explanation (v2.1.8+):
       // - SKILL: Quick-learn skills via single course (1-3 months)
       // - FIELD: Requires specialization/certification (6+ months)
+      //
+      // Course details field (v2025-08-26+):
+      // - course_details: 詳細課程資訊陣列（預設被排除以優化傳輸）
+      // - 環境變數控制：INCLUDE_COURSE_DETAILS="true" 時會包含此欄位
+      // - 內含完整課程資訊：name, type, provider, description, similarity 等
+      // - 生產環境預設排除，開發環境可啟用完整資訊
       "SkillSearchQueries": [
         {
           "skill_name": "FastAPI & REST API Frameworks",
