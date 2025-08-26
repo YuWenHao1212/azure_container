@@ -1,6 +1,57 @@
 """
 Integration tests for Course Availability Service
 """
+import os
+import sys
+
+# ============================================================
+# DIAGNOSTIC CODE FOR CI/CD DEBUGGING
+# ============================================================
+print("
+" + "="*60)
+print("COURSE AVAILABILITY TEST DIAGNOSTICS")
+print("="*60)
+print(f"Python: {sys.version}")
+print(f"Executable: {sys.executable}")
+print(f"Working Dir: {os.getcwd()}")
+print(f"ENABLE_COURSE_CACHE: {os.environ.get('ENABLE_COURSE_CACHE', 'NOT SET')}")
+print(f"CI: {os.environ.get('CI', 'NOT SET')}")
+print(f"GITHUB_ACTIONS: {os.environ.get('GITHUB_ACTIONS', 'NOT SET')}")
+
+# Check if cache module is already loaded
+if 'src.services.dynamic_course_cache' in sys.modules:
+    import src.services.dynamic_course_cache as cache_module_check
+    print(f"
+⚠️  WARNING: Cache module already loaded before test!")
+    print(f"    Cache instance: {cache_module_check._cache_instance}")
+    print(f"    Instance ID: {id(cache_module_check._cache_instance) if cache_module_check._cache_instance else 'None'}")
+    print(f"    Module file: {cache_module_check.__file__}")
+else:
+    print("
+✅ Cache module not yet loaded (clean state)")
+
+# List loaded test modules
+test_modules = [m for m in sys.modules if 'test' in m]
+if test_modules:
+    print(f"
+Loaded test modules ({len(test_modules)}):")
+    for m in sorted(test_modules)[:10]:
+        print(f"  - {m}")
+        
+# List src modules that might affect cache
+src_modules = [m for m in sys.modules if 'src.services' in m]
+if src_modules:
+    print(f"
+Loaded src.services modules ({len(src_modules)}):")
+    for m in sorted(src_modules):
+        print(f"  - {m}")
+
+print("="*60 + "
+")
+# ============================================================
+# END DIAGNOSTIC CODE
+# ============================================================
+
 import pytest
 
 from src.services.course_availability import CourseAvailabilityChecker

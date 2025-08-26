@@ -115,6 +115,28 @@ jobs:
         echo "📌 CI Mode: Using optimized test delays for faster execution"
         echo ""
         
+        # === STEP 1: Isolated Course Availability Test ===
+        echo "="
+        echo "=== ISOLATED TEST: Running Course Availability tests in isolation ==="
+        echo "="
+        # Clean Python cache
+        find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+        find . -type f -name "*.pyc" -delete 2>/dev/null || true
+        
+        # Run Course Availability tests in isolation
+        pytest test/integration/test_course_availability.py -xvs --tb=short
+        
+        if [ $? -eq 0 ]; then
+            echo "✅ Course Availability tests PASSED in isolation"
+        else
+            echo "❌ Course Availability tests FAILED even in isolation"
+            echo "This indicates the problem is NOT test order pollution"
+        fi
+        
+        echo ""
+        echo "=== STEP 2: Full Test Suite ==="
+        echo ""
+        
         # 優先使用 Python 版本
         if [ -f "test/scripts/pre_commit_check_advanced.py" ]; then
             # 執行測試並同時寫入日誌，保留退出碼
