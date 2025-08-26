@@ -211,6 +211,16 @@ class IndexCalAndGapAnalysisData(BaseModel):
         description="Recommended certifications for resume enhancement (course_id as key)"
     )
 
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        """Custom serialization that ensures nested GapAnalysisData respects environment variable."""
+        data = super().model_dump(**kwargs)
+
+        # Ensure gap_analysis uses custom serialization
+        if "gap_analysis" in data and self.gap_analysis:
+            data["gap_analysis"] = self.gap_analysis.model_dump(**kwargs)
+
+        return data
+
 
 # Setup logging
 logger = logging.getLogger(__name__)
