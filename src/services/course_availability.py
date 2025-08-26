@@ -231,20 +231,23 @@ SELECT
         ) ORDER BY similarity DESC
     ) as course_data,
     -- NEW: Return detailed course information for resume enhancement
-    -- Fixed: Remove CASE WHEN that could cause NULL values
+    -- Fixed: Use JSON_AGG instead of array_agg for better stability
     COALESCE(
-        array_agg(
-            json_build_object(
+        JSON_AGG(
+            JSON_BUILD_OBJECT(
                 'id', id,
-                'name', COALESCE(name, ''),
+                'name', COALESCE(REGEXP_REPLACE(name, '[\x00-\x1F\x7F]', '', 'g'), ''),
                 'type', COALESCE(course_type_standard, 'course'),
                 'provider_standardized', COALESCE(provider_standardized, 'Coursera'),
-                'description', COALESCE(LEFT(description, 200), ''),
+                'description', COALESCE(
+                    REGEXP_REPLACE(LEFT(description, 200), '[\x00-\x1F\x7F]', '', 'g'),
+                    ''
+                ),
                 'similarity', similarity
             )
             ORDER BY similarity DESC
         ) FILTER (WHERE id IS NOT NULL),
-        ARRAY[]::json[]
+        '[]'::json
     ) as course_details
 FROM quota_applied
 LIMIT 25;
@@ -686,6 +689,15 @@ class CourseAvailabilityChecker:
 
                     # NEW: Get course details for resume enhancement
                     course_details = result.get("course_details", [])
+
+                    # Handle JSON_AGG string result (convert to list if needed)
+                    if isinstance(course_details, str):
+                        import json
+                        try:
+                            course_details = json.loads(course_details)
+                        except (json.JSONDecodeError, TypeError):
+                            course_details = []
+
                     # Filter out None values
                     if course_details:
                         course_details = [c for c in course_details if c and isinstance(c, dict)]
