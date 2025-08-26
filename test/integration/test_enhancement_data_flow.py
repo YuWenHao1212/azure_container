@@ -190,7 +190,7 @@ class TestEnhancementDataFlow:
 
                 # Setup mocks
                 mock_index_service = MockIndex.return_value
-                mock_index_service.calculate_similarity = AsyncMock(return_value={
+                mock_index_service.calculate_index = AsyncMock(return_value={
                     "raw_similarity_percentage": 75,
                     "similarity_percentage": 85,
                     "keyword_coverage": {
@@ -203,7 +203,7 @@ class TestEnhancementDataFlow:
                 })
 
                 mock_gap_service = MockGap.return_value
-                mock_gap_service.analyze_gap = AsyncMock(return_value={
+                mock_gap_service.analyze_with_context = AsyncMock(return_value={
                     "CoreStrengths": "Strong Python and ML skills",
                     "KeyGaps": "Need more cloud experience",
                     "QuickImprovements": "Get AWS certification",
@@ -308,7 +308,7 @@ class TestEnhancementDataFlow:
                  patch('src.services.combined_analysis_v2.StructureAnalyzer'):
 
                 mock_gap_service = MockGap.return_value
-                mock_gap_service.analyze_gap = AsyncMock(return_value={
+                mock_gap_service.analyze_with_context = AsyncMock(return_value={
                     "SkillSearchQueries": [
                         {"skill_name": "Python", "course_details": []}
                     ]

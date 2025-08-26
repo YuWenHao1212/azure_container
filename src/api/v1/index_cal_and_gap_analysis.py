@@ -274,6 +274,23 @@ async def _execute_v2_analysis(
         # DEBUG: Log the extraction process
         logger.info(f"[ENHANCEMENT_DEBUG API] Processing {len(skill_queries)} skill queries from gap_result")
 
+        # Log course_details presence in each skill BEFORE Pydantic conversion
+        logger.info("[COURSE_DETAILS_DEBUG API] Checking course_details in raw skill_queries:")
+        for idx, skill in enumerate(skill_queries):
+            skill_name = skill.get("skill_name", "Unknown") if isinstance(skill, dict) else str(skill)
+            if isinstance(skill, dict):
+                course_details = skill.get("course_details", None)
+                if course_details is not None:
+                    logger.info(
+                        f"  - Skill {idx} '{skill_name}': has {len(course_details)} course_details"
+                    )
+                    if course_details and len(course_details) > 0:
+                        logger.info(f"    Sample: {course_details[0].get('id', 'N/A')[:30]}")
+                else:
+                    logger.info(f"  - Skill {idx} '{skill_name}': course_details is None/missing")
+            else:
+                logger.info(f"  - Skill {idx}: Not a dict, type={type(skill).__name__}")
+
         if skill_queries and len(skill_queries) > 0:
             first_skill = skill_queries[0]
             logger.info(f"[ENHANCEMENT_DEBUG API] First skill keys: {list(first_skill.keys())}")
@@ -333,6 +350,22 @@ async def _execute_v2_analysis(
             resume_enhancement_project=resume_enhancement_project,
             resume_enhancement_certification=resume_enhancement_certification
         )
+
+        # Log course_details AFTER Pydantic conversion
+        logger.info("[COURSE_DETAILS_DEBUG API] Checking course_details AFTER Pydantic conversion:")
+        for idx, skill_query in enumerate(response_data.gap_analysis.SkillSearchQueries):
+            skill_name = skill_query.skill_name
+            course_details = skill_query.course_details
+            if course_details is not None:
+                logger.info(
+                    f"  - Skill {idx} '{skill_name}': has {len(course_details)} course_details"
+                )
+                if course_details and len(course_details) > 0:
+                    first = course_details[0]
+                    course_id = first.get('id', 'N/A') if isinstance(first, dict) else 'Not a dict'
+                    logger.info(f"    Sample: {course_id[:30]}")
+            else:
+                logger.info(f"  - Skill {idx} '{skill_name}': course_details is None/missing")
 
         logger.info(
             f"V2 Index calculation and gap analysis completed: "

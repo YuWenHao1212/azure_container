@@ -433,6 +433,17 @@ class CombinedAnalysisServiceV2(BaseService):
                 # Track course availability timing
                 detailed_timings["course_availability_start"] = time.time()
 
+                # Log the state BEFORE enhancement
+                logger.info("[COURSE_DETAILS_DEBUG] SkillSearchQueries BEFORE enhancement:")
+                for idx, skill in enumerate(gap_result["SkillSearchQueries"]):
+                    skill_name = skill.get("skill_name", "Unknown") if isinstance(skill, dict) else str(skill)
+                    logger.info(
+                        f"  - Skill {idx}: type={type(skill).__name__}, "
+                        f"name={skill_name[:30] if isinstance(skill_name, str) else skill_name}"
+                    )
+                    if isinstance(skill, dict):
+                        logger.info(f"    Keys: {list(skill.keys())}")
+
                 # Execute batch check for course availability
                 # NOTE: pgvector should already be warmed up from parallel phase
                 enhanced_skills = await check_course_availability(
@@ -441,6 +452,25 @@ class CombinedAnalysisServiceV2(BaseService):
 
                 # Update gap result with enhanced skills
                 gap_result["SkillSearchQueries"] = enhanced_skills
+
+                # IMPORTANT: Verify course_details are preserved in each skill
+                logger.info("[COURSE_DETAILS_DEBUG] Verifying course_details after update:")
+                for idx, skill in enumerate(gap_result["SkillSearchQueries"]):
+                    skill_name = skill.get("skill_name", "Unknown")
+                    course_details = skill.get("course_details", [])
+                    course_count = len(course_details) if course_details else 0
+                    logger.info(
+                        f"  - Skill {idx} '{skill_name}': "
+                        f"has {course_count} course_details, "
+                        f"course_details is None: {course_details is None}"
+                    )
+                    # Log sample course_detail if available
+                    if course_details and len(course_details) > 0:
+                        first_course = course_details[0]
+                        logger.info(
+                            f"    Sample course: id={first_course.get('id', 'N/A')[:30]}, "
+                            f"name={first_course.get('name', 'N/A')[:30]}"
+                        )
 
                 detailed_timings["course_availability_end"] = time.time()
 
