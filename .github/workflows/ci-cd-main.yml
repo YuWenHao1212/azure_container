@@ -389,7 +389,8 @@ jobs:
             CORS_ORIGINS="https://airesumeadvisor.com,https://airesumeadvisor.bubbleapps.io,https://www.airesumeadvisor.com" \
             USE_RULE_BASED_DETECTOR=true \
             ENABLE_COURSE_CACHE=true \
-            LLM2_DEBUG_MODE=false
+            LLM2_DEBUG_MODE=false \
+            INCLUDE_COURSE_DETAILS=false
             
     - name: Wait for deployment
       run: |
