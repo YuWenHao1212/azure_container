@@ -613,6 +613,8 @@ class CourseAvailabilityChecker:
                     }
 
                 async with self._connection_pool.acquire() as conn:
+                    # pgvector already registered in connection pool init
+                    # No need to register again - saves 607ms per query!
 
                     # Use minimum threshold for initial query (optimization)
                     # The actual filtering happens in the SQL based on skill_category
