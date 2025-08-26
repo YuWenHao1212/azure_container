@@ -220,16 +220,16 @@ SELECT
     COUNT(*) as total_count,
     COUNT(DISTINCT course_type_standard) as type_diversity,
     array_agg(DISTINCT course_type_standard) as course_types,
-    -- SIMPLIFIED: Return course IDs directly like the old version
-    array_agg(id ORDER BY similarity DESC) as course_ids,
-    -- Also keep course_data for backward compatibility
-    array_agg(
+    -- SIMPLIFIED: Return course IDs directly like the old version (limited to 25)
+    (array_agg(id ORDER BY similarity DESC))[1:25] as course_ids,
+    -- Also keep course_data for backward compatibility (limited to 25)
+    (array_agg(
         json_build_object(
             'id', id,
             'similarity', similarity,
             'type', course_type_standard
         ) ORDER BY similarity DESC
-    ) as course_data,
+    ))[1:25] as course_data,
     -- NEW: Return detailed course information for resume enhancement
     -- Fixed: Use JSON_AGG instead of array_agg for better stability
     COALESCE(
@@ -249,8 +249,11 @@ SELECT
         ) FILTER (WHERE id IS NOT NULL),
         '[]'::json
     ) as course_details
-FROM quota_applied
-LIMIT 25;
+FROM (
+    SELECT * FROM quota_applied
+    ORDER BY similarity DESC
+    LIMIT 25
+) AS top_courses;
 """
 
 
