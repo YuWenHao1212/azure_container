@@ -388,6 +388,8 @@ class ResumeTailoringServiceV31:
                 education_enhancement_needed=bundle["education_enhancement_needed"],
                 standard_sections=json.dumps(bundle["standard_sections"]),
                 custom_sections=json.dumps(bundle["custom_sections"]),
+                resume_enhancement_project=json.dumps(bundle.get("resume_enhancement_project", {})),
+                resume_enhancement_certification=json.dumps(bundle.get("resume_enhancement_certification", {})),
                 output_language=bundle["output_language"]
             )
 
