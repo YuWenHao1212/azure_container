@@ -202,13 +202,13 @@ class IndexCalAndGapAnalysisData(BaseModel):
         default=None,
         description="Resume structure analysis (V4 enhancement)"
     )
-    resume_enhancement_project: dict[str, dict[str, str]] = Field(
-        default_factory=dict,
-        description="Recommended projects for resume enhancement (course_id as key)"
+    resume_enhancement_project: list[dict[str, str]] = Field(
+        default_factory=list,
+        description="Recommended projects for resume enhancement (v3.1.0 array format)"
     )
-    resume_enhancement_certification: dict[str, dict[str, str]] = Field(
-        default_factory=dict,
-        description="Recommended certifications for resume enhancement (course_id as key)"
+    resume_enhancement_certification: list[dict[str, str]] = Field(
+        default_factory=list,
+        description="Recommended certifications for resume enhancement (v3.1.0 array format)"
     )
 
     def model_dump(self, **kwargs) -> dict[str, Any]:
@@ -308,8 +308,8 @@ async def _execute_v2_analysis(
 
         # Extract enhancement data from first skill query (if available)
         skill_queries = gap_result.get("SkillSearchQueries", [])
-        resume_enhancement_project = {}
-        resume_enhancement_certification = {}
+        resume_enhancement_project = []
+        resume_enhancement_certification = []
 
         # DEBUG: Log the extraction process
         logger.info(f"[ENHANCEMENT_DEBUG API] Processing {len(skill_queries)} skill queries from gap_result")
@@ -335,8 +335,8 @@ async def _execute_v2_analysis(
             first_skill = skill_queries[0]
             logger.info(f"[ENHANCEMENT_DEBUG API] First skill keys: {list(first_skill.keys())}")
 
-            resume_enhancement_project = first_skill.get("resume_enhancement_project", {})
-            resume_enhancement_certification = first_skill.get("resume_enhancement_certification", {})
+            resume_enhancement_project = first_skill.get("resume_enhancement_project", [])
+            resume_enhancement_certification = first_skill.get("resume_enhancement_certification", [])
 
             # Log extraction for debugging
             logger.info(
@@ -346,13 +346,15 @@ async def _execute_v2_analysis(
 
             # DEBUG: More detailed logging
             if resume_enhancement_project:
-                sample_id = next(iter(resume_enhancement_project.keys()))[:20]
+                # List format: get ID from first item
+                sample_id = resume_enhancement_project[0].get("id", "N/A")[:20] if resume_enhancement_project else "N/A"
                 logger.info(f"[ENHANCEMENT_DEBUG API] Sample project ID: {sample_id}")
             else:
                 logger.warning("[ENHANCEMENT_DEBUG API] resume_enhancement_project is empty or missing")
 
             if resume_enhancement_certification:
-                sample_id = next(iter(resume_enhancement_certification.keys()))[:20]
+                # List format: get ID from first item
+                sample_id = resume_enhancement_certification[0].get("id", "N/A")[:20] if resume_enhancement_certification else "N/A"
                 logger.info(f"[ENHANCEMENT_DEBUG API] Sample certification ID: {sample_id}")
             else:
                 logger.warning("[ENHANCEMENT_DEBUG API] resume_enhancement_certification is empty or missing")
