@@ -421,8 +421,8 @@ class ResumeTailoringServiceV31:
                 covered_keywords=", ".join(bundle["covered_keywords"]) if bundle["covered_keywords"] else "None",
                 missing_keywords=", ".join(bundle["missing_keywords"]) if bundle["missing_keywords"] else "None",
                 education_enhancement_needed=bundle["education_enhancement_needed"],
-                standard_sections=json.dumps(bundle["standard_sections"]),
-                custom_sections=json.dumps(bundle["custom_sections"]),
+                standard_sections=json.dumps(bundle["standard_sections"], separators=(',', ':')),
+                custom_sections=json.dumps(bundle["custom_sections"], separators=(',', ':')),
                 resume_enhancement_project=self._format_enhancement_field(
                     bundle.get("resume_enhancement_project", {})
                 ),
