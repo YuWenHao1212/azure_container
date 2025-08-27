@@ -154,17 +154,17 @@ prompts:
       </ul>
       ```
     - No projects → Apply decision logic:
-      IF no personal projects AND no KeyGaps requiring demonstration:
+      IF no personal projects AND no resume_enhancement_project:
         → Return empty string ""
-      ELIF no personal projects BUT KeyGaps exist (e.g., Cloud, ML, DevOps):
-        → Create 1-2 learning projects to demonstrate gap-bridging efforts
+      ELIF no personal projects BUT resume_enhancement_project exists:
+        → Use enhancement projects (max 1 per skill)
       ELSE:
         → Process and enhance existing personal projects 
     - No certifications → Apply decision logic:
-      IF no existing certifications AND no relevant gaps to address:
+      IF no existing certifications AND no resume_enhancement_certification:
         → Return empty string ""
-      ELIF no existing certifications BUT gaps exist:
-        → Add 2-3 relevant certifications as "In Progress" or "Planned"
+      ELIF no existing certifications BUT resume_enhancement_certification exists:
+        → Use enhancement certifications (max 1 per skill)
       ELSE:
         → Process and reorder existing certifications by relevance
     - No custom sections → Skip custom section processing
@@ -248,18 +248,20 @@ prompts:
     <p><em>UC Berkeley</em> • <em>Berkeley, CA</em> • <em>Sep 2019 - May 2023</em></p>
     ```
     
-    3. **Projects:**
+    3. **Projects (Unified Format):**
     ```html
     <h2>Projects</h2>
-    <h3><strong>Project Name</strong></h3>
-    <p><em>Project Type</em> • <em>Date Range</em></p>
-    <p>Brief project description</p>
-    <ul>
-      <li>Technologies: Tech1, Tech2, Tech3</li>
-      <li>Impact: Metrics or outcomes</li>
-      <li>Link: github.com/user/project (if applicable)</li>
-    </ul>
+    <!-- Single format for all projects -->
+    <div class="{opt-modified or opt-new}">
+      <h3><strong>{project_name}</strong></h3>
+      <p>{LLM processed description}</p>
+    </div>
     ```
+    
+    Note: 
+    - Phase 1 (existing): class="opt-modified"
+    - Phase 2 (enhancement): class="opt-new"
+    - No bullet points, no provider, no dates
     
     4. **Certifications & Achievements:**
     ```html
@@ -298,6 +300,10 @@ prompts:
     CoreStrengths: {core_strengths}
     KeyGaps: {key_gaps}
     QuickImprovements: {quick_improvements}
+    
+    ## Enhancement Fields (Pre-matched from Gap Analysis)
+    resume_enhancement_project: {resume_enhancement_project}
+    resume_enhancement_certification: {resume_enhancement_certification}
     
     ## UNIFIED QUICKIMPROVEMENTS PROCESSOR
     
@@ -501,26 +507,39 @@ prompts:
        - KeyGaps-based additions: `<li class="opt-new">new learning project</li>`
        - Placeholders: `<span class="opt-placeholder">[X users]</span>`
     
-    **D. Creating Learning Projects for KeyGaps:**
+    **D. Projects Processing (Two-Phase Approach):**
     
-    When no PERSONAL projects exist but KeyGaps identified (NOT academic projects):
+    **Phase 1: Optimize existing personal projects (if any)**
+    For each existing personal project:
+    - Apply QI_MAP.projects improvements
+    - LLM enhances description with keywords and skills
+    - Format:
     ```html
-    <!-- For KeyGap: Kubernetes -->
-    <h3><strong>Container Orchestration Learning Lab</strong></h3>
-    <p><em>Self-Directed Learning Project</em> • <em>Current</em></p>
-    <p class="opt-new">Exploring container orchestration patterns and best practices</p>
-    <ul>
-      <li class="opt-new">Technologies: Docker, Docker Compose, Minikube</li>
-      <li class="opt-new">Focus: Microservices architecture and deployment strategies</li>
-      <li class="opt-new">Next Steps: Kubernetes certification preparation</li>
-    </ul>
+    <div class="opt-modified">
+      <h3><strong>{original_project_name}</strong></h3>
+      <p>{LLM enhanced description incorporating keywords}</p>
+    </div>
     ```
     
-    **Important:** Learning projects should:
-    - Be honest about learning status
-    - Show initiative and self-direction
-    - Connect to foundational skills
-    - Indicate concrete next steps
+    **Phase 2: Add projects from enhancement fields**
+    IF resume_enhancement_project is not empty:
+      1. Group by related_skill (one project per skill maximum)
+      2. LLM expands description from 200 chars to full paragraph
+      3. Naturally incorporate related_skill into description
+      4. Format:
+    ```html
+    <div class="opt-new">
+      <h3><strong>{name}</strong></h3>
+      <p>{LLM expanded description naturally incorporating {related_skill}}</p>
+    </div>
+    ```
+    
+    ELIF no enhancement projects AND KeyGaps require demonstration:
+      → Return empty string "" (no generic projects)
+    
+    **LLM Description Expansion Example:**
+    Input: {"name": "Cloud-Native App", "description": "Build scalable cloud apps", "related_skill": "Cloud Architecture"}
+    Output: "Developing microservices-based application focusing on cloud architecture principles, implementing containerization with Docker, orchestration with Kubernetes, and deploying scalable solutions with auto-scaling strategies."
     
     **E. Track Applied Changes for Projects:**
     Generate ONE standardized tracking entry:
@@ -554,23 +573,37 @@ prompts:
     4. Highlight certifications matching keywords
 
     
-    **B. Suggesting Certifications for KeyGaps:**
+    **B. Certifications Processing (Two-Phase Approach):**
     
-    Based on KeyGaps, add relevant certification paths:
-    ```
-    KeyGap: "AWS" → Suggest: "Planning: AWS Solutions Architect Associate"
-    KeyGap: "Agile" → Suggest: "Preparing for: Certified Scrum Master (CSM)"
-    KeyGap: "Security" → Suggest: "Studying for: CompTIA Security+"
-    ```
-    
-    Format new certifications to add:
+    **Phase 1: Optimize existing certifications (if any)**
+    For each existing certification:
+    - Apply QI_MAP.certifications improvements
+    - Reorder by relevance to JD
+    - Keep original provider and year
+    - Format:
     ```html
-    <h3>Certifications</h3>
-    <ul>
-      <li><strong>PMP</strong> - Project Management Institute | 2023</li>
-      <li class="opt-new"><strong>AWS Solutions Architect</strong> - In Progress (Target: Q1 2025)</li>
-    </ul>
+    <li class="opt-modified">
+      <strong>{original_cert_name}</strong> • {original_provider} • {original_year}
+    </li>
     ```
+    
+    **Phase 2: Add certifications from enhancement fields**
+    IF resume_enhancement_certification is not empty:
+      1. Group by related_skill (one certification per skill maximum)
+      2. Use current month/year for completion date
+      3. Format:
+    ```html
+    <li class="opt-new">
+      <strong>{name}</strong> • {provider} • {current_month_year}
+    </li>
+    ```
+    
+    ELIF no enhancement certifications AND KeyGaps exist:
+      → Return empty string "" (no generic certifications)
+    
+    **Format Examples:**
+    Phase 1: `<li class="opt-modified"><strong>AWS Certified Developer</strong> • Amazon • 2023</li>`
+    Phase 2: `<li class="opt-new"><strong>AWS Solutions Architect</strong> • AWS • January 2025</li>`
     
     **C. Achievements Processing:**
     1. Include relevant awards, recognitions, publications
@@ -701,6 +734,23 @@ prompts:
     covered_keywords: ["Python", "SQL", "Excel", "Analysis"]
     missing_keywords: ["AWS", "Docker", "Kubernetes", "TensorFlow", "CI/CD"]
     
+    resume_enhancement_project: {
+      "proj-cloud-001": {
+        "name": "Cloud-Native Application Development",
+        "provider": "Coursera",
+        "description": "Build scalable cloud apps with microservices",
+        "related_skill": "Cloud Computing"
+      }
+    }
+    resume_enhancement_certification: {
+      "cert-aws-001": {
+        "name": "AWS Solutions Architect Professional",
+        "provider": "AWS",
+        "description": "Advanced AWS architecture certification",
+        "related_skill": "Cloud Computing"
+      }
+    }
+    
     # Projects found in original resume (for illustration):
     # - "E-commerce Platform" (work project at TechCorp) → STAYS IN EXPERIENCE
     # - "ML Sentiment Analyzer" (academic project) → STAYS IN EDUCATION
@@ -714,16 +764,16 @@ prompts:
       "optimized_sections": {{
         "education": "<h2>Education</h2><h3>Bachelor of Science - Computer Science</h3><p><em>State University</em> • <em>San Francisco, CA</em> • <em>Sep 2021 - May 2025 (Expected)</em></p><p class='opt-new'><strong>GPA:</strong> 3.75/4.0</p><p class='opt-new'><strong>Relevant Coursework:</strong></p><ul><li>Data Structures • Algorithms • Database Systems</li><li>Cloud Computing • Distributed Systems • Software Engineering</li></ul><p class='opt-new'><strong>Academic Projects:</strong></p><ul><li><strong>Distributed Data Pipeline</strong> - Built scalable pipeline processing 1M+ records</li><li><strong>ML Sentiment Analyzer</strong> - Achieved 89% accuracy on Twitter dataset</li></ul><p class='opt-new'><strong>Leadership & Activities:</strong></p><ul><li>Teaching Assistant - CS101 Python Programming (100+ students)</li><li>Vice President - Computer Science Club (50+ members)</li></ul>",
         
-        "projects": "<!-- NOTE: E-commerce Platform stays in Experience, ML Sentiment Analyzer stays in Education --><h2>Projects</h2><h3><strong>Personal Finance Tracker</strong></h3><p><em>Personal Project</em> • <em>Jan 2024 - Present</em></p><p class='opt-modified'>Full-stack application for expense tracking with <span class='opt-modified'>data visualization and predictive analytics</span></p><ul><li class='opt-modified'>Technologies: Python, <span class='opt-modified'>Docker</span>, PostgreSQL, React</li><li class='opt-modified'>Impact: <span class='opt-placeholder'>[X]</span> active users, 4.5★ rating</li></ul><div class='opt-new'><h3><strong>Cloud Infrastructure Learning Lab</strong></h3><p><em>Self-Directed Learning</em> • <em>Current</em></p><p>Exploring cloud-native architectures and containerization</p><ul><li>Technologies: Docker, Docker Compose, LocalStack (AWS simulation)</li><li>Focus: Microservices deployment and orchestration patterns</li><li>Next Steps: AWS Solutions Architect certification</li></ul></div>",
+        "projects": "<!-- NOTE: E-commerce Platform stays in Experience, ML Sentiment Analyzer stays in Education --><h2>Projects</h2><div class='opt-modified'><h3><strong>Personal Finance Tracker</strong></h3><p>Full-stack application for expense tracking with data visualization and predictive analytics, leveraging Python and Docker for containerized deployment with PostgreSQL database and React frontend achieving <span class='opt-placeholder'>[X]</span> active users</p></div><div class='opt-new'><h3><strong>Cloud-Native Application Development</strong></h3><p>Developing microservices-based application focusing on cloud computing principles, implementing containerization with Docker, orchestration with Kubernetes, and deploying scalable solutions on AWS with auto-scaling and load balancing strategies</p></div>",
         
-        "certifications": "<h2>Certifications & Achievements</h2><h3>Certifications</h3><ul><li><strong>Python Institute PCEP</strong> - Python Institute | 2023</li><li class='opt-new'><strong>AWS Cloud Practitioner</strong> - In Progress (Target: Q1 2025)</li><li class='opt-new'><strong>Docker Certified Associate</strong> - Planned (Q2 2025)</li></ul><h3>Achievements</h3><ul><li class='opt-modified'><strong>Dean's List</strong> - State University | 2023-2024</li><li class='opt-modified'><strong>Hackathon Winner</strong> - TechCrunch Disrupt | 2023</li></ul>",
+        "certifications": "<h2>Certifications & Achievements</h2><h3>Certifications</h3><ul><li class='opt-modified'><strong>Python Institute PCEP</strong> • Python Institute • 2023</li><li class='opt-new'><strong>AWS Solutions Architect Professional</strong> • AWS • January 2025</li></ul><h3>Achievements</h3><ul><li class='opt-modified'><strong>Dean's List</strong> • State University • 2023-2024</li><li class='opt-modified'><strong>Hackathon Winner</strong> • TechCrunch Disrupt • 2023</li></ul>",
         
         "supplementary_details": "<h2>Supplementary Details</h2><div class='opt-modified'><h3>Professional Information</h3><ul><li><strong>Languages:</strong> English (Native), Mandarin (Fluent)</li><li><strong>Availability:</strong> Immediate</li></ul><h3>Community Involvement</h3><ul><li>Code Mentor - Girls Who Code | Teaching Python to high school students</li><li>Tech Lead - Habitat for Humanity Website Redesign | Led team of 5 developers</li></ul></div>"
       }},
       "tracking": [
         "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects, 2 activities",
-        "[Projects] Optimized: 1 personal project enhanced, 1 learning project created, excluded work and academic projects",
-        "[Certifications] Added: 2 new certifications for AWS and Docker gaps",
+        "[Projects] Mixed: 1 personal project enhanced, 1 enhancement project added from Cloud Computing courses",
+        "[Certifications] Mixed: 1 existing reordered, 1 enhancement certification added for AWS",
         "[Supplementary Details] Merged: consolidated Portfolio, Volunteer Work, and Hobbies into single section"
       ]
     }}
