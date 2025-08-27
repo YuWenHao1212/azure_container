@@ -269,9 +269,9 @@ prompts:
     ```html
     <h2>Projects</h2>
     <!-- Single format for all projects -->
-    <div class="{opt-modified or opt-new}">
-      <h3><strong>{project_name}</strong></h3>
-      <p>{LLM processed description}</p>
+    <div class="{{opt-modified or opt-new}}">
+      <h3><strong>{{project_name}}</strong></h3>
+      <p>{{LLM processed description}}</p>
     </div>
     ```
     
@@ -540,7 +540,7 @@ prompts:
     - Reorder by relevance to JD
     - Keep original provider and year
     - CSS: class="opt-modified"
-    - Format: `<strong>{name}</strong> • {provider} • {year}`
+    - Format: `<strong>{{name}}</strong> • {{provider}} • {{year}}`
     
     **Phase 2: Add from enhancement fields**
     - Source: resume_enhancement_certification
