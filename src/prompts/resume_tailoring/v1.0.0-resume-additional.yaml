@@ -79,9 +79,35 @@ prompts:
     ⚠️ NEVER move work projects out of Experience
     ⚠️ Projects Section = Personal projects ONLY
     
-    ## Your Core Responsibilities 
+    ## Enhancement Fields Integration Guidelines
+    
+    **Enhancement fields 來自 Gap Analysis API，已預先匹配相關技能：**
+    - 使用原則：有則用，無則略過（二元邏輯）
+    - 每個技能選擇最相關的一個課程
+    - 不要強行創造不存在的內容
+    
+    ## CSS Marking System (Universal Rules)
+    
+    **Apply these CSS classes consistently throughout all sections:**
+    - `opt-modified`: 基於 CoreStrengths/QuickImprovements 的優化（優化既有內容）
+    - `opt-new`: 基於 KeyGaps/Enhancement fields 的新增內容（填補技能缺口）
+    - `opt-placeholder`: 量化佔位符 ([X%], [Y years], [TEAM SIZE])
+    
+    **CSS Hierarchy Rules:**
+    - Outer level takes precedence (div > p > span)
+    - Never nest same class type
+    - When entire section is new: apply to outermost container only
+    
+    ## Content Guidelines
+    
+    **Target quantities (not mandatory if materials insufficient):**
+    - Projects: 目標 3-4 個（如有足夠素材）
+    - Certifications: 目標 5-6 個（如有足夠素材）
+    - Quality over quantity - 不強制達到數量
+    
+    ## Your Core Responsibilities
     1. **Process Education** - Standard or Enhanced based on flag
-    2. **Manage Projects** - Personal/side projects only (work projects stay in Experience, academic projects stay in Education)
+    2. **Manage Projects** - Personal/side projects only (work projects stay in Experience)
     3. **Optimize Certifications & Achievements** - Reorder and enhance
     4. **Evaluate Custom Sections** - Merge into single "Supplementary Details"
     
@@ -99,16 +125,7 @@ prompts:
     3. **DON'T** include internship projects in Projects section
     4. **DON'T** create Projects section if only work/academic projects exist
     
-    ## CSS Marking Rules
-    - `opt-modified`: Enhanced existing content (sentences/phrases)
-    - `opt-new`: Newly created content (sentences/phrases/sections)
-    - `opt-placeholder`: Quantification placeholders
-    
-    **CSS Hierarchy Rules:**
-    - Outer level takes precedence (div > p > span)
-    - Never nest same class type (no opt-modified inside opt-modified)
-    - When entire section is new: apply to outermost container only
-    - Example: `<div class="opt-new">` → no inner opt-new needed
+
     
     ## Priority Decision Framework
     When rules conflict, follow this priority order:
@@ -305,40 +322,17 @@ prompts:
     resume_enhancement_project: {resume_enhancement_project}
     resume_enhancement_certification: {resume_enhancement_certification}
     
-    ## UNIFIED QUICKIMPROVEMENTS PROCESSOR
+    ## QuickImprovements Processing (QI_MAP)
     
-    **Pre-categorize QuickImprovements by section (Process once, use everywhere):**
-    ```
-    QI_MAP = categorize_improvements(QuickImprovements):
-      education: improvements containing ["education", "degree", "coursework", "GPA", "thesis", "academic"]
-      projects: improvements containing ["project", "GitHub", "portfolio", "demo", "repository", "code"]  
-      certifications: improvements containing ["certification", "credential", "license", "cert", "qualified"]
-      general: all other improvements
-    ```
+    Pre-categorize QuickImprovements by section keywords:
+    - education: ["education", "degree", "coursework", "GPA", "thesis", "academic"]
+    - projects: ["project", "GitHub", "portfolio", "demo", "repository", "code"]  
+    - certifications: ["certification", "credential", "license", "cert", "qualified"]
+    - general: all other improvements
     
-    **Apply in each section:**
-    - Education → Use QI_MAP.education
-    - Projects → Use QI_MAP.projects
-    - Certifications → Use QI_MAP.certifications
-    - All sections → Consider QI_MAP.general
+    Apply relevant QI_MAP entries in each section.
     
-    ## CSS CLASS APPLICATION RULES
-    
-    **Universal CSS marking based on content source:**
-    - CoreStrengths/QuickImprovements → class="opt-modified" (優化現有證據)
-    - KeyGaps (no evidence) → class="opt-new" (填補技能缺口)
-    - Placeholders for user input → class="opt-placeholder" ([X], [Y], etc.)
-    - Unchanged original content → No CSS class
-    
-    **Decision Logic:**
-    IF content from CoreStrengths OR QuickImprovements:
-      → Use class="opt-modified" (enhancing existing evidence)
-    ELIF content from KeyGaps AND no supporting evidence:
-      → Use class="opt-new" (bridging skill gaps)
-    ELIF placeholder for user input:
-      → Use class="opt-placeholder" ([X], [Y], etc.)
-    ELSE (original unchanged):
-      → No CSS class needed
+
     
     ## Keywords
     Covered (maintain): {covered_keywords}
@@ -448,17 +442,8 @@ prompts:
     - Projects: "Data Analysis Project - ML foundation"
     - Activities: "AI/ML Study Group member"
     
-    **F. Track Applied Changes for Education:**
-    Generate ONE standardized tracking entry:
-    - Format: "[Education] Action: specific details"
-    - Actions: "Enhanced" (if education_enhancement_needed=true) or "Standard" (if false)
-    - Include counts: courses, projects, activities added
-    - Store for final tracking array
-    
-    Examples:
-    - "[Education] Enhanced: added GPA 3.85, 8 courses, 2 projects, 2 activities"
-    - "[Education] Standard: added 3 relevant courses matching keywords"
-    - "[Education] Created: self-learning template for missing education"
+    **F. Track Applied Changes:**
+    Store ONE entry for tracking array (format: "[Section] Action: details")
     
     ### Step 2: Projects Section Processing
     
@@ -510,49 +495,25 @@ prompts:
     **D. Projects Processing (Two-Phase Approach):**
     
     **Phase 1: Optimize existing personal projects (if any)**
-    For each existing personal project:
+    - Filter: ONLY personal/side/open-source projects
     - Apply QI_MAP.projects improvements
-    - LLM enhances description with keywords and skills
-    - Format:
-    ```html
-    <div class="opt-modified">
-      <h3><strong>{original_project_name}</strong></h3>
-      <p>{LLM enhanced description incorporating keywords}</p>
-    </div>
-    ```
+    - Enhance with keywords and quantification
+    - CSS: class="opt-modified"
     
-    **Phase 2: Add projects from enhancement fields**
-    IF resume_enhancement_project is not empty:
-      1. Group by related_skill (one project per skill maximum)
-      2. LLM expands description from 200 chars to full paragraph
-      3. Naturally incorporate related_skill into description
-      4. Format:
-    ```html
-    <div class="opt-new">
-      <h3><strong>{name}</strong></h3>
-      <p>{LLM expanded description naturally incorporating {related_skill}}</p>
-    </div>
-    ```
+    **Phase 2: Add from enhancement fields (if available)**
+    - Source: resume_enhancement_project
+    - Limit: One project per related_skill
+    - Expand description from ~200 chars to full paragraph
+    - CSS: class="opt-new"
     
-    ELIF no enhancement projects AND KeyGaps require demonstration:
-      → Return empty string "" (no generic projects)
+    **If no projects and no enhancements: Return empty string ""**
     
     **LLM Description Expansion Example:**
     Input: {"name": "Cloud-Native App", "description": "Build scalable cloud apps", "related_skill": "Cloud Architecture"}
     Output: "Developing microservices-based application focusing on cloud architecture principles, implementing containerization with Docker, orchestration with Kubernetes, and deploying scalable solutions with auto-scaling strategies."
     
-    **E. Track Applied Changes for Projects:**
-    Generate ONE standardized tracking entry:
-    - Format: "[Projects] Action: specific details"
-    - Actions: "Optimized" (existing projects enhanced), "Created" (new learning projects), or "Mixed" (both)
-    - Include: project count, enhancement type
-    - Note: Mention excluded work/academic projects if applicable
-    - Store for final tracking array
-    
-    Examples:
-    - "[Projects] Optimized: 3 personal projects enhanced with keywords"
-    - "[Projects] Created: 2 learning projects for Kubernetes and FastAPI gaps"
-    - "[Projects] Mixed: 2 optimized, 1 learning project added (excluded 3 work projects)"
+    **E. Track Applied Changes:**
+    Store ONE entry for tracking array
     
     ### Step 3: Certifications & Achievements Processing
     
@@ -575,31 +536,19 @@ prompts:
     
     **B. Certifications Processing (Two-Phase Approach):**
     
-    **Phase 1: Optimize existing certifications (if any)**
-    For each existing certification:
-    - Apply QI_MAP.certifications improvements
+    **Phase 1: Optimize existing certifications**
     - Reorder by relevance to JD
     - Keep original provider and year
-    - Format:
-    ```html
-    <li class="opt-modified">
-      <strong>{original_cert_name}</strong> • {original_provider} • {original_year}
-    </li>
-    ```
+    - CSS: class="opt-modified"
+    - Format: `<strong>{name}</strong> • {provider} • {year}`
     
-    **Phase 2: Add certifications from enhancement fields**
-    IF resume_enhancement_certification is not empty:
-      1. Group by related_skill (one certification per skill maximum)
-      2. Use current month/year for completion date
-      3. Format:
-    ```html
-    <li class="opt-new">
-      <strong>{name}</strong> • {provider} • {current_month_year}
-    </li>
-    ```
+    **Phase 2: Add from enhancement fields**
+    - Source: resume_enhancement_certification
+    - Limit: One certification per related_skill
+    - Use current month/year (e.g., "January 2025")
+    - CSS: class="opt-new"
     
-    ELIF no enhancement certifications AND KeyGaps exist:
-      → Return empty string "" (no generic certifications)
+    **If no certifications and no enhancements: Return empty string ""**
     
     **Format Examples:**
     Phase 1: `<li class="opt-modified"><strong>AWS Certified Developer</strong> • Amazon • 2023</li>`
@@ -611,18 +560,8 @@ prompts:
     3. Format consistently with certifications
 
     
-    **D. Track Applied Changes for Certifications:**
-    Generate ONE standardized tracking entry:
-    - Format: "[Certifications] Action: specific details"
-    - Actions: "Added" (new certifications), "Reordered" (prioritized), "Expanded" (both added and reordered)
-    - Include: certification count, type (existing vs new)
-    - Note: We ADD certifications for gaps, not suggest them
-    - Store for final tracking array
-    
-    Examples:
-    - "[Certifications] Added: 3 certifications for AWS, Agile, Security gaps"
-    - "[Certifications] Reordered: 4 existing certifications by relevance"
-    - "[Certifications] Expanded: reordered 2 existing, added 2 in-progress"
+    **D. Track Applied Changes:**
+    Store ONE entry for tracking array
     
     ### Step 4: Custom Sections Processing (簡化版)
     
@@ -724,10 +663,10 @@ prompts:
     **Input Example:**
     ```
     education_enhancement_needed: true
-    standard_sections: {{
+    standard_sections: {
       "education": "Education",
       "experience": "Work Experience"
-    }}
+    }
     custom_sections: ["Portfolio", "Volunteer Work", "Hobbies"]
     CoreStrengths: ["Data analysis", "Team leadership", "Python programming"]
     KeyGaps: ["Cloud Computing", "Machine Learning", "DevOps"]
@@ -760,8 +699,8 @@ prompts:
     
     **Output Example:**
     ```json
-    {{
-      "optimized_sections": {{
+    {
+      "optimized_sections": {
         "education": "<h2>Education</h2><h3>Bachelor of Science - Computer Science</h3><p><em>State University</em> • <em>San Francisco, CA</em> • <em>Sep 2021 - May 2025 (Expected)</em></p><p class='opt-new'><strong>GPA:</strong> 3.75/4.0</p><p class='opt-new'><strong>Relevant Coursework:</strong></p><ul><li>Data Structures • Algorithms • Database Systems</li><li>Cloud Computing • Distributed Systems • Software Engineering</li></ul><p class='opt-new'><strong>Academic Projects:</strong></p><ul><li><strong>Distributed Data Pipeline</strong> - Built scalable pipeline processing 1M+ records</li><li><strong>ML Sentiment Analyzer</strong> - Achieved 89% accuracy on Twitter dataset</li></ul><p class='opt-new'><strong>Leadership & Activities:</strong></p><ul><li>Teaching Assistant - CS101 Python Programming (100+ students)</li><li>Vice President - Computer Science Club (50+ members)</li></ul>",
         
         "projects": "<!-- NOTE: E-commerce Platform stays in Experience, ML Sentiment Analyzer stays in Education --><h2>Projects</h2><div class='opt-modified'><h3><strong>Personal Finance Tracker</strong></h3><p>Full-stack application for expense tracking with data visualization and predictive analytics, leveraging Python and Docker for containerized deployment with PostgreSQL database and React frontend achieving <span class='opt-placeholder'>[X]</span> active users</p></div><div class='opt-new'><h3><strong>Cloud-Native Application Development</strong></h3><p>Developing microservices-based application focusing on cloud computing principles, implementing containerization with Docker, orchestration with Kubernetes, and deploying scalable solutions on AWS with auto-scaling and load balancing strategies</p></div>",
@@ -769,70 +708,51 @@ prompts:
         "certifications": "<h2>Certifications & Achievements</h2><h3>Certifications</h3><ul><li class='opt-modified'><strong>Python Institute PCEP</strong> • Python Institute • 2023</li><li class='opt-new'><strong>AWS Solutions Architect Professional</strong> • AWS • January 2025</li></ul><h3>Achievements</h3><ul><li class='opt-modified'><strong>Dean's List</strong> • State University • 2023-2024</li><li class='opt-modified'><strong>Hackathon Winner</strong> • TechCrunch Disrupt • 2023</li></ul>",
         
         "supplementary_details": "<h2>Supplementary Details</h2><div class='opt-modified'><h3>Professional Information</h3><ul><li><strong>Languages:</strong> English (Native), Mandarin (Fluent)</li><li><strong>Availability:</strong> Immediate</li></ul><h3>Community Involvement</h3><ul><li>Code Mentor - Girls Who Code | Teaching Python to high school students</li><li>Tech Lead - Habitat for Humanity Website Redesign | Led team of 5 developers</li></ul></div>"
-      }},
+      },
       "tracking": [
         "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects, 2 activities",
         "[Projects] Mixed: 1 personal project enhanced, 1 enhancement project added from Cloud Computing courses",
         "[Certifications] Mixed: 1 existing reordered, 1 enhancement certification added for AWS",
         "[Supplementary Details] Merged: consolidated Portfolio, Volunteer Work, and Hobbies into single section"
       ]
-    }}
+    }
     ```
     
     ## TRACKING OUTPUT STANDARDS
     
-    **核心原則: 一個 section 一個描述條目**
-    
-    **Format Template:**
-    "[Section] Action: specific details"
-    
-    **標準化格式 (每個 section 只產生一個):**
-    - "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects, 2 activities"
-    - "[Education] Standard: HIGHEST degree with 3 relevant courses, other degrees basic format"
-    - "[Projects] Optimized: 2 personal projects enhanced with quantified impacts"
-    - "[Projects] Created: 1 learning project for cloud computing gap"
-    - "[Certifications] Added: 2 new certifications for AWS and Docker gaps"
-    - "[Certifications] Reordered: prioritized by JD relevance"
-    - "[Supplementary Details] Merged: consolidated Awards, Volunteer, Languages from 3 custom sections"
-    
-    **每個 Section 只能有一個 tracking entry**
-    
-    **Action Types:**
-    - Enhanced: Full optimization with additional components
-    - Standard: Basic optimization without enhancement
-    - Optimized: Improved existing content with better keywords/quantification
-    - Created: New content for addressing gaps
-    - Added: Included new items (certifications, skills, etc.)
-    - Merged: Combined multiple sections into one
-    - Reordered: Changed priority/sequence for relevance Changed priority/sequence
+    **One tracking entry per section processed:**
+    - Format: "[Section] Action: specific details"
+    - Actions: Enhanced, Standard, Optimized, Created, Added, Merged, Reordered
+    - Include counts and specifics (e.g., "3 courses, 2 projects")
+    - Skip empty sections (no tracking entry if section returns "")
     
     ## OUTPUT FORMAT
     
     Return a JSON object with EXACTLY this structure:
     
     ```json
-    {{
-      "optimized_sections": {{
+    {
+      "optimized_sections": {
         "education": "<h2>Education</h2>...",
         "projects": "<h2>Projects</h2>... or empty string",
         "certifications": "<h2>Certifications & Achievements</h2>... or empty string",
         "supplementary_details": "<h2>Supplementary Details</h2>... or empty string"
-      }},
+      },
       "tracking": [
         "[Education] Enhanced: HIGHEST degree only - added GPA, 6 courses, 2 projects",
         "[Projects] Optimized: 1 personal project enhanced, excluded 2 work projects",
         "[Certifications] Added: 2 new certifications for AWS and Docker gaps",
         "[Supplementary Details] Merged: consolidated 3 custom sections with relevant content"
       ]
-    }}
+    }
     ```
     
     **Edge Case Examples:**
     
     1. **No Education Background (JD requires degree):**
     ```json
-    {{
-      "optimized_sections": {{
+    {
+      "optimized_sections": {
         "education": "<h2>Education</h2><h3>Self-Directed Learning in Computer Science</h3><p><em>Continuous Professional Development</em> • <em>2020 - Present</em></p><ul><li>Focused Studies: Cloud Computing, DevOps, Machine Learning</li><li>Completed Courses: AWS Solutions Architect, Docker Mastery, Python Advanced</li><li>Key Technologies: AWS, Docker, Kubernetes, Python, TensorFlow</li></ul>",
         "projects": "...",
         "certifications": "...",
@@ -843,18 +763,18 @@ prompts:
     
     2. **Empty Sections (No gaps, no relevant content):**
     ```json
-    {{
-      "optimized_sections": {{
+    {
+      "optimized_sections": {
         "education": "<h2>Education</h2>...",
         "projects": "",  // No personal projects, no gaps requiring demo
         "certifications": "",  // No certs, no gaps to address
         "supplementary_details": ""  // No P1/P2 content, all P3 filtered
-      }},
+      },
       "tracking": [
         "[Education] Standard: HIGHEST degree with 3 relevant courses"
         // Note: No tracking for empty sections
       ]
-    }}
+    }
     ```
     
     3. **Priority-Based Filtering (Custom Sections):**
