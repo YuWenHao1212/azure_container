@@ -30,8 +30,8 @@
     "gap_analysis": {
       "CoreStrengths": "<ol><li>🏆 Top Match: ...</li></ol>",
       "KeyGaps": "<ol><li>🔧 <b>FastAPI & REST API</b>...</li></ol>",
-      "QuickImprovements": "<ol><li>🔧 <b>Highlight...</li></ol>",
-      "OverallAssessment": "..."
+      "QuickImprovements": "<ol><li>🔧 <b>Highlight...</li></ol>"
+      // ✅ 移除 OverallAssessment (Resume Tailoring 不使用)
       // ✅ 移除 SkillSearchQueries (Resume Tailoring 不需要)
     },
     
@@ -46,6 +46,24 @@
       "custom_sections": ["Portfolio", "Awards"],  // 非標準章節名稱列表
       "education_enhancement_needed": true  // 在 resume_structure 內部
       // ✅ 移除詳細 metadata (Resume Tailoring 不需要)
+    },
+    
+    // V5 Enhancement fields (選用)
+    "resume_enhancement_project": {
+      "coursera_prjt:BEUHr70KEe-LvhIuPUA7nw": {
+        "name": "Build REST API with FastAPI",
+        "provider": "Google",
+        "description": "...",
+        "related_skill": "FastAPI & REST API Frameworks"
+      }
+    },
+    "resume_enhancement_certification": {
+      "coursera_spzn:QroLL3-XEeu17gr5PLNEuQ": {
+        "name": "Google Cloud Professional Cloud Architect",
+        "provider": "Google",
+        "description": "...",
+        "related_skill": "Cloud Platforms (AWS, Azure, GCP)"
+      }
     }
     // ✅ 移除最外層 metadata (Resume Tailoring 不需要)
   },

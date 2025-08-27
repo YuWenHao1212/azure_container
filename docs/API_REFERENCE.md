@@ -536,124 +536,127 @@ X-API-Key: [YOUR_API_KEY]
 }
 ```
 
-### 5. 客製化履歷 (v2.1.0-simplified)
+### 5. 客製化履歷 (v3.1.0)
 `POST /api/v1/tailor-resume`
 
-根據職缺要求和差距分析結果優化履歷，使用混合式 CSS 標記系統追蹤關鍵字變化。
+根據職缺要求和差距分析結果優化履歷，使用雙 LLM 架構實現更精準的履歷優化。
 
-**版本更新 (v2.1.0-simplified)** 🚀
-- **混合式 CSS 標記**：LLM 語意標記 + Python 關鍵字後處理
-- **關鍵字追蹤機制**：自動追蹤 still_covered、removed、newly_added、still_missing 四種狀態
-- **防禦性變體匹配**：自動處理關鍵字變體（CI/CD ↔ CI-CD、Node.js ↔ NodeJS）
-- **縮寫雙向對應**：智能識別縮寫（ML ↔ Machine Learning、NLP ↔ Natural Language Processing）
-- **兩階段管線**：Instruction Compiler (GPT-4.1 mini) + Resume Writer (GPT-4.1)
-- **效能優化**：P50 < 2.5秒 (比 v2.0.0 快 44%)，成本降低 200x
-- **提示詞精簡**：從 10,534 字元降至 5,637 字元 (減少 47%)
+**版本更新 (v3.1.0)** 🚀
+- **雙 LLM 架構**：Core LLM 處理結構優化，Additional LLM 處理 enhancement fields
+- **直接使用 original_index**：接收完整的 Gap Analysis API 回應，無需轉換
+- **Enhancement Fields 支援**：自動整合建議的專案和認證
+- **簡化輸入格式**：移除不使用的欄位（OverallAssessment、SkillSearchQueries）
 
 **請求參數**
 ```json
 {
-  "job_description": "string (200-10000 字元)",  // 最少 200 字元
-  "original_resume": "string (200-50000 字元, HTML 格式)",  // 最少 200 字元
-  "gap_analysis": {  // 必填 - 來自 Gap Analysis API 的結果
-    "core_strengths": ["string"],  // 3-5 項優勢
-    "key_gaps": ["string"],  // 3-5 項差距（包含 [Skill Gap] 或 [Presentation Gap] 標記）
-    "quick_improvements": ["string"],  // 3-5 項改進建議
-    "covered_keywords": ["string"],  // 已涵蓋關鍵字（用於追蹤）
-    "missing_keywords": ["string"],  // 缺少關鍵字（用於追蹤）
-    "coverage_percentage": 75,  // 選填 - 關鍵字覆蓋率 (0-100)
-    "similarity_percentage": 80  // 選填 - 履歷相似度分數 (0-100)
+  "job_description": "string (最少 50 字元，最多 10000 字元)",
+  "original_resume": "string (HTML 格式，最少 100 字元，最多 50000 字元)",
+  "original_index": {
+    // 直接使用 /api/v1/index-cal-and-gap-analysis 的回應
+    // 必要欄位
+    "similarity_percentage": 82,
+    "keyword_coverage": {
+      "covered_keywords": ["Python", "AWS"],
+      "missed_keywords": ["Kubernetes"],
+      "coverage_percentage": 75
+    },
+    "gap_analysis": {
+      "CoreStrengths": "<ul><li>Strong Python expertise</li></ul>",
+      "KeyGaps": "<ul><li>Missing cloud certification</li></ul>",
+      "QuickImprovements": "<ul><li>Add Kubernetes experience</li></ul>"
+      // OverallAssessment 和 SkillSearchQueries 不需要
+    },
+    // 選用欄位
+    "resume_structure": {
+      "standard_sections": {
+        "summary": "Personal Summary",
+        "skills": "Technical Skills",
+        "experience": "Work Experience"
+      },
+      "custom_sections": [],
+      "education_enhancement_needed": false
+    },
+    "resume_enhancement_project": {
+      // course_id 作為 key
+      "course_123": {
+        "name": "Build Cloud Native Apps",
+        "description": "..."
+      }
+    },
+    "resume_enhancement_certification": {
+      // course_id 作為 key
+      "course_456": {
+        "name": "AWS Solutions Architect",
+        "provider": "AWS"
+      }
+    }
   },
-  "options": {  // 選填
-    "include_visual_markers": true,  // 預設 true - 啟用 CSS 類別標記
-    "language": "en"  // "en"|"zh-TW"，預設 "en"
+  "options": {
+    "include_visual_markers": true,  // 預設 true
+    "language": "zh-TW",             // "en" 或 "zh-TW"，預設 "en"
+    "format_version": "v3"           // 預設 "v3"
   }
 }
+
 ```
 
-**回應範例 (v2.1.0-simplified)**
+**回應範例 (v3.1.0)**
 ```json
 {
   "success": true,
   "data": {
     "optimized_resume": "<h2>John Smith</h2>
-<p>Senior Software Engineer with expertise in <span class='skill-highlight'>Python</span> and cloud technologies...</p>
+<p>Senior Software Engineer with expertise in <span class='opt-strength'>Python</span> and cloud technologies...</p>
 <ul>
-  <li>Led <span class='keyword-added'>Docker</span> containerization reducing deployment time by 70%</li>
-  <li>Implemented <span class='skill-highlight'>CI/CD pipelines</span> using Jenkins and GitLab</li>
-  <li>Developed <span class='keyword-added'>machine learning</span> models for customer analytics</li>
+  <li><span class='opt-keyword'>Led Docker containerization</span> reducing deployment time by 70%</li>
+  <li>Implemented <span class='opt-strength'>CI/CD pipelines</span> using Jenkins and GitLab</li>
+  <li>Developed <span class='opt-improvement'>machine learning models</span> for customer analytics</li>
 </ul>",
-    "applied_improvements": "<ul>
-  <li>Added Docker containerization experience</li>
-  <li>Highlighted CI/CD implementation</li>
-  <li>Included machine learning projects</li>
-  <li>Quantified achievements with metrics</li>
-</ul>",
-    "improvement_count": 4,
-    "keyword_tracking": {
-      "still_covered": ["Python", "JavaScript", "CI/CD"],  // 保持涵蓋
-      "removed": ["PHP"],  // 被移除（觸發警告）
-      "newly_added": ["Docker", "Kubernetes", "Machine Learning"],  // 新增
-      "still_missing": ["GraphQL", "Rust"],  // 仍然缺少
-      "warnings": ["Warning: 1 originally covered keywords were removed during optimization: PHP"]
-    },
-    "gap_analysis_insights": {
-      "structure_found": {
-        "sections": {
-          "summary": "Professional Summary",
-          "experience": "Work Experience", 
-          "skills": "Technical Skills"
-        },
-        "metadata": {
-          "total_sections": 3,
-          "has_quantified_achievements": true
-        }
-      },
-      "improvements_applied": 4
-    },
-    "coverage": {
-      "before": {
-        "percentage": 40,
-        "covered": ["Python", "JavaScript", "CI/CD", "PHP"],
-        "missed": ["Docker", "Kubernetes", "Machine Learning", "GraphQL", "Rust"]
-      },
-      "after": {
-        "percentage": 70,  // 上限 100%
-        "covered": ["Python", "JavaScript", "CI/CD", "Docker", "Kubernetes", "Machine Learning"],
-        "missed": ["GraphQL", "Rust"]
-      },
-      "improvement": 30,
+    "applied_improvements": [
+      "[Section: Summary] Created new professional summary highlighting cloud architecture expertise",
+      "[Section: Skills] Reorganized skills into job-relevant categories, added Kubernetes and Terraform",
+      "[Section: Experience - Tech Corp] Converted 5 bullets to STAR format, added quantification",
+      "[Section: Projects] Enhanced ML project description with technologies and impact metrics"
+    ],
+    "Keywords": {
+      "kcr_improvement": 50,
+      "kcr_before": 40,
+      "kcr_after": 90,
+      "kw_before_covered": ["Python", "JavaScript", "CI/CD"],
+      "kw_before_missed": ["Docker", "Kubernetes", "Machine Learning", "GraphQL", "Rust"],
+      "kw_after_covered": ["Python", "JavaScript", "CI/CD", "Docker", "Kubernetes", "Machine Learning"],
+      "kw_after_missed": ["GraphQL", "Rust"],
       "newly_added": ["Docker", "Kubernetes", "Machine Learning"],
-      "removed": ["PHP"]  // 被移除的關鍵字（如果有的話）
+      "kw_removed": []
     },
     "similarity": {
-      "before": 60,  // 從 gap_analysis 輸入（不重複計算）
-      "after": 85,   // 使用 IndexCalculationServiceV2 真實計算（embedding + cosine similarity + sigmoid）
-      "improvement": 25  // 實際差值
+      "SS_improvement": 25,
+      "SS_before": 60,
+      "SS_after": 85
     },
-    "processing_time_ms": 2450,
+    "total_processing_time_ms": 8880,
+    "pre_processing_ms": 280,
+    "llm1_processing_time_ms": 6080,
+    "llm2_processing_time_ms": 4080,
+    "post_processing_ms": 2600,
     "stage_timings": {
-      "instruction_compilation_ms": 280,  // Stage 1: GPT-4.1 mini
-      "resume_writing_ms": 2100,  // Stage 2: GPT-4.1
-      "keyword_detection_ms": 70  // 關鍵字檢測
-    },
-    "metadata": {
-      "version": "v2.1.0-simplified",
-      "pipeline": "two-stage-css-hybrid",
-      "models": {
-        "instruction_compiler": "gpt-4.1-mini",
-        "resume_writer": "gpt-4.1"
-      },
-      "css_marking": "hybrid",  // hybrid = LLM + Python
-      "keyword_variants_handled": true,
-      "abbreviations_mapped": true
+      "llm1_start_time_ms": 280,
+      "llm1_finish_time_ms": 6360,
+      "llm2_start_time_ms": 280,
+      "llm2_finish_time_ms": 4360
     }
   },
+  "metadata": {
+    "llm1_prompt_version": "v1.0.0-resume-core",
+    "llm2_prompt_version": "v1.0.0-resume-additional",
+    "llm1_model": "gpt-4.1",
+    "llm2_model": "gpt-4.1"
+  },
   "warning": {
-    "has_warning": true,  // 當有關鍵字被移除時
-    "message": "Optimization successful but 1 keywords removed",
-    "code": "KEYWORDS_REMOVED",
-    "details": ["PHP"]
+    "has_warning": false,
+    "message": "",
+    "details": []
   },
   "error": {
     "has_error": false,
@@ -664,23 +667,25 @@ X-API-Key: [YOUR_API_KEY]
 }
 ```
 
-**CSS 類別說明**
-- `skill-highlight`: 原有且保持的關鍵字技能（藍色高亮）
-- `keyword-added`: 新增的關鍵字技能（綠色高亮）
-- `skill-gap`: 技能缺口相關內容（橘色提示）
-- `improvement-metric`: 量化成就指標（粗體強調）
+**CSS 類別說明 (v3.1.0)**
+- `opt-strength`: 強調的核心優勢內容
+- `opt-keyword`: 新增的關鍵字
+- `opt-improvement`: 應用的改進建議
+- `opt-placeholder`: 需要用戶填入的量化指標占位符
+- `opt-new`: 新增的內容區塊
+- `opt-modified`: 修改過的內容
 
-**關鍵字追蹤邏輯**
-1. **still_covered**: 原本有、現在仍有的關鍵字
-2. **removed**: 原本有、但被移除的關鍵字（觸發警告）
-3. **newly_added**: 原本沒有、新增的關鍵字
-4. **still_missing**: 原本沒有、現在仍沒有的關鍵字
+**API 調用流程**
+1. 調用 `/api/v1/index-cal-and-gap-analysis` 獲取完整分析結果
+2. 將整個回應的 `data` 欄位作為 `original_index` 傳入
+3. 調用 `/api/v1/tailor-resume` 進行履歷優化
+4. 不需要任何資料轉換或重新格式化
 
-**防禦性設計特性**
-- 自動處理關鍵字變體：CI/CD = CI-CD、Node.js = NodeJS = Node
-- 縮寫智能對應：ML = Machine Learning、AI = Artificial Intelligence
-- 大小寫不敏感匹配：python = Python = PYTHON
-- 部分匹配支援："JavaScript" 匹配 "JS"、"TypeScript" 匹配 "TS"
+**向後相容性**
+服務層同時支援新舊格式：
+- 新格式：包含 `keyword_coverage` 的巢狀結構
+- 舊格式：頂層直接包含 `covered_keywords`、`missing_keywords` 等欄位
+- 自動偵測並適配不同格式
 ### 6. 搜尋相關課程
 `POST /api/v1/courses/search`
 
