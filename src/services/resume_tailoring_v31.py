@@ -330,24 +330,27 @@ class ResumeTailoringServiceV31:
         if not enhancement_data:
             return "{}"
 
-        # Convert to YAML-like format for prompt template
-        lines = []
+        # Convert to proper YAML object format for prompt template
+        lines = ["{"]
         for course_id, course_info in enhancement_data.items():
-            name = course_info.get("name", "")
-            provider = course_info.get("provider", "")
-            description = course_info.get("description", "")
-            related_skill = course_info.get("related_skill", "")
+            name = course_info.get("name", "").replace('"', '\\"')
+            provider = course_info.get("provider", "").replace('"', '\\"')
+            description = course_info.get("description", "").replace('"', '\\"')
+            related_skill = course_info.get("related_skill", "").replace('"', '\\"')
 
-            lines.append(f'  "{course_id}":')
-            lines.append(f'    name: "{name}"')
-            lines.append(f'    provider: "{provider}"')
-            lines.append(f'    description: "{description}"')
-            lines.append(f'    related_skill: "{related_skill}"')
+            lines.append(f'  "{course_id}": {{')
+            lines.append(f'    "name": "{name}",')
+            lines.append(f'    "provider": "{provider}",')
+            lines.append(f'    "description": "{description}",')
+            lines.append(f'    "related_skill": "{related_skill}"')
+            lines.append('  },')
 
-        if lines:
-            return "\n" + "\n".join(lines)
-        else:
-            return "{}"
+        # Remove trailing comma from last item and close
+        if len(lines) > 1:
+            lines[-1] = lines[-1].rstrip(',')
+        lines.append("}")
+
+        return "\n".join(lines)
 
     async def _call_llm1(self, bundle: dict) -> dict:
         """Call LLM1 (Core Optimizer) with v1.0.0-resume-core prompt."""
