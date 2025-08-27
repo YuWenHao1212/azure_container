@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import time
-from typing import Any
+from typing import Any, Union
 
 from fastapi import HTTPException
 
@@ -317,22 +317,45 @@ class ResumeTailoringServiceV31:
 
         return bundle1, bundle2
 
-    def _format_enhancement_field(self, enhancement_data: dict) -> str:
+    def _format_enhancement_field(self, enhancement_data: Union[dict, list]) -> str:
         """
         Format enhancement field data as compact JSON string for prompt template.
+        
+        Supports both:
+        - Legacy object format: {"course_id": {...}}
+        - New array format (v3.1.0): [{"id": "course_id", ...}]
 
         Args:
-            enhancement_data: Dictionary containing enhancement course data
+            enhancement_data: Dictionary or list containing enhancement course data
 
         Returns:
             Compact JSON-formatted string representation
         """
         if not enhancement_data:
-            return "{}"
+            return "[]"  # Return empty array for consistency
 
-        # Use json.dumps with separators for compact single-line JSON
-        import json
-        return json.dumps(enhancement_data, separators=(',', ':'), ensure_ascii=False)
+        # Handle array format (new v3.1.0)
+        if isinstance(enhancement_data, list):
+            # Already in array format, just serialize
+            import json
+            return json.dumps(enhancement_data, separators=(',', ':'), ensure_ascii=False)
+
+        # Handle object/dict format (legacy)
+        if isinstance(enhancement_data, dict):
+            # Convert object format to array format
+            result = []
+            for course_id, course_data in enhancement_data.items():
+                # Create new structure with 'id' field
+                item = {"id": course_id}
+                if isinstance(course_data, dict):
+                    item.update(course_data)
+                result.append(item)
+
+            import json
+            return json.dumps(result, separators=(',', ':'), ensure_ascii=False)
+
+        # Fallback for unexpected types
+        return "[]"
 
     async def _call_llm1(self, bundle: dict) -> dict:
         """Call LLM1 (Core Optimizer) with v1.0.0-resume-core prompt."""

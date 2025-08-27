@@ -48,23 +48,25 @@
       // ✅ 移除詳細 metadata (Resume Tailoring 不需要)
     },
     
-    // V5 Enhancement fields (選用)
-    "resume_enhancement_project": {
-      "coursera_prjt:BEUHr70KEe-LvhIuPUA7nw": {
+    // V5 Enhancement fields (選用) - 改為陣列格式 (v3.1.0)
+    "resume_enhancement_project": [
+      {
+        "id": "coursera_prjt:BEUHr70KEe-LvhIuPUA7nw",
         "name": "Build REST API with FastAPI",
         "provider": "Google",
         "description": "...",
         "related_skill": "FastAPI & REST API Frameworks"
       }
-    },
-    "resume_enhancement_certification": {
-      "coursera_spzn:QroLL3-XEeu17gr5PLNEuQ": {
+    ],
+    "resume_enhancement_certification": [
+      {
+        "id": "coursera_spzn:QroLL3-XEeu17gr5PLNEuQ",
         "name": "Google Cloud Professional Cloud Architect",
         "provider": "Google",
         "description": "...",
         "related_skill": "Cloud Platforms (AWS, Azure, GCP)"
       }
-    }
+    ]
     // ✅ 移除最外層 metadata (Resume Tailoring 不需要)
   },
   

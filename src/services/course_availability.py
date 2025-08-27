@@ -517,8 +517,8 @@ class CourseAvailabilityChecker:
                 logger.info("[ENHANCEMENT_DEBUG] Verifying first skill after adding enhancement:")
                 has_project = 'resume_enhancement_project' in skill_queries[0]
                 has_cert = 'resume_enhancement_certification' in skill_queries[0]
-                proj_count = len(skill_queries[0].get('resume_enhancement_project', {}))
-                cert_count = len(skill_queries[0].get('resume_enhancement_certification', {}))
+                proj_count = len(skill_queries[0].get('resume_enhancement_project', []))
+                cert_count = len(skill_queries[0].get('resume_enhancement_certification', []))
 
                 logger.info(f"  - First skill has resume_enhancement_project: {has_project}")
                 logger.info(f"  - First skill has resume_enhancement_certification: {has_cert}")
@@ -854,19 +854,19 @@ class CourseAvailabilityChecker:
         self,
         enhanced_skills: list[dict],
         skill_queries: list[dict]
-    ) -> tuple[dict, dict]:
+    ) -> tuple[list, list]:
         """
-        Build resume enhancement data structure
+        Build resume enhancement data structure (v3.1.0 array format)
 
         Args:
             enhanced_skills: Skills with course availability data
             skill_queries: Original skill queries with names
 
         Returns:
-            Tuple of (resume_enhancement_project, resume_enhancement_certification)
+            Tuple of (resume_enhancement_project[], resume_enhancement_certification[])
         """
-        projects = {}
-        certifications = {}
+        projects = []
+        certifications = []
 
         # DEBUG: Log input data
         logger.info(f"[ENHANCEMENT_DEBUG] _build_enhancement_data called with {len(enhanced_skills)} skills")
@@ -916,32 +916,34 @@ class CourseAvailabilityChecker:
 
                 # Projects: max 2 per skill
                 if course_type == "project" and project_count < 2:
-                    projects[course_id] = {
+                    projects.append({
+                        "id": course_id,
                         "name": course.get("name", ""),
                         "provider": course.get("provider_standardized", "Coursera"),
                         "description": course.get("description", "")[:200],
                         "related_skill": skill_name
-                    }
+                    })
                     project_count += 1
                     logger.info(f"    - Added project: {course_id[:20]}")
 
                 # Certifications and Specializations: max 4 per skill
                 elif course_type in ["certification", "specialization"] and cert_count < 4:
-                    certifications[course_id] = {
+                    certifications.append({
+                        "id": course_id,
                         "name": course.get("name", ""),
                         "provider": course.get("provider_standardized", "Coursera"),
                         "description": course.get("description", "")[:200],
                         "related_skill": skill_name
-                    }
+                    })
                     cert_count += 1
                     logger.info(f"    - Added certification: {course_id[:20]}")
 
                 # Skip regular courses - only project/certification/specialization allowed
                 # Based on specification requirement
 
-        # Return empty dict {} if no courses found (Bubble.io compatibility)
-        result_projects = projects if projects else {}
-        result_certifications = certifications if certifications else {}
+        # Return empty array [] if no courses found (v3.1.0 format)
+        result_projects = projects if projects else []
+        result_certifications = certifications if certifications else []
 
         # DEBUG: Log final enhancement data
         logger.info("[ENHANCEMENT_DEBUG] _build_enhancement_data returning:")
