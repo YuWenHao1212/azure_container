@@ -509,7 +509,7 @@ prompts:
     **If no projects and no enhancements: Return empty string ""**
     
     **LLM Description Expansion Example:**
-    Input: {"name": "Cloud-Native App", "description": "Build scalable cloud apps", "related_skill": "Cloud Architecture"}
+    Input: {{"name": "Cloud-Native App", "description": "Build scalable cloud apps", "related_skill": "Cloud Architecture"}}
     Output: "Developing microservices-based application focusing on cloud architecture principles, implementing containerization with Docker, orchestration with Kubernetes, and deploying scalable solutions with auto-scaling strategies."
     
     **E. Track Applied Changes:**
