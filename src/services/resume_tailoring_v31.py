@@ -319,38 +319,20 @@ class ResumeTailoringServiceV31:
 
     def _format_enhancement_field(self, enhancement_data: dict) -> str:
         """
-        Format enhancement field data as YAML-compatible string for prompt template.
+        Format enhancement field data as compact JSON string for prompt template.
 
         Args:
             enhancement_data: Dictionary containing enhancement course data
 
         Returns:
-            YAML-formatted string representation
+            Compact JSON-formatted string representation
         """
         if not enhancement_data:
             return "{}"
 
-        # Convert to proper YAML object format for prompt template
-        lines = ["{"]
-        for course_id, course_info in enhancement_data.items():
-            name = course_info.get("name", "").replace('"', '\\"')
-            provider = course_info.get("provider", "").replace('"', '\\"')
-            description = course_info.get("description", "").replace('"', '\\"')
-            related_skill = course_info.get("related_skill", "").replace('"', '\\"')
-
-            lines.append(f'  "{course_id}": {{')
-            lines.append(f'    "name": "{name}",')
-            lines.append(f'    "provider": "{provider}",')
-            lines.append(f'    "description": "{description}",')
-            lines.append(f'    "related_skill": "{related_skill}"')
-            lines.append('  },')
-
-        # Remove trailing comma from last item and close
-        if len(lines) > 1:
-            lines[-1] = lines[-1].rstrip(',')
-        lines.append("}")
-
-        return "\n".join(lines)
+        # Use json.dumps with separators for compact single-line JSON
+        import json
+        return json.dumps(enhancement_data, separators=(',', ':'), ensure_ascii=False)
 
     async def _call_llm1(self, bundle: dict) -> dict:
         """Call LLM1 (Core Optimizer) with v1.0.0-resume-core prompt."""
