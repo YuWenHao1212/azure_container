@@ -354,7 +354,10 @@ async def _execute_v2_analysis(
 
             if resume_enhancement_certification:
                 # List format: get ID from first item
-                sample_id = resume_enhancement_certification[0].get("id", "N/A")[:20] if resume_enhancement_certification else "N/A"
+                sample_id = (
+                    resume_enhancement_certification[0].get("id", "N/A")[:20]
+                    if resume_enhancement_certification else "N/A"
+                )
                 logger.info(f"[ENHANCEMENT_DEBUG API] Sample certification ID: {sample_id}")
             else:
                 logger.warning("[ENHANCEMENT_DEBUG API] resume_enhancement_certification is empty or missing")
