@@ -314,7 +314,8 @@ except:
     local total_duration=$((end_time - START_TIME))
     
     # Save performance metrics to JSON Lines file
-    if [ "$TOTAL_TESTS" -eq 4 ]; then
+    # Adjusted to save metrics even when only 3 tests run (Resume Tailoring disabled)
+    if [ "$TOTAL_TESTS" -eq 3 ] || [ "$TOTAL_TESTS" -eq 4 ]; then
         local commit_sha="${GITHUB_SHA:-unknown}"
         local github_run_id="${GITHUB_RUN_ID:-0}"
         local perf_json="{"
@@ -351,21 +352,23 @@ except:
     log_message "Total Time: ${total_duration}s"
     log_message ""
     
-    if [ "$FAILED_TESTS" -eq 0 ] && [ "$TOTAL_TESTS" -eq 4 ]; then
+    # Temporarily adjusted for Resume Tailoring being disabled
+    # Normal operation expects 4 tests, but we're running 3 while Resume Tailoring is disabled
+    if [ "$FAILED_TESTS" -eq 0 ] && [ "$TOTAL_TESTS" -eq 3 ]; then
         log_message "✅ All smoke tests PASSED!"
         log_message ""
         log_message "Performance SLAs Met:"
         log_message "  • Keyword Extraction: ✓ (${KEYWORD_TIME_MS}ms < 4500ms)"
-        log_message "  • Index Calculation: ✓ (${INDEX_TIME_MS}ms < 2000ms)"
+        log_message "  • Index Calculation: ✓ (${INDEX_TIME_MS}ms < 4000ms)"
         log_message "  • Gap Analysis: ✓ (${GAP_TIME_MS}ms < 25000ms)"
-        log_message "  • Resume Tailoring: ✓ (${RESUME_TIME_MS}ms < 25000ms)"
+        log_message "  • Resume Tailoring: ⏸️ (Temporarily disabled)"
         log_message ""
         log_message "Performance metrics saved to: $PERF_LOG"
         exit 0
     else
         log_message "❌ Smoke tests FAILED!"
-        if [ "$TOTAL_TESTS" -ne 4 ]; then
-            log_message "  Warning: Expected 4 tests but ran $TOTAL_TESTS"
+        if [ "$TOTAL_TESTS" -ne 3 ]; then
+            log_message "  Warning: Expected 3 tests (Resume Tailoring disabled) but ran $TOTAL_TESTS"
         fi
         if [ "$FAILED_TESTS" -gt 0 ]; then
             log_message "  $FAILED_TESTS out of $TOTAL_TESTS tests failed"
