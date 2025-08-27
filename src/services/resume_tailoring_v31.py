@@ -317,6 +317,38 @@ class ResumeTailoringServiceV31:
 
         return bundle1, bundle2
 
+    def _format_enhancement_field(self, enhancement_data: dict) -> str:
+        """
+        Format enhancement field data as YAML-compatible string for prompt template.
+
+        Args:
+            enhancement_data: Dictionary containing enhancement course data
+
+        Returns:
+            YAML-formatted string representation
+        """
+        if not enhancement_data:
+            return "{}"
+
+        # Convert to YAML-like format for prompt template
+        lines = []
+        for course_id, course_info in enhancement_data.items():
+            name = course_info.get("name", "")
+            provider = course_info.get("provider", "")
+            description = course_info.get("description", "")
+            related_skill = course_info.get("related_skill", "")
+
+            lines.append(f'  "{course_id}":')
+            lines.append(f'    name: "{name}"')
+            lines.append(f'    provider: "{provider}"')
+            lines.append(f'    description: "{description}"')
+            lines.append(f'    related_skill: "{related_skill}"')
+
+        if lines:
+            return "\n" + "\n".join(lines)
+        else:
+            return "{}"
+
     async def _call_llm1(self, bundle: dict) -> dict:
         """Call LLM1 (Core Optimizer) with v1.0.0-resume-core prompt."""
 
@@ -388,8 +420,12 @@ class ResumeTailoringServiceV31:
                 education_enhancement_needed=bundle["education_enhancement_needed"],
                 standard_sections=json.dumps(bundle["standard_sections"]),
                 custom_sections=json.dumps(bundle["custom_sections"]),
-                resume_enhancement_project=json.dumps(bundle.get("resume_enhancement_project", {})),
-                resume_enhancement_certification=json.dumps(bundle.get("resume_enhancement_certification", {})),
+                resume_enhancement_project=self._format_enhancement_field(
+                    bundle.get("resume_enhancement_project", {})
+                ),
+                resume_enhancement_certification=self._format_enhancement_field(
+                    bundle.get("resume_enhancement_certification", {})
+                ),
                 output_language=bundle["output_language"]
             )
 
