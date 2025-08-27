@@ -779,10 +779,10 @@ prompts:
     
     3. **Priority-Based Filtering (Custom Sections):**
     ```json
-    {{
+    {
       "supplementary_details": "<h2>Supplementary Details</h2><div class='opt-modified'><h3>Professional Information</h3><ul><li><strong>Work Authorization:</strong> H1-B Visa (P1 - Always kept)</li><li><strong>Languages:</strong> English (Native), Mandarin (Fluent) (P1)</li></ul><h3>Community Involvement</h3><ul><li>Tech Mentor - Girls Who Code (P2 - Kept for leadership role)</li></ul></div>"
       // Note: Hobbies section (P3) was filtered out
-    }}
+    }
     ```
     
     ## VALIDATION CHECKLIST
