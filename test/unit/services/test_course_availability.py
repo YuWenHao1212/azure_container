@@ -870,27 +870,42 @@ class TestCourseAvailability:
                 skills_with_courses, skill_queries
             )
 
-            # Verify projects are correctly extracted
-            assert "proj-1" in projects
-            assert projects["proj-1"]["name"] == "Python Web Project"
-            assert projects["proj-1"]["related_skill"] == "Python Programming"
-            assert "proj-2" in projects
-            assert projects["proj-2"]["related_skill"] == "Docker"
+            # Verify projects are correctly extracted (now arrays)
+            assert isinstance(projects, list), "Projects should be a list"
+            assert len(projects) == 2  # proj-1, proj-2
 
-            # Verify certifications are correctly extracted
-            assert "cert-1" in certifications
-            assert certifications["cert-1"]["name"] == "Python Certification"
-            assert "spec-1" in certifications  # Specialization should be in certifications
-            assert certifications["spec-1"]["name"] == "Python Specialization"
-            assert "cert-2" in certifications
+            # Check project IDs in array
+            project_ids = [p["id"] for p in projects]
+            assert "proj-1" in project_ids
+            assert "proj-2" in project_ids
+
+            # Find specific projects and verify content
+            proj1 = next(p for p in projects if p["id"] == "proj-1")
+            assert proj1["name"] == "Python Web Project"
+            assert proj1["related_skill"] == "Python Programming"
+
+            proj2 = next(p for p in projects if p["id"] == "proj-2")
+            assert proj2["related_skill"] == "Docker"
+
+            # Verify certifications are correctly extracted (now arrays)
+            assert isinstance(certifications, list), "Certifications should be a list"
+            assert len(certifications) == 3  # cert-1, spec-1, cert-2
+
+            cert_ids = [c["id"] for c in certifications]
+            assert "cert-1" in cert_ids
+            assert "spec-1" in cert_ids  # Specialization should be in certifications
+            assert "cert-2" in cert_ids
+
+            # Find specific certifications and verify content
+            cert1 = next(c for c in certifications if c["id"] == "cert-1")
+            assert cert1["name"] == "Python Certification"
+
+            spec1 = next(c for c in certifications if c["id"] == "spec-1")
+            assert spec1["name"] == "Python Specialization"
 
             # Verify regular courses are NOT included
-            assert "course-1" not in projects
-            assert "course-1" not in certifications
-
-            # Verify the method works regardless of INCLUDE_COURSE_DETAILS setting
-            assert len(projects) == 2  # proj-1, proj-2
-            assert len(certifications) == 3  # cert-1, spec-1, cert-2
+            assert "course-1" not in project_ids
+            assert "course-1" not in cert_ids
 
     @pytest.mark.asyncio
     async def test_CA_021_UT_enhancement_project_quota_enforcement(self, checker):
@@ -931,9 +946,12 @@ class TestCourseAvailability:
         )
 
         # Verify quota enforcement
+        # Projects is now a list, not a dict
+        assert isinstance(projects, list), "Projects should be a list"
+
         # Count projects per skill
         skill_project_count = {}
-        for _, proj_data in projects.items():
+        for proj_data in projects:
             skill = proj_data["related_skill"]
             skill_project_count[skill] = skill_project_count.get(skill, 0) + 1
 
@@ -945,9 +963,10 @@ class TestCourseAvailability:
         assert len(projects) <= 12, f"Total projects: {len(projects)}, expected max 12"
 
         # Verify it takes the first 2 projects (maintains order)
-        assert "proj-0-0" in projects
-        assert "proj-0-1" in projects
-        assert "proj-0-2" not in projects  # Third project should be excluded
+        project_ids = [p["id"] for p in projects]
+        assert "proj-0-0" in project_ids
+        assert "proj-0-1" in project_ids
+        assert "proj-0-2" not in project_ids  # Third project should be excluded
 
     @pytest.mark.asyncio
     async def test_CA_022_UT_enhancement_certification_quota_enforcement(self, checker):
@@ -996,9 +1015,12 @@ class TestCourseAvailability:
         )
 
         # Verify quota enforcement
+        # Certifications is now a list, not a dict
+        assert isinstance(certifications, list), "Certifications should be a list"
+
         # Count certifications per skill
         skill_cert_count = {}
-        for _, cert_data in certifications.items():
+        for cert_data in certifications:
             skill = cert_data["related_skill"]
             skill_cert_count[skill] = skill_cert_count.get(skill, 0) + 1
 
@@ -1010,14 +1032,15 @@ class TestCourseAvailability:
         assert len(certifications) <= 24, f"Total certifications: {len(certifications)}, expected max 24"
 
         # Verify it takes the first 4 (maintains order)
-        assert "cert-0-0" in certifications
-        assert "cert-0-1" in certifications
-        assert "cert-0-2" in certifications
-        assert "spec-0-0" in certifications
-        assert "spec-0-1" not in certifications  # Fifth item should be excluded
+        cert_ids = [c["id"] for c in certifications]
+        assert "cert-0-0" in cert_ids
+        assert "cert-0-1" in cert_ids
+        assert "cert-0-2" in cert_ids
+        assert "spec-0-0" in cert_ids
+        assert "spec-0-1" not in cert_ids  # Fifth item should be excluded
 
         # Verify specializations are treated as certifications
-        spec_count = sum(1 for cert_id in certifications if cert_id.startswith("spec-"))
+        spec_count = sum(1 for cert_id in cert_ids if cert_id.startswith("spec-"))
         assert spec_count > 0, "Specializations should be included in certifications"
 
     @pytest.mark.asyncio
@@ -1067,17 +1090,25 @@ class TestCourseAvailability:
         )
 
         # Verify only valid types are included
+        # Projects and certifications are now lists
+        assert isinstance(projects, list), "Projects should be a list"
+        assert isinstance(certifications, list), "Certifications should be a list"
+
+        # Get IDs from arrays
+        project_ids = [p["id"] for p in projects]
+        cert_ids = [c["id"] for c in certifications]
+
         # Projects should only contain project type
-        assert "proj-1" in projects
+        assert "proj-1" in project_ids
         assert len(projects) == 1  # Only one valid project
 
         # Certifications should contain certification and specialization
-        assert "cert-1" in certifications
-        assert "spec-1" in certifications
+        assert "cert-1" in cert_ids
+        assert "spec-1" in cert_ids
         assert len(certifications) == 2  # Only cert and spec
 
         # Verify excluded types
-        all_ids = list(projects.keys()) + list(certifications.keys())
+        all_ids = project_ids + cert_ids
         assert "course-1" not in all_ids, "Regular courses should be excluded"
         assert "workshop-1" not in all_ids, "Workshops should be excluded"
         assert "tutorial-1" not in all_ids, "Tutorials should be excluded"
@@ -1088,10 +1119,10 @@ class TestCourseAvailability:
 
         # Verify the filtering is strict
         assert all(
-            proj_id.startswith("proj-") for proj_id in projects
+            proj_id.startswith("proj-") for proj_id in project_ids
         ), "Projects should only contain project type"
 
         assert all(
             cert_id.startswith("cert-") or cert_id.startswith("spec-")
-            for cert_id in certifications
+            for cert_id in cert_ids
         ), "Certifications should only contain certification and specialization types"

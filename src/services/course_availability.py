@@ -500,8 +500,19 @@ class CourseAvailabilityChecker:
 
             # DEBUG: More detailed enhancement data logging
             logger.info("[ENHANCEMENT_DEBUG] Enhancement data details:")
-            logger.info(f"  - Projects: {list(enhancement_project.keys())[:5] if enhancement_project else 'Empty'}")
-            cert_preview = list(enhancement_certification.keys())[:5] if enhancement_certification else 'Empty'
+            # enhancement_project and enhancement_certification are now lists
+            if isinstance(enhancement_project, list):
+                proj_preview = [p.get("id", "") for p in enhancement_project[:5]] if enhancement_project else 'Empty'
+            else:
+                # Fallback for dict (shouldn't happen but just in case)
+                proj_preview = list(enhancement_project.keys())[:5] if enhancement_project else 'Empty'
+            logger.info(f"  - Projects: {proj_preview}")
+
+            if isinstance(enhancement_certification, list):
+                cert_preview = [c.get("id", "") for c in enhancement_certification[:5]] if enhancement_certification else 'Empty'
+            else:
+                # Fallback for dict (shouldn't happen but just in case)
+                cert_preview = list(enhancement_certification.keys())[:5] if enhancement_certification else 'Empty'
             logger.info(f"  - Certifications: {cert_preview}")
 
             # Add enhancement data to the first skill for backward compatibility
@@ -950,9 +961,11 @@ class CourseAvailabilityChecker:
         logger.info(f"  - Projects count: {len(result_projects)}")
         logger.info(f"  - Certifications count: {len(result_certifications)}")
         if result_projects:
-            logger.info(f"  - Sample project: {next(iter(result_projects.items())) if result_projects else 'None'}")
+            # result_projects is now a list, not a dict
+            logger.info(f"  - Sample project: {result_projects[0] if result_projects else 'None'}")
         if result_certifications:
-            sample_cert = next(iter(result_certifications.items())) if result_certifications else 'None'
+            # result_certifications is now a list, not a dict
+            sample_cert = result_certifications[0] if result_certifications else 'None'
             logger.info(f"  - Sample certification: {sample_cert}")
 
         return result_projects, result_certifications

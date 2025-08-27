@@ -360,22 +360,30 @@ class TestCourseAvailabilityIntegration:
                 projects = result[0]["resume_enhancement_project"]
                 certifications = result[0]["resume_enhancement_certification"]
 
+                # Projects and certifications are now lists
+                assert isinstance(projects, list), "Projects should be a list"
+                assert isinstance(certifications, list), "Certifications should be a list"
+
+                # Get IDs from arrays
+                project_ids = [p["id"] for p in projects]
+                cert_ids = [c["id"] for c in certifications]
+
                 # Verify projects include both Python and Docker projects
-                assert "py-proj-1" in projects
-                assert "py-proj-2" in projects
-                assert "dock-proj-1" in projects
+                assert "py-proj-1" in project_ids
+                assert "py-proj-2" in project_ids
+                assert "dock-proj-1" in project_ids
                 assert len(projects) == 3  # 2 Python + 1 Docker
 
                 # Verify certifications include cert and spec types
-                assert "py-cert-1" in certifications
-                assert "py-spec-1" in certifications  # Specialization counted as certification
-                assert "dock-cert-1" in certifications
-                assert "dock-cert-2" in certifications
+                assert "py-cert-1" in cert_ids
+                assert "py-spec-1" in cert_ids  # Specialization counted as certification
+                assert "dock-cert-1" in cert_ids
+                assert "dock-cert-2" in cert_ids
                 assert len(certifications) == 4  # 1 cert + 1 spec from Python, 2 certs from Docker
 
                 # Verify regular courses are NOT in enhancement
-                assert "py-course-1" not in projects
-                assert "py-course-1" not in certifications
+                assert "py-course-1" not in project_ids
+                assert "py-course-1" not in cert_ids
 
     @pytest.mark.asyncio
     async def test_CA_006_IT_enhancement_data_cross_environment_consistency(self):
@@ -470,9 +478,9 @@ class TestCourseAvailabilityIntegration:
 
                     result = await checker.check_course_availability(test_skills.copy())
 
-                    # Extract enhancement data
-                    projects = result[0].get("resume_enhancement_project", {})
-                    certifications = result[0].get("resume_enhancement_certification", {})
+                    # Extract enhancement data (now arrays)
+                    projects = result[0].get("resume_enhancement_project", [])
+                    certifications = result[0].get("resume_enhancement_certification", [])
 
                     return projects, certifications, result
 
@@ -486,20 +494,23 @@ class TestCourseAvailabilityIntegration:
         assert projects_excluded == projects_included, "Projects should be identical across environments"
         assert certs_excluded == certs_included, "Certifications should be identical across environments"
 
-        # Verify specific content
-        assert "fast-proj-1" in projects_excluded
-        assert "fast-proj-2" in projects_excluded
+        # Verify specific content (arrays now)
+        project_ids_excluded = [p["id"] for p in projects_excluded]
+        cert_ids_excluded = [c["id"] for c in certs_excluded]
+
+        assert "fast-proj-1" in project_ids_excluded
+        assert "fast-proj-2" in project_ids_excluded
         assert len(projects_excluded) == 2  # Only 2 projects (FastAPI has 2)
 
-        assert "fast-cert-1" in certs_excluded
-        assert "pg-spec-1" in certs_excluded  # Specialization as certification
-        assert "pg-cert-1" in certs_excluded
-        assert "pg-cert-2" in certs_excluded
+        assert "fast-cert-1" in cert_ids_excluded
+        assert "pg-spec-1" in cert_ids_excluded  # Specialization as certification
+        assert "pg-cert-1" in cert_ids_excluded
+        assert "pg-cert-2" in cert_ids_excluded
         assert len(certs_excluded) == 4  # 1 FastAPI cert + 3 PostgreSQL (1 spec + 2 certs)
 
         # Verify regular courses are excluded in both
-        assert "fast-course-1" not in projects_excluded
-        assert "fast-course-1" not in certs_excluded
+        assert "fast-course-1" not in project_ids_excluded
+        assert "fast-course-1" not in cert_ids_excluded
 
         # Verify the only difference is in SkillSearchQueries course_details field
         # (This would be checked at API response level, not here in the service)
