@@ -509,7 +509,10 @@ class CourseAvailabilityChecker:
             logger.info(f"  - Projects: {proj_preview}")
 
             if isinstance(enhancement_certification, list):
-                cert_preview = [c.get("id", "") for c in enhancement_certification[:5]] if enhancement_certification else 'Empty'
+                cert_preview = (
+                    [c.get("id", "") for c in enhancement_certification[:5]]
+                    if enhancement_certification else 'Empty'
+                )
             else:
                 # Fallback for dict (shouldn't happen but just in case)
                 cert_preview = list(enhancement_certification.keys())[:5] if enhancement_certification else 'Empty'

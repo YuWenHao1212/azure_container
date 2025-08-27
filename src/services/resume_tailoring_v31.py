@@ -320,7 +320,6 @@ class ResumeTailoringServiceV31:
     def _format_enhancement_field(self, enhancement_data: Union[dict, list]) -> str:
         """
         Format enhancement field data as compact JSON string for prompt template.
-        
         Supports both:
         - Legacy object format: {"course_id": {...}}
         - New array format (v3.1.0): [{"id": "course_id", ...}]
