@@ -127,7 +127,8 @@ class ResumeTailoringServiceV31:
                 covered_keywords=covered_keywords,
                 missing_keywords=missed_keywords,
                 resume_structure=resume_structure,
-                output_language=output_language
+                output_language=output_language,
+                original_index=original_index
             )
 
             pre_processing_ms = int((time.time() - pre_start) * 1000)
@@ -268,12 +269,17 @@ class ResumeTailoringServiceV31:
         covered_keywords: list[str],
         missing_keywords: list[str],
         resume_structure: dict,
-        output_language: str
+        output_language: str,
+        original_index: dict
     ) -> tuple[dict, dict]:
         """
         Allocate data bundles for parallel LLM processing.
         Both LLMs get full data but with different focus instructions.
         """
+
+        # Extract enhancement fields from original_index
+        resume_enhancement_project = original_index.get("resume_enhancement_project", {})
+        resume_enhancement_certification = original_index.get("resume_enhancement_certification", {})
 
         # Common data for both LLMs
         common_data = {
@@ -293,7 +299,7 @@ class ResumeTailoringServiceV31:
             "focus": "Professional Summary, Core Competencies/Skills, Professional Experience"
         }
 
-        # Bundle for LLM2 (Additional Manager)
+        # Bundle for LLM2 (Additional Manager) - includes enhancement fields
         bundle2 = {
             **common_data,
             # May need for context
@@ -303,6 +309,9 @@ class ResumeTailoringServiceV31:
             "education_enhancement_needed": resume_structure.get("education_enhancement_needed", False),
             "standard_sections": resume_structure.get("standard_sections", {}),
             "custom_sections": resume_structure.get("custom_sections", []),
+            # Add enhancement fields for LLM2
+            "resume_enhancement_project": resume_enhancement_project,
+            "resume_enhancement_certification": resume_enhancement_certification,
             "focus": "Education, Projects, Certifications, Custom Sections"
         }
 
