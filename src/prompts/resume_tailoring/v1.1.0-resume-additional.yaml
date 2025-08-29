@@ -472,8 +472,8 @@ prompts:
     Before processing certifications, add diagnostic comment to track data:
     ```html
     <!-- DEBUG: Certification Data Status
-         preprocessed_certifications_by_skill: {Check if empty or has data}
-         If empty {}: "NO CERTIFICATIONS RECEIVED - Should NOT create any"
+         preprocessed_certifications_by_skill: Check if empty {{}} or has data
+         If empty {{}}: "NO CERTIFICATIONS RECEIVED - Should NOT create any"
          If has data: "Received X skill groups with Y total certifications"
     -->
     ```
@@ -492,8 +492,8 @@ prompts:
     
     **Step 2: Add Enhancement Certifications**
     - Source: preprocessed_certifications_by_skill (預處理的證照群組)
-    - **🚨 CRITICAL CHECK**: First check if preprocessed_certifications_by_skill is empty {}
-    - **IF EMPTY {}**: 
+    - **🚨 CRITICAL CHECK**: First check if preprocessed_certifications_by_skill is empty {{}}
+    - **IF EMPTY {{}}**: 
         - DO NOT create any new certifications
         - DO NOT add placeholder certifications
         - Skip this step completely
@@ -506,7 +506,7 @@ prompts:
         - Directly append selected HTML strings without modification
     
     **Selection Criteria for Step 2:**
-    - CRITICAL: If preprocessed_certifications_by_skill is empty {}, DO NOT create ANY certifications
+    - CRITICAL: If preprocessed_certifications_by_skill is empty {{}}, DO NOT create ANY certifications
     - NEVER create placeholder certifications like "Test Certification" or "Test Provider"
     - Only use certifications that exist in preprocessed_certifications_by_skill
     - From each skill group in preprocessed_certifications_by_skill:
@@ -654,7 +654,7 @@ prompts:
     ## DIAGNOSTIC OUTPUT (TEMPORARY)
     
     **Before outputting final JSON, include diagnostic info in tracking array:**
-    - Add entry: "[DEBUG] preprocessed_certifications_by_skill status: {empty/X skills}"
+    - Add entry: "[DEBUG] preprocessed_certifications_by_skill status: empty or X skills"
     - This helps track if data is being received correctly
     
     ## OUTPUT FORMAT
