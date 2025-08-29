@@ -316,9 +316,16 @@ class ResumeTailoringServiceV31:
         from collections import defaultdict
         from datetime import datetime
 
+        # Enhanced logging for debugging
+        logger.warning("🔬 [PREPROCESS DEBUG] === Starting certification preprocessing ===")
+        logger.warning(f"  📥 Input type: {type(certifications)}")
+
         # Handle empty input
         if not certifications:
+            logger.warning("  ⚠️ Input is empty or None - returning empty dict")
             return {}
+
+        logger.warning(f"  📊 Input size: {len(certifications) if certifications else 0}")
 
         current_year = datetime.now().year
         skill_groups = defaultdict(list)
@@ -327,32 +334,57 @@ class ResumeTailoringServiceV31:
         cert_list = []
         if isinstance(certifications, dict):
             # Handle dict format (legacy or from Gap Analysis)
-            for _cert_id, cert_data in certifications.items():
+            logger.warning(f"  📦 Dict format detected with {len(certifications)} items")
+            for cert_id, cert_data in certifications.items():
                 if isinstance(cert_data, dict):
                     cert_list.append(cert_data)
+                    logger.warning(f"    - {cert_id}: {cert_data.get('name', 'Unknown')[:50]}...")
         elif isinstance(certifications, list):
             cert_list = certifications
+            logger.warning(f"  📋 List format detected with {len(certifications)} items")
+            for i, cert in enumerate(cert_list[:3]):  # Show first 3
+                if isinstance(cert, dict):
+                    logger.warning(f"    - Item {i}: {cert.get('name', 'Unknown')[:50]}...")
         else:
-            logger.warning(f"Unexpected certifications format: {type(certifications)}")
+            logger.warning(f"  ❌ Unexpected certifications format: {type(certifications)}")
             return {}
 
         # Group certifications by skill
+        logger.warning(f"  🔄 Processing {len(cert_list)} certifications...")
+        processed_count = 0
+
         for cert in cert_list:
             if not isinstance(cert, dict):
+                logger.warning(f"    ⚠️ Skipping non-dict item: {type(cert)}")
                 continue
 
             skill = cert.get('related_skill', '')
-            if skill:
+            name = cert.get('name', '')
+            provider = cert.get('provider', '')
+
+            if skill and name and provider:
                 # Format as HTML with opt-new CSS class
-                name = cert.get('name', '')
-                provider = cert.get('provider', '')
-                if name and provider:
-                    # Use bullet point (•) separator to match prompt template
-                    html = f'<li class="opt-new"><strong>{name}</strong> • {provider} • {current_year}</li>'
-                    skill_groups[skill].append(html)
+                # Use bullet point (•) separator to match prompt template
+                html = f'<li class="opt-new"><strong>{name}</strong> • {provider} • {current_year}</li>'
+                skill_groups[skill].append(html)
+                processed_count += 1
+                logger.warning(f"    ✅ Processed: {name[:30]}... -> Skill: {skill}")
+            else:
+                logger.warning(
+                    f"    ⚠️ Missing data - skill:{bool(skill)}, name:{bool(name)}, provider:{bool(provider)}"
+                )
 
         # Convert to regular dict for easier processing
-        return dict(skill_groups)
+        result = dict(skill_groups)
+
+        # Log final result
+        logger.warning(f"  📤 Output: {len(result)} skill groups, {processed_count} total certifications")
+        for skill, certs in result.items():
+            logger.warning(f"    - {skill}: {len(certs)} certifications")
+
+        logger.warning("🔬 [PREPROCESS DEBUG] === Preprocessing complete ===")
+
+        return result
 
     def _allocate_bundles(
         self,
@@ -394,18 +426,52 @@ class ResumeTailoringServiceV31:
 
         # Preprocess certifications for LLM2
         preprocessed_certifications = {}
-        logger.warning(
-            f"🚨 [BUNDLE DEBUG] resume_enhancement_certification type: {type(resume_enhancement_certification)}, "
-            f"content: {resume_enhancement_certification}"
-        )
+
+        # Enhanced logging for data flow tracking
+        logger.warning("🔍 [BUNDLE DEBUG] === Certification data flow check ===")
+        logger.warning(f"  1️⃣ Input type: {type(resume_enhancement_certification)}")
+        logger.warning(f"  2️⃣ Input empty: {not resume_enhancement_certification}")
+
         if resume_enhancement_certification:
-            logger.info("[BUNDLE DEBUG] Starting preprocessing of enhancement certifications...")
+            # Log input details
+            if isinstance(resume_enhancement_certification, dict):
+                logger.warning(f"  3️⃣ Dict format with {len(resume_enhancement_certification)} keys")
+                # Show first 3 keys
+                keys = list(resume_enhancement_certification.keys())[:3]
+                for key in keys:
+                    item = resume_enhancement_certification[key]
+                    if isinstance(item, dict):
+                        logger.warning(f"    📌 {key}: {item.get('name', 'Unknown')[:40]}...")
+            elif isinstance(resume_enhancement_certification, list):
+                logger.warning(f"  3️⃣ List format with {len(resume_enhancement_certification)} items")
+                # Show first 3 items
+                for i, item in enumerate(resume_enhancement_certification[:3]):
+                    if isinstance(item, dict):
+                        logger.warning(f"    📌 Item {i}: {item.get('name', 'Unknown')[:40]}...")
+
+            logger.warning("  4️⃣ Starting preprocessing...")
             preprocessed_certifications = self._preprocess_enhancement_certifications(
                 resume_enhancement_certification
             )
-            logger.info(f"[BUNDLE DEBUG] Preprocessing result: {len(preprocessed_certifications)} skill groups")
+
+            # Log preprocessing result
+            logger.warning("  5️⃣ After preprocessing:")
+            if preprocessed_certifications:
+                logger.warning(f"    ✅ Success: {len(preprocessed_certifications)} skill groups")
+                for skill, cert_list in preprocessed_certifications.items():
+                    logger.warning(f"    📚 {skill}: {len(cert_list)} HTML items")
+                    # Show first HTML item as preview
+                    if cert_list:
+                        import re
+                        # Extract cert name from HTML for preview
+                        match = re.search(r'<strong>(.*?)</strong>', cert_list[0])
+                        cert_name = match.group(1) if match else "Unknown"
+                        logger.warning(f"      • First cert: {cert_name[:30]}...")
+            else:
+                logger.warning("    ⚠️ Result is empty dict!")
         else:
-            logger.warning("[BUNDLE DEBUG] No resume_enhancement_certification data found!")
+            logger.warning("  ⚠️ No resume_enhancement_certification data found!")
+            logger.warning("  📝 This will result in empty preprocessed_certifications_by_skill")
 
         # Bundle for LLM2 (Additional Manager) - includes enhancement fields
         bundle2 = {
@@ -527,14 +593,27 @@ class ResumeTailoringServiceV31:
             # CRITICAL DEBUG: Always log LLM2 entry with WARNING level
             logger.warning("🚨 [LLM2 DEBUG] === Starting LLM2 call === 🚨")
 
-            # Debug: Log preprocessed certifications
+            # Enhanced debug logging for preprocessed certifications
             preprocessed_certs = bundle.get("preprocessed_certifications_by_skill", {})
+
+            logger.warning("📋 [LLM2 DEBUG] === Preprocessed certifications check ===")
             if preprocessed_certs:
-                logger.info(f"[LLM2 DEBUG] Preprocessed certifications by skill: {len(preprocessed_certs)} groups")
-                for skill, certs in preprocessed_certs.items():
-                    logger.info(f"[LLM2 DEBUG] - {skill}: {len(certs)} cert(s)")
+                logger.warning(f"  ✅ Found {len(preprocessed_certs)} skill groups")
+                import re
+                for skill, cert_list in preprocessed_certs.items():
+                    logger.warning(f"  📚 Skill: '{skill}' ({len(cert_list)} certifications)")
+                    for i, cert_html in enumerate(cert_list[:2], 1):  # Show first 2
+                        # Extract cert name from HTML
+                        match = re.search(r'<strong>(.*?)</strong>', cert_html)
+                        cert_name = match.group(1) if match else "Unknown"
+                        logger.warning(f"    {i}. {cert_name[:40]}...")
+                        # Show full HTML if not too long
+                        if len(cert_html) < 150:
+                            logger.warning(f"       Full HTML: {cert_html}")
             else:
-                logger.warning("🚨 [LLM2 DEBUG] No preprocessed certifications found! 🚨")
+                logger.warning("  🚨 No preprocessed certifications found! 🚨")
+                logger.warning("  ⚠️ This means preprocessed_certifications_by_skill is empty {}")
+                logger.warning("  ⚠️ LLM2 should NOT create any placeholder certifications!")
 
             # Build messages from prompt template
             system_prompt = self.additional_prompt["prompts"]["system"]
@@ -562,18 +641,37 @@ class ResumeTailoringServiceV31:
                 output_language=bundle["output_language"]
             )
 
-            # Debug: Log the actual JSON sent for certifications
-            cert_json = json.dumps(bundle.get("preprocessed_certifications_by_skill", {}), separators=(',', ':'))
-            logger.info(f"[LLM2 DEBUG] Preprocessed certs JSON length: {len(cert_json)} chars")
-            if len(cert_json) < 1000:  # Only log if not too long
-                logger.info(f"[LLM2 DEBUG] Preprocessed certs JSON: {cert_json}")
+            # Verify JSON serialization
+            cert_json_raw = bundle.get("preprocessed_certifications_by_skill", {})
+            cert_json = json.dumps(cert_json_raw, separators=(',', ':'))
 
-            # CRITICAL DEBUG: Log enhancement certification data
+            logger.warning("📄 [LLM2 DEBUG] === JSON serialization check ===")
+            logger.warning(f"  📊 Raw data type: {type(cert_json_raw)}")
+            logger.warning(f"  📊 Raw data empty: {not cert_json_raw}")
+            logger.warning(f"  📊 JSON string length: {len(cert_json)} chars")
+            logger.warning(f"  📊 JSON == '{{}}': {cert_json == '{}'}")
+
+            # Show JSON content based on length
+            if cert_json == '{}':
+                logger.warning("  🚨 JSON is empty object '{}'!")
+                logger.warning("  ⚠️ This will be passed to LLM2 as empty preprocessed_certifications_by_skill")
+            elif len(cert_json) < 1500:
+                logger.warning(f"  📝 Full JSON: {cert_json}")
+            else:
+                logger.warning(f"  📝 JSON preview (first 500 chars): {cert_json[:500]}...")
+                logger.warning(f"  📝 JSON preview (last 200 chars): ...{cert_json[-200:]}")
+
+            # CRITICAL DEBUG: Log raw enhancement certification data
             enhancement_cert_data = bundle.get("resume_enhancement_certification", {})
-            logger.info(
-                f"[LLM2 DEBUG] Raw enhancement cert data type: {type(enhancement_cert_data)}, "
-                f"length: {len(enhancement_cert_data) if enhancement_cert_data else 0}"
+            logger.warning("🔍 [LLM2 DEBUG] === Raw enhancement data check ===")
+            logger.warning(
+                f"  📦 Type: {type(enhancement_cert_data)}, "
+                f"Size: {len(enhancement_cert_data) if enhancement_cert_data else 0}"
             )
+            if enhancement_cert_data:
+                logger.warning("  📝 Raw data is present (will be formatted as JSON for prompt)")
+            else:
+                logger.warning("  ⚠️ Raw data is empty or None")
 
             messages = [
                 {"role": "system", "content": system_prompt},
