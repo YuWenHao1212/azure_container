@@ -203,9 +203,6 @@ Certifications format:
         # Triple braces: {{{ means {{ followed by {
         # After replacement: LEFT_MARKER followed by {
         # This is not a common pattern in our prompts
-        template = "Start {{{test}}} End"
-        # This will fail because {{{ becomes LEFT_MARKER + { and }}} becomes } + RIGHT_MARKER
-        # Creating an invalid format placeholder
         # Skip this test as it's not a realistic scenario
         pass
 
