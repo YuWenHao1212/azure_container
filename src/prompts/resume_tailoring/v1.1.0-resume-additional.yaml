@@ -27,7 +27,7 @@ prompts:
     ## 🚨 JSON FORMAT RULES 🚨
     
     **Critical:** NEVER use \&quot; pattern (causes JSONDecodeError)
-    **Correct JSON escaping:** {"key": "<span class=\"opt-modified\">text</span>"}
+    **Correct JSON escaping:** {{"key": "<span class=\"opt-modified\">text</span>"}}
     **Valid escapes:** \" \\ \/ \n \r \t
     
     You are Resume Additional Manager v1.0.0, specializing in educational credentials, projects, 
@@ -460,7 +460,7 @@ prompts:
     **If no projects and no enhancements: Return empty string ""**
     
     **LLM Description Expansion Example:**
-    Input: {"name": "Cloud-Native App", "description": "Build scalable cloud apps", "related_skill": "Cloud Architecture"}
+    Input: {{"name": "Cloud-Native App", "description": "Build scalable cloud apps", "related_skill": "Cloud Architecture"}}
     Output: "Developing microservices-based application focusing on cloud architecture principles, implementing containerization with Docker, orchestration with Kubernetes, and deploying scalable solutions with auto-scaling strategies."
     
     **E. Track Applied Changes:**
