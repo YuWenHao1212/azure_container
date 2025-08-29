@@ -493,6 +493,53 @@ graph TD
     Track["生成完整 tracking 記錄:<br/>• Education: 模式 + 處理細節<br/>• Projects: 個人專案統計 + 排除數<br/>• Certifications: 現有/新增統計<br/>• Custom: 合併到 Supplementary Details"] --> OutputJSON["輸出 JSON:<br/>optimized_sections + tracking"]
 ```
 
+### 📎 Certifications 簡化處理流程
+
+基於實際需求，Certifications 的處理邏輯已簡化為兩步驟流程：
+
+```mermaid
+graph TD
+    Start[開始處理 Certifications] --> Step1[Step 1: 處理既有認證]
+    
+    Step1 --> Process1["重新格式化既有認證<br/>格式: &lt;li&gt;&lt;strong&gt;名稱&lt;/strong&gt; - 機構 | 年份&lt;/li&gt;<br/>無 CSS 標記"]
+    
+    Process1 --> Check{有 enhancement certification?}
+    
+    Check -->|有| Step2[Step 2: 新增 enhancement 認證]
+    Check -->|無| Skip[跳過 - 不添加新認證]
+    
+    Step2 --> Process2["每個 related_skill 選一個認證<br/>格式: &lt;li&gt;&lt;strong&gt;名稱&lt;/strong&gt; - 機構 | 2025&lt;/li&gt;<br/>CSS: class='opt-new'"]
+    
+    Process2 --> Output[輸出最終結果]
+    Skip --> Output
+    
+    Output --> Format["&lt;h2&gt;Certifications &amp; Achievements&lt;/h2&gt;<br/>&lt;h3&gt;Certifications&lt;/h3&gt;<br/>&lt;ul&gt;既有+新增認證&lt;/ul&gt;"]
+    
+    style Step1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style Step2 fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+```
+
+**關鍵點說明：**
+1. **Step 1**: 處理原始履歷中的既有認證
+   - 重新格式化為標準格式
+   - **不做** CSS 標記
+
+2. **Step 2**: 判斷是否有 enhancement certification
+   - **有**：每個 skill 取一個，年份用當前年（如 2025），標記 `opt-new`
+   - **無**：完全跳過新增步驟
+
+3. **輸出格式範例**：
+   ```html
+   <h2>Certifications & Achievements</h2>
+   <h3>Certifications</h3>
+   <ul>
+     <!-- 既有認證（無 CSS） -->
+     <li><strong>AWS Certified Developer</strong> - Amazon | 2023</li>
+     <!-- enhancement 認證（有 CSS） -->
+     <li class="opt-new"><strong>Google Cloud Architect</strong> - Google | 2025</li>
+   </ul>
+   ```
+
 ### 📝 Education Enhancement 重要說明
 
 **關鍵規則**：Education Enhancement (無論 Standard 或 Enhanced 模式) **只適用於最高學歷**
