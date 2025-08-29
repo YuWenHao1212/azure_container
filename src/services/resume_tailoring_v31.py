@@ -394,8 +394,8 @@ class ResumeTailoringServiceV31:
 
         # Preprocess certifications for LLM2
         preprocessed_certifications = {}
-        logger.info(
-            f"[BUNDLE DEBUG] resume_enhancement_certification type: {type(resume_enhancement_certification)}, "
+        logger.warning(
+            f"🚨 [BUNDLE DEBUG] resume_enhancement_certification type: {type(resume_enhancement_certification)}, "
             f"content: {resume_enhancement_certification}"
         )
         if resume_enhancement_certification:
@@ -524,8 +524,8 @@ class ResumeTailoringServiceV31:
         start_time = time.time()
 
         try:
-            # CRITICAL DEBUG: Always log LLM2 entry
-            logger.info("[LLM2 DEBUG] === Starting LLM2 call ===")
+            # CRITICAL DEBUG: Always log LLM2 entry with WARNING level
+            logger.warning("🚨 [LLM2 DEBUG] === Starting LLM2 call === 🚨")
 
             # Debug: Log preprocessed certifications
             preprocessed_certs = bundle.get("preprocessed_certifications_by_skill", {})
@@ -534,7 +534,7 @@ class ResumeTailoringServiceV31:
                 for skill, certs in preprocessed_certs.items():
                     logger.info(f"[LLM2 DEBUG] - {skill}: {len(certs)} cert(s)")
             else:
-                logger.warning("[LLM2 DEBUG] No preprocessed certifications found!")
+                logger.warning("🚨 [LLM2 DEBUG] No preprocessed certifications found! 🚨")
 
             # Build messages from prompt template
             system_prompt = self.additional_prompt["prompts"]["system"]
