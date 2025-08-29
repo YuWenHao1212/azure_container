@@ -347,7 +347,8 @@ class ResumeTailoringServiceV31:
                 name = cert.get('name', '')
                 provider = cert.get('provider', '')
                 if name and provider:
-                    html = f'<li class="opt-new"><strong>{name}</strong> - {provider} | {current_year}</li>'
+                    # Use bullet point (•) separator to match prompt template
+                    html = f'<li class="opt-new"><strong>{name}</strong> • {provider} • {current_year}</li>'
                     skill_groups[skill].append(html)
 
         # Convert to regular dict for easier processing

@@ -496,12 +496,12 @@ prompts:
     ```
     {{
       "Cloud Computing": [
-        "<li class=\"opt-new\"><strong>AWS Solutions Architect Professional</strong> - AWS | 2025</li>",
-        "<li class=\"opt-new\"><strong>AWS Certified Developer</strong> - AWS | 2025</li>"
+        "<li class=\"opt-new\"><strong>AWS Solutions Architect Professional</strong> • AWS • 2025</li>",
+        "<li class=\"opt-new\"><strong>AWS Certified Developer</strong> • AWS • 2025</li>"
       ],
       "DevOps": [
-        "<li class=\"opt-new\"><strong>Docker Certified Associate</strong> - Docker | 2025</li>",
-        "<li class=\"opt-new\"><strong>Kubernetes Administrator</strong> - CNCF | 2025</li>"
+        "<li class=\"opt-new\"><strong>Docker Certified Associate</strong> • Docker • 2025</li>",
+        "<li class=\"opt-new\"><strong>Kubernetes Administrator</strong> • CNCF • 2025</li>"
       ]
     }}
     ```
