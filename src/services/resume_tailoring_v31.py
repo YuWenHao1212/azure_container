@@ -57,7 +57,7 @@ class ResumeTailoringServiceV31:
 
         # Load prompts
         self.core_prompt = self.prompt_service.load_prompt("resume_tailoring", "v1.0.0-resume-core")
-        self.additional_prompt = self.prompt_service.load_prompt("resume_tailoring", "v1.0.0-resume-additional")
+        self.additional_prompt = self.prompt_service.load_prompt("resume_tailoring", "v1.1.0-resume-additional")
 
         # Initialize metrics service
         self.index_service = get_index_calculation_service_v2()
