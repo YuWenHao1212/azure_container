@@ -516,6 +516,15 @@ class ResumeTailoringServiceV31:
         start_time = time.time()
 
         try:
+            # Debug: Log preprocessed certifications
+            preprocessed_certs = bundle.get("preprocessed_certifications_by_skill", {})
+            if preprocessed_certs:
+                logger.info(f"[LLM2 DEBUG] Preprocessed certifications by skill: {len(preprocessed_certs)} groups")
+                for skill, certs in preprocessed_certs.items():
+                    logger.info(f"[LLM2 DEBUG] - {skill}: {len(certs)} cert(s)")
+            else:
+                logger.warning("[LLM2 DEBUG] No preprocessed certifications found!")
+
             # Build messages from prompt template
             system_prompt = self.additional_prompt["prompts"]["system"]
             user_prompt = safe_format(self.additional_prompt["prompts"]["user"],
@@ -541,6 +550,12 @@ class ResumeTailoringServiceV31:
                 ),
                 output_language=bundle["output_language"]
             )
+
+            # Debug: Log the actual JSON sent for certifications
+            cert_json = json.dumps(bundle.get("preprocessed_certifications_by_skill", {}), separators=(',', ':'))
+            logger.info(f"[LLM2 DEBUG] Preprocessed certs JSON length: {len(cert_json)} chars")
+            if len(cert_json) < 1000:  # Only log if not too long
+                logger.info(f"[LLM2 DEBUG] Preprocessed certs JSON: {cert_json}")
 
             messages = [
                 {"role": "system", "content": system_prompt},
