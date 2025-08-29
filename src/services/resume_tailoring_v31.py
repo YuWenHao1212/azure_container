@@ -261,13 +261,13 @@ class ResumeTailoringServiceV31:
                 detail=f"Resume tailoring failed: {e!s}"
             ) from e
 
-    def _preprocess_enhancement_certifications(self, certifications: list) -> dict:
+    def _preprocess_enhancement_certifications(self, certifications) -> dict:
         """
         Group certifications by skill and format as HTML.
         Returns a dictionary with skills as keys and formatted HTML lists as values.
 
         Args:
-            certifications: List of certification dictionaries from resume_enhancement_certification
+            certifications: List or dict of certification data from resume_enhancement_certification
 
         Returns:
             Dictionary mapping skills to lists of formatted HTML certification items
@@ -275,11 +275,31 @@ class ResumeTailoringServiceV31:
         from collections import defaultdict
         from datetime import datetime
 
+        # Handle empty input
+        if not certifications:
+            return {}
+
         current_year = datetime.now().year
         skill_groups = defaultdict(list)
 
+        # Convert dict format to list if needed (for compatibility)
+        cert_list = []
+        if isinstance(certifications, dict):
+            # Handle dict format (legacy or from Gap Analysis)
+            for cert_id, cert_data in certifications.items():
+                if isinstance(cert_data, dict):
+                    cert_list.append(cert_data)
+        elif isinstance(certifications, list):
+            cert_list = certifications
+        else:
+            logger.warning(f"Unexpected certifications format: {type(certifications)}")
+            return {}
+
         # Group certifications by skill
-        for cert in certifications:
+        for cert in cert_list:
+            if not isinstance(cert, dict):
+                continue
+
             skill = cert.get('related_skill', '')
             if skill:
                 # Format as HTML with opt-new CSS class
