@@ -31,6 +31,47 @@ from ..services.unified_prompt_service import UnifiedPromptService
 logger = logging.getLogger(__name__)
 
 
+def safe_format(template: str, **kwargs) -> str:
+    """
+    Safe format function that handles JSON examples in prompts.
+
+    Uses Unicode markers to temporarily replace double braces {{ }}
+    to avoid conflicts with str.format().
+
+    Args:
+        template: The prompt template string containing JSON examples
+        **kwargs: Variables to format into the template
+
+    Returns:
+        Formatted string with JSON examples preserved
+    """
+    # Unicode markers that won't conflict with any normal text
+    LEFT_MARKER = '\u27EA'  # ⟪ (Mathematical Left Double Angle Bracket)
+    RIGHT_MARKER = '\u27EB'  # ⟫ (Mathematical Right Double Angle Bracket)
+
+    # Step 1: Replace {{ and }} with markers, being careful not to break format placeholders
+    # We need to handle these patterns:
+    # {{ -> LEFT_MARKER (escaped left brace)
+    # }} -> RIGHT_MARKER (escaped right brace)
+    # {var} -> keep as is (format placeholder)
+
+    # First pass: Replace {{ with LEFT_MARKER
+    # This is safe because {{ never starts a format placeholder
+    protected = template.replace('{{', LEFT_MARKER)
+
+    # Second pass: Replace }} with RIGHT_MARKER
+    # This is also safe because }} never ends a format placeholder
+    protected = protected.replace('}}', RIGHT_MARKER)
+
+    # Step 2: Apply normal str.format()
+    formatted = protected.format(**kwargs)
+
+    # Step 3: Restore original braces
+    final_result = formatted.replace(LEFT_MARKER, '{').replace(RIGHT_MARKER, '}')
+
+    return final_result
+
+
 class ResumeTailoringServiceV31:
     """
     Resume Tailoring Service v3.1.0 - Two-LLM Parallel Pipeline.
@@ -424,7 +465,7 @@ class ResumeTailoringServiceV31:
         try:
             # Build messages from prompt template
             system_prompt = self.core_prompt["prompts"]["system"]
-            user_prompt = self.core_prompt["prompts"]["user"].format(
+            user_prompt = safe_format(self.core_prompt["prompts"]["user"],
                 original_resume=bundle["original_resume"],
                 job_description=bundle["job_description"],
                 core_strengths=bundle["core_strengths"],
@@ -476,7 +517,7 @@ class ResumeTailoringServiceV31:
         try:
             # Build messages from prompt template
             system_prompt = self.additional_prompt["prompts"]["system"]
-            user_prompt = self.additional_prompt["prompts"]["user"].format(
+            user_prompt = safe_format(self.additional_prompt["prompts"]["user"],
                 original_resume=bundle["original_resume"],
                 job_description=bundle["job_description"],
                 core_strengths=bundle["core_strengths"],
