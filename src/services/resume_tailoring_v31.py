@@ -286,7 +286,7 @@ class ResumeTailoringServiceV31:
         cert_list = []
         if isinstance(certifications, dict):
             # Handle dict format (legacy or from Gap Analysis)
-            for cert_id, cert_data in certifications.items():
+            for _cert_id, cert_data in certifications.items():
                 if isinstance(cert_data, dict):
                     cert_list.append(cert_data)
         elif isinstance(certifications, list):
