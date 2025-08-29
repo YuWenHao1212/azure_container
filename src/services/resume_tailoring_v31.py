@@ -394,7 +394,10 @@ class ResumeTailoringServiceV31:
 
         # Preprocess certifications for LLM2
         preprocessed_certifications = {}
-        logger.info(f"[BUNDLE DEBUG] resume_enhancement_certification type: {type(resume_enhancement_certification)}, content: {resume_enhancement_certification}")
+        logger.info(
+            f"[BUNDLE DEBUG] resume_enhancement_certification type: {type(resume_enhancement_certification)}, "
+            f"content: {resume_enhancement_certification}"
+        )
         if resume_enhancement_certification:
             logger.info("[BUNDLE DEBUG] Starting preprocessing of enhancement certifications...")
             preprocessed_certifications = self._preprocess_enhancement_certifications(
@@ -567,7 +570,10 @@ class ResumeTailoringServiceV31:
 
             # CRITICAL DEBUG: Log enhancement certification data
             enhancement_cert_data = bundle.get("resume_enhancement_certification", {})
-            logger.info(f"[LLM2 DEBUG] Raw enhancement cert data type: {type(enhancement_cert_data)}, length: {len(enhancement_cert_data) if enhancement_cert_data else 0}")
+            logger.info(
+                f"[LLM2 DEBUG] Raw enhancement cert data type: {type(enhancement_cert_data)}, "
+                f"length: {len(enhancement_cert_data) if enhancement_cert_data else 0}"
+            )
 
             messages = [
                 {"role": "system", "content": system_prompt},
