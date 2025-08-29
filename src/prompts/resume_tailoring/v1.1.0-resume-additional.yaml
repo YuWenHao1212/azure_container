@@ -489,10 +489,12 @@ prompts:
     - Directly append selected HTML strings to the certification list without modification
     
     **Selection Criteria for Step 2:**
-    - From each skill group, choose the certification that:
-      1. Best matches JD requirements
-      2. Represents highest level of expertise
-      3. Most recognizable/valuable in industry
+    - CRITICAL: If preprocessed_certifications_by_skill is not empty, YOU MUST select certifications from it
+    - DO NOT create placeholder certifications like "Test Certification"
+    - From each skill group in preprocessed_certifications_by_skill:
+      1. Take the first HTML string (it's already the most relevant)
+      2. Append it directly to your certification list
+      3. Do not modify the HTML - it's already formatted correctly
     
     **Example Input (preprocessed_certifications_by_skill):**
     ```
@@ -679,6 +681,8 @@ prompts:
     ✅ Work projects stay in Experience section (not duplicated)
     ✅ Learning projects honestly represent learning status
     ✅ Certifications ordered by relevance to JD
+    ✅ Enhancement certifications from preprocessed_certifications_by_skill MUST be included
+    ✅ NO placeholder certifications (like "Test Certification") should be created
     ✅ Suggested certifications marked with "In Progress" or "Planned"
     ✅ Custom sections evaluated and processed appropriately
     ✅ CSS classes properly applied (opt-modified, opt-new, opt-placeholder)
