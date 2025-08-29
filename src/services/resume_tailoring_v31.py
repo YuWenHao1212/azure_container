@@ -394,10 +394,15 @@ class ResumeTailoringServiceV31:
 
         # Preprocess certifications for LLM2
         preprocessed_certifications = {}
+        logger.info(f"[BUNDLE DEBUG] resume_enhancement_certification type: {type(resume_enhancement_certification)}, content: {resume_enhancement_certification}")
         if resume_enhancement_certification:
+            logger.info("[BUNDLE DEBUG] Starting preprocessing of enhancement certifications...")
             preprocessed_certifications = self._preprocess_enhancement_certifications(
                 resume_enhancement_certification
             )
+            logger.info(f"[BUNDLE DEBUG] Preprocessing result: {len(preprocessed_certifications)} skill groups")
+        else:
+            logger.warning("[BUNDLE DEBUG] No resume_enhancement_certification data found!")
 
         # Bundle for LLM2 (Additional Manager) - includes enhancement fields
         bundle2 = {
@@ -516,6 +521,9 @@ class ResumeTailoringServiceV31:
         start_time = time.time()
 
         try:
+            # CRITICAL DEBUG: Always log LLM2 entry
+            logger.info("[LLM2 DEBUG] === Starting LLM2 call ===")
+
             # Debug: Log preprocessed certifications
             preprocessed_certs = bundle.get("preprocessed_certifications_by_skill", {})
             if preprocessed_certs:
@@ -556,6 +564,10 @@ class ResumeTailoringServiceV31:
             logger.info(f"[LLM2 DEBUG] Preprocessed certs JSON length: {len(cert_json)} chars")
             if len(cert_json) < 1000:  # Only log if not too long
                 logger.info(f"[LLM2 DEBUG] Preprocessed certs JSON: {cert_json}")
+
+            # CRITICAL DEBUG: Log enhancement certification data
+            enhancement_cert_data = bundle.get("resume_enhancement_certification", {})
+            logger.info(f"[LLM2 DEBUG] Raw enhancement cert data type: {type(enhancement_cert_data)}, length: {len(enhancement_cert_data) if enhancement_cert_data else 0}")
 
             messages = [
                 {"role": "system", "content": system_prompt},
