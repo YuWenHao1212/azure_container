@@ -261,6 +261,37 @@ class ResumeTailoringServiceV31:
                 detail=f"Resume tailoring failed: {e!s}"
             ) from e
 
+    def _preprocess_enhancement_certifications(self, certifications: list) -> dict:
+        """
+        Group certifications by skill and format as HTML.
+        Returns a dictionary with skills as keys and formatted HTML lists as values.
+
+        Args:
+            certifications: List of certification dictionaries from resume_enhancement_certification
+
+        Returns:
+            Dictionary mapping skills to lists of formatted HTML certification items
+        """
+        from collections import defaultdict
+        from datetime import datetime
+
+        current_year = datetime.now().year
+        skill_groups = defaultdict(list)
+
+        # Group certifications by skill
+        for cert in certifications:
+            skill = cert.get('related_skill', '')
+            if skill:
+                # Format as HTML with opt-new CSS class
+                name = cert.get('name', '')
+                provider = cert.get('provider', '')
+                if name and provider:
+                    html = f'<li class="opt-new"><strong>{name}</strong> - {provider} | {current_year}</li>'
+                    skill_groups[skill].append(html)
+
+        # Convert to regular dict for easier processing
+        return dict(skill_groups)
+
     def _allocate_bundles(
         self,
         original_resume: str,
@@ -299,6 +330,13 @@ class ResumeTailoringServiceV31:
             "focus": "Professional Summary, Core Competencies/Skills, Professional Experience"
         }
 
+        # Preprocess certifications for LLM2
+        preprocessed_certifications = {}
+        if resume_enhancement_certification:
+            preprocessed_certifications = self._preprocess_enhancement_certifications(
+                resume_enhancement_certification
+            )
+
         # Bundle for LLM2 (Additional Manager) - includes enhancement fields
         bundle2 = {
             **common_data,
@@ -312,6 +350,8 @@ class ResumeTailoringServiceV31:
             # Add enhancement fields for LLM2
             "resume_enhancement_project": resume_enhancement_project,
             "resume_enhancement_certification": resume_enhancement_certification,
+            # Add preprocessed certifications grouped by skill
+            "preprocessed_certifications_by_skill": preprocessed_certifications,
             "focus": "Education, Projects, Certifications, Custom Sections"
         }
 
