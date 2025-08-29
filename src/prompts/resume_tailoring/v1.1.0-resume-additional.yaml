@@ -475,7 +475,6 @@ prompts:
          preprocessed_certifications_by_skill: Check if empty {{}} or has data
          If empty {{}}: "NO CERTIFICATIONS RECEIVED - Should NOT create any"
          If has data: "Received X skill groups with Y total certifications"
-         Full JSON content (if not empty): {preprocessed_certifications_by_skill}
     -->
     ```
     
@@ -656,7 +655,8 @@ prompts:
     
     **Before outputting final JSON, include diagnostic info in tracking array:**
     - Add entry: "[DEBUG] preprocessed_certifications_by_skill status: empty or X skills"
-    - If not empty, add second entry: "[DEBUG] preprocessed_certifications_by_skill content: {full JSON content}"
+    - If not empty, add second entry showing the actual JSON content you received
+      Example: "[DEBUG] preprocessed_certifications_by_skill content: {'AWS Cloud': ['<li>...'], 'DevOps': ['<li>...']}"
     - This helps track if data is being received and processed correctly
     
     ## OUTPUT FORMAT
