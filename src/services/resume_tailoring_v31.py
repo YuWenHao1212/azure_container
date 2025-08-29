@@ -473,6 +473,10 @@ class ResumeTailoringServiceV31:
                 resume_enhancement_certification=self._format_enhancement_field(
                     bundle.get("resume_enhancement_certification", {})
                 ),
+                preprocessed_certifications_by_skill=json.dumps(
+                    bundle.get("preprocessed_certifications_by_skill", {}),
+                    separators=(',', ':')
+                ),
                 output_language=bundle["output_language"]
             )
 
