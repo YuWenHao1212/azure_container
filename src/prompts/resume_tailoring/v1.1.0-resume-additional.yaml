@@ -254,7 +254,7 @@ prompts:
     
     <h3>Certifications</h3>
     <ul>
-      <li><strong>Certification Name</strong> - Issuing Organization | Year</li>
+      <li><strong>Certification Name</strong> • Issuing Organization • Year</li>
     </ul>
     
     <h3>Achievements</h3>
@@ -478,13 +478,15 @@ prompts:
     - Reorder by relevance to JD (most relevant first)
     - Keep original provider and year
     - NO CSS classes (clean format)
-    - Format: `<li><strong>[name]</strong> - [provider] | [year]</li>`
+    - Format: `<li><strong>[name]</strong> • [provider] • [year]</li>`
     
     **Step 2: Add Enhancement Certifications**
     - Source: preprocessed_certifications_by_skill (預處理的證照群組)
     - For each skill group: Select ONE most relevant certification
     - Already formatted with opt-new CSS by Python
-    - Directly append selected items to list
+    - **IMPORTANT**: Each item is a complete HTML string - select and append AS-IS
+    - Selection method: Choose the FIRST item from each skill group array (already pre-sorted by relevance)
+    - Directly append selected HTML strings to the certification list without modification
     
     **Selection Criteria for Step 2:**
     - From each skill group, choose the certification that:
@@ -508,6 +510,12 @@ prompts:
     
     **Expected Output:**
     Select ONE from each skill group based on JD relevance
+    
+    **Selection Example:**
+    Given the above input, if JD mentions "AWS" and "Docker", select:
+    - From "Cloud Computing": Take the first item (AWS Solutions Architect Professional)
+    - From "DevOps": Take the first item (Docker Certified Associate)
+    Result: Two HTML strings appended directly to certification list
     
     **Achievements Processing:**
     1. Include relevant awards, recognitions, publications
