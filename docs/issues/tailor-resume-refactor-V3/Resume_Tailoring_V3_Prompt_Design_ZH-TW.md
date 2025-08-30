@@ -481,7 +481,7 @@ graph TD
     
     AnalyzeTypes --> SetUnifiedName["B. 設定統一名稱:<br/>Supplementary Details"]
     
-    SetUnifiedName --> PriorityFilter["C. Priority-Based 過濾:<br/><br/>P1 - ALWAYS KEEP:<br/>• Work Authorization/Visa<br/>• Security Clearance<br/>• Languages, Availability<br/><br/>P2 - CONDITIONALLY KEEP:<br/>• Publications for research role<br/>• Patents for innovation role<br/>• Memberships industry-specific<br/><br/>P3 - USUALLY REMOVE:<br/>• Hobbies unless job-related<br/>• References statement"]
+    SetUnifiedName --> PriorityFilter["C. Priority-Based 過濾:<br/><br/>P1 - ALWAYS KEEP:<br/>• Work Authorization/Visa<br/>• Security Clearance<br/>• Languages, Availability<br/><br/>P2 - CONDITIONALLY KEEP:<br/>• Awards & Recognitions (if relevant)<br/>• Publications for research role<br/>• Patents for innovation role<br/>• Memberships industry-specific<br/><br/>P3 - USUALLY REMOVE:<br/>• Hobbies unless job-related<br/>• References statement"]
     
     PriorityFilter --> CheckFiltered{過濾後有內容?}
     
@@ -494,6 +494,8 @@ graph TD
 ```
 
 ### 📎 Certifications 處理流程 (v1.1.0 實作)
+
+**重要更新 (2025-08-30)**：Achievements subsection 已從 Certifications 中移除。相關內容（Awards、Recognitions、Publications）現在由 Supplementary Details 處理。
 
 基於實際 v1.1.0-resume-additional.yaml (lines 493-563)，LLM2 中的 Certifications 採用**兩階段處理法**：
 
@@ -520,7 +522,7 @@ graph TD
     SelectionCriteria --> AppendHTML["直接附加選中的 HTML:<br/>• 已包含 class='opt-new'<br/>• 不修改結構<br/>• 保持原始格式"]
     
     Skip --> FinalOutput
-    AppendHTML --> FinalOutput["最終輸出:<br/>&lt;h2&gt;Certifications & Achievements&lt;/h2&gt;<br/>&lt;h3&gt;Certifications&lt;/h3&gt;<br/>&lt;ul&gt;[Phase 1 + Phase 2 認證]&lt;/ul&gt;"]
+    AppendHTML --> FinalOutput["最終輸出:<br/>&lt;h2&gt;Certifications&lt;/h2&gt;<br/>&lt;ul&gt;[Phase 1 + Phase 2 認證]&lt;/ul&gt;"]
     
     FinalOutput --> Track["Tracking:<br/>[Certifications] Optimized: X existing reordered<br/>[Certifications] Added: Y enhancement certifications"]
     
@@ -598,8 +600,7 @@ graph TD
    - 分隔符使用 ` • ` (不是 ` - ` 或 ` | `)
    - 範例輸出：
    ```html
-   <h2>Certifications & Achievements</h2>
-   <h3>Certifications</h3>
+   <h2>Certifications</h2>
    <ul>
      <!-- Phase 1: 既有認證（無 CSS） -->
      <li><strong>AWS Certified Developer</strong> • Amazon • 2023</li>
@@ -620,6 +621,7 @@ graph TD
    - 在 Education (Step 1) 和 Projects (Step 2) 之後處理
    - 與 Custom Sections (Step 4) 並列為 additional sections
    - LLM1 和 LLM2 **平行處理**，最終由 Python 合併輸出
+   - **Achievements 現在由 Supplementary Details 處理**（Awards、Recognitions、Publications 等內容移至 Step 4）
 
 ### 📝 Education Enhancement 重要說明
 

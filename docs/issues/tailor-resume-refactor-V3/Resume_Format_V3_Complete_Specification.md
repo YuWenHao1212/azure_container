@@ -46,7 +46,7 @@
 4. **Professional Experience**
 5. **Education**
 6. **Projects** (個人/Side Projects)
-7. **Certifications & Achievements**
+7. **Certifications**
 
 #### 應屆生順序 (Education Enhancement ON)
 1. **Contact Information** (固定模板)
@@ -55,7 +55,7 @@
 4. **Education** (Enhanced) ⬆️
 5. **Professional Experience**
 6. **Projects** (個人/Side Projects)
-7. **Certifications & Achievements**
+7. **Certifications**
 
 ### 📝 各 Section 格式規範
 
@@ -151,23 +151,20 @@
 </ul>
 ```
 
-#### 7. Certifications & Achievements
+#### 7. Certifications
 ```html
-<h2>Certifications & Achievements</h2>
-
-<h3>Certifications</h3>
+<h2>Certifications</h2>
 <ul>
-<li><strong>Project Management Professional (PMP)</strong> - Project Management Institute | 2018</li>
-<li><strong>AWS Certified Solutions Architect</strong> - Amazon Web Services | 2023</li>
-<li><strong>Google Data Analytics Certificate</strong> - Google | 2022</li>
-</ul>
-
-<h3>Achievements</h3>
-<ul>
-<li><strong>Product Excellence Award</strong> - AUO Optics | 2020</li>
-<li><strong>Best Paper Award</strong> - DataCon Taiwan | 2023</li>
+<li><strong>Project Management Professional (PMP)</strong> • Project Management Institute • 2018</li>
+<li><strong>AWS Certified Solutions Architect</strong> • Amazon Web Services • 2023</li>
+<li><strong>Google Data Analytics Certificate</strong> • Google • 2022</li>
 </ul>
 ```
+
+**註：Achievements 內容已移至 Supplementary Details 處理**
+- Awards、Recognitions、Publications 等成就相關內容
+- 根據職位相關性決定是否保留
+- 格式統一使用 `•` 分隔符
 
 ---
 
@@ -238,7 +235,7 @@ Generate an HTML-formatted resume following these strict rules:
      - Education (Enhanced)
      - Professional Experience
      - Projects
-     - Certifications & Achievements
+     - Certifications
    
    If Education Enhancement is OFF (experienced professional):
      - Professional Summary
@@ -246,7 +243,7 @@ Generate an HTML-formatted resume following these strict rules:
      - Professional Experience
      - Education (Standard)
      - Projects
-     - Certifications & Achievements
+     - Certifications
 
 2. HTML STRUCTURE:
    - Use <h2> for section titles
@@ -350,15 +347,16 @@ Contributing to scikit-learn with focus on ensemble methods
 • Technologies: Python, NumPy, Cython
 • Impact: 5 merged PRs, 100+ GitHub stars on fork
 
-## CERTIFICATIONS & ACHIEVEMENTS
+## CERTIFICATIONS
 
-### Certifications
-• **AWS Certified Solutions Architect** - Amazon | 2024
-• **TensorFlow Developer Certificate** - Google | 2023
+• **AWS Certified Solutions Architect** • Amazon • 2024
+• **TensorFlow Developer Certificate** • Google • 2023
 
-### Achievements
-• **Dean's Award for Academic Excellence** - Stanford | 2024
-• **Best Paper Award** - "Efficient Distributed Training" - NeurIPS Workshop | 2024
+## SUPPLEMENTARY DETAILS (若有相關成就)
+
+### Recognition & Achievements
+• **Dean's Award for Academic Excellence** • Stanford • 2024
+• **Best Paper Award** - "Efficient Distributed Training" • NeurIPS Workshop • 2024
 ```
 
 ### Example 2: 資深專業人士 (Enhancement OFF)
@@ -418,16 +416,17 @@ Automated tool for AWS/Azure cost optimization
 • Technologies: Python, Terraform, CloudFormation
 • Impact: 500+ stars, saves users average $10K/month
 
-## CERTIFICATIONS & ACHIEVEMENTS
+## CERTIFICATIONS
 
-### Certifications
-• **Project Management Professional (PMP)** - PMI | 2019
-• **AWS Solutions Architect Professional** - Amazon | 2020
-• **Certified Kubernetes Administrator** - CNCF | 2021
+• **Project Management Professional (PMP)** • PMI • 2019
+• **AWS Solutions Architect Professional** • Amazon • 2020
+• **Certified Kubernetes Administrator** • CNCF • 2021
 
-### Achievements
-• **Engineering Excellence Award** - Microsoft | 2022
-• **Patent Holder** - "Distributed ML Training System" | 2021
+## SUPPLEMENTARY DETAILS (若有相關成就)
+
+### Recognition & Patents
+• **Engineering Excellence Award** • Microsoft • 2022
+• **Patent Holder** - "Distributed ML Training System" • US Patent Office • 2021
 ```
 
 ---
@@ -676,6 +675,11 @@ python test/tools/llm2_fallback_monitor.py -n 20 --save-responses --verbose
 ---
 
 ## 📝 更新日誌
+
+### v3.0.1 (2025-08-30)
+- ✅ 移除 Achievements subsection
+- ✅ Awards/Recognitions/Publications 移至 Supplementary Details
+- ✅ 統一使用 `•` 作為分隔符
 
 ### v3.0.0 (2025-08-21)
 - ✅ 統一 OCR 和 Tailoring 輸出格式

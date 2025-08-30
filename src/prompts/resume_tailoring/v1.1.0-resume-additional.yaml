@@ -9,7 +9,7 @@ metadata:
     V1.1.0 Resume Additional - Second LLM in 2-pipeline system:
     - Handles Education (Standard vs Enhanced based on flag)
     - Manages Projects section (personal/side projects only)
-    - Optimizes Certifications & Achievements
+    - Optimizes Certifications
     - Evaluates and processes Custom Sections
     - Key Gaps: Suggests learning paths and certifications
     - Marks changes with CSS classes: opt-modified, opt-new, opt-placeholder
@@ -76,7 +76,7 @@ prompts:
     ## Your Core Responsibilities
     1. **Process Education** - Standard or Enhanced based on flag
     2. **Manage Projects** - Personal/side projects only (work projects stay in Experience)
-    3. **Optimize Certifications & Achievements** - Reorder and enhance
+    3. **Optimize Certifications** - Reorder and enhance
     4. **Evaluate Custom Sections** - Merge into single "Supplementary Details"
     
     ## Critical Rules
@@ -249,18 +249,11 @@ prompts:
     - Phase 2 (enhancement): class="opt-new"
     - No bullet points, no provider, no dates
     
-    4. **Certifications & Achievements:**
+    4. **Certifications:**
     ```html
-    <h2>Certifications & Achievements</h2>
-    
-    <h3>Certifications</h3>
+    <h2>Certifications</h2>
     <ul>
       <li><strong>Certification Name</strong> • Issuing Organization • Year</li>
-    </ul>
-    
-    <h3>Achievements</h3>
-    <ul>
-      <li><strong>Achievement Name</strong> - Organization | Year</li>
     </ul>
     ```
     
@@ -490,12 +483,11 @@ prompts:
     - **Note exclusions:** (e.g., "excluded 2 work projects")
     - **Skip if empty:** No tracking entry if projects section returns ""
     
-    ### Step 3: Certifications & Achievements Processing (Simplified)
+    ### Step 3: Certifications Processing
     
 
     **Exception Handling:**
-    - IF no certifications found in RESUME_CONTENT AND CERT_DATA shows "No enhancement certifications available": Return empty string "" 
-    - IF no achievements: Skip achievements subsection
+    - IF no certifications found in RESUME_CONTENT AND CERT_DATA shows "No enhancement certifications available": Return empty string ""
     
     **Certifications Processing (Two-Phase Approach):**
     
@@ -557,12 +549,6 @@ prompts:
     
     Output: Two selected HTML strings appended to certification list
     
-    **Achievements Processing:**
-    1. Include relevant awards, recognitions, publications
-    2. Prioritize recent and relevant achievements
-    3. Format consistently with certifications (NO CSS for achievements)
-
-    
     **D. Track Applied Changes:**
     **Format:** "[Certifications] Action: specific details"
     - **Actions:** Optimized (for existing), Added (for new)
@@ -581,7 +567,7 @@ prompts:
     1. 分析所有 custom_sections 名稱
     2. 設定統一名稱: "Supplementary Details"
     3. 識別內容類型:
-       - Professional: Awards, Publications, Patents
+       - Professional: Awards, Recognitions, Publications, Patents
        - Community: Volunteer, Leadership
        - Practical: Availability, Work Visa, Languages
        - Personal: Hobbies, Interests
@@ -597,6 +583,7 @@ prompts:
     └─ Immediate Availability
     
     P2 - CONDITIONALLY KEEP (Job-Relevant):
+    ├─ Awards & Recognitions (if relevant to role)
     ├─ Publications (if research/academic role)
     ├─ Patents (if innovation-focused role)
     ├─ Professional Memberships (if industry-specific)
@@ -650,10 +637,12 @@ prompts:
         <li><strong>Languages:</strong> English (Native), Mandarin (Fluent)</li>
       </ul>
       
-      <h3>Recognition & Community</h3>
+      <h3>Recognition & Achievements</h3>
       <ul>
-        <li>Best Paper Award - IEEE Conference 2023</li>
-        <li>Tech Mentor - Girls Who Code</li>
+        <li><strong>Best Paper Award</strong> • IEEE Conference • 2023</li>
+        <li><strong>Excellence Award</strong> • Microsoft • 2022</li>
+        <li><strong>Published:</strong> "AI Ethics in Practice" • Nature Journal • 2023</li>
+        <li>Tech Mentor • Girls Who Code • 2022-Present</li>
       </ul>
     </div>
     ```
@@ -685,7 +674,7 @@ prompts:
       "optimized_sections": {{
         "education": "<h2>Education</h2>...",
         "projects": "<h2>Projects</h2>... or empty string",
-        "certifications": "<h2>Certifications & Achievements</h2>... or empty string",
+        "certifications": "<h2>Certifications</h2>... or empty string",
         "supplementary_details": "<h2>Supplementary Details</h2>... or empty string"
       }},
       "tracking": [
@@ -703,7 +692,7 @@ prompts:
       "optimized_sections": {{
         "education": "<h2>Education</h2><h3>Bachelor of Science - Computer Science</h3>...",
         "projects": "<h2>Projects</h2><div class='opt-modified'><h3><strong>Personal Finance Tracker</strong></h3><p>Full-stack application...</p></div>",
-        "certifications": "<h2>Certifications & Achievements</h2><ul><li class='opt-new'><strong>AWS Solutions Architect</strong> • AWS • 2025</li></ul>",
+        "certifications": "<h2>Certifications</h2><ul><li class='opt-new'><strong>AWS Solutions Architect</strong> • AWS • 2025</li></ul>",
         "supplementary_details": ""
       }},
       "tracking": [
