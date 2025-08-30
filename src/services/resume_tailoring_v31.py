@@ -584,6 +584,32 @@ class ResumeTailoringServiceV31:
             logger.error(f"LLM1 call failed: {e}")
             raise
 
+    def _format_certifications_as_text(self, cert_data: dict) -> str:
+        """
+        Format preprocessed certifications as natural text for LLM consumption.
+        
+        Args:
+            cert_data: Dictionary with skills as keys and HTML lists as values
+            
+        Returns:
+            Formatted text string suitable for LLM processing
+        """
+        if not cert_data:
+            return "No enhancement certifications available."
+        
+        # Build formatted text
+        text_parts = ["Preprocessed certifications ready for insertion (grouped by skill):
+"]
+        
+        for skill, cert_list in cert_data.items():
+            text_parts.append(f"
+{skill}:")
+            for cert_html in cert_list:
+                text_parts.append(cert_html)
+            
+        return "
+".join(text_parts)
+    
     async def _call_llm2(self, bundle: dict) -> dict:
         """Call LLM2 (Additional Manager) with v1.0.0-resume-additional prompt."""
 
@@ -634,32 +660,30 @@ class ResumeTailoringServiceV31:
                 resume_enhancement_certification=self._format_enhancement_field(
                     bundle.get("resume_enhancement_certification", {})
                 ),
-                preprocessed_certifications_by_skill=json.dumps(
-                    bundle.get("preprocessed_certifications_by_skill", {}),
-                    separators=(',', ':')
+                preprocessed_certifications_by_skill=self._format_certifications_as_text(
+                    bundle.get("preprocessed_certifications_by_skill", {})
                 ),
                 output_language=bundle["output_language"]
             )
 
-            # Verify JSON serialization
-            cert_json_raw = bundle.get("preprocessed_certifications_by_skill", {})
-            cert_json = json.dumps(cert_json_raw, separators=(',', ':'))
+            # Verify text formatting
+            cert_data_raw = bundle.get("preprocessed_certifications_by_skill", {})
+            cert_text = self._format_certifications_as_text(cert_data_raw)
 
-            logger.warning("📄 [LLM2 DEBUG] === JSON serialization check ===")
-            logger.warning(f"  📊 Raw data type: {type(cert_json_raw)}")
-            logger.warning(f"  📊 Raw data empty: {not cert_json_raw}")
-            logger.warning(f"  📊 JSON string length: {len(cert_json)} chars")
-            logger.warning(f"  📊 JSON == '{{}}': {cert_json == '{}'}")
+            logger.warning("📄 [LLM2 DEBUG] === Text formatting check ===")
+            logger.warning(f"  📊 Raw data type: {type(cert_data_raw)}")
+            logger.warning(f"  📊 Raw data empty: {not cert_data_raw}")
+            logger.warning(f"  📊 Formatted text length: {len(cert_text)} chars")
+            logger.warning(f"  📊 Text is 'No enhancement...': {'No enhancement' in cert_text}")
 
-            # Show JSON content based on length
-            if cert_json == '{}':
-                logger.warning("  🚨 JSON is empty object '{}'!")
-                logger.warning("  ⚠️ This will be passed to LLM2 as empty preprocessed_certifications_by_skill")
-            elif len(cert_json) < 1500:
-                logger.warning(f"  📝 Full JSON: {cert_json}")
+            # Show formatted text content
+            if not cert_data_raw:
+                logger.warning("  🚨 No certifications - will show 'No enhancement certifications available.'")
+            elif len(cert_text) < 1500:
+                logger.warning(f"  📝 Full formatted text:\n{cert_text}")
             else:
-                logger.warning(f"  📝 JSON preview (first 500 chars): {cert_json[:500]}...")
-                logger.warning(f"  📝 JSON preview (last 200 chars): ...{cert_json[-200:]}")
+                logger.warning(f"  📝 Text preview (first 500 chars):\n{cert_text[:500]}...")
+                logger.warning(f"  📝 Text preview (last 200 chars):\n...{cert_text[-200:]}")
 
             # CRITICAL DEBUG: Log raw enhancement certification data
             enhancement_cert_data = bundle.get("resume_enhancement_certification", {})
