@@ -427,7 +427,7 @@ prompts:
     
     **F. Track Applied Changes:**
     **Format:** "[Education] Action: specific details"
-    - **Actions:** Enhanced, Standard, Created, Modified
+    - **Actions:** Optimized, Added
     - **Include counts:** (e.g., "added GPA, 6 courses, 2 projects, 2 activities")
     - **Skip if empty:** No tracking entry if education doesn't exist
     
@@ -485,7 +485,7 @@ prompts:
     
     **E. Track Applied Changes:**
     **Format:** "[Projects] Action: specific details"
-    - **Actions:** Optimized, Created, Added, Mixed
+    - **Actions:** Optimized, Added
     - **Include counts:** (e.g., "2 personal projects enhanced, 1 enhancement project added")
     - **Note exclusions:** (e.g., "excluded 2 work projects")
     - **Skip if empty:** No tracking entry if projects section returns ""
@@ -556,7 +556,7 @@ prompts:
     
     **D. Track Applied Changes:**
     **Format:** "[Certifications] Action: specific details"
-    - **Actions:** Mixed, Reordered, Added, Created
+    - **Actions:** Optimized (for existing), Added (for new)
     - **Include counts:** (e.g., "1 existing reordered, 1 enhancement certification added")
     - **Special note:** Include "(No additional certification resources available)" if CERT_DATA was empty
     - **Skip if empty:** No tracking entry if certifications section returns ""
@@ -662,7 +662,7 @@ prompts:
     
     **One tracking entry per section processed:**
     - Format: "[Section] Action: specific details"
-    - Actions: Enhanced, Standard, Optimized, Created, Added, Merged, Reordered
+    - Actions: Optimized, Added, Merged
     - Include counts and specifics (e.g., "3 courses, 2 projects")
     - Skip empty sections (no tracking entry if section returns "")
     
