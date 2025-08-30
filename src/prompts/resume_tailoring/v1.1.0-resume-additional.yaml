@@ -500,8 +500,7 @@ prompts:
         - Skip this step completely
         - Add comment: `<!-- No enhancement certifications available -->`
     - **IF certifications are present**:
-        - Text format: "Skill Name:
-<li>...</li>"
+        - Text format: "Skill Name: <li>...</li>" (each skill on separate line)
         - For each skill group: Select ONE most relevant certification
         - Already formatted with opt-new CSS by Python
         - Each line starting with <li> is a complete HTML string - select and append AS-IS
