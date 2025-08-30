@@ -501,9 +501,18 @@ prompts:
     
     **Phase 1: Format Existing Certifications**
     - Reorder by relevance to JD_CONTENT (most relevant first)
-    - Keep original provider and year
-    - NO CSS classes (clean format)
-    - Format: `<li><strong>[name]</strong> • [provider] • [year]</li>`
+    - Keep original provider and year when available
+    - Handle missing information:
+      - IF year is missing: Add `<span class="opt-placeholder">[Year]</span>`
+      - IF provider/organization is missing: Add `<span class="opt-placeholder">[Organization]</span>`
+    - NO CSS classes on the `<li>` element itself (clean format)
+    - Format: `<li><strong>[name]</strong> • [provider_or_placeholder] • [year_or_placeholder]</li>`
+    
+    **Examples:**
+    - Complete: `<li><strong>AWS Solutions Architect</strong> • Amazon • 2023</li>`
+    - Missing year: `<li><strong>PMP</strong> • PMI • <span class="opt-placeholder">[Year]</span></li>`
+    - Missing provider: `<li><strong>Python Advanced</strong> • <span class="opt-placeholder">[Organization]</span> • 2022</li>`
+    - Missing both: `<li><strong>Agile Certification</strong> • <span class="opt-placeholder">[Organization]</span> • <span class="opt-placeholder">[Year]</span></li>`
     
     **Phase 2: Add Enhancement Certifications**
     

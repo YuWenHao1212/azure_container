@@ -493,52 +493,133 @@ graph TD
     Track["生成完整 tracking 記錄:<br/>• Education: 模式 + 處理細節<br/>• Projects: 個人專案統計 + 排除數<br/>• Certifications: 現有/新增統計<br/>• Custom: 合併到 Supplementary Details"] --> OutputJSON["輸出 JSON:<br/>optimized_sections + tracking"]
 ```
 
-### 📎 Certifications 簡化處理流程
+### 📎 Certifications 處理流程 (v1.1.0 實作)
 
-基於實際需求，Certifications 的處理邏輯已簡化為兩步驟流程：
+基於實際 v1.1.0-resume-additional.yaml (lines 493-563)，LLM2 中的 Certifications 採用**兩階段處理法**：
 
 ```mermaid
 graph TD
-    Start[開始處理 Certifications] --> Step1[Step 1: 處理既有認證]
+    Start[LLM2: Step 3 - Certifications Processing] --> Check[Exception Handling]
     
-    Step1 --> Process1["重新格式化既有認證<br/>格式: &lt;li&gt;&lt;strong&gt;名稱&lt;/strong&gt; - 機構 | 年份&lt;/li&gt;<br/>無 CSS 標記"]
+    Check --> Validate{檢查條件}
+    Validate -->|無既有認證 AND<br/>CERT_DATA = 'No enhancement...'| ReturnEmpty[Return empty string ""]
+    Validate -->|有內容| Phase1[Phase 1: Format Existing]
     
-    Process1 --> Check{有 enhancement certification?}
+    Phase1 --> Process1["處理既有認證:<br/>1. 按 JD 相關性重新排序<br/>2. 保留原始 provider 和 year (若有)<br/>3. 處理缺失資訊：<br/>   - 缺年份: 加 &lt;span class='opt-placeholder'&gt;[Year]&lt;/span&gt;<br/>   - 缺機構: 加 &lt;span class='opt-placeholder'&gt;[Organization]&lt;/span&gt;<br/>4. NO CSS classes on &lt;li&gt; element<br/>格式: &lt;li&gt;&lt;strong&gt;[name]&lt;/strong&gt; • [provider_or_placeholder] • [year_or_placeholder]&lt;/li&gt;"]
     
-    Check -->|有| Step2[Step 2: 新增 enhancement 認證]
-    Check -->|無| Skip[跳過 - 不添加新認證]
+    Process1 --> Phase2[Phase 2: Add Enhancement]
     
-    Step2 --> Process2["每個 related_skill 選一個認證<br/>格式: &lt;li&gt;&lt;strong&gt;名稱&lt;/strong&gt; - 機構 | 2025&lt;/li&gt;<br/>CSS: class='opt-new'"]
+    Phase2 --> ValidateData{檢查 CERT_DATA}
+    ValidateData -->|text = 'No enhancement<br/>certifications available'| Skip[STOP - Skip Phase 2]
+    ValidateData -->|有技能分組資料| SelectCerts[Selection Logic]
     
-    Process2 --> Output[輸出最終結果]
-    Skip --> Output
+    SelectCerts --> PerSkill["對每個 skill group:<br/>1. 分析組內所有認證<br/>2. 選擇 ONE 最符合 JD 的認證<br/>3. 保持預格式化的 HTML 結構"]
     
-    Output --> Format["&lt;h2&gt;Certifications &amp; Achievements&lt;/h2&gt;<br/>&lt;h3&gt;Certifications&lt;/h3&gt;<br/>&lt;ul&gt;既有+新增認證&lt;/ul&gt;"]
+    PerSkill --> SelectionCriteria["選擇標準 (優先順序):<br/>1. JD_CONTENT 相關性<br/>2. 認證新近度 (Recency)<br/>3. 廠商重要性"]
     
-    style Step1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style Step2 fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    SelectionCriteria --> AppendHTML["直接附加選中的 HTML:<br/>• 已包含 class='opt-new'<br/>• 不修改結構<br/>• 保持原始格式"]
+    
+    Skip --> FinalOutput
+    AppendHTML --> FinalOutput["最終輸出:<br/>&lt;h2&gt;Certifications & Achievements&lt;/h2&gt;<br/>&lt;h3&gt;Certifications&lt;/h3&gt;<br/>&lt;ul&gt;[Phase 1 + Phase 2 認證]&lt;/ul&gt;"]
+    
+    FinalOutput --> Track["Tracking:<br/>[Certifications] Optimized: X existing reordered<br/>[Certifications] Added: Y enhancement certifications"]
+    
+    style Phase1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style Phase2 fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    style ReturnEmpty fill:#ffebee,stroke:#c62828,stroke-width:2px
 ```
 
 **關鍵點說明：**
-1. **Step 1**: 處理原始履歷中的既有認證
-   - 重新格式化為標準格式
-   - **不做** CSS 標記
 
-2. **Step 2**: 判斷是否有 enhancement certification
-   - **有**：每個 skill 取一個，年份用當前年（如 2025），標記 `opt-new`
-   - **無**：完全跳過新增步驟
+1. **Two-Phase Approach（兩階段處理法）**：
+   - **Phase 1**: 處理既有認證（Existing Certifications）
+     - 重新排序（按 JD 相關性）
+     - 保留原始 provider 和 year（若有）
+     - **處理缺失資訊**：
+       - 缺少年份：加入 `<span class="opt-placeholder">[Year]</span>`
+       - 缺少機構：加入 `<span class="opt-placeholder">[Organization]</span>`
+     - **不在** `<li>` 元素上加 CSS classes（clean format）
+     - 格式：`<li><strong>[name]</strong> • [provider_or_placeholder] • [year_or_placeholder]</li>`
+   
+   - **Phase 2**: 新增增強認證（Enhancement Certifications）
+     - 來源：CERT_DATA (preprocessed_certifications_by_skill)
+     - 每個 skill group 選擇 **ONE** 認證
+     - 保持預格式化的 HTML（已包含 `class="opt-new"`）
 
-3. **輸出格式範例**：
+2. **Exception Handling（例外處理）**：
+   - 若無既有認證 **AND** CERT_DATA 顯示 "No enhancement certifications available"
+     → 返回空字串 ""
+   - 若 CERT_DATA = "No enhancement certifications available"
+     → 完全跳過 Phase 2
+
+3. **預處理資料格式** (CERT_DATA)：
+   ```
+   Cloud Computing:
+   <li class="opt-new"><strong>AWS Solutions Architect</strong> • AWS • 2025</li>
+   <li class="opt-new"><strong>AWS Developer</strong> • AWS • 2025</li>
+   
+   DevOps:
+   <li class="opt-new"><strong>Docker Associate</strong> • Docker • 2025</li>
+   <li class="opt-new"><strong>Kubernetes Admin</strong> • CNCF • 2025</li>
+   ```
+   - 按 skill 分組
+   - 每個認證已預格式化為 HTML `<li>` 元素
+   - 已包含 `class="opt-new"` 標記
+
+4. **Selection Logic（選擇邏輯）**：
+   - 每個 skill group 選擇 **ONE** 認證
+   - 優先順序：JD 相關性 > 新近度 > 廠商重要性
+   - 例：若 JD 提到 "AWS architecture"，選 AWS Solutions Architect
+
+5. **CSS 標記策略**：
+   - **Phase 1 (既有認證)**: 
+     - `<li>` 元素本身：NO CSS classes
+     - 缺失資訊：使用 `<span class="opt-placeholder">` 包裹
+   - **Phase 2 (新增認證)**: `class="opt-new"` - 已預先包含在 HTML 中
+   - 注意：認證本身不使用 `opt-modified`（只用 placeholder 標記缺失）
+   
+   **Phase 1 處理範例**：
+   ```html
+   <!-- 完整資訊 -->
+   <li><strong>AWS Solutions Architect</strong> • Amazon • 2023</li>
+   
+   <!-- 缺少年份 -->
+   <li><strong>PMP</strong> • PMI • <span class="opt-placeholder">[Year]</span></li>
+   
+   <!-- 缺少機構 -->
+   <li><strong>Python Advanced</strong> • <span class="opt-placeholder">[Organization]</span> • 2022</li>
+   
+   <!-- 缺少年份和機構 -->
+   <li><strong>Agile Certification</strong> • <span class="opt-placeholder">[Organization]</span> • <span class="opt-placeholder">[Year]</span></li>
+   ```
+
+6. **格式化規則**：
+   - 使用 HTML `<li>` 標籤（不是 bullet point `•`）
+   - 分隔符使用 ` • ` (不是 ` - ` 或 ` | `)
+   - 範例輸出：
    ```html
    <h2>Certifications & Achievements</h2>
    <h3>Certifications</h3>
    <ul>
-     <!-- 既有認證（無 CSS） -->
-     <li><strong>AWS Certified Developer</strong> - Amazon | 2023</li>
-     <!-- enhancement 認證（有 CSS） -->
-     <li class="opt-new"><strong>Google Cloud Architect</strong> - Google | 2025</li>
+     <!-- Phase 1: 既有認證（無 CSS） -->
+     <li><strong>AWS Certified Developer</strong> • Amazon • 2023</li>
+     <!-- Phase 2: 新增認證（有 opt-new） -->
+     <li class="opt-new"><strong>Google Cloud Architect</strong> • Google • 2025</li>
    </ul>
    ```
+
+7. **Tracking 輸出**：
+   - 格式：`[Certifications] Action: specific details`
+   - 範例：
+     - `[Certifications] Optimized: 1 existing reordered`
+     - `[Certifications] Added: 2 enhancement certifications`
+   - 若 CERT_DATA 為空：加註 "(No additional certification resources available)"
+
+8. **與其他部分的關係**：
+   - Certifications 是 LLM2 處理的 Step 3
+   - 在 Education (Step 1) 和 Projects (Step 2) 之後處理
+   - 與 Custom Sections (Step 4) 並列為 additional sections
+   - LLM1 和 LLM2 **平行處理**，最終由 Python 合併輸出
 
 ### 📝 Education Enhancement 重要說明
 
