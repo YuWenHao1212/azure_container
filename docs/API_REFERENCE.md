@@ -582,20 +582,26 @@ X-API-Key: [YOUR_API_KEY]
       "custom_sections": [],
       "education_enhancement_needed": false
     },
-    "resume_enhancement_project": {
-      // course_id 作為 key
-      "course_123": {
+    "resume_enhancement_project": [
+      // 陣列格式，從 Gap Analysis API 直接傳入
+      {
+        "id": "coursera_prjt:BEUHr70KEe-LvhIuPUA7nw",
         "name": "Build Cloud Native Apps",
-        "description": "..."
+        "description": "Hands-on project to build cloud applications",
+        "provider": "Google",
+        "related_skill": "Cloud Computing"
       }
-    },
-    "resume_enhancement_certification": {
-      // course_id 作為 key
-      "course_456": {
+    ],
+    "resume_enhancement_certification": [
+      // 陣列格式，從 Gap Analysis API 直接傳入
+      {
+        "id": "coursera_cert:ALMS0NyJEe6J_wr_0biVVQ",
         "name": "AWS Solutions Architect",
-        "provider": "AWS"
+        "provider": "Amazon Web Services",
+        "description": "Learn to design distributed systems on AWS",
+        "related_skill": "AWS Cloud"
       }
-    }
+    ]
   },
   "options": {
     "include_visual_markers": true,  // 預設 true
