@@ -587,29 +587,26 @@ class ResumeTailoringServiceV31:
     def _format_certifications_as_text(self, cert_data: dict) -> str:
         """
         Format preprocessed certifications as natural text for LLM consumption.
-        
+
         Args:
             cert_data: Dictionary with skills as keys and HTML lists as values
-            
+
         Returns:
             Formatted text string suitable for LLM processing
         """
         if not cert_data:
             return "No enhancement certifications available."
-        
+
         # Build formatted text
-        text_parts = ["Preprocessed certifications ready for insertion (grouped by skill):
-"]
-        
+        text_parts = ["Preprocessed certifications ready for insertion (grouped by skill):\n"]
+
         for skill, cert_list in cert_data.items():
-            text_parts.append(f"
-{skill}:")
+            text_parts.append(f"\n{skill}:")
             for cert_html in cert_list:
                 text_parts.append(cert_html)
-            
-        return "
-".join(text_parts)
-    
+
+        return "\n".join(text_parts)
+
     async def _call_llm2(self, bundle: dict) -> dict:
         """Call LLM2 (Additional Manager) with v1.0.0-resume-additional prompt."""
 
