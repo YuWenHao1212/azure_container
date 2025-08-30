@@ -80,7 +80,7 @@ prompts:
     4. **Evaluate Custom Sections** - Merge into single "Supplementary Details"
     
     ## Critical Rules
-    - Education Enhancement decision based on `education_enhancement_needed` flag
+    - Education Enhancement decision based on EDUCATION_FLAG
     - Projects section handles ONLY personal/side projects (NO work or academic projects)
     - Academic Projects stay in Education section when Enhanced mode is ON (Standard mode: remain in original location)
     - Key Gaps addressed through learning demonstrations, not false claims
@@ -99,7 +99,7 @@ prompts:
     ## Priority Decision Framework
     When rules conflict, follow this priority order:
     Priority 1: Safety & Integrity (never claim missing skills)
-    Priority 2: Enhancement flag compliance (respect education_enhancement_needed)
+    Priority 2: Enhancement flag compliance (respect EDUCATION_FLAG)
     Priority 3: Keyword integration (natural placement)
     Priority 4: Section optimization (improve existing content)
     Priority 5: CSS marking (based on content source)
@@ -107,7 +107,7 @@ prompts:
     ## DEFAULT VALUES & FALLBACKS
     
     **When inputs are missing or empty:**
-    - education_enhancement_needed undefined → Default to false
+    - EDUCATION_FLAG undefined → Default to false
     - No existing education → Apply decision tree:
       IF job_description requires "Bachelor's degree or equivalent":
         → Use Option 1 (Traditional formal education template)
@@ -140,22 +140,22 @@ prompts:
       </ul>
       ```
     - No projects → Apply decision logic:
-      IF no personal projects AND no resume_enhancement_project:
+      IF no personal projects AND no PROJECTS_DATA:
         → Return empty string ""
-      ELIF no personal projects BUT resume_enhancement_project exists:
+      ELIF no personal projects BUT PROJECTS_DATA exists:
         → Use enhancement projects (max 1 per skill)
       ELSE:
         → Process and enhance existing personal projects 
     - No certifications → Apply decision logic:
-      IF no existing certifications AND no preprocessed_certifications_by_skill:
+      IF no existing certifications AND no CERT_DATA:
         → Return empty string ""
-      ELIF no existing certifications BUT preprocessed_certifications_by_skill exists:
+      ELIF no existing certifications BUT CERT_DATA exists:
         → Select ONE certification from each skill group
       ELSE:
         → Process existing certifications, then add from preprocessed groups
     - No custom sections → Skip custom section processing
-    - covered_keywords empty → Focus on missing_keywords
-    - missing_keywords empty → Generic optimization only
+    - KEYWORDS_COVERED empty → Focus on KEYWORDS_MISSING
+    - KEYWORDS_MISSING empty → Generic optimization only
     
     **Always ensure output contains:**
     - education: Never empty (at minimum, basic education)
@@ -168,7 +168,7 @@ prompts:
     
     **Projects Section Returns "" When:**
     - No personal/side projects exist AND
-    - No resume_enhancement_project available
+    - No PROJECTS_DATA available
 
     
     **Certifications Section Returns "" When:**
@@ -276,42 +276,59 @@ prompts:
     Optimize these additional resume sections based on the following inputs:
     
     <context>
-    ## Original Resume (Full Access)
+    ## DATA SECTION - All input variables are defined here
+    
+    ### 1. PRIMARY DOCUMENTS
+    **RESUME_CONTENT** - Original Resume:
     {original_resume}
     
-    ## Target Job Description
+    **JD_CONTENT** - Target Job Description:
     {job_description}
     
-    ## Gap Analysis Intelligence (PRE-VALIDATED)
-    CoreStrengths: {core_strengths}
-    KeyGaps: {key_gaps}
-    QuickImprovements: {quick_improvements}
+    ### 2. GAP ANALYSIS RESULTS
+    **ANALYSIS_STRENGTHS** - Core Strengths:
+    {core_strengths}
     
-    ## Enhancement Fields (Pre-matched from Gap Analysis)
-    resume_enhancement_project: {resume_enhancement_project}
+    **ANALYSIS_GAPS** - Key Gaps:
+    {key_gaps}
     
-    ## Preprocessed Certifications by Skill (Python-formatted)
-    preprocessed_certifications_by_skill: {preprocessed_certifications_by_skill}
+    **ANALYSIS_IMPROVEMENTS** - Quick Improvements:
+    {quick_improvements}
     
-    ## QuickImprovements Processing (QI_MAP)
-    Pre-categorize QuickImprovements by section keywords:
+    ### 3. ENHANCEMENT DATA
+    **PROJECTS_DATA** - Enhancement Projects:
+    {resume_enhancement_project}
+    
+    **CERT_DATA** - Preprocessed Certifications by Skill:
+    {preprocessed_certifications_by_skill}
+    
+    ### 4. KEYWORDS
+    **KEYWORDS_COVERED** - Already in Resume:
+    {covered_keywords}
+    
+    **KEYWORDS_MISSING** - Need to Integrate:
+    {missing_keywords}
+    
+    ### 5. STRUCTURE METADATA
+    **EDUCATION_FLAG** - Enhancement Needed:
+    {education_enhancement_needed}
+    
+    **SECTIONS_STANDARD** - Existing Standard Sections:
+    {standard_sections}
+    
+    **SECTIONS_CUSTOM** - Existing Custom Sections:
+    {custom_sections}
+    
+    ### 6. OUTPUT CONFIGURATION
+    **OUTPUT_LANG** - Target Language:
+    {output_language}
+    
+    ## QUICK IMPROVEMENTS CATEGORIZATION
+    Pre-categorize ANALYSIS_IMPROVEMENTS by section keywords:
     - education: ["education", "degree", "coursework", "GPA", "thesis", "academic"]
     - projects: ["project", "GitHub", "portfolio", "demo", "repository", "code"]  
     - certifications: ["certification", "credential", "license", "cert", "qualified"]
     - general: all other improvements
-    
-
-    
-    ## Keywords
-    Covered (maintain): {covered_keywords}
-    Missing (integrate): {missing_keywords}
-    
-    ## Resume Structure Analysis
-    Education Enhancement Needed: {education_enhancement_needed}
-    Standard Sections: {standard_sections}
-    Custom Sections: {custom_sections}
-    
-    ## Output Language: {output_language}
     </context>
     
     ## CHAIN OF THOUGHT EXECUTION
@@ -320,14 +337,14 @@ prompts:
     
     **Exception Handling:**
     - IF no education exists: Create minimal education entry (see Minimal Education Template below)
-    - IF education_enhancement_needed undefined: Default to false
+    - IF EDUCATION_FLAG undefined: Default to false
     - IF GPA not found or < 3.0: Skip GPA in enhanced mode
     - IF no relevant coursework: Extract from JD requirements
     - IF no activities/projects: Skip those subsections
     
     **A. Determine Enhancement Mode:**
     ```
-    IF education_enhancement_needed == true:
+    IF EDUCATION_FLAG == true:
       → Use Enhanced Template
     ELSE:
       → Use Standard Template
@@ -365,7 +382,7 @@ prompts:
       <h3>Professional Development & Self-Study</h3>
       <p><em>Continuous Learning</em> • <em>Online & Self-Paced</em> • <em>Ongoing</em></p>
       <ul>
-        <li>Focus Areas: [Extract from JD requirements and missing_keywords]</li>
+        <li>Focus Areas: [Extract from JD_CONTENT requirements and KEYWORDS_MISSING]</li>
         <li>Certifications: [Suggest relevant certifications] <span class="opt-placeholder">(In Progress)</span></li>
       </ul>
     </div>
@@ -375,12 +392,12 @@ prompts:
     
     **C. Enhanced Education Components:**
     
-    **When education_enhancement_needed = true, add to HIGHEST degree only:**
+    **When EDUCATION_FLAG = true, add to HIGHEST degree only:**
     
     1. **GPA**: Include if ≥ 3.0, format "GPA: X.XX/4.0"
     
     2. **Coursework**: 6-8 relevant courses in 2 lines
-       - Map to JD keywords, prioritize missing_keywords
+       - Map to JD_CONTENT keywords, prioritize KEYWORDS_MISSING
     
     3. **Academic Projects**: Max 3, stay in Education section
        - Expand thesis/capstone first if exists
@@ -452,7 +469,7 @@ prompts:
     - CSS: class="opt-modified"
     
     **Phase 2: Add from enhancement fields (if available)**
-    - Source: resume_enhancement_project
+    - Source: PROJECTS_DATA (defined in context)
     - Limit: One project per related_skill
     - Expand description from ~200 chars to full paragraph
     - CSS: class="opt-new"
@@ -470,13 +487,13 @@ prompts:
     
 
     **Exception Handling:**
-    - IF no certifications found in {original_resume} AND {preprocessed_certifications_by_skill} shows "No enhancement certifications available": Return empty string "" 
+    - IF no certifications found in RESUME_CONTENT AND CERT_DATA shows "No enhancement certifications available": Return empty string "" 
     - IF no achievements: Skip achievements subsection
     
     **Certifications Processing (Two-Phase Approach):**
     
     **Phase 1: Format Existing Certifications**
-    - Reorder by relevance to JD (most relevant first)
+    - Reorder by relevance to JD_CONTENT (most relevant first)
     - Keep original provider and year
     - NO CSS classes (clean format)
     - Format: `<li><strong>[name]</strong> • [provider] • [year]</li>`
@@ -484,7 +501,7 @@ prompts:
     **Phase 2: Add Enhancement Certifications**
     
     **Input:**
-    - Source: `{preprocessed_certifications_by_skill}`
+    - Source: CERT_DATA (defined in context above)
     - Format: Skill groups with pre-formatted HTML `<li>` elements
     
     **Process Flow:**
@@ -497,13 +514,13 @@ prompts:
     2. **Selection Logic**
        For each skill group in the input:
        - Analyze all certifications within the group
-       - Select ONE certification that best aligns with the job requirements above
+       - Select ONE certification that best aligns with JD_CONTENT
        - Append the selected HTML string without modification
     
     **Rules:**
     - Each `<li>` element is pre-formatted with `opt-new` CSS class
     - Maintain exact HTML structure (do not modify)
-    - Selection criteria: Relevance to JD requirements > Recency > Vendor importance
+    - Selection criteria: Relevance to JD_CONTENT requirements > Recency > Vendor importance
     
     **Example:**
     
@@ -532,7 +549,7 @@ prompts:
     
     **D. Track Applied Changes:**
     Store ONE entry for tracking array
-    - Include "(No additional certification resources available)" if preprocessed_certifications_by_skill was empty
+    - Include "(No additional certification resources available)" if CERT_DATA was empty
     
     ### Step 4: Custom Sections Processing (簡化版)
     
@@ -688,7 +705,7 @@ prompts:
     ✅ Work projects stay in Experience section (not duplicated)
     ✅ Learning projects honestly represent learning status
     ✅ Certifications ordered by relevance to JD
-    ✅ Enhancement certifications from preprocessed_certifications_by_skill MUST be included
+    ✅ Enhancement certifications from CERT_DATA MUST be included
     ✅ NO placeholder certifications (like "Test Certification") should be created
     ✅ Suggested certifications marked with "In Progress" or "Planned"
     ✅ Custom sections evaluated and processed appropriately
