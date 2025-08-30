@@ -426,7 +426,10 @@ prompts:
     - Activities: "AI/ML Study Group member"
     
     **F. Track Applied Changes:**
-    Store ONE entry for tracking array (format: "[Section] Action: details")
+    **Format:** "[Education] Action: specific details"
+    - **Actions:** Enhanced, Standard, Created, Modified
+    - **Include counts:** (e.g., "added GPA, 6 courses, 2 projects, 2 activities")
+    - **Skip if empty:** No tracking entry if education doesn't exist
     
     ### Step 2: Projects Section Processing
     
@@ -481,7 +484,11 @@ prompts:
     Output: "Developing microservices-based application focusing on cloud architecture principles, implementing containerization with Docker, orchestration with Kubernetes, and deploying scalable solutions with auto-scaling strategies."
     
     **E. Track Applied Changes:**
-    Store ONE entry for tracking array
+    **Format:** "[Projects] Action: specific details"
+    - **Actions:** Optimized, Created, Added, Mixed
+    - **Include counts:** (e.g., "2 personal projects enhanced, 1 enhancement project added")
+    - **Note exclusions:** (e.g., "excluded 2 work projects")
+    - **Skip if empty:** No tracking entry if projects section returns ""
     
     ### Step 3: Certifications & Achievements Processing (Simplified)
     
@@ -548,8 +555,11 @@ prompts:
 
     
     **D. Track Applied Changes:**
-    Store ONE entry for tracking array
-    - Include "(No additional certification resources available)" if CERT_DATA was empty
+    **Format:** "[Certifications] Action: specific details"
+    - **Actions:** Mixed, Reordered, Added, Created
+    - **Include counts:** (e.g., "1 existing reordered, 1 enhancement certification added")
+    - **Special note:** Include "(No additional certification resources available)" if CERT_DATA was empty
+    - **Skip if empty:** No tracking entry if certifications section returns ""
     
     ### Step 4: Custom Sections Processing (簡化版)
     
